@@ -1,0 +1,26 @@
+pluginManagement {
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/releases' }
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+
+        maven { url 'https://jitpack.io' }
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+
+
+    }
+    plugins {
+        //id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
+    }
+}
+plugins {
+    id "com.android.application" version "8.3.2" apply false  // ✅ 改为一致
+    id "com.android.library" version "8.3.2" apply false       // ✅ 改为一致
+    id 'org.jetbrains.kotlin.android' version '1.9.23' apply false
+    //id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+}
+include ":app"

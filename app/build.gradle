@@ -1,0 +1,95 @@
+plugins {
+    id "com.android.application"
+    // START: FlutterFire Configuration
+    //id 'com.google.gms.google-services'
+    // END: FlutterFire Configuration
+    id "kotlin-android"
+    ///id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace "com.lora.cn"
+    compileSdkVersion 35
+    ndkVersion '25.1.8937393'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        applicationId "com.lora.cn"
+        minSdkVersion 24
+        multiDexEnabled true  // 添加这行
+        targetSdkVersion 35
+        versionCode 100000
+        versionName "1.0.0"
+    }
+
+    signingConfigs {// 自动化打包配置
+        release {// 开发环境
+            keyAlias 'keystore'
+            keyPassword '123456'
+            storeFile file('D:\\work\\jack-keystore.jks')
+            storePassword '123456'
+        }
+        debug {// 开发环境
+            keyAlias 'keystore'
+            keyPassword '123456'
+            storeFile file('D:\\work\\jack-keystore.jks')
+            storePassword '123456'
+        }
+    }
+
+//      signingConfigs {// 自动化打包配置
+//            release {// 开发环境
+//                keyAlias 'keep'
+//                keyPassword 'hb123456'
+//                storeFile file('..\\zephyr-jks.jks')
+//                storePassword 'hb123456'
+//            }
+//            debug {// 开发环境
+//                keyAlias 'keep'
+//                keyPassword 'hb123456'
+//                storeFile file('..\\zephyr-jks.jks')
+//                storePassword 'hb123456'
+//            }
+//        }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            //代码混淆需要添加的
+            minifyEnabled false//资源压缩设置
+            //useProguard true//代码压缩设置
+            shrinkResources false//是否启用缩减资源
+            //读取代码压缩配置文件
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            ndk{
+//                //之前看QQ微信等大佬都只用"armeabi"
+//                abiFilters  'armeabi-v7a', 'arm64-v8a'
+//            }
+        }
+    }
+}
+
+
+dependencies {
+
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'androidx.navigation:navigation-fragment:2.8.9'
+    implementation 'androidx.navigation:navigation-ui:2.8.9'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+}
