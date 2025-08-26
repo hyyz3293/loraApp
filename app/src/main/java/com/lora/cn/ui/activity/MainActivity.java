@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView btnLogout;
     
     private Fragment currentFragment;
-    private int currentTabIndex = 0; // 0: 终端列表, 1: 日志信息, 2: 清点终端, 3: 设置
+    private int currentTabIndex = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,22 +102,14 @@ public class MainActivity extends AppCompatActivity {
         menuTabAdapter.notifyDataSetChanged();
 
         // 切换Fragment
-        Fragment fragment = null;
-        switch (tabIndex) {
-            case 0:
-                fragment = new TerminalListFragment();
-                break;
-            case 1:
-                fragment = new LogInfoFragment();
-                break;
-            case 2:
-                fragment = new TerminalCheckFragment();
-                break;
-            case 3:
-                fragment = new SettingsFragment();
-                break;
-        }
-        
+        Fragment fragment = switch (tabIndex) {
+            case 0 -> new TerminalListFragment();
+            case 1 -> new LogInfoFragment();
+            case 2 -> new TerminalCheckFragment();
+            case 3 -> new SettingsFragment();
+            default -> null;
+        };
+
         if (fragment != null) {
             FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
             if (currentFragment != null) {

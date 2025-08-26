@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 分组选择选项 -->
+    <string-array name="group_options">
+        <item>全部</item>
+        <item>科室一</item>
+        <item>科室二</item>
+    </string-array>
+
+    <!-- 筛选选择选项 -->
+    <string-array name="filter_options">
+        <item>全部</item>
+        <item>只显示重点关注</item>
+        <item>只显示异常关注</item>
+        <item>只显示没有信号的</item>
+    </string-array>
+
+    <!-- 页数选择选项 -->
+    <string-array name="page_size_options">
+        <item>10条/页</item>
+        <item>20条/页</item>
+    </string-array>
+</resources>

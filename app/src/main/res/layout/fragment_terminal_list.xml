@@ -8,17 +8,148 @@
     <LinearLayout
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
+        android:paddingTop="23dp"
+        android:paddingBottom="23dp"
+        android:paddingLeft="34dp"
+        android:paddingRight="34dp"
         android:layout_width="match_parent"
         android:layout_weight="1"
         android:orientation="vertical"
         android:layout_height="0dp" >
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="93dp" >
+            android:layout_height="93dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp" >
+
+            <TextView
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="分组："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:background="@drawable/spinner_background"
+                android:layout_width="152dp"
+                android:layout_height="48dp" >
+
+                <Spinner
+                    android:id="@+id/spinner_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingLeft="15dp"
+                    android:paddingRight="15dp"
+                    android:entries="@array/group_options"
+                    />
+
+            </LinearLayout>
 
 
-        </RelativeLayout>
+            <TextView
+                android:layout_marginLeft="15dp"
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="筛选："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:background="@drawable/spinner_background"
+                android:layout_width="152dp"
+                android:layout_height="48dp" >
+
+                <Spinner
+                    android:id="@+id/spinner_filter"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingLeft="15dp"
+                    android:paddingRight="15dp"
+                    android:entries="@array/group_options"
+                    />
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:layout_marginLeft="15dp"
+                android:layout_width="219dp"
+                android:background="@drawable/spinner_background"
+                android:orientation="horizontal"
+                android:layout_height="48dp">
+
+                <EditText
+                    android:id="@+id/et_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@null"
+                    android:hint="终端名称搜索"
+                    android:padding="8dp"
+                    android:textSize="14sp"
+                    android:textColorHint="#838383"
+                    android:textColor="@color/black"
+                    android:drawableRight="@mipmap/ic_search"
+                    android:drawablePadding="20dp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_marginLeft="40dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" >
+
+                <ImageView
+                    android:id="@+id/sx_left"
+                    android:background="@mipmap/ic_sx_left"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <Spinner
+                    android:id="@+id/spinner_ts"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:entries="@array/group_options"
+                    android:background="@drawable/spinner_no_arrow_background"
+                    />
+
+                <ImageView
+                    android:id="@+id/sx_right"
+                    android:background="@mipmap/ic_sx_rg"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+            <RelativeLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent" >
+
+                <TextView
+                    android:id="@+id/add_terminal"
+                    android:paddingLeft="17dp"
+                    android:paddingRight="17dp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_btn_4"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:text="添加终端"
+                    android:textColor="#383B40"
+                    android:textSize="16dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp" />
+
+            </RelativeLayout>
+
+        </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/terminal_recycle"

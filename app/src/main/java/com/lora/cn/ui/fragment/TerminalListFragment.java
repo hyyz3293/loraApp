@@ -18,13 +18,7 @@ public class TerminalListFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_terminal_list, container, false);
-        
-        // 初始化视图
-        TextView tvTitle = view.findViewById(R.id.tv_fragment_title);
-        tvTitle.setText("终端列表");
-        
-        // TODO: 在此添加终端列表的具体实现
-        
+
         return view;
     }
 
