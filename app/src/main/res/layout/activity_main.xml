@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@mipmap/ic_bg_hm"
-    tools:context=".ui.MainActivity">
+    tools:context=".ui.activity.MainActivity">
 
     <!-- 顶部导航栏 -->
     <LinearLayout

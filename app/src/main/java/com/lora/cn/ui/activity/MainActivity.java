@@ -1,9 +1,8 @@
-package com.lora.cn.ui;
+package com.lora.cn.ui.activity;
 
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
@@ -101,7 +100,6 @@ public class MainActivity extends AppCompatActivity {
 
         menuTabAdapter.submitList(menuTabs);
         menuTabAdapter.notifyDataSetChanged();
-        
 
         // 切换Fragment
         Fragment fragment = null;

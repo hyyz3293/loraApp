@@ -1,4 +1,4 @@
-package com.lora.cn.ui;
+package com.lora.cn.ui.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
