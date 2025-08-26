@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="150dp"
+    android:orientation="vertical"
+    android:gravity="center|bottom"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tv_tab_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="菜单项"
+        android:textColor="@color/white"
+        android:textSize="20sp"
+        android:gravity="center"
+        android:background="?android:attr/selectableItemBackground"
+        />
+
+    <ImageView
+        android:id="@+id/img_tab_title"
+        android:layout_margin="8dp"
+        android:layout_marginBottom="18dp"
+        android:layout_width="14dp"
+        android:background="@drawable/bg_menu_10"
+        android:layout_height="5dp" />
+    
+</LinearLayout>

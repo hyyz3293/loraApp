@@ -38,9 +38,6 @@
         android:theme="@style/Theme.LoraApp"
         tools:targetApi="31">
         <activity
-            android:name=".ui.LoginActivity"
-            android:exported="false" />
-        <activity
             android:name=".ui.WelcomeActivity"
             android:exported="true"
             android:theme="@style/Theme.LoraApp">
@@ -51,10 +48,11 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".ui.LoginActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.LoraApp.NoActionBar"></activity>
+            android:exported="true" />
     </application>
 
 </manifest>

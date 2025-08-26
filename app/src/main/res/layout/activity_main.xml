@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/white"
+    android:background="@mipmap/ic_bg_hm"
     tools:context=".ui.MainActivity">
 
     <!-- 顶部导航栏 -->
@@ -14,16 +14,14 @@
         android:layout_width="match_parent"
         android:layout_height="80dp"
         android:orientation="horizontal"
-        android:background="#2196F3"
         android:gravity="center_vertical"
         android:paddingLeft="20dp"
         android:paddingRight="20dp">
 
         <!-- Logo和标题区域 -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
@@ -31,94 +29,40 @@
                 android:id="@+id/iv_logo"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@mipmap/ic_launcher"
+                android:src="@mipmap/app_logo"
                 android:layout_marginRight="15dp" />
 
             <TextView
+                android:layout_marginLeft="18dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="终端监控中心"
-                android:textColor="@color/white"
-                android:textSize="24sp"
+                android:textColor="@color/black"
+                android:textSize="28sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
         <!-- 中间菜单区域 -->
-        <LinearLayout
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_menu_tabs"
+            android:layout_marginLeft="25dp"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="2"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <TextView
-                android:id="@+id/tab_terminal_list"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="终端列表"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/tab_log_info"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="日志信息"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/tab_terminal_check"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="清点终端"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/tab_settings"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="设置"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true" />
-
-        </LinearLayout>
+            android:layout_weight="1" />
 
         <!-- 右侧用户信息区域 -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="horizontal"
             android:gravity="center_vertical|end">
 
             <ImageView
                 android:id="@+id/iv_user_avatar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@mipmap/ic_launcher_round"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@mipmap/ic_user"
                 android:layout_marginRight="10dp" />
 
             <TextView
@@ -126,65 +70,25 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="当前用户"
-                android:textColor="@color/white"
-                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:textSize="18sp"
                 android:layout_marginRight="15dp" />
 
-            <TextView
-                android:id="@+id/btn_logout"
+            <View
+                android:background="#8291A9"
+                android:layout_width="1dp"
+                android:layout_height="20dp" />
+
+            <ImageView
+                android:id="@+id/logout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="退出"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:padding="8dp"
-                android:background="@drawable/bg_et_8"
-                android:clickable="true"
-                android:focusable="true" />
+                android:src="@mipmap/ic_logout"
+                android:layout_marginLeft="18dp"
+                android:layout_marginRight="28dp" />
 
         </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- 选中指示器 -->
-    <LinearLayout
-        android:id="@+id/indicator_container"
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:orientation="horizontal"
-        android:background="#1976D2">
-
-        <View
-            android:id="@+id/indicator_terminal_list"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="#FF5722"
-            android:visibility="visible" />
-
-        <View
-            android:id="@+id/indicator_log_info"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="#FF5722"
-            android:visibility="invisible" />
-
-        <View
-            android:id="@+id/indicator_terminal_check"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="#FF5722"
-            android:visibility="invisible" />
-
-        <View
-            android:id="@+id/indicator_settings"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="#FF5722"
-            android:visibility="invisible" />
 
     </LinearLayout>
 
