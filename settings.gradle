@@ -10,8 +10,9 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
-
-
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots/'
+        }
     }
     plugins {
         //id "dev.flutter.flutter-gradle-plugin" version "1.0.0" apply false
@@ -22,5 +23,9 @@ plugins {
     id "com.android.library" version "8.3.2" apply false       // ✅ 改为一致
     id 'org.jetbrains.kotlin.android' version '1.9.23' apply false
     //id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    //id 'io.realm' version '10.19.0' apply false
+    id 'io.realm.kotlin' version '1.11.0' apply false
+
+
 }
 include ":app"

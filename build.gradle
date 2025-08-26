@@ -19,6 +19,8 @@ buildscript {
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
         //classpath 'com.google.gms:google-services:4.3.15'
         classpath "com.github.liujingxing:XmlClassGuard:1.2.6"
+        classpath "io.realm:realm-gradle-plugin:10.19.0"
+
     }
 }
 
