@@ -2,168 +2,251 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp"
-    android:background="@color/white">
+    android:background="@drawable/bg_white_12"
+    android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tv_fragment_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="日志信息"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginBottom="20dp" />
-
-    <!-- 日志过滤器 -->
     <LinearLayout
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:paddingTop="23dp"
+        android:paddingBottom="23dp"
+        android:paddingLeft="34dp"
+        android:paddingRight="34dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="15dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="日志级别："
-            android:textSize="16sp"
-            android:textColor="@color/black"
-            android:layout_marginRight="10dp"
-            android:gravity="center_vertical" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="全部"
-            android:textSize="14sp"
-            android:textColor="@color/white"
-            android:background="#2196F3"
-            android:padding="8dp"
-            android:layout_marginRight="10dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="错误"
-            android:textSize="14sp"
-            android:textColor="@color/black"
-            android:background="@drawable/bg_et_8"
-            android:padding="8dp"
-            android:layout_marginRight="10dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="警告"
-            android:textSize="14sp"
-            android:textColor="@color/black"
-            android:background="@drawable/bg_et_8"
-            android:padding="8dp" />
-
-    </LinearLayout>
-
-    <!-- 日志列表 -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_height="0dp" >
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="93dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp" >
 
-            <!-- 示例日志项 -->
+            <TextView
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="日志类型："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/bg_white_12"
-                android:padding="15dp"
-                android:layout_marginBottom="10dp">
+                android:background="@drawable/spinner_background"
+                android:layout_width="152dp"
+                android:layout_height="48dp" >
 
-                <LinearLayout
+                <Spinner
+                    android:id="@+id/log_type"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="5dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="INFO"
-                        android:textSize="12sp"
-                        android:textColor="@color/white"
-                        android:background="#4CAF50"
-                        android:padding="4dp"
-                        android:layout_marginRight="10dp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="2024-01-15 14:30:25"
-                        android:textSize="14sp"
-                        android:textColor="#666666" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="终端设备001连接成功，开始数据同步"
-                    android:textSize="16sp"
-                    android:textColor="@color/black" />
+                    android:layout_height="match_parent"
+                    android:paddingLeft="15dp"
+                    android:paddingRight="15dp"
+                    android:entries="@array/log_type_options"
+                    />
 
             </LinearLayout>
 
-            <!-- 更多日志项 -->
+
+            <TextView
+                android:layout_marginLeft="15dp"
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="报警处理："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/bg_white_12"
-                android:padding="15dp"
-                android:layout_marginBottom="10dp">
+                android:background="@drawable/spinner_background"
+                android:layout_width="152dp"
+                android:layout_height="48dp" >
 
-                <LinearLayout
+                <Spinner
+                    android:id="@+id/spinner_police"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="5dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="ERROR"
-                        android:textSize="12sp"
-                        android:textColor="@color/white"
-                        android:background="#F44336"
-                        android:padding="4dp"
-                        android:layout_marginRight="10dp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="2024-01-15 14:28:10"
-                        android:textSize="14sp"
-                        android:textColor="#666666" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="终端设备002连接超时，请检查网络连接"
-                    android:textSize="16sp"
-                    android:textColor="@color/black" />
+                    android:layout_height="match_parent"
+                    android:paddingLeft="15dp"
+                    android:paddingRight="15dp"
+                    android:entries="@array/log_police_options"
+                    />
 
             </LinearLayout>
+
+
+            <TextView
+                android:layout_marginLeft="15dp"
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="日志时间："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+
+            <RelativeLayout
+                android:id="@+id/time_start_time"
+                android:background="@drawable/time_background"
+                android:layout_width="152dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:layout_height="40dp" >
+
+                <TextView
+                    android:id="@+id/time_start_time_tv"
+                    android:layout_centerVertical="true"
+                    android:text="开始时间"
+                    android:textColor="#767676"
+                    android:textSize="13dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <ImageView
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@mipmap/ic_es"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp" />
+
+            </RelativeLayout>
+
+            <View
+                android:layout_marginLeft="7dp"
+                android:layout_marginRight="7dp"
+                android:background="#909090"
+                android:layout_width="13dp"
+                android:layout_height="2dp" />
+            
+            <RelativeLayout
+                android:id="@+id/time_end_time"
+                android:background="@drawable/time_background"
+                android:layout_width="152dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:layout_height="40dp" >
+
+                <TextView
+                    android:id="@+id/time_end_time_tv"
+                    android:layout_centerVertical="true"
+                    android:text="结束时间"
+                    android:textColor="#767676"
+                    android:textSize="13dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <ImageView
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@mipmap/ic_es"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp" />
+
+            </RelativeLayout>
 
         </LinearLayout>
 
-    </ScrollView>
+        <View
+            android:background="#AEAEAE"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="50dp" >
+
+            <TextView
+                android:id="@+id/log_time"
+                android:text="时间"
+                android:gravity="center_vertical"
+                android:paddingLeft="5dp"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="188"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/log_statu"
+                android:text="状态"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="138"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/log_name"
+                android:text="终端列表"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="156"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/log_id"
+                android:text="终端ID"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="168"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/log_complute"
+                android:text="处理人"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="168"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/log_complute_time"
+                android:text="处理人"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="182"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/log_operation"
+                android:text="操作"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="182"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+        <View
+            android:background="#AEAEAE"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/terminal_log_recycle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </LinearLayout>
+
 
 </LinearLayout>
