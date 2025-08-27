@@ -2,225 +2,152 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="20dp"
-    android:background="@color/white">
+    android:background="@drawable/bg_white_12"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp"
+    android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tv_fragment_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="清点终端"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginBottom="20dp" />
-
-    <!-- 统计信息卡片 -->
     <LinearLayout
+        android:paddingTop="23dp"
+        android:paddingBottom="23dp"
+        android:paddingLeft="34dp"
+        android:paddingRight="34dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="20dp">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:background="@drawable/bg_white_12"
-            android:padding="15dp"
-            android:gravity="center"
-            android:layout_marginRight="10dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="总数"
-                android:textSize="14sp"
-                android:textColor="#666666" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="25"
-                android:textSize="32sp"
-                android:textStyle="bold"
-                android:textColor="#2196F3"
-                android:layout_marginTop="5dp" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:background="@drawable/bg_white_12"
-            android:padding="15dp"
-            android:gravity="center"
-            android:layout_marginRight="10dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="在线"
-                android:textSize="14sp"
-                android:textColor="#666666" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="22"
-                android:textSize="32sp"
-                android:textStyle="bold"
-                android:textColor="#4CAF50"
-                android:layout_marginTop="5dp" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:background="@drawable/bg_white_12"
-            android:padding="15dp"
-            android:gravity="center">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="离线"
-                android:textSize="14sp"
-                android:textColor="#666666" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="3"
-                android:textSize="32sp"
-                android:textStyle="bold"
-                android:textColor="#F44336"
-                android:layout_marginTop="5dp" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <!-- 操作按钮 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="20dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:text="开始清点"
-            android:textSize="16sp"
-            android:textColor="@color/white"
-            android:background="@drawable/bg_login_6"
-            android:gravity="center"
-            android:layout_marginRight="10dp"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:text="导出报告"
-            android:textSize="16sp"
-            android:textColor="@color/black"
-            android:background="@drawable/bg_et_8"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true" />
-
-    </LinearLayout>
-
-    <!-- 清点结果列表 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="清点结果"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/black"
-        android:layout_marginBottom="15dp" />
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_height="0dp" >
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="93dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp" >
 
-            <!-- 示例清点项 -->
+            <TextView
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="日志类型："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:background="@drawable/bg_white_12"
-                android:padding="15dp"
-                android:layout_marginBottom="8dp"
-                android:gravity="center_vertical">
+                android:background="@drawable/spinner_background"
+                android:layout_width="152dp"
+                android:layout_height="48dp" >
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="护士站A区-001"
-                    android:textSize="16sp"
-                    android:textColor="@color/black" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="已清点"
-                    android:textSize="12sp"
-                    android:textColor="@color/white"
-                    android:background="#4CAF50"
-                    android:padding="5dp" />
+                <Spinner
+                    android:id="@+id/log_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingLeft="15dp"
+                    android:paddingRight="15dp"
+                    android:entries="@array/log_type_options"
+                    />
 
             </LinearLayout>
 
+
+            <TextView
+                android:layout_marginLeft="15dp"
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="报警处理："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:orientation="horizontal"
-                android:background="@drawable/bg_white_12"
-                android:padding="15dp"
-                android:layout_marginBottom="8dp"
-                android:gravity="center_vertical">
+                android:background="@drawable/spinner_background"
+                android:layout_width="152dp"
+                android:layout_height="48dp" >
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="护士站B区-002"
-                    android:textSize="16sp"
-                    android:textColor="@color/black" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="未清点"
-                    android:textSize="12sp"
-                    android:textColor="@color/white"
-                    android:background="#FF9800"
-                    android:padding="5dp" />
+                <Spinner
+                    android:id="@+id/spinner_police"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:paddingLeft="15dp"
+                    android:paddingRight="15dp"
+                    android:entries="@array/log_police_options"
+                    />
 
             </LinearLayout>
+
+
+            <TextView
+                android:layout_marginLeft="15dp"
+                android:textSize="16dp"
+                android:textColor="@color/black"
+                android:text="日志时间："
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+
+            <RelativeLayout
+                android:id="@+id/time_start_time"
+                android:background="@drawable/time_background"
+                android:layout_width="152dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:layout_height="40dp" >
+
+                <TextView
+                    android:id="@+id/time_start_time_tv"
+                    android:layout_centerVertical="true"
+                    android:text="开始时间"
+                    android:textColor="#767676"
+                    android:textSize="13dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <ImageView
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@mipmap/ic_es"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp" />
+
+            </RelativeLayout>
+
+            <View
+                android:layout_marginLeft="7dp"
+                android:layout_marginRight="7dp"
+                android:background="#909090"
+                android:layout_width="13dp"
+                android:layout_height="2dp" />
+
+            <RelativeLayout
+                android:id="@+id/time_end_time"
+                android:background="@drawable/time_background"
+                android:layout_width="152dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:layout_height="40dp" >
+
+                <TextView
+                    android:id="@+id/time_end_time_tv"
+                    android:layout_centerVertical="true"
+                    android:text="结束时间"
+                    android:textColor="#767676"
+                    android:textSize="13dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <ImageView
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:background="@mipmap/ic_es"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp" />
+
+            </RelativeLayout>
 
         </LinearLayout>
 
-    </ScrollView>
+
+    </LinearLayout>
+
 
 </LinearLayout>

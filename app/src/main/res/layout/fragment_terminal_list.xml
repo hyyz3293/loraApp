@@ -2,15 +2,15 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_white_12"
     android:orientation="vertical">
 
     <LinearLayout
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
+        android:background="@drawable/bg_white_12"
         android:paddingTop="23dp"
         android:paddingBottom="23dp"
         android:paddingLeft="34dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginLeft="20dp"
         android:paddingRight="34dp"
         android:layout_width="match_parent"
         android:layout_weight="1"
@@ -158,10 +158,14 @@
 
     </LinearLayout>
 
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"/>
+
     <RelativeLayout
         android:background="#F1F5F9"
         android:layout_width="match_parent"
-        android:layout_marginTop="48dp"
         android:gravity="center"
         android:layout_height="60dp" >
 
@@ -169,7 +173,7 @@
             android:id="@+id/rv_terminal_status"
             android:layout_centerInParent="true"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent" />
+            android:layout_height="wrap_content" />
 
     </RelativeLayout>
 

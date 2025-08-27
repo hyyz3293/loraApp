@@ -18,13 +18,6 @@ public class TerminalCheckFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_terminal_check, container, false);
-        
-        // 初始化视图
-        TextView tvTitle = view.findViewById(R.id.tv_fragment_title);
-        tvTitle.setText("清点终端");
-        
-        // TODO: 在此添加清点终端的具体实现
-        
         return view;
     }
 
