@@ -43,7 +43,7 @@ public class PieChartView extends View {
     private void init() {
         piePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         piePaint.setStyle(Paint.Style.STROKE);
-        piePaint.setStrokeWidth(35f); // 圆环宽度35dp
+        piePaint.setStrokeWidth(30f); // 圆环宽度30dp，为间隔留出空间
         
         linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         linePaint.setStyle(Paint.Style.STROKE);
@@ -89,27 +89,34 @@ public class PieChartView extends View {
         }
         
         float startAngle = -90f; // 从12点钟方向开始
+        float totalAngle = 0f;
+        
+        // 计算总角度，为间隔预留空间
+        float gapAngle = 5f; // 每个模块间隔5度
+        float totalGapAngle = pieDataList.size() * gapAngle;
+        float availableAngle = 360f - totalGapAngle;
         
         for (int i = 0; i < pieDataList.size(); i++) {
             PieData data = pieDataList.get(i);
-            float sweepAngle = data.percentage * 360f / 100f;
+            float sweepAngle = (data.percentage / 100f) * availableAngle;
             
             // 绘制圆环扇形
             piePaint.setColor(data.color);
             canvas.drawArc(pieRect, startAngle, sweepAngle, false, piePaint);
             
-            // 计算引线起点和终点
+            // 计算每个图块的中间角度（用于放置小白点）
             float midAngle = startAngle + sweepAngle / 2f;
             double radians = Math.toRadians(midAngle);
             
+            // 小白点在每个图块中间（圆环的中心位置）
+            float dotRadius = radius - 15f; // 圆环中心位置
+            float dotX = centerX + (float) (dotRadius * Math.cos(radians));
+            float dotY = centerY + (float) (dotRadius * Math.sin(radians));
+            canvas.drawCircle(dotX, dotY, 4f, dotPaint);
+            
             if (showLines) {
-                // 引线起点在圆环内边缘（圆环内侧）- 用于绘制白色小圆点
-                float innerRadius = radius - 17.5f; // 圆环宽度35dp的一半
-                float lineStartX = centerX + (float) (innerRadius * Math.cos(radians));
-                float lineStartY = centerY + (float) (innerRadius * Math.sin(radians));
-                
                 // 引线从圆环外边缘开始
-                float outerRadius = radius + 17.5f; // 圆环外边缘
+                float outerRadius = radius + 15f; // 圆环外边缘
                 float lineOuterStartX = centerX + (float) (outerRadius * Math.cos(radians));
                 float lineOuterStartY = centerY + (float) (outerRadius * Math.sin(radians));
                 
@@ -118,7 +125,7 @@ public class PieChartView extends View {
                 float lineMidY = centerY + (float) ((radius + 40) * Math.sin(radians));
                 
                 // 横向线段终点
-                boolean isLeft = midAngle > 90 && midAngle < 270; // 调整判断条件适应-90度起始角
+                boolean isLeft = midAngle > 90 && midAngle < 270;
                 float lineEndX = lineMidX + (isLeft ? -60 : 60);
                 float lineEndY = lineMidY;
                 
@@ -126,18 +133,17 @@ public class PieChartView extends View {
                 canvas.drawLine(lineOuterStartX, lineOuterStartY, lineMidX, lineMidY, linePaint);
                 canvas.drawLine(lineMidX, lineMidY, lineEndX, lineEndY, linePaint);
                 
-                // 在线条头部（圆环内侧）绘制白色小圆点
-                canvas.drawCircle(lineStartX, lineStartY, 4f, dotPaint);
-                
-                // 绘制文本在横向线段上方
+                // 绘制文本在平行线中间（横向线段的中点）
                 String text = data.label + " " + data.percentage + "%";
-                float textX = isLeft ? lineEndX - textPaint.measureText(text) : lineEndX;
-                float textY = lineEndY - 10; // 文字在线条上方10dp
+                float textCenterX = (lineMidX + lineEndX) / 2f; // 平行线中间位置
+                float textX = isLeft ? textCenterX - textPaint.measureText(text) / 2f : textCenterX - textPaint.measureText(text) / 2f;
+                float textY = lineEndY - 5; // 文字在线条上方5dp
                 
                 canvas.drawText(text, textX, textY, textPaint);
             }
             
-            startAngle += sweepAngle;
+            // 下一个扇形的起始角度（加上间隔）
+            startAngle += sweepAngle + gapAngle;
         }
     }
     
