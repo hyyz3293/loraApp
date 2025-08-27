@@ -18,11 +18,7 @@ public class LogInfoFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_log_info, container, false);
-        
-        // 初始化视图
-        TextView tvTitle = view.findViewById(R.id.tv_fragment_title);
-        tvTitle.setText("日志信息");
-        
+
         // TODO: 在此添加日志信息的具体实现
         
         return view;
