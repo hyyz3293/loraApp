@@ -8,83 +8,135 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <TextView
-            android:id="@+id/log_time"
-            android:text=""
-            android:gravity="center_vertical"
-            android:paddingLeft="5dp"
-            android:textColor="#666666"
-            android:textSize="13dp"
-            android:textStyle="bold"
+        <LinearLayout
             android:layout_weight="188"
             android:layout_width="0dp"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/log_statu"
-            android:text=""
             android:gravity="center_vertical"
-            android:textColor="#666666"
-            android:textSize="13dp"
-            android:textStyle="bold"
+            android:layout_height="match_parent"  >
+
+            <TextView
+                android:id="@+id/log_time"
+                android:text=""
+                android:gravity="center_vertical"
+                android:textColor="#666666"
+                android:textSize="13dp"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
             android:layout_weight="138"
             android:layout_width="0dp"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/log_name"
-            android:text=""
             android:gravity="center_vertical"
-            android:textColor="#666666"
-            android:textSize="13dp"
-            android:textStyle="bold"
+            android:layout_height="match_parent"  >
+
+            <TextView
+                android:id="@+id/log_statu"
+                android:text=""
+                android:gravity="center_vertical"
+                android:textColor="#666666"
+                android:textSize="13dp"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
             android:layout_weight="156"
             android:layout_width="0dp"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/log_id"
-            android:text=""
             android:gravity="center_vertical"
-            android:textColor="#666666"
-            android:textSize="13dp"
-            android:textStyle="bold"
+            android:layout_height="match_parent"  >
+
+            <TextView
+                android:id="@+id/log_name"
+                android:text=""
+                android:gravity="center_vertical"
+                android:textColor="#666666"
+                android:textSize="13dp"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
             android:layout_weight="168"
             android:layout_width="0dp"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/log_complute"
-            android:text=""
             android:gravity="center_vertical"
-            android:textColor="#666666"
-            android:textSize="13dp"
-            android:textStyle="bold"
+            android:layout_height="match_parent"  >
+
+            <TextView
+                android:id="@+id/log_id"
+                android:text=""
+                android:gravity="center_vertical"
+                android:textColor="#666666"
+                android:textSize="13dp"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_weight="168"
             android:layout_width="0dp"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/log_complute_time"
-            android:text=""
             android:gravity="center_vertical"
-            android:textColor="#666666"
-            android:textSize="13dp"
-            android:textStyle="bold"
+            android:layout_height="match_parent"  >
+
+            <TextView
+                android:id="@+id/log_complute"
+                android:text=""
+                android:gravity="center_vertical"
+                android:textColor="#666666"
+                android:textSize="13dp"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
             android:layout_weight="182"
             android:layout_width="0dp"
-            android:layout_height="match_parent" />
-
-        <TextView
-            android:id="@+id/log_operation"
-            android:text=""
             android:gravity="center_vertical"
-            android:textColor="#666666"
-            android:textSize="13dp"
-            android:textStyle="bold"
-            android:layout_weight="182"
-            android:layout_width="0dp"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"  >
+
+            <TextView
+                android:id="@+id/log_complute_time"
+                android:text=""
+                android:gravity="center_vertical"
+                android:textColor="#666666"
+                android:textSize="13dp"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+       <LinearLayout
+           android:layout_weight="110"
+           android:layout_width="0dp"
+           android:gravity="center_vertical"
+           android:layout_height="match_parent"  >
+
+           <TextView
+               android:id="@+id/log_operation"
+               android:text=""
+               android:gravity="center_vertical"
+               android:textColor="#666666"
+               android:textSize="13dp"
+               android:textStyle="bold"
+               android:layout_width="wrap_content"
+               android:layout_height="wrap_content" />
+
+       </LinearLayout>
 
     </LinearLayout>
     

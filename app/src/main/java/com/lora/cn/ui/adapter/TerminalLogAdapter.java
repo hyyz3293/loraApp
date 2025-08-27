@@ -1,6 +1,8 @@
 package com.lora.cn.ui.adapter;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -32,8 +34,8 @@ public class TerminalLogAdapter extends BaseQuickAdapter<TerminalLog, QuickViewH
         // 设置时间字段
         setTextOrPlaceholder(logTime, item.getLogTime());
 
-        // 设置状态字段
-        setTextOrPlaceholder(logStatus, item.getLogStatus());
+        // 设置状态字段，包含特殊状态的圆点和颜色
+        setStatusWithDot(logStatus, item.getLogStatus());
 
         // 设置名称字段
         setTextOrPlaceholder(logName, item.getLogName());
@@ -69,6 +71,45 @@ public class TerminalLogAdapter extends BaseQuickAdapter<TerminalLog, QuickViewH
         } else {
             textView.setText(text);
             textView.setBackground(null);
+        }
+    }
+
+    /**
+     * 设置状态字段，包含特殊状态的圆点和颜色
+     */
+    private void setStatusWithDot(TextView textView, String status) {
+        if (TextUtils.isEmpty(status)) {
+            textView.setText("");
+            textView.setBackground(ContextCompat.getDrawable(textView.getContext(), R.drawable.placeholder_empty));
+            textView.setCompoundDrawables(null, null, null, null);
+            return;
+        }
+
+        textView.setText(status);
+        textView.setBackground(null);
+        
+        // 根据状态设置圆点和文字颜色
+        Drawable dotDrawable = null;
+        int textColor = Color.parseColor("#666666"); // 默认颜色
+        
+        if ("设备丢失".equals(status) || "异常丢失".equals(status)) {
+            dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_red);
+            textColor = Color.parseColor("#D30000");
+        } else if ("低电量报警".equals(status) || "低电量".equals(status)) {
+            dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_orange);
+            textColor = Color.parseColor("#FF9F0F");
+        }
+        
+        // 设置文字颜色
+        textView.setTextColor(textColor);
+        
+        // 设置左侧圆点
+        if (dotDrawable != null) {
+            dotDrawable.setBounds(0, 0, dotDrawable.getIntrinsicWidth(), dotDrawable.getIntrinsicHeight());
+            textView.setCompoundDrawables(dotDrawable, null, null, null);
+            textView.setCompoundDrawablePadding(8); // 设置圆点与文字的间距
+        } else {
+            textView.setCompoundDrawables(null, null, null, null);
         }
     }
 
