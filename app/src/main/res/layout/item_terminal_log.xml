@@ -121,7 +121,7 @@
         </LinearLayout>
 
        <LinearLayout
-           android:layout_weight="110"
+           android:layout_weight="107"
            android:layout_width="0dp"
            android:gravity="center_vertical"
            android:layout_height="match_parent"  >

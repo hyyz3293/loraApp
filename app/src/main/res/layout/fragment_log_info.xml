@@ -230,7 +230,7 @@
                 android:textColor="#333333"
                 android:textSize="12dp"
                 android:textStyle="bold"
-                android:layout_weight="182"
+                android:layout_weight="107"
                 android:layout_width="0dp"
                 android:layout_height="match_parent" />
 
