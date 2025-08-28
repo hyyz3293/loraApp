@@ -125,16 +125,16 @@
             android:orientation="horizontal"
             android:gravity="center" >
 
-            <!-- 第一个饼状图 -->
-            <LinearLayout
+
+            <RelativeLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center" >
+                android:orientation="vertical">
 
                 <com.lora.cn.ui.view.PieChartView
                     android:id="@+id/pie_chart_online"
+                    android:layout_centerInParent="true"
                     android:layout_width="200dp"
                     android:layout_height="200dp"
                     app:radius="80dp"
@@ -147,18 +147,26 @@
                     app:textColor="#000000"
                     app:dotRadius="4dp"
                     app:gapAngle="5" />
-            </LinearLayout>
 
-            <!-- 第二个饼状图 -->
-            <LinearLayout
+                <TextView
+                    android:text="丢失状态"
+                    android:layout_centerInParent="true"
+                    android:textSize="24dp"
+                    android:textColor="@color/black"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center" >
+                android:orientation="vertical">
 
                 <com.lora.cn.ui.view.PieChartView
                     android:id="@+id/pie_chart_battery"
+                    android:layout_centerInParent="true"
                     android:layout_width="200dp"
                     android:layout_height="200dp"
                     app:radius="80dp"
@@ -167,11 +175,20 @@
                     app:ringWidth="30dp"
                     app:lineColor="#D8D8D8"
                     app:backgroundColor="#F1F4F8"
-                    app:textSize="24sp"
+                    app:textSize="14sp"
                     app:textColor="#000000"
                     app:dotRadius="4dp"
                     app:gapAngle="5" />
-            </LinearLayout>
+
+                <TextView
+                    android:text="丢失状态"
+                    android:layout_centerInParent="true"
+                    android:textSize="24dp"
+                    android:textColor="@color/black"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </RelativeLayout>
 
         </LinearLayout>
 
