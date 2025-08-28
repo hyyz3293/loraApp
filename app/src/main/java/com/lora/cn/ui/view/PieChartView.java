@@ -81,7 +81,7 @@ public class PieChartView extends View {
         super.onDraw(canvas);
         
         // 绘制最外层背景圆形 175*175
-        float backgroundRadius = 87.5f; // 175/2 = 87.5
+        float backgroundRadius = 110f; // 175/2 = 87.5
         canvas.drawCircle(centerX, centerY, backgroundRadius, backgroundPaint);
         
         if (pieDataList.isEmpty()) {
@@ -108,8 +108,8 @@ public class PieChartView extends View {
             float midAngle = startAngle + sweepAngle / 2f;
             double radians = Math.toRadians(midAngle);
             
-            // 小白点在每个图块中间（圆环的中心位置）
-            float dotRadius = radius - 15f; // 圆环中心位置
+            // 小白点在圆环的中心点（圆环宽度的正中间）
+            float dotRadius = radius; // 圆环的中心线位置
             float dotX = centerX + (float) (dotRadius * Math.cos(radians));
             float dotY = centerY + (float) (dotRadius * Math.sin(radians));
             canvas.drawCircle(dotX, dotY, 4f, dotPaint);

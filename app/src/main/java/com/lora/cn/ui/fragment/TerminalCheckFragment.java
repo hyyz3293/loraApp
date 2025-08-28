@@ -58,9 +58,9 @@ public class TerminalCheckFragment extends Fragment {
         
         // 初始化电量状态饼状图数据
         List<PieChartView.PieData> batteryData = new ArrayList<>();
-        batteryData.add(new PieChartView.PieData("正常电量", 70.0f, Color.parseColor("#4CAF50")));
-        batteryData.add(new PieChartView.PieData("低电量", 25.0f, Color.parseColor("#FF9F0F")));
-        batteryData.add(new PieChartView.PieData("电量耗尽", 5.0f, Color.parseColor("#D30000")));
+        batteryData.add(new PieChartView.PieData("正常", 70.0f, Color.parseColor("#4CAF50")));
+        batteryData.add(new PieChartView.PieData("低电", 25.0f, Color.parseColor("#FF9F0F")));
+        batteryData.add(new PieChartView.PieData("电量", 5.0f, Color.parseColor("#D30000")));
         
         pieChartBattery.setData(batteryData);
     }
