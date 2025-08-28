@@ -20,6 +20,8 @@ public class PieChartView extends View {
     private Paint piePaint;
     private Paint linePaint;
     private Paint textPaint;
+    private Paint namePaint; // name字段的画笔
+    private Paint valuePaint; // value字段的画笔
     private Paint dotPaint;
     private Paint backgroundPaint;
     private RectF pieRect;
@@ -90,6 +92,16 @@ public class PieChartView extends View {
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setTextSize(textSize);
         textPaint.setColor(textColor);
+        
+        // 初始化name字段画笔 - #898989颜色
+        namePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        namePaint.setTextSize(textSize);
+        namePaint.setColor(Color.parseColor("#898989"));
+        
+        // 初始化value字段画笔 - #000000颜色
+        valuePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        valuePaint.setTextSize(textSize);
+        valuePaint.setColor(Color.parseColor("#000000"));
         
         pieRect = new RectF();
         pieDataList = new ArrayList<>();
@@ -211,13 +223,25 @@ public class PieChartView extends View {
                 canvas.drawLine(lineOuterStartX, lineOuterStartY, lineMidX, lineMidY, linePaint);
                 canvas.drawLine(lineMidX, lineMidY, lineEndX, lineEndY, linePaint);
                 
-                // 绘制文本在平行线中间（横向线段的中点）
-                String text = data.label + " " + data.percentage + "%";
+                // 分别绘制name和value字段，使用不同颜色
+                String nameText = data.name;
+                String valueText = data.value;
+                
                 float textCenterX = (lineMidX + lineEndX) / 2f; // 平行线中间位置
-                float textX = isLeft ? textCenterX - textPaint.measureText(text) / 2f : textCenterX - textPaint.measureText(text) / 2f;
+                
+                // 计算文本宽度以便居中对齐
+                float nameWidth = namePaint.measureText(nameText);
+                float valueWidth = valuePaint.measureText(valueText);
+                float totalWidth = nameWidth + valueWidth + 10f; // 10f为间距
+                
+                float startX = textCenterX - totalWidth / 2f;
                 float textY = lineEndY - 5; // 文字在线条上方5dp
                 
-                canvas.drawText(text, textX, textY, textPaint);
+                // 绘制name字段（#898989颜色）
+                canvas.drawText(nameText, startX, textY, namePaint);
+                
+                // 绘制value字段（#000000颜色）
+                canvas.drawText(valueText, startX + nameWidth + 10f, textY, valuePaint);
             }
             
             // 下一个扇形的起始角度（加上间隔）
@@ -240,12 +264,23 @@ public class PieChartView extends View {
     }
     
     public static class PieData {
-        public String label;
+        public String name;  // 前面的字段
+        public String value; // 后面的字段
         public float percentage;
         public int color;
         
+        public PieData(String name, String value, float percentage, int color) {
+            this.name = name;
+            this.value = value;
+            this.percentage = percentage;
+            this.color = color;
+        }
+        
+        // 为了向后兼容，保留原来的构造函数
+        @Deprecated
         public PieData(String label, float percentage, int color) {
-            this.label = label;
+            this.name = label;
+            this.value = percentage + "%";
             this.percentage = percentage;
             this.color = color;
         }
@@ -273,6 +308,8 @@ public class PieChartView extends View {
     public void setTextSize(float textSize) {
         this.textSize = textSize;
         textPaint.setTextSize(textSize);
+        namePaint.setTextSize(textSize);
+        valuePaint.setTextSize(textSize);
         invalidate();
     }
     
@@ -289,6 +326,18 @@ public class PieChartView extends View {
     
     public void setGapAngle(float gapAngle) {
         this.gapAngle = gapAngle;
+        invalidate();
+    }
+    
+    // 设置name字段颜色
+    public void setNameColor(int nameColor) {
+        namePaint.setColor(nameColor);
+        invalidate();
+    }
+    
+    // 设置value字段颜色
+    public void setValueColor(int valueColor) {
+        valuePaint.setColor(valueColor);
         invalidate();
     }
 }

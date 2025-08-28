@@ -143,7 +143,7 @@
                     app:ringWidth="30dp"
                     app:lineColor="#D8D8D8"
                     app:backgroundColor="#F1F4F8"
-                    app:textSize="24sp"
+                    app:textSize="14sp"
                     app:textColor="#000000"
                     app:dotRadius="4dp"
                     app:gapAngle="5" />

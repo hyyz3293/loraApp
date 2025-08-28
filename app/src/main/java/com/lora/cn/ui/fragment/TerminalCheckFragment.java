@@ -50,10 +50,10 @@ public class TerminalCheckFragment extends Fragment {
     private void initPieChartData() {
         // 初始化在线状态饼状图数据
         List<PieChartView.PieData> onlineData = new ArrayList<>();
-        onlineData.add(new PieChartView.PieData("在线", 65.0f, Color.parseColor("#4CAF50")));
+        onlineData.add(new PieChartView.PieData("在线", "11", 65.0f, Color.parseColor("#4CAF50")));
         onlineData.add(new PieChartView.PieData("离线", 20.0f, Color.parseColor("#F44336")));
         onlineData.add(new PieChartView.PieData("异常", 15.0f, Color.parseColor("#FF9800")));
-        
+
         pieChartOnline.setData(onlineData);
         
         // 初始化电量状态饼状图数据
