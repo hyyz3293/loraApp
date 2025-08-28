@@ -1,6 +1,7 @@
 package com.lora.cn.ui.view;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -8,6 +9,8 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
+
+import com.lora.cn.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,48 +25,127 @@ public class PieChartView extends View {
     private RectF pieRect;
     private List<PieData> pieDataList;
     private int centerX, centerY;
-    private int radius;
+    private float radius = 80f; // 默认圆环半径
+    private float backgroundRadius = 87.5f; // 默认底部圆半径
     private boolean showLines = true; // 控制是否显示线条的开关
+    private float ringWidth = 30f; // 圆环宽度
+    private int lineColor = Color.parseColor("#D8D8D8"); // 线条颜色
+    private int backgroundColor = Color.parseColor("#F1F4F8"); // 背景颜色
+    private float textSize = 24f; // 文字大小
+    private int textColor = Color.BLACK; // 文字颜色
+    private float dotRadius = 4f; // 小白点半径
+    private float gapAngle = 5f; // 模块间隔角度
     
     public PieChartView(Context context) {
         super(context);
-        init();
+        init(context, null);
     }
     
     public PieChartView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
+        init(context, attrs);
     }
     
     public PieChartView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
+        init(context, attrs);
     }
     
-    private void init() {
+    private void init(Context context, AttributeSet attrs) {
+        // 读取XML属性
+        if (attrs != null) {
+            TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.PieChartView);
+            
+            radius = typedArray.getDimension(R.styleable.PieChartView_radius, radius);
+            backgroundRadius = typedArray.getDimension(R.styleable.PieChartView_backgroundRadius, backgroundRadius);
+            showLines = typedArray.getBoolean(R.styleable.PieChartView_showLines, showLines);
+            ringWidth = typedArray.getDimension(R.styleable.PieChartView_ringWidth, ringWidth);
+            lineColor = typedArray.getColor(R.styleable.PieChartView_lineColor, lineColor);
+            backgroundColor = typedArray.getColor(R.styleable.PieChartView_backgroundColor, backgroundColor);
+            textSize = typedArray.getDimension(R.styleable.PieChartView_textSize, textSize);
+            textColor = typedArray.getColor(R.styleable.PieChartView_textColor, textColor);
+            dotRadius = typedArray.getDimension(R.styleable.PieChartView_dotRadius, dotRadius);
+            gapAngle = typedArray.getFloat(R.styleable.PieChartView_gapAngle, gapAngle);
+            
+            typedArray.recycle();
+        }
+        
         piePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         piePaint.setStyle(Paint.Style.STROKE);
-        piePaint.setStrokeWidth(30f); // 圆环宽度30dp，为间隔留出空间
+        piePaint.setStrokeWidth(ringWidth);
         
         linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         linePaint.setStyle(Paint.Style.STROKE);
-        linePaint.setStrokeWidth(1f); // 线条宽度1dp
-        linePaint.setColor(Color.parseColor("#D8D8D8")); // 线条颜色
+        linePaint.setStrokeWidth(1f);
+        linePaint.setColor(lineColor);
         
         dotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         dotPaint.setStyle(Paint.Style.FILL);
-        dotPaint.setColor(Color.WHITE); // 白色小圆点
+        dotPaint.setColor(Color.WHITE);
         
         backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         backgroundPaint.setStyle(Paint.Style.FILL);
-        backgroundPaint.setColor(Color.parseColor("#F1F4F8")); // 背景圆形颜色
+        backgroundPaint.setColor(backgroundColor);
         
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setTextSize(24f);
-        textPaint.setColor(Color.BLACK);
+        textPaint.setTextSize(textSize);
+        textPaint.setColor(textColor);
         
         pieRect = new RectF();
         pieDataList = new ArrayList<>();
+    }
+    
+    /**
+     * 设置底部圆半径
+     * @param backgroundRadius 底部圆半径
+     */
+    public void setBackgroundRadius(float backgroundRadius) {
+        this.backgroundRadius = backgroundRadius;
+        invalidate();
+    }
+    
+    /**
+     * 设置圆环半径
+     * @param radius 圆环半径
+     */
+    public void setRadius(float radius) {
+        this.radius = radius;
+        updatePieRect();
+        invalidate();
+    }
+    
+    /**
+     * 同时设置底部圆和圆环半径
+     * @param backgroundRadius 底部圆半径
+     * @param radius 圆环半径
+     */
+    public void setRadiuses(float backgroundRadius, float radius) {
+        this.backgroundRadius = backgroundRadius;
+        this.radius = radius;
+        updatePieRect();
+        invalidate();
+    }
+    
+    /**
+     * 获取底部圆半径
+     * @return 底部圆半径
+     */
+    public float getBackgroundRadius() {
+        return backgroundRadius;
+    }
+    
+    /**
+     * 获取圆环半径
+     * @return 圆环半径
+     */
+    public float getRadius() {
+        return radius;
+    }
+    
+    private void updatePieRect() {
+        if (centerX != 0 && centerY != 0) {
+            pieRect.set(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+        }
     }
     
     @Override
@@ -71,17 +153,14 @@ public class PieChartView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         centerX = w / 2;
         centerY = h / 2;
-        radius = 80; // 直径160dp，半径80dp
-        
-        pieRect.set(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+        updatePieRect();
     }
     
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         
-        // 绘制最外层背景圆形 175*175
-        float backgroundRadius = 110f; // 175/2 = 87.5
+        // 绘制最外层背景圆形
         canvas.drawCircle(centerX, centerY, backgroundRadius, backgroundPaint);
         
         if (pieDataList.isEmpty()) {
@@ -92,7 +171,6 @@ public class PieChartView extends View {
         float totalAngle = 0f;
         
         // 计算总角度，为间隔预留空间
-        float gapAngle = 5f; // 每个模块间隔5度
         float totalGapAngle = pieDataList.size() * gapAngle;
         float availableAngle = 360f - totalGapAngle;
         
@@ -109,14 +187,14 @@ public class PieChartView extends View {
             double radians = Math.toRadians(midAngle);
             
             // 小白点在圆环的中心点（圆环宽度的正中间）
-            float dotRadius = radius; // 圆环的中心线位置
-            float dotX = centerX + (float) (dotRadius * Math.cos(radians));
-            float dotY = centerY + (float) (dotRadius * Math.sin(radians));
-            canvas.drawCircle(dotX, dotY, 4f, dotPaint);
+            float dotRadiusPos = radius; // 圆环的中心线位置
+            float dotX = centerX + (float) (dotRadiusPos * Math.cos(radians));
+            float dotY = centerY + (float) (dotRadiusPos * Math.sin(radians));
+            canvas.drawCircle(dotX, dotY, dotRadius, dotPaint);
             
             if (showLines) {
                 // 引线从圆环外边缘开始
-                float outerRadius = radius + 15f; // 圆环外边缘
+                float outerRadius = radius + ringWidth/2 + 15f; // 圆环外边缘
                 float lineOuterStartX = centerX + (float) (outerRadius * Math.cos(radians));
                 float lineOuterStartY = centerY + (float) (outerRadius * Math.sin(radians));
                 
@@ -171,5 +249,46 @@ public class PieChartView extends View {
             this.percentage = percentage;
             this.color = color;
         }
+    }
+    
+    // 添加更多的setter方法来支持动态修改属性
+    public void setRingWidth(float ringWidth) {
+        this.ringWidth = ringWidth;
+        piePaint.setStrokeWidth(ringWidth);
+        invalidate();
+    }
+    
+    public void setLineColor(int lineColor) {
+        this.lineColor = lineColor;
+        linePaint.setColor(lineColor);
+        invalidate();
+    }
+    
+    public void setBackgroundColor(int backgroundColor) {
+        this.backgroundColor = backgroundColor;
+        backgroundPaint.setColor(backgroundColor);
+        invalidate();
+    }
+    
+    public void setTextSize(float textSize) {
+        this.textSize = textSize;
+        textPaint.setTextSize(textSize);
+        invalidate();
+    }
+    
+    public void setTextColor(int textColor) {
+        this.textColor = textColor;
+        textPaint.setColor(textColor);
+        invalidate();
+    }
+    
+    public void setDotRadius(float dotRadius) {
+        this.dotRadius = dotRadius;
+        invalidate();
+    }
+    
+    public void setGapAngle(float gapAngle) {
+        this.gapAngle = gapAngle;
+        invalidate();
     }
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PieChartView">
+        <!-- 圆环半径 -->
+        <attr name="radius" format="dimension" />
+        <!-- 背景圆半径 -->
+        <attr name="backgroundRadius" format="dimension" />
+        <!-- 是否显示线条 -->
+        <attr name="showLines" format="boolean" />
+        <!-- 圆环宽度 -->
+        <attr name="ringWidth" format="dimension" />
+        <!-- 线条颜色 -->
+        <attr name="lineColor" format="color" />
+        <!-- 背景圆颜色 -->
+        <attr name="backgroundColor" format="color" />
+        <!-- 文字大小 -->
+        <attr name="textSize" format="dimension" />
+        <!-- 文字颜色 -->
+        <attr name="textColor" format="color" />
+        <!-- 小白点半径 -->
+        <attr name="dotRadius" format="dimension" />
+        <!-- 模块间隔角度 -->
+        <attr name="gapAngle" format="float" />
+    </declare-styleable>
+</resources>
