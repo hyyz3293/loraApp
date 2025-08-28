@@ -121,7 +121,7 @@
         <!-- 两个饼状图的容器 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="200dp"
+            android:layout_height="280dp"
             android:orientation="horizontal"
             android:gravity="center" >
 
@@ -135,8 +135,8 @@
                 <com.lora.cn.ui.view.PieChartView
                     android:id="@+id/pie_chart_online"
                     android:layout_centerInParent="true"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
+                    android:layout_width="280dp"
+                    android:layout_height="280dp"
                     app:radius="80dp"
                     app:backgroundRadius="87.5dp"
                     app:showLines="true"
@@ -167,8 +167,8 @@
                 <com.lora.cn.ui.view.PieChartView
                     android:id="@+id/pie_chart_battery"
                     android:layout_centerInParent="true"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
+                    android:layout_width="280dp"
+                    android:layout_height="280dp"
                     app:radius="80dp"
                     app:backgroundRadius="87.5dp"
                     app:showLines="true"
@@ -181,7 +181,7 @@
                     app:gapAngle="5" />
 
                 <TextView
-                    android:text="丢失状态"
+                    android:text="电量状态"
                     android:layout_centerInParent="true"
                     android:textSize="24dp"
                     android:textColor="@color/black"

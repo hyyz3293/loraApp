@@ -50,17 +50,18 @@ public class TerminalCheckFragment extends Fragment {
     private void initPieChartData() {
         // 初始化在线状态饼状图数据
         List<PieChartView.PieData> onlineData = new ArrayList<>();
-        onlineData.add(new PieChartView.PieData("在线", "11", 65.0f, Color.parseColor("#4CAF50")));
-        onlineData.add(new PieChartView.PieData("离线", 20.0f, Color.parseColor("#F44336")));
-        onlineData.add(new PieChartView.PieData("异常", 15.0f, Color.parseColor("#FF9800")));
+        onlineData.add(new PieChartView.PieData("正常取走", "11", 65.0f, Color.parseColor("#5D75F7")));
+        onlineData.add(new PieChartView.PieData("在线", 20.0f, Color.parseColor("#39E56D")));
+        onlineData.add(new PieChartView.PieData("异常丢失", 10.0f, Color.parseColor("#D00000")));
+        onlineData.add(new PieChartView.PieData("离线", 5.0f, Color.parseColor("#CECECE")));
 
         pieChartOnline.setData(onlineData);
         
         // 初始化电量状态饼状图数据
         List<PieChartView.PieData> batteryData = new ArrayList<>();
-        batteryData.add(new PieChartView.PieData("正常", 70.0f, Color.parseColor("#4CAF50")));
-        batteryData.add(new PieChartView.PieData("低电", 25.0f, Color.parseColor("#FF9F0F")));
-        batteryData.add(new PieChartView.PieData("电量", 5.0f, Color.parseColor("#D30000")));
+        batteryData.add(new PieChartView.PieData("正常电量", 70.0f, Color.parseColor("#39E56D")));
+        batteryData.add(new PieChartView.PieData("低电量", 25.0f, Color.parseColor("#D00000")));
+        batteryData.add(new PieChartView.PieData("离线", 5.0f, Color.parseColor("#CECECE")));
         
         pieChartBattery.setData(batteryData);
     }

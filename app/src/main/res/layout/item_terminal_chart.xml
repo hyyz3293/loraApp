@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp"
+    android:layout_marginBottom="15dp"
+    android:background="@drawable/bg_chart_20"
+    android:layout_height="180dp">
+
+   <LinearLayout
+       android:layout_weight="1"
+       android:layout_width="0dp"
+       android:orientation="horizontal"
+       android:gravity="center"
+       android:layout_height="match_parent" >
+
+       <RelativeLayout
+           android:layout_width="134dp"
+           android:layout_height="match_parent"
+           android:orientation="vertical">
+
+           <TextView
+               android:id="@+id/chart_online_title"
+               android:text="111"
+               android:layout_alignParentTop="true"
+               android:layout_centerHorizontal="true"
+               android:background="@drawable/bg_chart_tv_20"
+               android:layout_width="wrap_content"
+               android:paddingRight="17dp"
+               android:paddingLeft="17dp"
+               android:gravity="center"
+               android:textSize="16dp"
+               android:textStyle="bold"
+               android:textColor="@color/black"
+               android:layout_height="30dp" />
+
+           <RelativeLayout
+               android:layout_marginBottom="17dp"
+               android:layout_width="113dp"
+               android:layout_centerHorizontal="true"
+               android:layout_alignParentBottom="true"
+               android:layout_height="113dp" >
+
+               <com.lora.cn.ui.view.PieChartView
+                   android:id="@+id/chart_online"
+
+                   android:layout_width="113dp"
+                   android:layout_height="113dp"
+                   app:radius="40dp"
+                   app:backgroundRadius="47.5dp"
+                   app:showLines="false"
+                   app:ringWidth="30dp"
+                   app:lineColor="#D8D8D8"
+                   app:backgroundColor="#F1F4F8"
+                   app:textSize="14sp"
+                   app:textColor="#000000"
+                   app:dotRadius="4dp"
+                   app:gapAngle="5" />
+
+               <TextView
+                   android:text="丢失状态"
+                   android:layout_centerInParent="true"
+                   android:textSize="14dp"
+                   android:textColor="@color/black"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content" />
+
+           </RelativeLayout>
+
+       </RelativeLayout>
+
+       <androidx.recyclerview.widget.RecyclerView
+           android:layout_marginLeft="64dp"
+           android:id="@+id/chart_recycle"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           />
+
+
+   </LinearLayout>
+    
+</LinearLayout>
