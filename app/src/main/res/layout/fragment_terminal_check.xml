@@ -117,54 +117,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <!-- 饼状图标题和开关 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="30dp" >
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="终端状态统计"
-                android:textSize="20sp"
-                android:textColor="@color/black"
-                android:textStyle="bold"
-                android:gravity="center" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical" >
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="显示线条"
-                    android:textSize="14sp"
-                    android:textColor="@color/black"
-                    android:layout_marginRight="8dp" />
-
-                <Switch
-                    android:id="@+id/switch_show_lines"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
         <!-- 两个饼状图的容器 -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="300dp"
             android:orientation="horizontal"
             android:gravity="center" >
 
@@ -175,15 +131,6 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center" >
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="终端在线状态"
-                    android:textSize="16sp"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="20dp" />
 
                 <com.lora.cn.ui.view.PieChartView
                     android:id="@+id/pie_chart_online"
@@ -199,15 +146,6 @@
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center" >
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="终端电量状态"
-                    android:textSize="16sp"
-                    android:textColor="@color/black"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="20dp" />
 
                 <com.lora.cn.ui.view.PieChartView
                     android:id="@+id/pie_chart_battery"
