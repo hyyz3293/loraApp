@@ -132,7 +132,7 @@
                     app:gapAngle="5" />
 
                 <TextView
-                    android:text="丢失状态"
+                    android:text="电量状态"
                     android:layout_centerInParent="true"
                     android:textSize="14dp"
                     android:textColor="@color/black"
