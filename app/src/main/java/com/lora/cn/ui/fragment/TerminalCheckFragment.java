@@ -11,8 +11,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
+import com.lora.cn.ui.adapter.TerminalChartAdapter;
+import com.lora.cn.ui.model.ChartItem;
+import com.lora.cn.ui.model.TerminalChartData;
 import com.lora.cn.ui.view.PieChartView;
 
 import java.text.SimpleDateFormat;
@@ -28,6 +33,10 @@ public class TerminalCheckFragment extends Fragment {
     private TextView terminalRemainingNumber;
     private TextView terminalClearTime;
     private TextView addTerminal;
+    private RecyclerView terminalCheckRecycle;
+    
+    // 新增适配器
+    private TerminalChartAdapter terminalChartAdapter;
     
     // 数据字段
     private int remainingCount = 1;
@@ -51,6 +60,16 @@ public class TerminalCheckFragment extends Fragment {
         terminalRemainingNumber = view.findViewById(R.id.terminal_remaining_number);
         terminalClearTime = view.findViewById(R.id.terminal_clear_time);
         addTerminal = view.findViewById(R.id.add_terminal);
+        terminalCheckRecycle = view.findViewById(R.id.terminal_check_recycle);
+        
+        // 初始化RecyclerView
+        initRecyclerView();
+    }
+    
+    private void initRecyclerView() {
+        terminalChartAdapter = new TerminalChartAdapter();
+        terminalCheckRecycle.setLayoutManager(new LinearLayoutManager(getContext()));
+        terminalCheckRecycle.setAdapter(terminalChartAdapter);
     }
     
     private void initData() {
@@ -60,6 +79,9 @@ public class TerminalCheckFragment extends Fragment {
         
         // 初始化饼图数据
         initPieChartData();
+        
+        // 初始化图表适配器数据
+        initChartAdapterData();
     }
     
     private void initListeners() {
@@ -96,6 +118,95 @@ public class TerminalCheckFragment extends Fragment {
         batteryData.add(new PieChartView.PieData("离线", "5", 5.0f, Color.parseColor("#CECECE")));
         
         pieChartBattery.setData(batteryData);
+    }
+    
+    /**
+     * 初始化图表适配器数据
+     */
+    private void initChartAdapterData() {
+        List<TerminalChartData> chartDataList = generateMockChartData();
+        terminalChartAdapter.submitList(chartDataList);
+    }
+    
+    /**
+     * 生成假数据
+     */
+    private List<TerminalChartData> generateMockChartData() {
+        List<TerminalChartData> dataList = new ArrayList<>();
+        
+        // 第一组数据 - 终端状态统计
+        TerminalChartData terminalStatusData = new TerminalChartData();
+        terminalStatusData.setOnlineTitle("终端状态统计");
+        terminalStatusData.setBatteryTitle("电量状态统计");
+        
+        // 在线状态饼图数据
+        List<PieChartView.PieData> onlinePieData = new ArrayList<>();
+        onlinePieData.add(new PieChartView.PieData("正常", "85", 68.0f, Color.parseColor("#39E56D")));
+        onlinePieData.add(new PieChartView.PieData("离线", "25", 20.0f, Color.parseColor("#CECECE")));
+        onlinePieData.add(new PieChartView.PieData("异常", "15", 12.0f, Color.parseColor("#D00000")));
+        terminalStatusData.setOnlinePieData(onlinePieData);
+        
+        // 电量状态饼图数据
+        List<PieChartView.PieData> batteryPieData = new ArrayList<>();
+        batteryPieData.add(new PieChartView.PieData("正常", "95", 76.0f, Color.parseColor("#39E56D")));
+        batteryPieData.add(new PieChartView.PieData("低电量", "20", 16.0f, Color.parseColor("#FF9500")));
+        batteryPieData.add(new PieChartView.PieData("离线", "10", 8.0f, Color.parseColor("#CECECE")));
+        terminalStatusData.setBatteryPieData(batteryPieData);
+        
+        // 在线状态图例数据
+        List<ChartItem> onlineChartItems = new ArrayList<>();
+        onlineChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "正常", "85台"));
+        onlineChartItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", "25台"));
+        onlineChartItems.add(new ChartItem(Color.parseColor("#D00000"), "异常", "15台"));
+        terminalStatusData.setOnlineChartItems(onlineChartItems);
+        
+        // 电量状态图例数据
+        List<ChartItem> batteryChartItems = new ArrayList<>();
+        batteryChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "正常", "95台"));
+        batteryChartItems.add(new ChartItem(Color.parseColor("#FF9500"), "低电量", "20台"));
+        batteryChartItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", "10台"));
+        terminalStatusData.setBatteryChartItems(batteryChartItems);
+        
+        dataList.add(terminalStatusData);
+        
+        // 第二组数据 - 区域分布统计
+        TerminalChartData regionData = new TerminalChartData();
+        regionData.setOnlineTitle("区域分布");
+        regionData.setBatteryTitle("使用频率");
+        
+        // 区域分布饼图数据
+        List<PieChartView.PieData> regionPieData = new ArrayList<>();
+        regionPieData.add(new PieChartView.PieData("A区", "45", 36.0f, Color.parseColor("#5D75F7")));
+        regionPieData.add(new PieChartView.PieData("B区", "35", 28.0f, Color.parseColor("#39E56D")));
+        regionPieData.add(new PieChartView.PieData("C区", "25", 20.0f, Color.parseColor("#FF9500")));
+        regionPieData.add(new PieChartView.PieData("D区", "20", 16.0f, Color.parseColor("#D00000")));
+        regionData.setOnlinePieData(regionPieData);
+        
+        // 使用频率饼图数据
+        List<PieChartView.PieData> usagePieData = new ArrayList<>();
+        usagePieData.add(new PieChartView.PieData("高频", "60", 48.0f, Color.parseColor("#D00000")));
+        usagePieData.add(new PieChartView.PieData("中频", "40", 32.0f, Color.parseColor("#FF9500")));
+        usagePieData.add(new PieChartView.PieData("低频", "25", 20.0f, Color.parseColor("#39E56D")));
+        regionData.setBatteryPieData(usagePieData);
+        
+        // 区域分布图例数据
+        List<ChartItem> regionChartItems = new ArrayList<>();
+        regionChartItems.add(new ChartItem(Color.parseColor("#5D75F7"), "A区", "45台"));
+        regionChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "B区", "35台"));
+        regionChartItems.add(new ChartItem(Color.parseColor("#FF9500"), "C区", "25台"));
+        regionChartItems.add(new ChartItem(Color.parseColor("#D00000"), "D区", "20台"));
+        regionData.setOnlineChartItems(regionChartItems);
+        
+        // 使用频率图例数据
+        List<ChartItem> usageChartItems = new ArrayList<>();
+        usageChartItems.add(new ChartItem(Color.parseColor("#D00000"), "高频", "60台"));
+        usageChartItems.add(new ChartItem(Color.parseColor("#FF9500"), "中频", "40台"));
+        usageChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "低频", "25台"));
+        regionData.setBatteryChartItems(usageChartItems);
+        
+        dataList.add(regionData);
+        
+        return dataList;
     }
     
     /**
@@ -153,6 +264,9 @@ public class TerminalCheckFragment extends Fragment {
         // 这里可以调用API获取最新的终端数据
         // 然后更新饼图显示
         initPieChartData();
+        
+        // 刷新图表适配器数据
+        initChartAdapterData();
     }
     
     /**
