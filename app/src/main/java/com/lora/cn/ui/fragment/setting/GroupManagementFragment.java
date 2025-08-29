@@ -1,11 +1,9 @@
-package com.lora.cn.ui.fragment;
+package com.lora.cn.ui.fragment.setting;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,7 +11,7 @@ import androidx.fragment.app.Fragment;
 
 import com.lora.cn.R;
 
-public class UserManagementFragment extends Fragment {
+public class GroupManagementFragment extends Fragment {
 
 //    private TextView titleText;
 //    private ImageView backButton;
@@ -21,7 +19,7 @@ public class UserManagementFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_user_management, container, false);
+        View view = inflater.inflate(R.layout.fragment_group_management, container, false);
         
 //        initViews(view);
 //        setupContent();
@@ -29,24 +27,24 @@ public class UserManagementFragment extends Fragment {
         return view;
     }
 
-//    private void initViews(View view) {
+    private void initViews(View view) {
 //        titleText = view.findViewById(R.id.setting_title);
 //        backButton = view.findViewById(R.id.setting_back);
-//
+        
 //        backButton.setOnClickListener(v -> {
 //            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
 //                getParentFragmentManager().popBackStack();
 //            }
 //        });
-//    }
-//
+    }
+
 //    private void setupContent() {
 //        if (titleText != null) {
-//            titleText.setText("用户管理");
+//            titleText.setText("分组管理");
 //        }
 //    }
 
-    public static UserManagementFragment newInstance() {
-        return new UserManagementFragment();
+    public static GroupManagementFragment newInstance() {
+        return new GroupManagementFragment();
     }
 }

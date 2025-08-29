@@ -4,19 +4,21 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
 import com.lora.cn.ui.adapter.TerminalSettingAdapter;
+import com.lora.cn.ui.fragment.setting.DepartmentManagementFragment;
+import com.lora.cn.ui.fragment.setting.DeviceSettingFragment;
+import com.lora.cn.ui.fragment.setting.GroupManagementFragment;
+import com.lora.cn.ui.fragment.setting.RoleManagementFragment;
+import com.lora.cn.ui.fragment.setting.UserManagementFragment;
 import com.lora.cn.ui.model.SettingItem;
 
 import java.util.ArrayList;
