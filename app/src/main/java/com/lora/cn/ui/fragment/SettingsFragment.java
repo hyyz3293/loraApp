@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -52,7 +53,7 @@ public class SettingsFragment extends Fragment {
         settingList.add(new SettingItem(R.mipmap.ic_setting6, "科室管理"));
 
         // 设置RecyclerView
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
         terminalSettingRecycle.setLayoutManager(layoutManager);
         
         terminalSettingAdapter = new TerminalSettingAdapter();
@@ -69,9 +70,16 @@ public class SettingsFragment extends Fragment {
     }
 
     private void onSettingClick(int position, SettingItem settingItem) {
-        // 处理设置项点击事件
-        Toast.makeText(getContext(), "点击了: " + settingItem.getTitle(), Toast.LENGTH_SHORT).show();
-        // TODO: 根据不同的设置项跳转到对应的页面
+        // 跳转到设置详情Fragment
+        SettingDetailFragment detailFragment = SettingDetailFragment.newInstance(
+            settingItem.getTitle(), 
+            settingItem.getIconResId()
+        );
+        
+        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, detailFragment);
+        transaction.addToBackStack(null); // 添加到回退栈，支持返回
+        transaction.commit();
     }
 
     public static SettingsFragment newInstance() {
