@@ -70,16 +70,34 @@ public class SettingsFragment extends Fragment {
     }
 
     private void onSettingClick(int position, SettingItem settingItem) {
-        // 跳转到设置详情Fragment
-        SettingDetailFragment detailFragment = SettingDetailFragment.newInstance(
-            settingItem.getTitle(), 
-            settingItem.getIconResId()
-        );
+        Fragment targetFragment = null;
         
-        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-        transaction.replace(R.id.fragment_container, detailFragment);
-        transaction.addToBackStack(null); // 添加到回退栈，支持返回
-        transaction.commit();
+        // 根据位置跳转到不同的Fragment
+        switch (position) {
+            case 0: // 设备设置
+                targetFragment = DeviceSettingFragment.newInstance();
+                break;
+            case 1: // 分组管理
+                targetFragment = GroupManagementFragment.newInstance();
+                break;
+            case 2: // 角色管理
+                targetFragment = RoleManagementFragment.newInstance();
+                break;
+            case 3: // 用户管理
+                targetFragment = UserManagementFragment.newInstance();
+                break;
+            case 4: // 科室管理
+            case 5: // 科室管理（重复项）
+                targetFragment = DepartmentManagementFragment.newInstance();
+                break;
+        }
+        
+        if (targetFragment != null) {
+            FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, targetFragment);
+            transaction.addToBackStack(null); // 添加到回退栈，支持返回
+            transaction.commit();
+        }
     }
 
     public static SettingsFragment newInstance() {
