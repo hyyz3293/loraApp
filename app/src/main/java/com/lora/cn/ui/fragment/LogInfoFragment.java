@@ -1,4 +1,4 @@
-package com.lora.cn.ui.fragment.setting;
+package com.lora.cn.ui.fragment;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;

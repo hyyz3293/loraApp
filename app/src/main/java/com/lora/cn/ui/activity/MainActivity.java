@@ -15,7 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.ui.fragment.TerminalListFragment;
-import com.lora.cn.ui.fragment.setting.LogInfoFragment;
+import com.lora.cn.ui.fragment.LogInfoFragment;
 import com.lora.cn.ui.fragment.TerminalCheckFragment;
 import com.lora.cn.ui.fragment.SettingsFragment;
 import com.lora.cn.ui.adapter.MenuTabAdapter;

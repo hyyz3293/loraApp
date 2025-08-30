@@ -52,7 +52,7 @@ public class SettingsFragment extends Fragment {
         settingList.add(new SettingItem(R.mipmap.ic_setting3, "角色管理"));
         settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
         settingList.add(new SettingItem(R.mipmap.ic_setting5, "科室管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting6, "科室管理"));
+        settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
 
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
