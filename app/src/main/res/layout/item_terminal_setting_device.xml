@@ -1,37 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="horizontal"
-    android:layout_marginLeft="28dp"
-    android:layout_marginRight="28dp"
-    android:layout_marginBottom="15dp"
+    android:layout_height="76dp"
+    android:orientation="vertical"
+    android:layout_marginLeft="30dp"
+    android:layout_marginRight="30dp"
+    android:gravity="center"
     android:paddingLeft="45dp"
     android:paddingRight="34dp"
-    android:background="@drawable/bg_setting_10"
-    android:layout_height="76dp">
+    android:layout_gravity="center"
+    android:layout_marginBottom="15dp"
+    android:background="@drawable/bg_setting_10">
 
+    <!-- ViewType 0: 普通文本显示 -->
     <LinearLayout
+        android:id="@+id/layout_normal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_width="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_height="wrap_content" >
+        android:gravity="center_vertical"
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/terminal_setting_text"
-            android:textColor="@color/black"
-            android:textSize="22dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="设置项"
+            android:textSize="16sp"
+            android:textColor="@color/black" />
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@mipmap/ic_rg"
+            android:layout_marginStart="8dp" />
 
     </LinearLayout>
 
-    <ImageView
-        android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
-        android:background="@mipmap/ic_rg"
-        android:layout_width="9dp"
-        android:layout_height="16dp" />
+    <!-- ViewType 1: 音量调节滑动条 -->
+    <LinearLayout
+        android:id="@+id/layout_volume"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:visibility="gone">
 
+        <TextView
+            android:id="@+id/volume_title"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="音量设置"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="8dp" />
 
-</RelativeLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical|right">
+
+            <SeekBar
+                android:id="@+id/volume_seekbar"
+                android:layout_width="276dp"
+                android:layout_height="26dp"
+                android:layout_marginHorizontal="16dp"
+                android:max="100"
+                android:progress="50" />
+
+            <TextView
+                android:id="@+id/volume_value"
+                android:layout_marginLeft="24dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="50"
+                android:textSize="14sp"
+                android:textColor="@color/black"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- ViewType 2: 数字显示和弹窗编辑 -->
+    <LinearLayout
+        android:id="@+id/layout_number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="?attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/number_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="清点次数"
+            android:textSize="16sp"
+            android:textColor="@color/black" />
+
+        <TextView
+            android:id="@+id/number_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="5"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:padding="8dp"
+            android:minWidth="40dp"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -75,7 +75,8 @@ public class DeviceSettingFragment extends Fragment {
         // 设置点击事件监听器
         terminalSettingAdapter.setOnItemClickListener((adapter, view, position) -> {
             SettingItem settingItem = settingList.get(position);
-            onSettingClick(position, settingItem);
+            if (settingItem.getViewType() == 0)
+                onSettingClick(position, settingItem);
         });
 
         // 提交数据到适配器
