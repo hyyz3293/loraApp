@@ -1,11 +1,8 @@
 package com.lora.cn.ui.adapter;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
@@ -19,6 +16,7 @@ import com.chad.library.adapter4.BaseQuickAdapter;
 import com.chad.library.adapter4.viewholder.QuickViewHolder;
 import com.lora.cn.R;
 import com.lora.cn.ui.model.SettingItem;
+import com.lora.cn.utils.DialogUtils;
 
 public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, QuickViewHolder> {
 
@@ -74,7 +72,7 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
         }
         
         volumeSeekBar.setProgress(currentVolume);
-        volumeValue.setText(String.valueOf(currentVolume) + "%");
+        volumeValue.setText(String.valueOf(currentVolume));
 
         // 设置滑动监听
         volumeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -106,50 +104,26 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
         numberTitle.setText(item.getTitle());
         
         // 设置当前数值
-        String currentNum = "2"; // 默认值
+        String currentNum = "5"; // 默认值
         if (item.getNum() != null && !item.getNum().isEmpty()) {
             currentNum = item.getNum();
         }
-        numberValue.setText(currentNum + "次");
+        numberValue.setText(currentNum);
 
-        // 设置点击监听，弹出编辑对话框
-        layoutNumber.setOnClickListener(v -> showNumberEditDialog(v.getContext(), item, numberValue));
-    }
-
-    private void showNumberEditDialog(Context context, SettingItem item, TextView numberValue) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("修改 " + item.getTitle());
-
-        // 创建输入框
-        final EditText input = new EditText(context);
-        input.setInputType(InputType.TYPE_CLASS_NUMBER);
-        input.setText(item.getNum() != null ? item.getNum() : "5");
-        input.setSelection(input.getText().length());
-        builder.setView(input);
-
-        // 设置按钮
-        builder.setPositiveButton("确定", (dialog, which) -> {
-            String newValue = input.getText().toString().trim();
-            if (!newValue.isEmpty()) {
-                try {
-                    int num = Integer.parseInt(newValue);
-                    if (num >= 0 && num <= 999) {
-                        item.setNum(newValue);
-                        numberValue.setText(newValue);
-                        Toast.makeText(context, "设置成功: " + newValue, Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(context, "请输入0-999之间的数字", Toast.LENGTH_SHORT).show();
-                    }
-                } catch (NumberFormatException e) {
-                    Toast.makeText(context, "请输入有效数字", Toast.LENGTH_SHORT).show();
+        // 设置点击监听，使用工具类显示对话框
+        layoutNumber.setOnClickListener(v -> {
+            DialogUtils.showNumberEditDialog(
+                v.getContext(),
+                "修改 " + item.getTitle(),
+                item.getNum() != null ? item.getNum() : "5",
+                newValue -> {
+                    // 确认回调
+                    item.setNum(newValue);
+                    numberValue.setText(newValue);
+                    Toast.makeText(v.getContext(), "设置成功: " + newValue, Toast.LENGTH_SHORT).show();
                 }
-            }
+            );
         });
-
-        builder.setNegativeButton("取消", (dialog, which) -> dialog.cancel());
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
     }
 
     @NonNull
