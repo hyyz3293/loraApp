@@ -104,24 +104,49 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
         numberTitle.setText(item.getTitle());
         
         // 设置当前数值
-        String currentNum = "5"; // 默认值
-        if (item.getNum() != null && !item.getNum().isEmpty()) {
-            currentNum = item.getNum();
+        String currentNum = "2"; // 默认值
+        if (item.getValue() != null && !item.getValue().isEmpty()) {
+            currentNum = item.getValue();
         }
         numberValue.setText(currentNum);
 
         // 设置点击监听，使用工具类显示对话框
         layoutNumber.setOnClickListener(v -> {
+            String title = "";
+            String hint = "";
+            String value = "";
+            String unit = "";
+            switch (item.getIndex()) {
+                case 3:
+                    title = "清点次数设置";
+                    hint = "清点次数";
+                    value = item.getValue() != null ? item.getValue() : "2";
+                    break;
+                case 4:
+                    title = "低电量报警值";
+                    hint = "电量值";
+                    value = item.getValue() != null ? item.getValue() : "2";
+                    break;
+                case 5:
+                    title = "回到首页时间设置";
+                    hint = "回到首页时间";
+                    value = item.getValue() != null ? item.getValue() : "60";
+                    unit = "秒";
+                    break;
+            }
+
             DialogUtils.showNumberEditDialog(
                 v.getContext(),
-                "修改 " + item.getTitle(),
-                item.getNum() != null ? item.getNum() : "5",
-                newValue -> {
-                    // 确认回调
-                    item.setNum(newValue);
-                    numberValue.setText(newValue);
-                    Toast.makeText(v.getContext(), "设置成功: " + newValue, Toast.LENGTH_SHORT).show();
-                }
+                    title,
+                    hint,
+                    value,
+                    unit,
+                    newValue -> {
+                        // 确认回调
+                        item.setValue(newValue);
+                        numberValue.setText(newValue);
+                        Toast.makeText(v.getContext(), "设置成功: " + newValue, Toast.LENGTH_SHORT).show();
+                    }
             );
         });
     }

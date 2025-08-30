@@ -58,12 +58,12 @@ public class DeviceSettingFragment extends Fragment {
     private void initSettingData() {
         // 创建设置项数据
         List<SettingItem> settingList = new ArrayList<>();
-        settingList.add(new SettingItem("音量设置", 1));
-        settingList.add(new SettingItem( "WiFIi连接", 0));
-        settingList.add(new SettingItem( "IP配置", 0));
-        settingList.add(new SettingItem(  "清点次数(非管理员角色)", 2));
-        settingList.add(new SettingItem( "低电量报警值", 0));
-        settingList.add(new SettingItem( "返回首页时间", 0));
+        settingList.add(new SettingItem("音量设置", 1, 0));
+        settingList.add(new SettingItem( "WiFIi连接", 0, 1));
+        settingList.add(new SettingItem( "IP配置", 0, 2));
+        settingList.add(new SettingItem(  "清点次数(非管理员角色)", 2, 3));
+        settingList.add(new SettingItem( "低电量报警值", 2, 4, "20%"));
+        settingList.add(new SettingItem( "返回首页时间", 2, 5, "60"));
 
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
@@ -75,7 +75,7 @@ public class DeviceSettingFragment extends Fragment {
         // 设置点击事件监听器
         terminalSettingAdapter.setOnItemClickListener((adapter, view, position) -> {
             SettingItem settingItem = settingList.get(position);
-            if (settingItem.getViewType() == 0)
+            if (settingItem.getViewType() == 0 || settingItem.getIndex() < 3)
                 onSettingClick(position, settingItem);
         });
 

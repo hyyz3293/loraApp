@@ -31,7 +31,7 @@ public class DialogUtils {
      * @param currentValue 当前数值
      * @param listener 回调监听器
      */
-    public static void showNumberEditDialog(Context context, String title, String currentValue, OnNumberEditListener listener) {
+    public static void showNumberEditDialog(Context context, String title, String hint, String currentValue, String unit, OnNumberEditListener listener) {
         // 创建对话框
         Dialog dialog = new Dialog(context);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -45,7 +45,7 @@ public class DialogUtils {
         if (window != null) {
             window.setBackgroundDrawableResource(android.R.color.transparent);
             window.setLayout(
-                (int) (context.getResources().getDisplayMetrics().widthPixels * 0.85),
+                (int) (context.getResources().getDisplayMetrics().widthPixels * 0.5),
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT
             );
         }
@@ -53,15 +53,24 @@ public class DialogUtils {
         // 获取控件
         TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
         ImageView btnClose = dialogView.findViewById(R.id.btn_close);
+        TextView editNumberHint = dialogView.findViewById(R.id.edit_number_hint);
+        TextView editNumberUnit = dialogView.findViewById(R.id.edit_number_unit);
         EditText editNumber = dialogView.findViewById(R.id.edit_number);
         Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
         Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
-        
+
+
+        editNumberHint.setText(hint);
         // 设置标题和当前值
         dialogTitle.setText(title);
         if (!TextUtils.isEmpty(currentValue)) {
             editNumber.setText(currentValue);
             editNumber.setSelection(currentValue.length());
+        }
+        editNumberUnit.setVisibility(View.GONE);
+        if (!TextUtils.isEmpty(unit)) {
+            editNumberUnit.setText(unit);
+            editNumberUnit.setVisibility(View.VISIBLE);
         }
         
         // 关闭按钮点击事件
@@ -117,8 +126,8 @@ public class DialogUtils {
      * @param currentValue 当前数值
      * @param onConfirm 确认回调
      */
-    public static void showNumberEditDialog(Context context, String title, String currentValue, OnConfirmListener onConfirm) {
-        showNumberEditDialog(context, title, currentValue, new OnNumberEditListener() {
+    public static void showNumberEditDialog(Context context, String title, String hint, String currentValue, String unit, OnConfirmListener onConfirm) {
+        showNumberEditDialog(context, title, hint, currentValue, unit, new OnNumberEditListener() {
             @Override
             public void onConfirm(String newValue) {
                 if (onConfirm != null) {
