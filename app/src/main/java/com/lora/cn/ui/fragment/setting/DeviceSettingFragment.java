@@ -85,25 +85,9 @@ public class DeviceSettingFragment extends Fragment {
 
     private void onSettingClick(int position, SettingItem settingItem) {
         Fragment targetFragment = null;
-
         // 根据位置跳转到不同的Fragment
         switch (position) {
-            case 0: // 设备设置
-                targetFragment = DeviceSettingFragment.newInstance();
-                break;
-            case 1: // 分组管理
-                targetFragment = GroupManagementFragment.newInstance();
-                break;
-            case 2: // 角色管理
-                targetFragment = RoleManagementFragment.newInstance();
-                break;
-            case 3: // 用户管理
-                targetFragment = UserManagementFragment.newInstance();
-                break;
-            case 4: // 科室管理
-            case 5: // 科室管理（重复项）
-                targetFragment = DepartmentManagementFragment.newInstance();
-                break;
+
         }
 
         if (targetFragment != null) {
