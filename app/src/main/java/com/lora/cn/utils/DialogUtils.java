@@ -148,4 +148,73 @@ public class DialogUtils {
     public interface OnConfirmListener {
         void onConfirm(String newValue);
     }
+    
+    // 在DialogUtils类中添加以下方法
+    
+    /**
+     * WiFi密码输入对话框回调接口
+     */
+    public interface OnWifiPasswordListener {
+        void onPasswordEntered(String password);
+    }
+    
+    /**
+     * 显示WiFi密码输入对话框
+     * @param context 上下文
+     * @param title 对话框标题
+     * @param listener 回调监听器
+     */
+    public static void showWifiPasswordDialog(Context context, String title, OnWifiPasswordListener listener) {
+        // 创建对话框
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        
+        // 加载布局
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_wifi_password, null);
+        dialog.setContentView(dialogView);
+        
+        // 设置对话框属性
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(
+                (int) (context.getResources().getDisplayMetrics().widthPixels * 0.85),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+        
+        // 获取控件
+        TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
+        ImageView btnClose = dialogView.findViewById(R.id.btn_close);
+        EditText editPassword = dialogView.findViewById(R.id.edit_password);
+        Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
+        Button btnConnect = dialogView.findViewById(R.id.btn_connect);
+        
+        // 设置标题
+        dialogTitle.setText(title);
+        
+        // 关闭按钮点击事件
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        
+        // 取消按钮点击事件
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        
+        // 连接按钮点击事件
+        btnConnect.setOnClickListener(v -> {
+            String password = editPassword.getText().toString().trim();
+            
+            if (TextUtils.isEmpty(password)) {
+                Toast.makeText(context, "请输入WiFi密码", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            dialog.dismiss();
+            if (listener != null) {
+                listener.onPasswordEntered(password);
+            }
+        });
+        
+        // 显示对话框
+        dialog.show();
+    }
 }
