@@ -10,12 +10,37 @@
         android:id="@+id/toolbar"
         layout="@layout/toolbar_common" />
 
+    <!-- 分组选择器 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@color/background_light">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="所属分组："
+            android:textSize="14sp"
+            android:layout_gravity="center_vertical" />
+
+        <Spinner
+            android:id="@+id/spinner_groups"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
     <!-- 搜索栏 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
+        android:paddingTop="0dp"
         android:background="@color/background_light">
 
         <EditText
@@ -24,7 +49,7 @@
             android:layout_height="40dp"
             android:layout_weight="1"
             android:background="@drawable/bg_search_input"
-            android:hint="搜索分组名称"
+            android:hint="搜索分类名称"
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
             android:textSize="14sp" />
@@ -39,9 +64,9 @@
 
     </LinearLayout>
 
-    <!-- 分组列表 -->
+    <!-- 分类列表 -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_groups"
+        android:id="@+id/rv_categories"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="8dp" />

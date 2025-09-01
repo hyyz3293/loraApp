@@ -28,6 +28,8 @@ public class SettingsFragment extends Fragment {
 
     private RecyclerView terminalSettingRecycle;
     private TerminalSettingAdapter terminalSettingAdapter;
+    private View settingsMainContainer;
+    private View settingsFragmentContainer;
 
     @Nullable
     @Override
@@ -36,12 +38,15 @@ public class SettingsFragment extends Fragment {
         
         initViews(view);
         initSettingData();
+        setupBackStackListener();
         
         return view;
     }
 
     private void initViews(View view) {
         terminalSettingRecycle = view.findViewById(R.id.terminal_setting_recycle);
+        settingsMainContainer = view.findViewById(R.id.settings_main_container);
+        settingsFragmentContainer = view.findViewById(R.id.settings_fragment_container);
     }
 
     private void initSettingData() {
@@ -95,12 +100,27 @@ public class SettingsFragment extends Fragment {
         }
         
         if (targetFragment != null) {
-            // 使用Activity的FragmentManager进行导航
-            FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
-            transaction.replace(android.R.id.content, targetFragment);
+            // 使用子Fragment管理器进行导航，在当前Fragment内部切换
+            FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
+            transaction.replace(R.id.settings_fragment_container, targetFragment);
             transaction.addToBackStack(null);
             transaction.commit();
+            
+            // 隐藏主设置页面，显示子Fragment容器
+            settingsMainContainer.setVisibility(View.GONE);
+            settingsFragmentContainer.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void setupBackStackListener() {
+        // 监听子Fragment回退栈变化
+        getChildFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getChildFragmentManager().getBackStackEntryCount() == 0) {
+                // 回退栈为空，显示主设置页面
+                settingsMainContainer.setVisibility(View.VISIBLE);
+                settingsFragmentContainer.setVisibility(View.GONE);
+            }
+        });
     }
 
     public static SettingsFragment newInstance() {

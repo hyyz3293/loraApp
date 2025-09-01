@@ -101,12 +101,11 @@ public class DeviceSettingFragment extends Fragment {
                             public void onGranted(@NonNull List<String> granted) {
                                 Fragment  targetFragment = WifiSettingFragment.newInstance();
                                 if (targetFragment != null) {
-                                    // 使用Activity的FragmentManager进行导航
-                                    FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
-                                    transaction.replace(android.R.id.content, targetFragment);
+                                    // 使用父Fragment管理器进行导航
+                                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                                    transaction.replace(R.id.settings_fragment_container, targetFragment);
                                     transaction.addToBackStack(null); // 添加到回退栈，支持返回
                                     transaction.commit();
-                                    //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
                                 }
                             }
 
@@ -120,12 +119,11 @@ public class DeviceSettingFragment extends Fragment {
             case 2: //IP
                 targetFragment = IpConfigFragment.newInstance();
                 if (targetFragment != null) {
-                    // 使用Activity的FragmentManager进行导航
-                    FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
-                    transaction.replace(android.R.id.content, targetFragment);
+                    // 使用父Fragment管理器进行导航
+                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                    transaction.replace(R.id.settings_fragment_container, targetFragment);
                     transaction.addToBackStack(null); // 添加到回退栈，支持返回
                     transaction.commit();
-                    //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
                 }
                 break;
         }

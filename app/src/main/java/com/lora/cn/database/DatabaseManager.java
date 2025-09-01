@@ -1,0 +1,268 @@
+package com.lora.cn.database;
+
+import android.content.Context;
+import com.lora.cn.database.dao.CategoryDao;
+import com.lora.cn.database.dao.GroupDao;
+import com.lora.cn.database.entity.Category;
+import com.lora.cn.database.entity.Group;
+
+import java.util.List;
+
+/**
+ * 数据库管理器
+ * 提供统一的数据库操作接口
+ */
+public class DatabaseManager {
+    private static DatabaseManager instance;
+    private DatabaseHelper dbHelper;
+    private GroupDao groupDao;
+    private CategoryDao categoryDao;
+    
+    private DatabaseManager(Context context) {
+        dbHelper = DatabaseHelper.getInstance(context);
+        groupDao = new GroupDao(dbHelper);
+        categoryDao = new CategoryDao(dbHelper);
+    }
+    
+    /**
+     * 获取数据库管理器的单例实例
+     */
+    public static synchronized DatabaseManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new DatabaseManager(context.getApplicationContext());
+        }
+        return instance;
+    }
+    
+    // ==================== 分组相关操作 ====================
+    
+    /**
+     * 添加分组
+     */
+    public long addGroup(String groupName, String groupDescription) {
+        if (groupDao.isGroupNameExists(groupName)) {
+            throw new IllegalArgumentException("分组名称已存在: " + groupName);
+        }
+        
+        Group group = new Group(groupName, groupDescription);
+        return groupDao.insertGroup(group);
+    }
+    
+    /**
+     * 更新分组
+     */
+    public boolean updateGroup(long groupId, String groupName, String groupDescription) {
+        if (groupDao.isGroupNameExists(groupName, groupId)) {
+            throw new IllegalArgumentException("分组名称已存在: " + groupName);
+        }
+        
+        Group group = groupDao.getGroupById(groupId);
+        if (group == null) {
+            return false;
+        }
+        
+        group.setGroupName(groupName);
+        group.setGroupDescription(groupDescription);
+        
+        return groupDao.updateGroup(group) > 0;
+    }
+    
+    /**
+     * 删除分组（会级联删除相关分类）
+     */
+    public boolean deleteGroup(long groupId) {
+        return groupDao.deleteGroup(groupId) > 0;
+    }
+    
+    /**
+     * 根据ID获取分组
+     */
+    public Group getGroupById(long groupId) {
+        return groupDao.getGroupById(groupId);
+    }
+    
+    /**
+     * 根据名称获取分组
+     */
+    public Group getGroupByName(String groupName) {
+        return groupDao.getGroupByName(groupName);
+    }
+    
+    /**
+     * 获取所有分组
+     */
+    public List<Group> getAllGroups() {
+        return groupDao.getAllGroups();
+    }
+    
+    /**
+     * 获取分组及其分类列表
+     */
+    public List<Group> getGroupsWithCategories() {
+        List<Group> groups = groupDao.getAllGroups();
+        for (Group group : groups) {
+            List<Category> categories = categoryDao.getCategoriesByGroupId(group.getGroupId());
+            group.setCategories(categories);
+        }
+        return groups;
+    }
+    
+    /**
+     * 检查分组名称是否存在
+     */
+    public boolean isGroupNameExists(String groupName) {
+        return groupDao.isGroupNameExists(groupName);
+    }
+    
+    /**
+     * 获取分组总数
+     */
+    public int getGroupCount() {
+        return groupDao.getGroupCount();
+    }
+    
+    // ==================== 分类相关操作 ====================
+    
+    /**
+     * 添加分类
+     */
+    public long addCategory(String categoryName, String categoryDescription, long groupId) {
+        // 检查分组是否存在
+        Group group = groupDao.getGroupById(groupId);
+        if (group == null) {
+            throw new IllegalArgumentException("分组不存在，ID: " + groupId);
+        }
+        
+        // 检查分类名称在该分组中是否已存在
+        if (categoryDao.isCategoryNameExistsInGroup(categoryName, groupId)) {
+            throw new IllegalArgumentException("分类名称在该分组中已存在: " + categoryName);
+        }
+        
+        Category category = new Category(categoryName, categoryDescription, groupId);
+        return categoryDao.insertCategory(category);
+    }
+    
+    /**
+     * 更新分类
+     */
+    public boolean updateCategory(long categoryId, String categoryName, String categoryDescription, long groupId) {
+        // 检查分组是否存在
+        Group group = groupDao.getGroupById(groupId);
+        if (group == null) {
+            throw new IllegalArgumentException("分组不存在，ID: " + groupId);
+        }
+        
+        // 检查分类名称在该分组中是否已存在（排除当前分类）
+        if (categoryDao.isCategoryNameExistsInGroup(categoryName, groupId, categoryId)) {
+            throw new IllegalArgumentException("分类名称在该分组中已存在: " + categoryName);
+        }
+        
+        Category category = categoryDao.getCategoryById(categoryId);
+        if (category == null) {
+            return false;
+        }
+        
+        category.setCategoryName(categoryName);
+        category.setCategoryDescription(categoryDescription);
+        category.setGroupId(groupId);
+        
+        return categoryDao.updateCategory(category) > 0;
+    }
+    
+    /**
+     * 删除分类
+     */
+    public boolean deleteCategory(long categoryId) {
+        return categoryDao.deleteCategory(categoryId) > 0;
+    }
+    
+    /**
+     * 根据ID获取分类
+     */
+    public Category getCategoryById(long categoryId) {
+        return categoryDao.getCategoryById(categoryId);
+    }
+    
+    /**
+     * 根据分组ID获取分类列表
+     */
+    public List<Category> getCategoriesByGroupId(long groupId) {
+        return categoryDao.getCategoriesByGroupId(groupId);
+    }
+    
+    /**
+     * 获取所有分类
+     */
+    public List<Category> getAllCategories() {
+        return categoryDao.getAllCategories();
+    }
+    
+    /**
+     * 获取分类及其关联的分组信息
+     */
+    public List<Category> getCategoriesWithGroup() {
+        return categoryDao.getCategoriesWithGroup();
+    }
+    
+    /**
+     * 检查分类名称在指定分组中是否存在
+     */
+    public boolean isCategoryNameExistsInGroup(String categoryName, long groupId) {
+        return categoryDao.isCategoryNameExistsInGroup(categoryName, groupId);
+    }
+    
+    /**
+     * 获取指定分组的分类总数
+     */
+    public int getCategoryCountByGroupId(long groupId) {
+        return categoryDao.getCategoryCountByGroupId(groupId);
+    }
+    
+    /**
+     * 获取分类总数
+     */
+    public int getCategoryCount() {
+        return categoryDao.getCategoryCount();
+    }
+    
+    // ==================== 统计相关操作 ====================
+    
+    /**
+     * 获取数据库统计信息
+     */
+    public DatabaseStats getDatabaseStats() {
+        return new DatabaseStats(
+            getGroupCount(),
+            getCategoryCount()
+        );
+    }
+    
+    /**
+     * 数据库统计信息类
+     */
+    public static class DatabaseStats {
+        private int groupCount;
+        private int categoryCount;
+        
+        public DatabaseStats(int groupCount, int categoryCount) {
+            this.groupCount = groupCount;
+            this.categoryCount = categoryCount;
+        }
+        
+        public int getGroupCount() {
+            return groupCount;
+        }
+        
+        public int getCategoryCount() {
+            return categoryCount;
+        }
+        
+        @Override
+        public String toString() {
+            return "DatabaseStats{" +
+                    "groupCount=" + groupCount +
+                    ", categoryCount=" + categoryCount +
+                    '}';
+        }
+    }
+}
