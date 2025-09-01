@@ -102,7 +102,7 @@ public class DeviceSettingFragment extends Fragment {
                                 Fragment  targetFragment = WifiSettingFragment.newInstance();
                                 if (targetFragment != null) {
                                     FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-                                    transaction.replace(R.id.fragment_container, targetFragment);
+                                    transaction.replace(getId(), targetFragment);
                                     transaction.addToBackStack(null); // 添加到回退栈，支持返回
                                     transaction.commit();
                                     //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
@@ -120,7 +120,7 @@ public class DeviceSettingFragment extends Fragment {
                 targetFragment = IpConfigFragment.newInstance();
                 if (targetFragment != null) {
                     FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-                    transaction.replace(R.id.fragment_container, targetFragment);
+                    transaction.replace(getId(), targetFragment);
                     transaction.addToBackStack(null); // 添加到回退栈，支持返回
                     transaction.commit();
                     //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");

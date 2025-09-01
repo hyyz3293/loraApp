@@ -8,16 +8,13 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
-import com.lora.cn.ui.fragment.TerminalListFragment;
-import com.lora.cn.ui.fragment.LogInfoFragment;
-import com.lora.cn.ui.fragment.TerminalCheckFragment;
-import com.lora.cn.ui.fragment.SettingsFragment;
+import com.lora.cn.ui.adapter.MainPagerAdapter;
 import com.lora.cn.ui.adapter.MenuTabAdapter;
 import com.lora.cn.ui.model.MenuTab;
 
@@ -27,12 +24,13 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView rvMenuTabs;
+    private ViewPager2 viewPager;
     private MenuTabAdapter menuTabAdapter;
+    private MainPagerAdapter pagerAdapter;
     private List<MenuTab> menuTabs;
     private ImageView btnLogout;
     
-    private Fragment currentFragment;
-    private int currentTabIndex = -1;
+    private int currentTabIndex = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,16 +39,17 @@ public class MainActivity extends AppCompatActivity {
         
         initViews();
         initMenuTabs();
+        initViewPager();
         initListeners();
         
         // 默认显示终端列表
         menuTabs.get(0).setSelected(true);
         menuTabAdapter.notifyDataSetChanged();
-        switchToTab(0);
     }
-    
+
     private void initViews() {
         rvMenuTabs = findViewById(R.id.rv_menu_tabs);
+        viewPager = findViewById(R.id.view_pager);
         btnLogout = findViewById(R.id.logout);
     }
     
@@ -69,11 +68,22 @@ public class MainActivity extends AppCompatActivity {
         menuTabAdapter.submitList(menuTabs);
         rvMenuTabs.setAdapter(menuTabAdapter);
     }
-    
+
+    private void initViewPager() {
+        pagerAdapter = new MainPagerAdapter(this);
+        viewPager.setAdapter(pagerAdapter);
+        
+        // 设置ViewPager2的页面切换监听
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                updateTabSelection(position);
+            }
+        });
+    }
+
     private void initListeners() {
-//        menuTabAdapter.setOnTabClickListener((position, menuTab) -> {
-//            switchToTab(position);
-//        });
         menuTabAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener<MenuTab>() {
             @Override
             public void onClick(@NonNull BaseQuickAdapter<MenuTab, ?> baseQuickAdapter, @NonNull View view, int position) {
@@ -89,37 +99,20 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         
+        // 切换ViewPager2到指定页面
+        viewPager.setCurrentItem(tabIndex, true); // true表示平滑滚动
+    }
+
+    private void updateTabSelection(int tabIndex) {
         currentTabIndex = tabIndex;
-
+        
+        // 更新标签选中状态
         for (int i = 0; i < menuTabs.size(); i++) {
-            menuTabs.get(i).setSelected(false);
-            if (i == currentTabIndex) {
-                menuTabs.get(i).setSelected(true);
-            }
+            menuTabs.get(i).setSelected(i == tabIndex);
         }
-
+        
         menuTabAdapter.submitList(menuTabs);
         menuTabAdapter.notifyDataSetChanged();
-
-        // 切换Fragment
-        Fragment fragment = switch (tabIndex) {
-            case 0 -> new TerminalListFragment();
-            case 1 -> new LogInfoFragment();
-            case 2 -> new TerminalCheckFragment();
-            case 3 -> new SettingsFragment();
-            default -> null;
-        };
-
-        if (fragment != null) {
-            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-            if (currentFragment != null) {
-                transaction.replace(R.id.fragment_container, fragment);
-            } else {
-                transaction.add(R.id.fragment_container, fragment);
-            }
-            transaction.commit();
-            currentFragment = fragment;
-        }
     }
 
     private void logout() {

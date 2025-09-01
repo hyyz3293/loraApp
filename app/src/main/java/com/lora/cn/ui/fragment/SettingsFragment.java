@@ -96,7 +96,7 @@ public class SettingsFragment extends Fragment {
         
         if (targetFragment != null) {
             FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-            transaction.replace(R.id.fragment_container, targetFragment);
+            transaction.replace(getId(), targetFragment);
             transaction.addToBackStack(null); // 添加到回退栈，支持返回
             transaction.commit();
         }
