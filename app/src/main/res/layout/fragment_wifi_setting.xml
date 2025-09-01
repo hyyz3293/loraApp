@@ -89,6 +89,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/wifi_ll"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:orientation="horizontal"
