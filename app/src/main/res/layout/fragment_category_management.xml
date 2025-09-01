@@ -5,13 +5,69 @@
     android:orientation="vertical"
     android:background="@color/white">
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="93dp"
+        android:padding="12dp" >
+
+        <TextView
+            android:textSize="30dp"
+            android:textColor="@color/black"
+            android:text="分组设置"
+            android:layout_centerVertical="true"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="34dp"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/add_group"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="新增分组"
+                android:textStyle="bold"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
+
+            <TextView
+                android:id="@+id/back"
+                android:background="@drawable/bg_back_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="#383B40"
+                android:text="返回"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
+
+        </LinearLayout>
+
+
+    </RelativeLayout>
+
+
     <!-- 通用工具栏 -->
     <include
+        android:visibility="gone"
         android:id="@+id/toolbar"
         layout="@layout/toolbar_common" />
 
     <!-- 分组选择器 -->
     <LinearLayout
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -36,6 +92,7 @@
 
     <!-- 搜索栏 -->
     <LinearLayout
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -68,6 +125,6 @@
         android:id="@+id/rv_categories"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp" />
+        />
 
 </LinearLayout>

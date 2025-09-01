@@ -163,8 +163,8 @@ public class GroupManagementFragment extends Fragment  {
         //showGroupDialog(null, "新增分组");
         DialogUtils.showNumberEditDialog(
                 getContext(),
-                "新增分组",
-                "分组名称",
+                "新增分类",
+                "分类名称",
                 "",
                 "",
                 newValue -> {

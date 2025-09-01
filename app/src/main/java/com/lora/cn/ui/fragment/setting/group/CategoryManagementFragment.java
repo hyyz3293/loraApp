@@ -23,16 +23,21 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Category;
 import com.lora.cn.database.entity.Group;
 import com.lora.cn.ui.adapter.CategoryAdapter;
+import com.lora.cn.utils.DialogUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CategoryManagementFragment extends Fragment implements CategoryAdapter.OnCategoryItemClickListener {
+public class CategoryManagementFragment extends Fragment{
+
+    private TextView back;
+    private TextView btnAddTv;
 
     private TextView toolbarTitle;
     private ImageView btnBack;
@@ -45,8 +50,8 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
     private CategoryAdapter categoryAdapter;
     private DatabaseManager dbManager;
     private List<Category> allCategories;
-    private List<Group> allGroups;
-    private ArrayAdapter<Group> groupSpinnerAdapter;
+    //private List<Group> allGroups;
+    //private ArrayAdapter<Group> groupSpinnerAdapter;
     private long selectedGroupId = -1; // -1表示显示所有分组的分类
 
     @Nullable
@@ -56,7 +61,7 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         
         initViews(view);
         setupRecyclerView();
-        setupSpinner();
+
         setupListeners();
         loadData();
         
@@ -71,22 +76,26 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         if (args != null) {
             long selectedGroupId = args.getLong("selected_group_id", -1);
             String selectedGroupName = args.getString("selected_group_name");
-            
-            if (selectedGroupId != -1 && selectedGroupName != null) {
-                // 在Spinner中选择对应的分组
-                for (int i = 0; i < allGroups.size(); i++) {
-                    if (allGroups.get(i).getGroupId() == selectedGroupId) {
-                        spinnerGroups.setSelection(i); // 直接设置位置，因为allGroups已经包含了"全部分组"选项
-                        this.selectedGroupId = selectedGroupId;
-                        filterCategoriesByGroup();
-                        break;
-                    }
-                }
-            }
+            this.selectedGroupId = selectedGroupId;
+//            if (selectedGroupId != -1 && selectedGroupName != null) {
+//                // 在Spinner中选择对应的分组
+//                for (int i = 0; i < allGroups.size(); i++) {
+//                    if (allGroups.get(i).getGroupId() == selectedGroupId) {
+//                        spinnerGroups.setSelection(i); // 直接设置位置，因为allGroups已经包含了"全部分组"选项
+//                        this.selectedGroupId = selectedGroupId;
+//                        filterCategoriesByGroup();
+//                        break;
+//                    }
+//                }
+//            }
         }
     }
 
     private void initViews(View view) {
+
+        btnAddTv = view.findViewById(R.id.add_group);
+        back = view.findViewById(R.id.back);
+
         // 工具栏
         toolbarTitle = view.findViewById(R.id.toolbar_title);
         btnBack = view.findViewById(R.id.btn_back);
@@ -108,46 +117,14 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         // 初始化数据库管理器
         dbManager = DatabaseManager.getInstance(requireContext());
         allCategories = new ArrayList<>();
-        allGroups = new ArrayList<>();
+        //allGroups = new ArrayList<>();
     }
 
     private void setupRecyclerView() {
         categoryAdapter = new CategoryAdapter();
-        categoryAdapter.setOnCategoryItemClickListener(this);
+
         rvCategories.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvCategories.setAdapter(categoryAdapter);
-    }
-
-    private void setupSpinner() {
-        groupSpinnerAdapter = new ArrayAdapter<Group>(requireContext(), android.R.layout.simple_spinner_item, allGroups) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                Group group = getItem(position);
-                if (group != null) {
-                    if (group.getGroupId() == -1) {
-                        textView.setText(group.getGroupName());
-                    } else {
-                        textView.setText(group.getGroupName());
-                    }
-                }
-                return view;
-            }
-            
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                Group group = getItem(position);
-                if (group != null) {
-                    textView.setText(group.getGroupName());
-                }
-                return view;
-            }
-        };
-        groupSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerGroups.setAdapter(groupSpinnerAdapter);
     }
 
     private void setupListeners() {
@@ -164,21 +141,21 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         // 搜索按钮
         btnSearch.setOnClickListener(v -> performSearch());
         
-        // 分组选择监听
-        spinnerGroups.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                Group selectedGroup = allGroups.get(position);
-                selectedGroupId = selectedGroup.getGroupId();
-                filterCategoriesByGroup();
-            }
-            
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                selectedGroupId = -1;
-                filterCategoriesByGroup();
-            }
-        });
+//        // 分组选择监听
+//        spinnerGroups.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//            @Override
+//            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+//                Group selectedGroup = allGroups.get(position);
+//                selectedGroupId = selectedGroup.getGroupId();
+//                filterCategoriesByGroup();
+//            }
+//
+//            @Override
+//            public void onNothingSelected(AdapterView<?> parent) {
+//                selectedGroupId = -1;
+//                filterCategoriesByGroup();
+//            }
+//        });
         
         // 搜索框文本变化监听
         etSearch.addTextChangedListener(new TextWatcher() {
@@ -195,34 +172,52 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
             @Override
             public void afterTextChanged(Editable s) {}
         });
+
+        // 返回按钮
+        back.setOnClickListener(v -> {
+            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
+                getParentFragmentManager().popBackStack();
+            }
+        });
+
+        // 新增按钮
+        btnAddTv.setOnClickListener(v -> showAddCategoryDialog());
+
+        categoryAdapter.addOnItemChildClickListener(R.id.tv_group_edit, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
+            @Override
+            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
+                onEditClick(allCategories.get(i));
+            }
+        });
+        categoryAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
+            @Override
+            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
+                onDeleteClick(allCategories.get(i));
+            }
+        });
+//        categoryAdapter.addOnItemChildClickListener(R.id.tv_group_edit, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
+//            @Override
+//            public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
+//                onEditClick(allCategories.get(i));
+//            }
+//        });
+//        categoryAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
+//            @Override
+//            public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
+//                onDeleteClick(allCategories.get(i));
+//            }
+//        });
     }
 
     private void loadData() {
-        loadGroups();
+
         loadCategories();
     }
 
-    private void loadGroups() {
-        try {
-            List<Group> groups = dbManager.getAllGroups();
-            allGroups.clear();
-            
-            // 添加"所有分组"选项
-            Group allGroupsOption = new Group();
-            allGroupsOption.setGroupId(-1);
-            allGroupsOption.setGroupName("所有分组");
-            allGroups.add(allGroupsOption);
-            
-            allGroups.addAll(groups);
-            groupSpinnerAdapter.notifyDataSetChanged();
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "加载分组失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
 
     private void loadCategories() {
         try {
-            allCategories = dbManager.getCategoriesWithGroup();
+            allCategories = dbManager.getCategoriesByGroupId(selectedGroupId);
             filterCategoriesByGroup();
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载分类失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -244,7 +239,7 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
             }
         }
         
-        categoryAdapter.setCategoryList(filteredCategories);
+        categoryAdapter.submitList(filteredCategories);
     }
 
     private void performSearch() {
@@ -272,106 +267,116 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
                 filteredCategories.add(category);
             }
         }
-        categoryAdapter.setCategoryList(filteredCategories);
+        categoryAdapter.submitList(filteredCategories);
     }
 
-    private void showAddCategoryDialog() {
-        if (allGroups.size() <= 1) { // 只有"所有分组"选项
-            Toast.makeText(requireContext(), "请先创建分组", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        showCategoryDialog(null, "新增分类");
-    }
+//    private void showAddCategoryDialog() {
+//        if (allGroups.size() <= 1) { // 只有"所有分组"选项
+//            Toast.makeText(requireContext(), "请先创建分组", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//        showCategoryDialog(null, "新增分类");
+//    }
 
     private void showEditCategoryDialog(Category category) {
-        showCategoryDialog(category, "编辑分类");
+        //showCategoryDialog(category, "编辑分类");
+        DialogUtils.showNumberEditDialog(
+                getContext(),
+                "编辑分组",
+                "分组名称",
+                category.getCategoryName(),
+                "",
+                newValue -> {
+                    updateCategory(category.getCategoryId(), newValue, "", selectedGroupId);
+                }
+        );
     }
 
-    private void showCategoryDialog(Category category, String title) {
-        View dialogView = LayoutInflater.from(requireContext())
-                .inflate(R.layout.dialog_add_category, null);
-        
-        EditText etName = dialogView.findViewById(R.id.et_category_name);
-        EditText etDescription = dialogView.findViewById(R.id.et_category_description);
-        Spinner spinnerGroup = dialogView.findViewById(R.id.spinner_group);
-        
-        // 设置分组选择器
-        List<Group> availableGroups = new ArrayList<>();
-        for (Group group : allGroups) {
-            if (group.getGroupId() != -1) { // 排除"所有分组"选项
-                availableGroups.add(group);
-            }
-        }
-        
-        ArrayAdapter<Group> dialogGroupAdapter = new ArrayAdapter<Group>(requireContext(), 
-                android.R.layout.simple_spinner_item, availableGroups) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                Group group = getItem(position);
-                if (group != null) {
-                    textView.setText(group.getGroupName());
-                }
-                return view;
-            }
-            
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                TextView textView = (TextView) view;
-                Group group = getItem(position);
-                if (group != null) {
-                    textView.setText(group.getGroupName());
-                }
-                return view;
-            }
-        };
-        dialogGroupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerGroup.setAdapter(dialogGroupAdapter);
-        
-        if (category != null) {
-            etName.setText(category.getCategoryName());
-            etDescription.setText(category.getCategoryDescription());
-            
-            // 设置分组选择
-            for (int i = 0; i < availableGroups.size(); i++) {
-                if (availableGroups.get(i).getGroupId() == category.getGroupId()) {
-                    spinnerGroup.setSelection(i);
-                    break;
-                }
-            }
-        }
-        
-        new AlertDialog.Builder(requireContext())
-                .setTitle(title)
-                .setView(dialogView)
-                .setPositiveButton("确定", (dialog, which) -> {
-                    String name = etName.getText().toString().trim();
-                    String description = etDescription.getText().toString().trim();
-                    
-                    if (TextUtils.isEmpty(name)) {
-                        Toast.makeText(requireContext(), "请输入分类名称", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    
-                    if (spinnerGroup.getSelectedItem() == null) {
-                        Toast.makeText(requireContext(), "请选择分组", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    
-                    Group selectedGroup = (Group) spinnerGroup.getSelectedItem();
-                    long groupId = selectedGroup.getGroupId();
-                    
-                    if (category == null) {
-                        addCategory(name, description, groupId);
-                    } else {
-                        updateCategory(category.getCategoryId(), name, description, groupId);
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
+//    private void showCategoryDialog(Category category, String title) {
+//        View dialogView = LayoutInflater.from(requireContext())
+//                .inflate(R.layout.dialog_add_category, null);
+//
+//        EditText etName = dialogView.findViewById(R.id.et_category_name);
+//        EditText etDescription = dialogView.findViewById(R.id.et_category_description);
+//        Spinner spinnerGroup = dialogView.findViewById(R.id.spinner_group);
+//
+//        // 设置分组选择器
+//        List<Group> availableGroups = new ArrayList<>();
+//        for (Group group : allGroups) {
+//            if (group.getGroupId() != -1) { // 排除"所有分组"选项
+//                availableGroups.add(group);
+//            }
+//        }
+//
+//        ArrayAdapter<Group> dialogGroupAdapter = new ArrayAdapter<Group>(requireContext(),
+//                android.R.layout.simple_spinner_item, availableGroups) {
+//            @Override
+//            public View getView(int position, View convertView, ViewGroup parent) {
+//                View view = super.getView(position, convertView, parent);
+//                TextView textView = (TextView) view;
+//                Group group = getItem(position);
+//                if (group != null) {
+//                    textView.setText(group.getGroupName());
+//                }
+//                return view;
+//            }
+//
+//            @Override
+//            public View getDropDownView(int position, View convertView, ViewGroup parent) {
+//                View view = super.getDropDownView(position, convertView, parent);
+//                TextView textView = (TextView) view;
+//                Group group = getItem(position);
+//                if (group != null) {
+//                    textView.setText(group.getGroupName());
+//                }
+//                return view;
+//            }
+//        };
+//        dialogGroupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//        spinnerGroup.setAdapter(dialogGroupAdapter);
+//
+//        if (category != null) {
+//            etName.setText(category.getCategoryName());
+//            etDescription.setText(category.getCategoryDescription());
+//
+//            // 设置分组选择
+//            for (int i = 0; i < availableGroups.size(); i++) {
+//                if (availableGroups.get(i).getGroupId() == category.getGroupId()) {
+//                    spinnerGroup.setSelection(i);
+//                    break;
+//                }
+//            }
+//        }
+//
+//        new AlertDialog.Builder(requireContext())
+//                .setTitle(title)
+//                .setView(dialogView)
+//                .setPositiveButton("确定", (dialog, which) -> {
+//                    String name = etName.getText().toString().trim();
+//                    String description = etDescription.getText().toString().trim();
+//
+//                    if (TextUtils.isEmpty(name)) {
+//                        Toast.makeText(requireContext(), "请输入分类名称", Toast.LENGTH_SHORT).show();
+//                        return;
+//                    }
+//
+//                    if (spinnerGroup.getSelectedItem() == null) {
+//                        Toast.makeText(requireContext(), "请选择分组", Toast.LENGTH_SHORT).show();
+//                        return;
+//                    }
+//
+//                    Group selectedGroup = (Group) spinnerGroup.getSelectedItem();
+//                    long groupId = selectedGroup.getGroupId();
+//
+//                    if (category == null) {
+//                        addCategory(name, description, groupId);
+//                    } else {
+//                        updateCategory(category.getCategoryId(), name, description, groupId);
+//                    }
+//                })
+//                .setNegativeButton("取消", null)
+//                .show();
+//    }
 
     private void addCategory(String name, String description, long groupId) {
         try {
@@ -422,17 +427,32 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
                 .show();
     }
 
-    @Override
+    private void showAddCategoryDialog() {
+        //showGroupDialog(null, "新增分组");
+        DialogUtils.showNumberEditDialog(
+                getContext(),
+                "新增分组",
+                "分组名称",
+                "",
+                "",
+                newValue -> {
+                    addCategory(newValue, "", selectedGroupId);
+                }
+        );
+
+    }
+
+
     public void onEditClick(Category category) {
         showEditCategoryDialog(category);
     }
 
-    @Override
+
     public void onDeleteClick(Category category) {
         deleteCategory(category);
     }
 
-    @Override
+
     public void onItemClick(Category category) {
         // 可以在这里实现点击分类查看详情的功能
         Toast.makeText(requireContext(), "点击了分类: " + category.getCategoryName(), Toast.LENGTH_SHORT).show();
