@@ -27,6 +27,7 @@ import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Group;
 import com.lora.cn.ui.adapter.GroupAdapter;
 import com.lora.cn.ui.fragment.setting.group.CategoryManagementFragment;
+import com.lora.cn.utils.DialogUtils;
 
 import android.os.Bundle;
 
@@ -159,12 +160,36 @@ public class GroupManagementFragment extends Fragment  {
     }
 
     private void showAddGroupDialog() {
-        showGroupDialog(null, "新增分组");
+        //showGroupDialog(null, "新增分组");
+        DialogUtils.showNumberEditDialog(
+                getContext(),
+                "新增分类",
+                "",
+                "分类名称",
+                "",
+                newValue -> {
+                    addGroup(newValue, "");
+                }
+        );
+
     }
 
     private void showEditGroupDialog(Group group) {
-        showGroupDialog(group, "编辑分组");
+        //showGroupDialog(group, "编辑分组");
+        DialogUtils.showNumberEditDialog(
+                getContext(),
+                "编辑分类",
+                "",
+                "分类名称",
+                "",
+                newValue -> {
+                    updateGroup(group.getGroupId(), newValue, "");
+                }
+        );
+
     }
+
+
 
     private void showGroupDialog(Group group, String title) {
         View dialogView = LayoutInflater.from(requireContext())
