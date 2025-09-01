@@ -3,11 +3,12 @@ package com.lora.cn.ui.activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.FrameLayout;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
@@ -17,6 +18,7 @@ import com.lora.cn.R;
 import com.lora.cn.ui.adapter.MainPagerAdapter;
 import com.lora.cn.ui.adapter.MenuTabAdapter;
 import com.lora.cn.ui.model.MenuTab;
+import com.lora.cn.ui.fragment.setting.user.UserInfoFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +31,12 @@ public class MainActivity extends AppCompatActivity {
     private MainPagerAdapter pagerAdapter;
     private List<MenuTab> menuTabs;
     private ImageView btnLogout;
+    private TextView tvUserName;
+    private FrameLayout fragmentUserInfoContainer;
+    private UserInfoFragment userInfoFragment;
     
     private int currentTabIndex = 0;
+    private boolean isUserInfoVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
         rvMenuTabs = findViewById(R.id.rv_menu_tabs);
         viewPager = findViewById(R.id.view_pager);
         btnLogout = findViewById(R.id.logout);
+        tvUserName = findViewById(R.id.tv_user_name);
+        fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
     }
     
     private void initMenuTabs() {
@@ -92,6 +100,8 @@ public class MainActivity extends AppCompatActivity {
         });
         
         btnLogout.setOnClickListener(v -> logout());
+        
+        tvUserName.setOnClickListener(v -> toggleUserInfo());
     }
 
     private void switchToTab(int tabIndex) {
@@ -113,6 +123,63 @@ public class MainActivity extends AppCompatActivity {
         
         menuTabAdapter.submitList(menuTabs);
         menuTabAdapter.notifyDataSetChanged();
+    }
+
+    private void toggleUserInfo() {
+        if (isUserInfoVisible) {
+            hideUserInfo();
+        } else {
+            showUserInfo();
+        }
+    }
+
+    private void showUserInfo() {
+        if (userInfoFragment == null) {
+            userInfoFragment = new UserInfoFragment();
+            userInfoFragment.setOnUserInfoActionListener(new UserInfoFragment.OnUserInfoActionListener() {
+                @Override
+                public void onCloseUserInfo() {
+                    hideUserInfo();
+                }
+
+                @Override
+                public void onEditProfile() {
+                    // 这里可以添加编辑资料的逻辑
+                    hideUserInfo();
+                }
+            });
+        }
+
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_user_info_container, userInfoFragment)
+                .commit();
+
+        fragmentUserInfoContainer.setVisibility(View.VISIBLE);
+        rvMenuTabs.setVisibility(View.INVISIBLE);
+        viewPager.setVisibility(View.GONE);
+        isUserInfoVisible = true;
+    }
+
+    private void hideUserInfo() {
+        fragmentUserInfoContainer.setVisibility(View.GONE);
+        viewPager.setVisibility(View.VISIBLE);
+        rvMenuTabs.setVisibility(View.VISIBLE);
+        isUserInfoVisible = false;
+
+        if (userInfoFragment != null) {
+            getSupportFragmentManager().beginTransaction()
+                    .remove(userInfoFragment)
+                    .commit();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isUserInfoVisible) {
+            hideUserInfo();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private void logout() {
