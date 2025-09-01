@@ -171,7 +171,6 @@
 
                 <ImageView
                     android:id="@+id/wifi_pwd_lock"
-                    android:background="@mipmap/ic_down"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
             </LinearLayout>

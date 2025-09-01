@@ -1,5 +1,6 @@
 package com.lora.cn.ui.fragment.setting;
 
+import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,6 +15,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.blankj.utilcode.util.PermissionUtils;
+import com.blankj.utilcode.util.UtilsTransActivity;
 import com.lora.cn.R;
 import com.lora.cn.ui.activity.WebViewActivity;
 import com.lora.cn.ui.adapter.TerminalSettingAdapter;
@@ -92,20 +95,40 @@ public class DeviceSettingFragment extends Fragment {
         // 根据位置跳转到不同的Fragment
         switch (position) {
             case 1: //WIFI
-                targetFragment = WifiSettingFragment.newInstance();
+                PermissionUtils.permission(Manifest.permission.ACCESS_FINE_LOCATION)
+                        .callback(new PermissionUtils.FullCallback() {
+                            @Override
+                            public void onGranted(@NonNull List<String> granted) {
+                                Fragment  targetFragment = WifiSettingFragment.newInstance();
+                                if (targetFragment != null) {
+                                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                                    transaction.replace(R.id.fragment_container, targetFragment);
+                                    transaction.addToBackStack(null); // 添加到回退栈，支持返回
+                                    transaction.commit();
+                                    //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
+                                }
+                            }
+
+                            @Override
+                            public void onDenied(@NonNull List<String> deniedForever, @NonNull List<String> denied) {
+
+                            }
+                        }).request();
+
                 break;
             case 2: //IP
                 targetFragment = IpConfigFragment.newInstance();
+                if (targetFragment != null) {
+                    FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+                    transaction.replace(R.id.fragment_container, targetFragment);
+                    transaction.addToBackStack(null); // 添加到回退栈，支持返回
+                    transaction.commit();
+                    //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
+                }
                 break;
         }
 
-        if (targetFragment != null) {
-            FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-            transaction.replace(R.id.fragment_container, targetFragment);
-            transaction.addToBackStack(null); // 添加到回退栈，支持返回
-            transaction.commit();
-            //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
-        }
+
     }
     public static DeviceSettingFragment newInstance() {
         return new DeviceSettingFragment();
