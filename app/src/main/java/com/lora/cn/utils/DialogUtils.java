@@ -2,6 +2,8 @@ package com.lora.cn.utils;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,7 +14,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.lora.cn.R;
+import com.lora.cn.ui.adapter.WifiListAdapter;
+import com.lora.cn.ui.model.WifiItem;
+
+import java.util.List;
 
 public class DialogUtils {
 
@@ -215,6 +224,63 @@ public class DialogUtils {
         });
         
         // 显示对话框
+        dialog.show();
+    }
+    
+    // 在DialogUtils类中添加以下方法
+    
+    public interface OnWifiSelectedListener {
+        void onWifiSelected(WifiItem wifiItem);
+    }
+    
+    public static void showWifiListDialog(Context context, List<WifiItem> wifiList, OnWifiSelectedListener listener) {
+//        Dialog.Builder builder = new Dialog.Builder(context);
+//        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_wifi_list, null);
+//        builder.setView(dialogView);
+//
+//        Dialog dialog = builder.create();
+//        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        // 加载布局
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_wifi_list, null);
+        dialog.setContentView(dialogView);
+
+        // 设置对话框属性
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(
+                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.85),
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+        
+        RecyclerView recyclerView = dialogView.findViewById(R.id.rv_wifi_list);
+        TextView titleText = dialogView.findViewById(R.id.tv_title);
+        ImageView closeButton = dialogView.findViewById(R.id.iv_close);
+        
+        titleText.setText("选择WiFi网络");
+        
+        // 设置RecyclerView
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        WifiListAdapter adapter = new WifiListAdapter();
+        recyclerView.setAdapter(adapter);
+        
+        adapter.setOnItemClickListener((adapterView, view, position) -> {
+            WifiItem selectedWifi = wifiList.get(position);
+            if (listener != null) {
+                listener.onWifiSelected(selectedWifi);
+            }
+            dialog.dismiss();
+        });
+        
+        adapter.submitList(wifiList);
+        
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+        
         dialog.show();
     }
 }

@@ -90,6 +90,7 @@
 
             <LinearLayout
                 android:id="@+id/wifi_ll"
+                android:gravity="center"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
                 android:orientation="horizontal"
