@@ -17,18 +17,23 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Group;
 import com.lora.cn.ui.adapter.GroupAdapter;
+import com.lora.cn.ui.fragment.setting.group.CategoryManagementFragment;
+
+import android.os.Bundle;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class GroupManagementFragment extends Fragment implements GroupAdapter.OnGroupItemClickListener {
+public class GroupManagementFragment extends Fragment  {
 
 
     private TextView back;
@@ -74,7 +79,6 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
 
     private void setupRecyclerView() {
         groupAdapter = new GroupAdapter();
-        groupAdapter.setOnGroupItemClickListener(this);
         rvGroups.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvGroups.setAdapter(groupAdapter);
     }
@@ -101,19 +105,37 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (TextUtils.isEmpty(s)) {
-                    groupAdapter.setGroupList(allGroups);
+                    groupAdapter.submitList(allGroups);
                 }
             }
             
             @Override
             public void afterTextChanged(Editable s) {}
         });
+        groupAdapter.addOnItemChildClickListener(R.id.tv_group_fz, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
+            @Override
+            public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
+                onItemClickItem(allGroups.get(i));
+            }
+        });
+        groupAdapter.addOnItemChildClickListener(R.id.tv_group_edit, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
+            @Override
+            public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
+                onEditClick(allGroups.get(i));
+            }
+        });
+        groupAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
+            @Override
+            public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
+                onDeleteClick(allGroups.get(i));
+            }
+        });
     }
 
     private void loadGroups() {
         try {
-            allGroups = dbManager.getGroupsWithCategories();
-            groupAdapter.setGroupList(allGroups);
+            allGroups = dbManager.getAllGroups();
+            groupAdapter.submitList(allGroups);
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载分组失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
@@ -122,7 +144,7 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
     private void performSearch() {
         String keyword = etSearch.getText().toString().trim();
         if (TextUtils.isEmpty(keyword)) {
-            groupAdapter.setGroupList(allGroups);
+            groupAdapter.submitList(allGroups);
             return;
         }
         
@@ -133,7 +155,7 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
                 filteredGroups.add(group);
             }
         }
-        groupAdapter.setGroupList(filteredGroups);
+        groupAdapter.submitList(filteredGroups);
     }
 
     private void showAddGroupDialog() {
@@ -227,20 +249,27 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
                 .show();
     }
 
-    @Override
+
     public void onEditClick(Group group) {
         showEditGroupDialog(group);
     }
 
-    @Override
     public void onDeleteClick(Group group) {
         deleteGroup(group);
     }
 
-    @Override
-    public void onItemClick(Group group) {
-        // 可以在这里实现点击分组查看详情的功能
-        Toast.makeText(requireContext(), "点击了分组: " + group.getGroupName(), Toast.LENGTH_SHORT).show();
+    public void onItemClickItem(Group group) {
+        // 跳转到分类管理页面，并传递分组ID进行过滤
+        CategoryManagementFragment categoryFragment = CategoryManagementFragment.newInstance();
+        Bundle args = new Bundle();
+        args.putLong("selected_group_id", group.getGroupId());
+        args.putString("selected_group_name", group.getGroupName());
+        categoryFragment.setArguments(args);
+        
+        FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
+        transaction.replace(R.id.settings_fragment_container, categoryFragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 
     public static GroupManagementFragment newInstance() {

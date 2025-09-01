@@ -60,7 +60,30 @@ public class CategoryManagementFragment extends Fragment implements CategoryAdap
         setupListeners();
         loadData();
         
+        // 处理从分组管理页面传递过来的参数
+        handleArgumentsFromGroupManagement();
+        
         return view;
+    }
+    
+    private void handleArgumentsFromGroupManagement() {
+        Bundle args = getArguments();
+        if (args != null) {
+            long selectedGroupId = args.getLong("selected_group_id", -1);
+            String selectedGroupName = args.getString("selected_group_name");
+            
+            if (selectedGroupId != -1 && selectedGroupName != null) {
+                // 在Spinner中选择对应的分组
+                for (int i = 0; i < allGroups.size(); i++) {
+                    if (allGroups.get(i).getGroupId() == selectedGroupId) {
+                        spinnerGroups.setSelection(i); // 直接设置位置，因为allGroups已经包含了"全部分组"选项
+                        this.selectedGroupId = selectedGroupId;
+                        filterCategoriesByGroup();
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     private void initViews(View view) {

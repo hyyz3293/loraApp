@@ -59,11 +59,6 @@
 
     </RelativeLayout>
 
-    <!-- 通用工具栏 -->
-    <include
-        android:id="@+id/toolbar"
-        layout="@layout/toolbar_common" />
-
     <!-- 搜索栏 -->
     <LinearLayout
         android:visibility="gone"
@@ -99,6 +94,6 @@
         android:id="@+id/rv_groups"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp" />
+          />
 
 </LinearLayout>
