@@ -13,6 +13,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.lora.cn.R;
+import com.lora.cn.ui.fragment.setting.user.UserInfoEditFragment;
+import com.lora.cn.ui.fragment.setting.user.PasswordChangeFragment;
 
 public class UserInfoFragment extends Fragment {
 
@@ -24,8 +26,6 @@ public class UserInfoFragment extends Fragment {
 
     public interface OnUserInfoActionListener {
         void onCloseUserInfo();
-        void onEditProfile();
-        void onChangePassword();
     }
 
     public void setOnUserInfoActionListener(OnUserInfoActionListener listener) {
@@ -61,9 +61,49 @@ public class UserInfoFragment extends Fragment {
         });
 
         userInfo.setOnClickListener(v -> {
+            // 直接跳转到用户信息编辑Fragment，保留顶部
+            UserInfoEditFragment editFragment = new UserInfoEditFragment();
+            editFragment.setOnUserInfoEditListener(new UserInfoEditFragment.OnUserInfoEditListener() {
+                @Override
+                public void onCancelEdit() {
+                    // 返回到当前Fragment
+                    getParentFragmentManager().popBackStack();
+                }
+
+                @Override
+                public void onSaveUserInfo(UserInfoEditFragment.UserInfo userInfo) {
+                    // 保存用户信息逻辑
+                    getParentFragmentManager().popBackStack();
+                }
+            });
+            
+            getParentFragmentManager().beginTransaction()
+                    .replace(getId(), editFragment)
+                    .addToBackStack(null)
+                    .commit();
         });
 
         userPwd.setOnClickListener(v -> {
+            // 直接跳转到密码修改Fragment，保留顶部
+            PasswordChangeFragment passwordFragment = new PasswordChangeFragment();
+            passwordFragment.setOnPasswordChangeListener(new PasswordChangeFragment.OnPasswordChangeListener() {
+                @Override
+                public void onCancelPasswordChange() {
+                    // 返回到当前Fragment
+                    getParentFragmentManager().popBackStack();
+                }
+
+                @Override
+                public void onSavePassword(String oldPassword, String newPassword) {
+                    // 保存密码逻辑
+                    getParentFragmentManager().popBackStack();
+                }
+            });
+            
+            getParentFragmentManager().beginTransaction()
+                    .replace(getId(), passwordFragment)
+                    .addToBackStack(null)
+                    .commit();
         });
     }
 
