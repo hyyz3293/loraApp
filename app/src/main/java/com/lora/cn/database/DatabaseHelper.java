@@ -11,7 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -29,6 +29,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_CATEGORY_GROUP_ID = "group_id"; // 外键，关联分组表
     public static final String COLUMN_CATEGORY_CREATE_TIME = "create_time";
     public static final String COLUMN_CATEGORY_UPDATE_TIME = "update_time";
+    
+    // 科室表
+    public static final String TABLE_DEPARTMENTS = "departments";
+    public static final String COLUMN_DEPARTMENT_ID = "department_id";
+    public static final String COLUMN_DEPARTMENT_NAME = "department_name";
+    public static final String COLUMN_DEPARTMENT_SORT_ORDER = "sort_order";
+    public static final String COLUMN_DEPARTMENT_STATUS = "status";
+    public static final String COLUMN_DEPARTMENT_CREATE_TIME = "create_time";
+    public static final String COLUMN_DEPARTMENT_UPDATE_TIME = "update_time";
     
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 
@@ -52,6 +61,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         "FOREIGN KEY (" + COLUMN_CATEGORY_GROUP_ID + ") REFERENCES " + 
         TABLE_GROUPS + "(" + COLUMN_GROUP_ID + ") ON DELETE CASCADE, " +
         "UNIQUE(" + COLUMN_CATEGORY_NAME + ", " + COLUMN_CATEGORY_GROUP_ID + ")" +
+        ")";
+    
+    // 创建科室表的SQL语句
+    private static final String CREATE_TABLE_DEPARTMENTS = 
+        "CREATE TABLE " + TABLE_DEPARTMENTS + " (" +
+        COLUMN_DEPARTMENT_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_DEPARTMENT_NAME + " TEXT NOT NULL UNIQUE, " +
+        COLUMN_DEPARTMENT_SORT_ORDER + " INTEGER DEFAULT 0, " +
+        COLUMN_DEPARTMENT_STATUS + " INTEGER DEFAULT 1, " +
+        COLUMN_DEPARTMENT_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        COLUMN_DEPARTMENT_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
         ")";
     
     // 创建索引的SQL语句
@@ -83,6 +103,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 创建分类表
         db.execSQL(CREATE_TABLE_CATEGORIES);
         
+        // 创建科室表
+        db.execSQL(CREATE_TABLE_DEPARTMENTS);
+        
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
         
@@ -93,6 +116,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // 删除旧表
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_DEPARTMENTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_CATEGORIES);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUPS);
         
