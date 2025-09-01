@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#FFFFFF">
+
+    <!-- 用户姓名 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="用户姓名："
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <EditText
+            android:id="@+id/et_user_name"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="管理员A"
+            android:textSize="16sp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_background"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- 性别 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="性别："
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <RadioGroup
+            android:id="@+id/rg_gender"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:layout_marginStart="8dp">
+
+            <RadioButton
+                android:id="@+id/rb_male"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="男"
+                android:textSize="16sp"
+                android:layout_marginEnd="24dp" />
+
+            <RadioButton
+                android:id="@+id/rb_female"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="女"
+                android:textSize="16sp"
+                android:checked="true" />
+
+        </RadioGroup>
+
+    </LinearLayout>
+
+    <!-- 职务 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="职务："
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <EditText
+            android:id="@+id/et_position"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="护士长"
+            android:textSize="16sp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_background"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- 科室 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="科室："
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <EditText
+            android:id="@+id/et_department"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="内1科"
+            android:textSize="16sp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_background"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- 编号 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="编号："
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <EditText
+            android:id="@+id/et_user_id"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="HS0001"
+            android:textSize="16sp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_background"
+            android:layout_marginStart="8dp" />
+
+    </LinearLayout>
+
+    <!-- 联系电话 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="32dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="联系电话："
+            android:textSize="16sp"
+            android:textColor="#333333" />
+
+        <EditText
+            android:id="@+id/et_phone"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="13896981378"
+            android:textSize="16sp"
+            android:padding="12dp"
+            android:background="@drawable/edit_text_background"
+            android:layout_marginStart="8dp"
+            android:inputType="phone" />
+
+    </LinearLayout>
+
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="24dp">
+
+        <TextView
+            android:id="@+id/btn_cancel"
+            android:layout_width="120dp"
+            android:layout_height="48dp"
+            android:text="取消"
+            android:textSize="16sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:background="@drawable/button_cancel_background"
+            android:layout_marginEnd="24dp"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/btn_save"
+            android:layout_width="120dp"
+            android:layout_height="48dp"
+            android:text="保存"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:gravity="center"
+            android:background="@drawable/button_primary_background"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </LinearLayout>
+
+</LinearLayout>

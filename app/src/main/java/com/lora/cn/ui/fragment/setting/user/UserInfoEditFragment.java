@@ -1,0 +1,173 @@
+package com.lora.cn.ui.fragment.setting.user;
+
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.lora.cn.R;
+
+public class UserInfoEditFragment extends Fragment {
+
+    private EditText etUserName;
+    private RadioGroup rgGender;
+    private RadioButton rbMale;
+    private RadioButton rbFemale;
+    private EditText etPosition;
+    private EditText etDepartment;
+    private EditText etUserId;
+    private EditText etPhone;
+    private TextView btnCancel;
+    private TextView btnSave;
+
+    private OnUserInfoEditListener listener;
+
+    public interface OnUserInfoEditListener {
+        void onCancelEdit();
+        void onSaveUserInfo(UserInfo userInfo);
+    }
+
+    public static class UserInfo {
+        public String userName;
+        public String gender;
+        public String position;
+        public String department;
+        public String userId;
+        public String phone;
+
+        public UserInfo(String userName, String gender, String position, String department, String userId, String phone) {
+            this.userName = userName;
+            this.gender = gender;
+            this.position = position;
+            this.department = department;
+            this.userId = userId;
+            this.phone = phone;
+        }
+    }
+
+    public void setOnUserInfoEditListener(OnUserInfoEditListener listener) {
+        this.listener = listener;
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_user_info_edit, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        
+        initViews(view);
+        initListeners();
+        loadDefaultData();
+    }
+
+    private void initViews(View view) {
+        etUserName = view.findViewById(R.id.et_user_name);
+        rgGender = view.findViewById(R.id.rg_gender);
+        rbMale = view.findViewById(R.id.rb_male);
+        rbFemale = view.findViewById(R.id.rb_female);
+        etPosition = view.findViewById(R.id.et_position);
+        etDepartment = view.findViewById(R.id.et_department);
+        etUserId = view.findViewById(R.id.et_user_id);
+        etPhone = view.findViewById(R.id.et_phone);
+        btnCancel = view.findViewById(R.id.btn_cancel);
+        btnSave = view.findViewById(R.id.btn_save);
+    }
+
+    private void initListeners() {
+        btnCancel.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onCancelEdit();
+            }
+        });
+
+        btnSave.setOnClickListener(v -> {
+            if (validateInput()) {
+                saveUserInfo();
+            }
+        });
+    }
+
+    private void loadDefaultData() {
+        // 加载默认数据
+        etUserName.setText("管理员A");
+        rbFemale.setChecked(true);
+        etPosition.setText("护士长");
+        etDepartment.setText("内1科");
+        etUserId.setText("HS0001");
+        etPhone.setText("13896981378");
+    }
+
+    private boolean validateInput() {
+        if (etUserName.getText().toString().trim().isEmpty()) {
+            Toast.makeText(getContext(), "请输入用户姓名", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (etPosition.getText().toString().trim().isEmpty()) {
+            Toast.makeText(getContext(), "请输入职务", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (etDepartment.getText().toString().trim().isEmpty()) {
+            Toast.makeText(getContext(), "请输入科室", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (etUserId.getText().toString().trim().isEmpty()) {
+            Toast.makeText(getContext(), "请输入编号", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        if (etPhone.getText().toString().trim().isEmpty()) {
+            Toast.makeText(getContext(), "请输入联系电话", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        return true;
+    }
+
+    private void saveUserInfo() {
+        String userName = etUserName.getText().toString().trim();
+        String gender = rbMale.isChecked() ? "男" : "女";
+        String position = etPosition.getText().toString().trim();
+        String department = etDepartment.getText().toString().trim();
+        String userId = etUserId.getText().toString().trim();
+        String phone = etPhone.getText().toString().trim();
+
+        UserInfo userInfo = new UserInfo(userName, gender, position, department, userId, phone);
+        
+        if (listener != null) {
+            listener.onSaveUserInfo(userInfo);
+        }
+
+        Toast.makeText(getContext(), "用户信息保存成功", Toast.LENGTH_SHORT).show();
+    }
+
+    public void setUserInfo(UserInfo userInfo) {
+        if (userInfo != null) {
+            etUserName.setText(userInfo.userName);
+            if ("男".equals(userInfo.gender)) {
+                rbMale.setChecked(true);
+            } else {
+                rbFemale.setChecked(true);
+            }
+            etPosition.setText(userInfo.position);
+            etDepartment.setText(userInfo.department);
+            etUserId.setText(userInfo.userId);
+            etPhone.setText(userInfo.phone);
+        }
+    }
+}

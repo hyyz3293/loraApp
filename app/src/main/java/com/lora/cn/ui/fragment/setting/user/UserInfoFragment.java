@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,12 +17,15 @@ import com.lora.cn.R;
 public class UserInfoFragment extends Fragment {
 
     private TextView back;
+    private RelativeLayout userInfo;
+    private RelativeLayout userPwd;
 
     private OnUserInfoActionListener listener;
 
     public interface OnUserInfoActionListener {
         void onCloseUserInfo();
         void onEditProfile();
+        void onChangePassword();
     }
 
     public void setOnUserInfoActionListener(OnUserInfoActionListener listener) {
@@ -45,6 +49,8 @@ public class UserInfoFragment extends Fragment {
 
     private void initViews(View view) {
         back = view.findViewById(R.id.back);
+        userInfo = view.findViewById(R.id.user_info);
+        userPwd = view.findViewById(R.id.user_pwd);
     }
 
     private void initListeners() {
@@ -54,11 +60,11 @@ public class UserInfoFragment extends Fragment {
             }
         });
 
-//        btnEditProfile.setOnClickListener(v -> {
-//            if (listener != null) {
-//                listener.onEditProfile();
-//            }
-//        });
+        userInfo.setOnClickListener(v -> {
+        });
+
+        userPwd.setOnClickListener(v -> {
+        });
     }
 
     private void loadUserInfo() {

@@ -19,6 +19,8 @@ import com.lora.cn.ui.adapter.MainPagerAdapter;
 import com.lora.cn.ui.adapter.MenuTabAdapter;
 import com.lora.cn.ui.model.MenuTab;
 import com.lora.cn.ui.fragment.setting.user.UserInfoFragment;
+import com.lora.cn.ui.fragment.setting.user.UserInfoEditFragment;
+import com.lora.cn.ui.fragment.setting.user.PasswordChangeFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -144,8 +146,58 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onEditProfile() {
-                    // 这里可以添加编辑资料的逻辑
-                    hideUserInfo();
+                    // 跳转到用户信息编辑Fragment，保留顶部
+                    UserInfoEditFragment editFragment = new UserInfoEditFragment();
+                    editFragment.setOnUserInfoEditListener(new UserInfoEditFragment.OnUserInfoEditListener() {
+                        @Override
+                        public void onCancelEdit() {
+                            // 返回到UserInfoFragment
+                            getSupportFragmentManager().beginTransaction()
+                                    .replace(R.id.fragment_user_info_container, userInfoFragment)
+                                    .commit();
+                        }
+
+                        @Override
+                        public void onSaveUserInfo(UserInfoEditFragment.UserInfo userInfo) {
+                            // 保存用户信息逻辑
+                            // 返回到UserInfoFragment
+                            getSupportFragmentManager().beginTransaction()
+                                    .replace(R.id.fragment_user_info_container, userInfoFragment)
+                                    .commit();
+                        }
+                    });
+                    
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_user_info_container, editFragment)
+                            .commit();
+                }
+
+                @Override
+                public void onChangePassword() {
+                    // 跳转到密码修改Fragment，保留顶部
+                    PasswordChangeFragment passwordFragment = new PasswordChangeFragment();
+                    passwordFragment.setOnPasswordChangeListener(new PasswordChangeFragment.OnPasswordChangeListener() {
+                        @Override
+                        public void onCancelPasswordChange() {
+                            // 返回到UserInfoFragment
+                            getSupportFragmentManager().beginTransaction()
+                                    .replace(R.id.fragment_user_info_container, userInfoFragment)
+                                    .commit();
+                        }
+
+                        @Override
+                        public void onSavePassword(String oldPassword, String newPassword) {
+                            // 保存密码逻辑
+                            // 返回到UserInfoFragment
+                            getSupportFragmentManager().beginTransaction()
+                                    .replace(R.id.fragment_user_info_container, userInfoFragment)
+                                    .commit();
+                        }
+                    });
+                    
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_user_info_container, passwordFragment)
+                            .commit();
                 }
             });
         }
