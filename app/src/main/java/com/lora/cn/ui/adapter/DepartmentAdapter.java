@@ -45,6 +45,8 @@ public class DepartmentAdapter extends BaseQuickAdapter<Department, QuickViewHol
         SwitchCompat switchStatus = holder.getView(R.id.switch_department_status);
         switchStatus.setChecked(department.getStatus() == 1);
         
+
+        
 //        // 设置开关状态变化监听器
 //        switchStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
 //            if (listener != null) {

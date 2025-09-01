@@ -2,8 +2,10 @@ package com.lora.cn.database;
 
 import android.content.Context;
 import com.lora.cn.database.dao.CategoryDao;
+import com.lora.cn.database.dao.DepartmentDao;
 import com.lora.cn.database.dao.GroupDao;
 import com.lora.cn.database.entity.Category;
+import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.Group;
 
 import java.util.List;
@@ -17,11 +19,13 @@ public class DatabaseManager {
     private DatabaseHelper dbHelper;
     private GroupDao groupDao;
     private CategoryDao categoryDao;
+    private DepartmentDao departmentDao;
     
     private DatabaseManager(Context context) {
         dbHelper = DatabaseHelper.getInstance(context);
         groupDao = new GroupDao(dbHelper);
         categoryDao = new CategoryDao(dbHelper);
+        departmentDao = new DepartmentDao(dbHelper);
     }
     
     /**
@@ -225,6 +229,84 @@ public class DatabaseManager {
         return categoryDao.getCategoryCount();
     }
     
+    // ==================== 科室相关操作 ====================
+    
+    /**
+     * 添加科室
+     */
+    public long addDepartment(String departmentName, int sortOrder, int status) {
+        if (departmentDao.isDepartmentNameExists(departmentName)) {
+            throw new IllegalArgumentException("科室名称已存在: " + departmentName);
+        }
+        
+        Department department = new Department();
+        department.setDepartmentName(departmentName);
+        department.setSortOrder(sortOrder);
+        department.setStatus(status);
+        
+        return departmentDao.insertDepartment(department);
+    }
+    
+    /**
+     * 插入科室对象
+     */
+    public long insertDepartment(Department department) {
+        if (departmentDao.isDepartmentNameExists(department.getDepartmentName())) {
+            throw new IllegalArgumentException("科室名称已存在: " + department.getDepartmentName());
+        }
+        
+        return departmentDao.insertDepartment(department);
+    }
+    
+    /**
+     * 更新科室
+     */
+    public int updateDepartment(Department department) {
+        return departmentDao.updateDepartment(department);
+    }
+    
+    /**
+     * 删除科室
+     */
+    public int deleteDepartment(long departmentId) {
+        return departmentDao.deleteDepartment(departmentId);
+    }
+    
+    /**
+     * 根据ID获取科室
+     */
+    public Department getDepartmentById(long departmentId) {
+        return departmentDao.getDepartmentById(departmentId);
+    }
+    
+    /**
+     * 根据名称获取科室
+     */
+    public Department getDepartmentByName(String departmentName) {
+        return departmentDao.getDepartmentByName(departmentName);
+    }
+    
+    /**
+     * 获取所有科室
+     */
+    public List<Department> getAllDepartments() {
+        return departmentDao.getAllDepartments();
+    }
+    
+    /**
+     * 检查科室名称是否存在
+     */
+    public boolean isDepartmentNameExists(String departmentName) {
+        return departmentDao.isDepartmentNameExists(departmentName);
+    }
+    
+    /**
+     * 获取科室总数
+     */
+    public int getDepartmentCount() {
+        return departmentDao.getDepartmentCount();
+    }
+    
     // ==================== 统计相关操作 ====================
     
     /**
@@ -233,7 +315,8 @@ public class DatabaseManager {
     public DatabaseStats getDatabaseStats() {
         return new DatabaseStats(
             getGroupCount(),
-            getCategoryCount()
+            getCategoryCount(),
+            getDepartmentCount()
         );
     }
     
@@ -243,10 +326,12 @@ public class DatabaseManager {
     public static class DatabaseStats {
         private int groupCount;
         private int categoryCount;
+        private int departmentCount;
         
-        public DatabaseStats(int groupCount, int categoryCount) {
+        public DatabaseStats(int groupCount, int categoryCount, int departmentCount) {
             this.groupCount = groupCount;
             this.categoryCount = categoryCount;
+            this.departmentCount = departmentCount;
         }
         
         public int getGroupCount() {
@@ -257,11 +342,16 @@ public class DatabaseManager {
             return categoryCount;
         }
         
+        public int getDepartmentCount() {
+            return departmentCount;
+        }
+        
         @Override
         public String toString() {
             return "DatabaseStats{" +
                     "groupCount=" + groupCount +
                     ", categoryCount=" + categoryCount +
+                    ", departmentCount=" + departmentCount +
                     '}';
         }
     }
