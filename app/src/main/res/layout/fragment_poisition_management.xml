@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+<!--    &lt;!&ndash; 标题栏 &ndash;&gt;-->
+<!--    <RelativeLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="56dp"-->
+<!--        android:background="@color/colorPrimary"-->
+<!--        android:elevation="4dp">-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/btn_back"-->
+<!--            android:layout_width="48dp"-->
+<!--            android:layout_height="48dp"-->
+<!--            android:layout_centerVertical="true"-->
+<!--            android:layout_marginStart="8dp"-->
+<!--            android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--            android:clickable="true"-->
+<!--            android:focusable="true"-->
+<!--            android:padding="12dp"-->
+<!--            android:src="@drawable/ic_arrow_back"-->
+<!--            android:tint="@color/white" />-->
+
+<!--        <TextView-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_centerInParent="true"-->
+<!--            android:text="科室管理"-->
+<!--            android:textColor="@color/white"-->
+<!--            android:textSize="18sp"-->
+<!--            android:textStyle="bold" />-->
+
+<!--        <ImageView-->
+<!--            android:id="@+id/btn_add_department"-->
+<!--            android:layout_width="48dp"-->
+<!--            android:layout_height="48dp"-->
+<!--            android:layout_alignParentEnd="true"-->
+<!--            android:layout_centerVertical="true"-->
+<!--            android:layout_marginEnd="8dp"-->
+<!--            android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--            android:clickable="true"-->
+<!--            android:focusable="true"-->
+<!--            android:padding="12dp"-->
+<!--            android:src="@drawable/ic_add"-->
+<!--            android:tint="@color/white" />-->
+
+<!--    </RelativeLayout>-->
+
+<!--    &lt;!&ndash; 科室树形结构 &ndash;&gt;-->
+<!--    <LinearLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:padding="16dp"-->
+<!--        android:background="@color/background_light">-->
+
+<!--        <TextView-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="科室层级结构"-->
+<!--            android:textSize="16sp"-->
+<!--            android:textStyle="bold" />-->
+
+<!--        <View-->
+<!--            android:layout_width="0dp"-->
+<!--            android:layout_height="1dp"-->
+<!--            android:layout_weight="1" />-->
+
+<!--        <Switch-->
+<!--            android:id="@+id/switch_tree_view"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="树形视图"-->
+<!--            android:textSize="14sp" />-->
+
+<!--    </LinearLayout>-->
+
+<!--    &lt;!&ndash; 科室统计卡片 &ndash;&gt;-->
+<!--    <androidx.cardview.widget.CardView-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_margin="16dp"-->
+<!--        android:elevation="2dp"-->
+<!--        android:radius="8dp">-->
+
+<!--        <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:padding="16dp">-->
+
+<!--            <LinearLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:orientation="vertical"-->
+<!--                android:gravity="center">-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/tv_total_departments"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="12"-->
+<!--                    android:textSize="24sp"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:textColor="@color/colorPrimary" />-->
+
+<!--                <TextView-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="总科室数"-->
+<!--                    android:textSize="12sp"-->
+<!--                    android:textColor="@color/text_secondary" />-->
+
+<!--            </LinearLayout>-->
+
+<!--            <LinearLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:orientation="vertical"-->
+<!--                android:gravity="center">-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/tv_parent_departments"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="3"-->
+<!--                    android:textSize="24sp"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:textColor="@color/orange" />-->
+
+<!--                <TextView-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="一级科室"-->
+<!--                    android:textSize="12sp"-->
+<!--                    android:textColor="@color/text_secondary" />-->
+
+<!--            </LinearLayout>-->
+
+<!--            <LinearLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:orientation="vertical"-->
+<!--                android:gravity="center">-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/tv_sub_departments"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="9"-->
+<!--                    android:textSize="24sp"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:textColor="@color/green" />-->
+
+<!--                <TextView-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="子科室"-->
+<!--                    android:textSize="12sp"-->
+<!--                    android:textColor="@color/text_secondary" />-->
+
+<!--            </LinearLayout>-->
+
+<!--        </LinearLayout>-->
+
+<!--    </androidx.cardview.widget.CardView>-->
+
+<!--    &lt;!&ndash; 科室列表 &ndash;&gt;-->
+<!--    <androidx.recyclerview.widget.RecyclerView-->
+<!--        android:id="@+id/rv_departments"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:padding="8dp" />-->
+
+</LinearLayout>
