@@ -16,7 +16,7 @@ import com.lora.cn.R;
 import com.lora.cn.ui.adapter.TerminalSettingAdapter;
 import com.lora.cn.ui.fragment.setting.PositionManagementFragment;
 import com.lora.cn.ui.fragment.setting.DepartmentManagementFragment;
-import com.lora.cn.ui.fragment.setting.device.DeviceSettingFragment;
+import com.lora.cn.ui.fragment.setting.DeviceSettingFragment;
 import com.lora.cn.ui.fragment.setting.GroupManagementFragment;
 import com.lora.cn.ui.fragment.setting.RoleManagementFragment;
 import com.lora.cn.ui.fragment.setting.UserManagementFragment;

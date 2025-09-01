@@ -30,9 +30,9 @@ import java.util.List;
 
 public class GroupManagementFragment extends Fragment implements GroupAdapter.OnGroupItemClickListener {
 
-    private TextView toolbarTitle;
-    private ImageView btnBack;
-    private ImageView btnAdd;
+
+    private TextView back;
+    private TextView btnAdd;
     private EditText etSearch;
     private Button btnSearch;
     private RecyclerView rvGroups;
@@ -56,9 +56,8 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
 
     private void initViews(View view) {
         // 工具栏
-        toolbarTitle = view.findViewById(R.id.toolbar_title);
-        btnBack = view.findViewById(R.id.btn_back);
-        btnAdd = view.findViewById(R.id.btn_add);
+        btnAdd = view.findViewById(R.id.add_group);
+        back = view.findViewById(R.id.back);
         
         // 搜索
         etSearch = view.findViewById(R.id.et_search);
@@ -67,9 +66,7 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
         // 列表
         rvGroups = view.findViewById(R.id.rv_groups);
         
-        // 设置标题
-        toolbarTitle.setText("分组管理");
-        
+
         // 初始化数据库管理器
         dbManager = DatabaseManager.getInstance(requireContext());
         allGroups = new ArrayList<>();
@@ -84,7 +81,7 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
 
     private void setupListeners() {
         // 返回按钮
-        btnBack.setOnClickListener(v -> {
+        back.setOnClickListener(v -> {
             if (getParentFragmentManager().getBackStackEntryCount() > 0) {
                 getParentFragmentManager().popBackStack();
             }
@@ -92,7 +89,7 @@ public class GroupManagementFragment extends Fragment implements GroupAdapter.On
         
         // 新增按钮
         btnAdd.setOnClickListener(v -> showAddGroupDialog());
-        
+
         // 搜索按钮
         btnSearch.setOnClickListener(v -> performSearch());
         
