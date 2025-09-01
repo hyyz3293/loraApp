@@ -1,48 +1,250 @@
 package com.lora.cn.ui.fragment.setting;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.Group;
+import com.lora.cn.ui.adapter.GroupAdapter;
 
-public class GroupManagementFragment extends Fragment {
+import java.util.ArrayList;
+import java.util.List;
 
-//    private TextView titleText;
-//    private ImageView backButton;
+public class GroupManagementFragment extends Fragment implements GroupAdapter.OnGroupItemClickListener {
+
+    private TextView toolbarTitle;
+    private ImageView btnBack;
+    private ImageView btnAdd;
+    private EditText etSearch;
+    private Button btnSearch;
+    private RecyclerView rvGroups;
+    
+    private GroupAdapter groupAdapter;
+    private DatabaseManager dbManager;
+    private List<Group> allGroups;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_group_management, container, false);
         
-//        initViews(view);
-//        setupContent();
+        initViews(view);
+        setupRecyclerView();
+        setupListeners();
+        loadGroups();
         
         return view;
     }
 
     private void initViews(View view) {
-//        titleText = view.findViewById(R.id.setting_title);
-//        backButton = view.findViewById(R.id.setting_back);
+        // 工具栏
+        toolbarTitle = view.findViewById(R.id.toolbar_title);
+        btnBack = view.findViewById(R.id.btn_back);
+        btnAdd = view.findViewById(R.id.btn_add);
         
-//        backButton.setOnClickListener(v -> {
-//            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
-//                getParentFragmentManager().popBackStack();
-//            }
-//        });
+        // 搜索
+        etSearch = view.findViewById(R.id.et_search);
+        btnSearch = view.findViewById(R.id.btn_search);
+        
+        // 列表
+        rvGroups = view.findViewById(R.id.rv_groups);
+        
+        // 设置标题
+        toolbarTitle.setText("分组管理");
+        
+        // 初始化数据库管理器
+        dbManager = DatabaseManager.getInstance(requireContext());
+        allGroups = new ArrayList<>();
     }
 
-//    private void setupContent() {
-//        if (titleText != null) {
-//            titleText.setText("分组管理");
-//        }
-//    }
+    private void setupRecyclerView() {
+        groupAdapter = new GroupAdapter();
+        groupAdapter.setOnGroupItemClickListener(this);
+        rvGroups.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvGroups.setAdapter(groupAdapter);
+    }
+
+    private void setupListeners() {
+        // 返回按钮
+        btnBack.setOnClickListener(v -> {
+            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
+                getParentFragmentManager().popBackStack();
+            }
+        });
+        
+        // 新增按钮
+        btnAdd.setOnClickListener(v -> showAddGroupDialog());
+        
+        // 搜索按钮
+        btnSearch.setOnClickListener(v -> performSearch());
+        
+        // 搜索框文本变化监听
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (TextUtils.isEmpty(s)) {
+                    groupAdapter.setGroupList(allGroups);
+                }
+            }
+            
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void loadGroups() {
+        try {
+            allGroups = dbManager.getGroupsWithCategories();
+            groupAdapter.setGroupList(allGroups);
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), "加载分组失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void performSearch() {
+        String keyword = etSearch.getText().toString().trim();
+        if (TextUtils.isEmpty(keyword)) {
+            groupAdapter.setGroupList(allGroups);
+            return;
+        }
+        
+        List<Group> filteredGroups = new ArrayList<>();
+        for (Group group : allGroups) {
+            if (group.getGroupName().toLowerCase().contains(keyword.toLowerCase()) ||
+                group.getGroupDescription().toLowerCase().contains(keyword.toLowerCase())) {
+                filteredGroups.add(group);
+            }
+        }
+        groupAdapter.setGroupList(filteredGroups);
+    }
+
+    private void showAddGroupDialog() {
+        showGroupDialog(null, "新增分组");
+    }
+
+    private void showEditGroupDialog(Group group) {
+        showGroupDialog(group, "编辑分组");
+    }
+
+    private void showGroupDialog(Group group, String title) {
+        View dialogView = LayoutInflater.from(requireContext())
+                .inflate(R.layout.dialog_add_group, null);
+        
+        EditText etName = dialogView.findViewById(R.id.et_group_name);
+        EditText etDescription = dialogView.findViewById(R.id.et_group_description);
+        
+        if (group != null) {
+            etName.setText(group.getGroupName());
+            etDescription.setText(group.getGroupDescription());
+        }
+        
+        new AlertDialog.Builder(requireContext())
+                .setTitle(title)
+                .setView(dialogView)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    String name = etName.getText().toString().trim();
+                    String description = etDescription.getText().toString().trim();
+                    
+                    if (TextUtils.isEmpty(name)) {
+                        Toast.makeText(requireContext(), "请输入分组名称", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    
+                    if (group == null) {
+                        addGroup(name, description);
+                    } else {
+                        updateGroup(group.getGroupId(), name, description);
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void addGroup(String name, String description) {
+        try {
+            long groupId = dbManager.addGroup(name, description);
+            if (groupId > 0) {
+                Toast.makeText(requireContext(), "添加成功", Toast.LENGTH_SHORT).show();
+                loadGroups();
+            } else {
+                Toast.makeText(requireContext(), "添加失败", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), "添加失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateGroup(long groupId, String name, String description) {
+        try {
+            boolean success = dbManager.updateGroup(groupId, name, description);
+            if (success) {
+                Toast.makeText(requireContext(), "更新成功", Toast.LENGTH_SHORT).show();
+                loadGroups();
+            } else {
+                Toast.makeText(requireContext(), "更新失败", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(requireContext(), "更新失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void deleteGroup(Group group) {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("删除确认")
+                .setMessage("确定要删除分组 \"" + group.getGroupName() + "\" 吗？\n删除分组将同时删除其下所有分类。")
+                .setPositiveButton("删除", (dialog, which) -> {
+                    try {
+                        boolean success = dbManager.deleteGroup(group.getGroupId());
+                        if (success) {
+                            Toast.makeText(requireContext(), "删除成功", Toast.LENGTH_SHORT).show();
+                            loadGroups();
+                        } else {
+                            Toast.makeText(requireContext(), "删除失败", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Toast.makeText(requireContext(), "删除失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    @Override
+    public void onEditClick(Group group) {
+        showEditGroupDialog(group);
+    }
+
+    @Override
+    public void onDeleteClick(Group group) {
+        deleteGroup(group);
+    }
+
+    @Override
+    public void onItemClick(Group group) {
+        // 可以在这里实现点击分组查看详情的功能
+        Toast.makeText(requireContext(), "点击了分组: " + group.getGroupName(), Toast.LENGTH_SHORT).show();
+    }
 
     public static GroupManagementFragment newInstance() {
         return new GroupManagementFragment();

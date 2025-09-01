@@ -2,7 +2,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="56dp"
-    android:background="@color/colorPrimary"
+
     android:elevation="4dp">
 
     <!-- 返回按钮 -->
@@ -16,8 +16,7 @@
         android:clickable="true"
         android:focusable="true"
         android:padding="12dp"
-        android:src="@drawable/ic_arrow_back"
-        android:tint="@color/white" />
+         />
 
     <!-- 标题 -->
     <TextView
@@ -42,7 +41,6 @@
         android:clickable="true"
         android:focusable="true"
         android:padding="12dp"
-        android:src="@drawable/ic_add"
-        android:tint="@color/white" />
+       />
 
 </RelativeLayout>

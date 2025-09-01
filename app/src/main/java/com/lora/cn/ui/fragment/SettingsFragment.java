@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
 import com.lora.cn.ui.adapter.TerminalSettingAdapter;
+import com.lora.cn.ui.fragment.setting.CategoryManagementFragment;
 import com.lora.cn.ui.fragment.setting.DepartmentManagementFragment;
 import com.lora.cn.ui.fragment.setting.DeviceSettingFragment;
 import com.lora.cn.ui.fragment.setting.GroupManagementFragment;
@@ -54,10 +55,10 @@ public class SettingsFragment extends Fragment {
         List<SettingItem> settingList = new ArrayList<>();
         settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
         settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting3, "角色管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting5, "科室管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
+        settingList.add(new SettingItem(R.mipmap.ic_setting3, "分类管理"));
+        settingList.add(new SettingItem(R.mipmap.ic_setting4, "角色管理"));
+        settingList.add(new SettingItem(R.mipmap.ic_setting5, "用户管理"));
+        settingList.add(new SettingItem(R.mipmap.ic_setting6, "科室管理"));
 
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
@@ -87,14 +88,16 @@ public class SettingsFragment extends Fragment {
             case 1: // 分组管理
                 targetFragment = GroupManagementFragment.newInstance();
                 break;
-            case 2: // 角色管理
+            case 2: // 分类管理
+                targetFragment = CategoryManagementFragment.newInstance();
+                break;
+            case 3: // 角色管理
                 targetFragment = RoleManagementFragment.newInstance();
                 break;
-            case 3: // 用户管理
+            case 4: // 用户管理
                 targetFragment = UserManagementFragment.newInstance();
                 break;
-            case 4: // 科室管理
-            case 5: // 科室管理（重复项）
+            case 5: // 科室管理
                 targetFragment = DepartmentManagementFragment.newInstance();
                 break;
         }

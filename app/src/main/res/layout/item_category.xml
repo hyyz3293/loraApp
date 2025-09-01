@@ -13,21 +13,21 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- 分组名称和操作按钮 -->
+        <!-- 分类名称和操作按钮 -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
             <TextView
-                android:id="@+id/tv_group_name"
+                android:id="@+id/tv_category_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-                android:text="分组名称"
+                android:text="分类名称"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                 />
+            />
 
             <!-- 操作按钮 -->
             <LinearLayout
@@ -38,18 +38,16 @@
                 android:orientation="horizontal">
 
                 <ImageView
-                    android:id="@+id/btn_edit_group"
+                    android:id="@+id/btn_edit_category"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="6dp"
-
-                  />
+                    android:padding="6dp" />
 
                 <ImageView
-                    android:id="@+id/btn_delete_group"
+                    android:id="@+id/btn_delete_category"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_marginStart="8dp"
@@ -63,17 +61,17 @@
 
         </RelativeLayout>
 
-        <!-- 分组描述 -->
+        <!-- 分类描述 -->
         <TextView
-            android:id="@+id/tv_group_description"
+            android:id="@+id/tv_category_description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="分组描述"
+            android:text="分类描述"
             android:textSize="14sp"
-          />
+            />
 
-        <!-- 分组统计信息 -->
+        <!-- 所属分组和时间信息 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -83,15 +81,15 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="分类数量："
+                android:text="所属分组："
                 android:textSize="12sp"
                  />
 
             <TextView
-                android:id="@+id/tv_category_count"
+                android:id="@+id/tv_group_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0"
+                android:text="分组名称"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -106,7 +104,7 @@
                 android:layout_height="wrap_content"
                 android:text="创建时间"
                 android:textSize="12sp"
-                />
+                 />
 
         </LinearLayout>
 

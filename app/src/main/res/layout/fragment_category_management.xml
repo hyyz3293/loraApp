@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:background="@color/background_light">
+        >
 
         <TextView
             android:layout_width="wrap_content"
@@ -41,14 +41,13 @@
         android:orientation="horizontal"
         android:padding="16dp"
         android:paddingTop="0dp"
-        android:background="@color/background_light">
+       >
 
         <EditText
             android:id="@+id/et_search"
             android:layout_width="0dp"
             android:layout_height="40dp"
             android:layout_weight="1"
-            android:background="@drawable/bg_search_input"
             android:hint="搜索分类名称"
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
