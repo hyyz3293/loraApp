@@ -1,7 +1,6 @@
-package com.lora.cn.ui.fragment.setting;
+package com.lora.cn.ui.fragment.setting.device;
 
 import android.Manifest;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,13 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.blankj.utilcode.util.PermissionUtils;
-import com.blankj.utilcode.util.UtilsTransActivity;
 import com.lora.cn.R;
-import com.lora.cn.ui.activity.WebViewActivity;
-import com.lora.cn.ui.adapter.TerminalSettingAdapter;
 import com.lora.cn.ui.adapter.TerminalSettingDeviceAdapter;
-import com.lora.cn.ui.fragment.setting.device.IpConfigFragment;
-import com.lora.cn.ui.fragment.setting.device.WifiSettingFragment;
 import com.lora.cn.ui.model.SettingItem;
 
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package com.lora.cn.ui.fragment.setting.group;
+package com.lora.cn.ui.fragment.setting;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
