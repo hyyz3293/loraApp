@@ -74,6 +74,8 @@ public class WelcomeActivity extends AppCompatActivity {
         if (!isLogin) {
             intent = new Intent(WelcomeActivity.this, LoginActivity.class);
         }
+        //WebViewActivity.start(this, "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
+
         startActivity(intent);
         finish();
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);

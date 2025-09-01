@@ -5,105 +5,178 @@
     android:orientation="vertical"
     android:background="@color/white">
 
-    <!-- 标题栏 -->
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:elevation="4dp">
-
-        <ImageView
-            android:id="@+id/btn_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_centerVertical="true"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="12dp"
-            />
+        android:layout_height="93dp"
+        android:padding="12dp" >
 
         <TextView
-            android:id="@+id/title_text"
+            android:textSize="30dp"
+            android:textColor="@color/black"
+            android:text="设置"
+            android:layout_centerVertical="true"
+            android:textStyle="bold"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:text="WiFi设置"
-            android:textColor="@color/white"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:layout_height="wrap_content" />
 
-    </RelativeLayout>
-
-    <!-- WiFi开关区域 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:background="@drawable/bg_white_12"
-        android:layout_margin="16dp">
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_centerVertical="true"
+            android:layout_marginRight="34dp"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="WiFi"
-                android:textSize="16sp"
-                android:textColor="@color/black"
-                android:textStyle="bold" />
+                android:id="@+id/connect"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="连接"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
 
-            <Switch
-                android:id="@+id/wifi_switch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+            <TextView
+                android:id="@+id/back"
+                android:background="@drawable/bg_back_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="#383B40"
+                android:text="返回"
+
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tv_wifi_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="已关闭"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp" />
 
-        <TextView
-            android:id="@+id/tv_current_wifi"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="WiFi已关闭"
-            android:textSize="14sp"
+    </RelativeLayout>
 
-            android:layout_marginTop="8dp" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <RelativeLayout
+            android:layout_marginLeft="28dp"
+            android:layout_marginRight="28dp"
+            android:layout_marginBottom="15dp"
+            android:paddingLeft="45dp"
+            android:paddingRight="30dp"
+            android:background="@drawable/bg_setting_10"
+            android:layout_height="76dp"
+            android:layout_width="match_parent">
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_height="wrap_content" >
+
+                <TextView
+                    android:text="WiFi名称"
+                    android:textColor="@color/black"
+                    android:textSize="22dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+
+                <TextView
+                    android:id="@+id/wifi_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="15dp"
+                    android:paddingRight="15dp"
+                    android:textStyle="bold"
+                    android:textSize="22dp"
+                    android:layout_marginRight="20dp"
+                    android:textColor="#1D2129"
+                    />
+
+                <ImageView
+                    android:background="@mipmap/ic_down"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_marginLeft="28dp"
+            android:layout_marginRight="28dp"
+            android:layout_marginBottom="15dp"
+            android:paddingLeft="45dp"
+            android:paddingRight="30dp"
+            android:background="@drawable/bg_setting_10"
+            android:layout_height="76dp"
+            android:layout_width="match_parent">
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_height="wrap_content" >
+
+                <TextView
+                    android:text="密码"
+                    android:textColor="@color/black"
+                    android:textSize="22dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal"
+                android:layout_width="410dp"
+                android:gravity="center"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:background="@drawable/bg_white_3"
+                android:layout_height="42dp" >
+
+                <EditText
+                    android:id="@+id/wifi_pwd"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="请输入密码"
+                    android:layout_height="match_parent"
+                    android:textStyle="bold"
+                    android:textSize="16dp"
+                    android:textColorHint="#9E9E9E"
+                    android:layout_marginRight="20dp"
+                    android:textColor="#1D2129"
+                    />
+
+                <ImageView
+                    android:id="@+id/wifi_pwd_lock"
+                    android:background="@mipmap/ic_down"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+
+        </RelativeLayout>
 
     </LinearLayout>
-
-    <!-- 刷新按钮 -->
-    <Button
-        android:id="@+id/btn_refresh"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/bg_button_primary"
-        android:text="刷新WiFi列表"
-        android:textColor="@color/white"
-        android:textSize="16sp" />
-
-    <!-- WiFi列表 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_wifi_list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginHorizontal="16dp"
-        android:background="@drawable/bg_white_12" />
 
 </LinearLayout>

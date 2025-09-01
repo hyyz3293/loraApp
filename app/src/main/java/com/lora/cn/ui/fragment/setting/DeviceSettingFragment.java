@@ -1,5 +1,6 @@
 package com.lora.cn.ui.fragment.setting;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,8 +15,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
+import com.lora.cn.ui.activity.WebViewActivity;
 import com.lora.cn.ui.adapter.TerminalSettingAdapter;
 import com.lora.cn.ui.adapter.TerminalSettingDeviceAdapter;
+import com.lora.cn.ui.fragment.setting.device.IpConfigFragment;
+import com.lora.cn.ui.fragment.setting.device.WifiSettingFragment;
 import com.lora.cn.ui.model.SettingItem;
 
 import java.util.ArrayList;
@@ -87,7 +91,12 @@ public class DeviceSettingFragment extends Fragment {
         Fragment targetFragment = null;
         // 根据位置跳转到不同的Fragment
         switch (position) {
-
+            case 1: //WIFI
+                targetFragment = WifiSettingFragment.newInstance();
+                break;
+            case 2: //IP
+                targetFragment = IpConfigFragment.newInstance();
+                break;
         }
 
         if (targetFragment != null) {
@@ -95,6 +104,7 @@ public class DeviceSettingFragment extends Fragment {
             transaction.replace(R.id.fragment_container, targetFragment);
             transaction.addToBackStack(null); // 添加到回退栈，支持返回
             transaction.commit();
+            //WebViewActivity.start(getActivity(), "http://gcs.t.jikexiu.com/h5/user/info.html", "我的资料");
         }
     }
     public static DeviceSettingFragment newInstance() {
