@@ -58,15 +58,17 @@ public class CategoryManagementFragment extends Fragment{
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_category_management, container, false);
-        
+
+        // 处理从分组管理页面传递过来的参数
+        handleArgumentsFromGroupManagement();
+
         initViews(view);
         setupRecyclerView();
 
         setupListeners();
         loadData();
         
-        // 处理从分组管理页面传递过来的参数
-        handleArgumentsFromGroupManagement();
+
         
         return view;
     }
@@ -218,7 +220,8 @@ public class CategoryManagementFragment extends Fragment{
     private void loadCategories() {
         try {
             allCategories = dbManager.getCategoriesByGroupId(selectedGroupId);
-            filterCategoriesByGroup();
+            categoryAdapter.submitList(allCategories);
+            categoryAdapter.notifyDataSetChanged();
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载分类失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
@@ -280,7 +283,7 @@ public class CategoryManagementFragment extends Fragment{
 
     private void showEditCategoryDialog(Category category) {
         //showCategoryDialog(category, "编辑分类");
-        DialogUtils.showNumberEditDialog(
+        DialogUtils.showTextEditDialog(
                 getContext(),
                 "编辑分组",
                 "分组名称",
@@ -429,7 +432,7 @@ public class CategoryManagementFragment extends Fragment{
 
     private void showAddCategoryDialog() {
         //showGroupDialog(null, "新增分组");
-        DialogUtils.showNumberEditDialog(
+        DialogUtils.showTextEditDialog(
                 getContext(),
                 "新增分组",
                 "分组名称",

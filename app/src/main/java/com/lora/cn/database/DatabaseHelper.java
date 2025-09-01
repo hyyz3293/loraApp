@@ -87,7 +87,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
         
         // 插入初始数据
-        insertInitialData(db);
+        //insertInitialData(db);
     }
     
     @Override

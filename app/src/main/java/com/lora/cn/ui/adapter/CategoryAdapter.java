@@ -30,6 +30,8 @@ public class CategoryAdapter extends BaseQuickAdapter<Category, QuickViewHolder>
         @Override
         protected void onBindViewHolder(@NonNull QuickViewHolder holder, int i, @Nullable Category group) {
             holder.setText(R.id.tv_group_name, group.getCategoryName());
+
+            holder.setText(R.id.tv_group_fz, "");
         }
 
         @NonNull
