@@ -74,7 +74,7 @@ public class DialogUtils {
         dialogTitle.setText(title);
         if (!TextUtils.isEmpty(currentValue)) {
             editNumber.setText(currentValue);
-            editNumber.setSelection(currentValue.length());
+            //editNumber.setSelection(currentValue.length());
         }
         editNumberUnit.setVisibility(View.GONE);
         if (!TextUtils.isEmpty(unit)) {

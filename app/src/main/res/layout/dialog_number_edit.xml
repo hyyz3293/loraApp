@@ -69,7 +69,6 @@
                 android:background="@drawable/bg_edit_text"
                 android:hint=""
                 android:inputType="number"
-                android:maxLength="3"
                 android:paddingHorizontal="16dp"
                 android:textSize="16sp"
                 android:textColor="@color/black" />

@@ -163,9 +163,9 @@ public class GroupManagementFragment extends Fragment  {
         //showGroupDialog(null, "新增分组");
         DialogUtils.showNumberEditDialog(
                 getContext(),
-                "新增分类",
+                "新增分组",
+                "分组名称",
                 "",
-                "分类名称",
                 "",
                 newValue -> {
                     addGroup(newValue, "");
@@ -179,8 +179,8 @@ public class GroupManagementFragment extends Fragment  {
         DialogUtils.showNumberEditDialog(
                 getContext(),
                 "编辑分类",
-                "",
                 "分类名称",
+                group.getGroupName(),
                 "",
                 newValue -> {
                     updateGroup(group.getGroupId(), newValue, "");
