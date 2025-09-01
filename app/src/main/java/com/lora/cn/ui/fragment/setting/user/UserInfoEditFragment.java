@@ -5,9 +5,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -19,9 +19,7 @@ import com.lora.cn.R;
 public class UserInfoEditFragment extends Fragment {
 
     private EditText etUserName;
-    private RadioGroup rgGender;
-    private RadioButton rbMale;
-    private RadioButton rbFemale;
+    private Spinner spGender;
     private EditText etPosition;
     private EditText etDepartment;
     private EditText etUserId;
@@ -75,15 +73,19 @@ public class UserInfoEditFragment extends Fragment {
 
     private void initViews(View view) {
         etUserName = view.findViewById(R.id.et_user_name);
-        rgGender = view.findViewById(R.id.rg_gender);
-        rbMale = view.findViewById(R.id.rb_male);
-        rbFemale = view.findViewById(R.id.rb_female);
+        spGender = view.findViewById(R.id.sp_gender);
         etPosition = view.findViewById(R.id.et_position);
         etDepartment = view.findViewById(R.id.et_department);
         etUserId = view.findViewById(R.id.et_user_id);
         etPhone = view.findViewById(R.id.et_phone);
         btnCancel = view.findViewById(R.id.btn_cancel);
         btnSave = view.findViewById(R.id.btn_save);
+        
+        // 设置性别Spinner
+        String[] genderOptions = {"男", "女"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, genderOptions);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spGender.setAdapter(adapter);
     }
 
     private void initListeners() {
@@ -103,7 +105,7 @@ public class UserInfoEditFragment extends Fragment {
     private void loadDefaultData() {
         // 加载默认数据
         etUserName.setText("管理员A");
-        rbFemale.setChecked(true);
+        spGender.setSelection(1); // 选择"女"
         etPosition.setText("护士长");
         etDepartment.setText("内1科");
         etUserId.setText("HS0001");
@@ -141,7 +143,7 @@ public class UserInfoEditFragment extends Fragment {
 
     private void saveUserInfo() {
         String userName = etUserName.getText().toString().trim();
-        String gender = rbMale.isChecked() ? "男" : "女";
+        String gender = spGender.getSelectedItem().toString();
         String position = etPosition.getText().toString().trim();
         String department = etDepartment.getText().toString().trim();
         String userId = etUserId.getText().toString().trim();
@@ -160,9 +162,9 @@ public class UserInfoEditFragment extends Fragment {
         if (userInfo != null) {
             etUserName.setText(userInfo.userName);
             if ("男".equals(userInfo.gender)) {
-                rbMale.setChecked(true);
+                spGender.setSelection(0);
             } else {
-                rbFemale.setChecked(true);
+                spGender.setSelection(1);
             }
             etPosition.setText(userInfo.position);
             etDepartment.setText(userInfo.department);
