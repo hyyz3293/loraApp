@@ -95,8 +95,9 @@ public class SettingsFragment extends Fragment {
         }
         
         if (targetFragment != null) {
-            FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-            transaction.replace(getId(), targetFragment);
+            // 使用Activity的FragmentManager进行导航
+            FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
+            transaction.replace(android.R.id.content, targetFragment);
             transaction.addToBackStack(null); // 添加到回退栈，支持返回
             transaction.commit();
         }

@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         }
         
         // 切换ViewPager2到指定页面
-        viewPager.setCurrentItem(tabIndex, true); // true表示平滑滚动
+        viewPager.setCurrentItem(tabIndex, false); // false表示无动画切换
     }
 
     private void updateTabSelection(int tabIndex) {
