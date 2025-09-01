@@ -13,7 +13,7 @@
         <TextView
             android:textSize="30dp"
             android:textColor="@color/black"
-            android:text="设置"
+            android:text="WiFi连接"
             android:layout_centerVertical="true"
             android:textStyle="bold"
             android:layout_width="wrap_content"
