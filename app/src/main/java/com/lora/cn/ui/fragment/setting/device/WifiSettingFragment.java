@@ -153,7 +153,7 @@ public class WifiSettingFragment extends Fragment {
             @Override
             public void onWifiSelected(WifiItem wifiItem) {
                 wifiName.setText(wifiItem.getSsid());
-                wifiPwd.setText(""); 
+                wifiPwd.setText("");
             }
         });
     }

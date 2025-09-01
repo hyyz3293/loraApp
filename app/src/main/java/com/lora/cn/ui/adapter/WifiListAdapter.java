@@ -56,18 +56,18 @@ public class WifiListAdapter extends BaseQuickAdapter<WifiItem, QuickViewHolder>
 //        }
         
         // 设置连接状态
-//        if (item.isConnected()) {
-//            tvSsid.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.colorPrimary));
-//        } else {
-//            tvSsid.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.black));
-//        }
+        if (item.isConnected()) {
+            tvSsid.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.teal_200));
+        } else {
+            tvSsid.setTextColor(holder.itemView.getContext().getResources().getColor(R.color.black));
+        }
 //
         // 设置点击事件
-        holder.itemView.setOnClickListener(v -> {
-            if (onItemClickListener != null) {
-                onItemClickListener.onItemClick(item, position);
-            }
-        });
+//        holder.itemView.setOnClickListener(v -> {
+//            if (onItemClickListener != null) {
+//                onItemClickListener.onItemClick(item, position);
+//            }
+//        });
     }
     
     @NonNull
