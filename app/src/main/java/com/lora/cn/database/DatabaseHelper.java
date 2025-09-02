@@ -11,7 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -138,14 +138,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // 删除旧表
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_DEPARTMENTS);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_CATEGORIES);
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUPS);
+        if (oldVersion < 2) {
+            // 版本1升级到版本2：添加科室表
+            db.execSQL(CREATE_TABLE_DEPARTMENTS);
+        }
         
-        // 重新创建表
-        onCreate(db);
+        if (oldVersion < 3) {
+            // 版本2升级到版本3：添加职位表
+            db.execSQL(CREATE_TABLE_POSITIONS);
+        }
+        
+        // 如果需要完全重建数据库，可以取消注释以下代码
+        // db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
+        // db.execSQL("DROP TABLE IF EXISTS " + TABLE_DEPARTMENTS);
+        // db.execSQL("DROP TABLE IF EXISTS " + TABLE_CATEGORIES);
+        // db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUPS);
+        // onCreate(db);
     }
     
     @Override
