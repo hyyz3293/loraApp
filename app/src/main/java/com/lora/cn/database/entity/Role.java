@@ -9,6 +9,7 @@ public class Role {
     private long roleId;
     private String roleName;
     private String description;
+    private int sortOrder; // 排序号
     private int status; // 状态（0/1 开关）
     private Date createTime;
     private Date updateTime;
@@ -16,16 +17,18 @@ public class Role {
     public Role() {
     }
     
-    public Role(String roleName, String description, int status) {
+    public Role(String roleName, String description, int sortOrder, int status) {
         this.roleName = roleName;
         this.description = description;
+        this.sortOrder = sortOrder;
         this.status = status;
     }
     
-    public Role(long roleId, String roleName, String description, int status, Date createTime, Date updateTime) {
+    public Role(long roleId, String roleName, String description, int sortOrder, int status, Date createTime, Date updateTime) {
         this.roleId = roleId;
         this.roleName = roleName;
         this.description = description;
+        this.sortOrder = sortOrder;
         this.status = status;
         this.createTime = createTime;
         this.updateTime = updateTime;
@@ -53,6 +56,14 @@ public class Role {
     
     public void setDescription(String description) {
         this.description = description;
+    }
+    
+    public int getSortOrder() {
+        return sortOrder;
+    }
+    
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
     }
     
     public int getStatus() {
@@ -85,6 +96,7 @@ public class Role {
                 "roleId=" + roleId +
                 ", roleName='" + roleName + '\'' +
                 ", description='" + description + '\'' +
+                ", sortOrder=" + sortOrder +
                 ", status=" + status +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +

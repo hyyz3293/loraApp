@@ -53,6 +53,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ROLE_ID = "role_id";
     public static final String COLUMN_ROLE_NAME = "role_name";
     public static final String COLUMN_ROLE_DESCRIPTION = "description";
+    public static final String COLUMN_ROLE_SORT_ORDER = "sort_order";
     public static final String COLUMN_ROLE_STATUS = "status";
     public static final String COLUMN_ROLE_CREATE_TIME = "create_time";
     public static final String COLUMN_ROLE_UPDATE_TIME = "update_time";
@@ -127,6 +128,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_ROLE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
         COLUMN_ROLE_NAME + " TEXT NOT NULL UNIQUE, " +
         COLUMN_ROLE_DESCRIPTION + " TEXT, " +
+        COLUMN_ROLE_SORT_ORDER + " INTEGER DEFAULT 0, " +
         COLUMN_ROLE_STATUS + " INTEGER DEFAULT 1, " +
         COLUMN_ROLE_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
         COLUMN_ROLE_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +

@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:text="权限名称"
             android:textSize="16sp"
-            android:textColor="@color/text_primary" />
+               />
 
         <TextView
             android:id="@+id/tv_permission_description"
@@ -35,8 +35,7 @@
             android:layout_height="wrap_content"
             android:text="权限描述"
             android:textSize="14sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginTop="4dp" />
+             android:layout_marginTop="4dp" />
 
     </LinearLayout>
 

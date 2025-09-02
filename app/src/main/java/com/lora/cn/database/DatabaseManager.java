@@ -16,6 +16,7 @@ import com.lora.cn.database.entity.Role;
 import com.lora.cn.database.entity.Permission;
 import com.lora.cn.database.entity.RolePermission;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -432,8 +433,8 @@ public class DatabaseManager {
         role.setDescription(description);
         role.setStatus(1); // 默认启用
         String currentTime = String.valueOf(System.currentTimeMillis());
-        role.setCreateTime(currentTime);
-        role.setUpdateTime(currentTime);
+        role.setCreateTime(new Date());
+        role.setUpdateTime(new Date());
         
         return roleDao.insertRole(role);
     }

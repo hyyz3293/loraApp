@@ -26,6 +26,7 @@ public class RoleDao {
         ContentValues values = new ContentValues();
         values.put(DatabaseHelper.COLUMN_ROLE_NAME, role.getRoleName());
         values.put(DatabaseHelper.COLUMN_ROLE_DESCRIPTION, role.getDescription());
+        values.put(DatabaseHelper.COLUMN_ROLE_SORT_ORDER, role.getSortOrder());
         values.put(DatabaseHelper.COLUMN_ROLE_STATUS, role.getStatus());
         values.put(DatabaseHelper.COLUMN_ROLE_CREATE_TIME, role.getCreateTime());
         values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, role.getUpdateTime());
@@ -41,6 +42,7 @@ public class RoleDao {
         ContentValues values = new ContentValues();
         values.put(DatabaseHelper.COLUMN_ROLE_NAME, role.getRoleName());
         values.put(DatabaseHelper.COLUMN_ROLE_DESCRIPTION, role.getDescription());
+        values.put(DatabaseHelper.COLUMN_ROLE_SORT_ORDER, role.getSortOrder());
         values.put(DatabaseHelper.COLUMN_ROLE_STATUS, role.getStatus());
         values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, role.getUpdateTime());
         
@@ -175,6 +177,7 @@ public class RoleDao {
         role.setRoleId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_ID)));
         role.setRoleName(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_NAME)));
         role.setDescription(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_DESCRIPTION)));
+        role.setSortOrder(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_SORT_ORDER)));
         role.setStatus(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_STATUS)));
         role.setCreateTime(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_CREATE_TIME)));
         role.setUpdateTime(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME)));

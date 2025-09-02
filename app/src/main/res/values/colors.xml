@@ -10,4 +10,7 @@
     <color name="c_03090E">#FF03090E</color>
     <color name="tv_gray">#4B5361</color>
     <color name="trans">#00000000</color>
+    <color name="colorPrimary">#FF6200EE</color>
+    <color name="colorAccent">#FF03DAC5</color>
+    <color name="error_color">#FFD32F2F</color>
 </resources>
