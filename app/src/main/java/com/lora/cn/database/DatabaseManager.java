@@ -5,10 +5,16 @@ import com.lora.cn.database.dao.CategoryDao;
 import com.lora.cn.database.dao.DepartmentDao;
 import com.lora.cn.database.dao.GroupDao;
 import com.lora.cn.database.dao.PositionDao;
+import com.lora.cn.database.dao.RoleDao;
+import com.lora.cn.database.dao.PermissionDao;
+import com.lora.cn.database.dao.RolePermissionDao;
 import com.lora.cn.database.entity.Category;
 import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.Group;
 import com.lora.cn.database.entity.Position;
+import com.lora.cn.database.entity.Role;
+import com.lora.cn.database.entity.Permission;
+import com.lora.cn.database.entity.RolePermission;
 
 import java.util.List;
 
@@ -23,6 +29,9 @@ public class DatabaseManager {
     private CategoryDao categoryDao;
     private DepartmentDao departmentDao;
     private PositionDao positionDao;
+    private RoleDao roleDao;
+    private PermissionDao permissionDao;
+    private RolePermissionDao rolePermissionDao;
     
     private DatabaseManager(Context context) {
         dbHelper = DatabaseHelper.getInstance(context);
@@ -30,6 +39,9 @@ public class DatabaseManager {
         categoryDao = new CategoryDao(dbHelper);
         departmentDao = new DepartmentDao(dbHelper);
         positionDao = new PositionDao(dbHelper);
+        roleDao = new RoleDao(dbHelper);
+        permissionDao = new PermissionDao(dbHelper);
+        rolePermissionDao = new RolePermissionDao(dbHelper);
     }
     
     /**
@@ -395,12 +407,174 @@ public class DatabaseManager {
      * 获取数据库统计信息
      */
     public DatabaseStats getDatabaseStats() {
-        return new DatabaseStats(
-            getGroupCount(),
-            getCategoryCount(),
-            getDepartmentCount(),
-            getPositionCount()
-        );
+        int groupCount = getGroupCount();
+        int categoryCount = getCategoryCount();
+        int departmentCount = getDepartmentCount();
+        int positionCount = getPositionCount();
+        int roleCount = getRoleCount();
+        int permissionCount = getPermissionCount();
+        
+        return new DatabaseStats(groupCount, categoryCount, departmentCount, positionCount, roleCount, permissionCount);
+    }
+    
+    // ==================== 角色相关操作 ====================
+    
+    /**
+     * 添加角色
+     */
+    public long addRole(String roleName, String description) {
+        if (roleDao.isRoleNameExists(roleName, 0)) {
+            throw new IllegalArgumentException("角色名称已存在: " + roleName);
+        }
+        
+        Role role = new Role();
+        role.setRoleName(roleName);
+        role.setDescription(description);
+        role.setStatus(1); // 默认启用
+        String currentTime = String.valueOf(System.currentTimeMillis());
+        role.setCreateTime(currentTime);
+        role.setUpdateTime(currentTime);
+        
+        return roleDao.insertRole(role);
+    }
+    
+    /**
+     * 更新角色
+     */
+    public boolean updateRole(int roleId, String roleName, String description) {
+        if (roleDao.isRoleNameExists(roleName, roleId)) {
+            throw new IllegalArgumentException("角色名称已存在: " + roleName);
+        }
+        
+        Role role = roleDao.getRoleById(roleId);
+        if (role == null) {
+            return false;
+        }
+        
+        role.setRoleName(roleName);
+        role.setDescription(description);
+        role.setUpdateTime(String.valueOf(System.currentTimeMillis()));
+        
+        return roleDao.updateRole(role) > 0;
+    }
+    
+    /**
+     * 删除角色（会级联删除相关权限关联）
+     */
+    public boolean deleteRole(int roleId) {
+        // 先删除角色权限关联
+        rolePermissionDao.deleteRolePermissionsByRoleId(roleId);
+        // 再删除角色
+        return roleDao.deleteRole(roleId) > 0;
+    }
+    
+    /**
+     * 根据ID获取角色
+     */
+    public Role getRoleById(int roleId) {
+        return roleDao.getRoleById(roleId);
+    }
+    
+    /**
+     * 根据名称获取角色
+     */
+    public Role getRoleByName(String roleName) {
+        return roleDao.getRoleByName(roleName);
+    }
+    
+    /**
+     * 获取所有角色
+     */
+    public List<Role> getAllRoles() {
+        return roleDao.getAllRoles();
+    }
+    
+    /**
+     * 获取启用的角色
+     */
+    public List<Role> getActiveRoles() {
+        return roleDao.getActiveRoles();
+    }
+    
+    /**
+     * 检查角色名称是否存在
+     */
+    public boolean isRoleNameExists(String roleName) {
+        return roleDao.isRoleNameExists(roleName, 0);
+    }
+    
+    /**
+     * 获取角色总数
+     */
+    public int getRoleCount() {
+        return roleDao.getRoleCount();
+    }
+    
+    // ==================== 权限相关操作 ====================
+    
+    /**
+     * 获取所有权限
+     */
+    public List<Permission> getAllPermissions() {
+        return permissionDao.getAllPermissions();
+    }
+    
+    /**
+     * 根据分类获取权限
+     */
+    public List<Permission> getPermissionsByCategory(String category) {
+        return permissionDao.getPermissionsByCategory(category);
+    }
+    
+    /**
+     * 获取启用的权限
+     */
+    public List<Permission> getActivePermissions() {
+        return permissionDao.getActivePermissions();
+    }
+    
+    /**
+     * 根据角色ID获取权限
+     */
+    public List<Permission> getPermissionsByRoleId(int roleId) {
+        return permissionDao.getPermissionsByRoleId(roleId);
+    }
+    
+    /**
+     * 获取所有权限分类
+     */
+    public List<String> getAllPermissionCategories() {
+        return permissionDao.getAllCategories();
+    }
+    
+    /**
+     * 获取权限总数
+     */
+    public int getPermissionCount() {
+        return permissionDao.getAllPermissions().size();
+    }
+    
+    // ==================== 角色权限关联操作 ====================
+    
+    /**
+     * 设置角色权限
+     */
+    public boolean setRolePermissions(int roleId, List<Integer> permissionIds) {
+        return rolePermissionDao.setRolePermissions(roleId, permissionIds);
+    }
+    
+    /**
+     * 检查角色是否拥有某个权限
+     */
+    public boolean hasPermission(int roleId, String permissionCode) {
+        return rolePermissionDao.hasPermissionByCode(roleId, permissionCode);
+    }
+    
+    /**
+     * 获取角色的权限ID列表
+     */
+    public List<Integer> getPermissionIdsByRoleId(int roleId) {
+        return rolePermissionDao.getPermissionIdsByRoleId(roleId);
     }
     
     /**
@@ -412,11 +586,23 @@ public class DatabaseManager {
         private int departmentCount;
         private int positionCount;
         
+        private int roleCount;
+        private int permissionCount;
+        
         public DatabaseStats(int groupCount, int categoryCount, int departmentCount, int positionCount) {
             this.groupCount = groupCount;
             this.categoryCount = categoryCount;
             this.departmentCount = departmentCount;
             this.positionCount = positionCount;
+        }
+        
+        public DatabaseStats(int groupCount, int categoryCount, int departmentCount, int positionCount, int roleCount, int permissionCount) {
+            this.groupCount = groupCount;
+            this.categoryCount = categoryCount;
+            this.departmentCount = departmentCount;
+            this.positionCount = positionCount;
+            this.roleCount = roleCount;
+            this.permissionCount = permissionCount;
         }
         
         public int getGroupCount() {
@@ -435,6 +621,14 @@ public class DatabaseManager {
             return positionCount;
         }
         
+        public int getRoleCount() {
+            return roleCount;
+        }
+        
+        public int getPermissionCount() {
+            return permissionCount;
+        }
+        
         @Override
         public String toString() {
             return "DatabaseStats{" +
@@ -442,6 +636,8 @@ public class DatabaseManager {
                     ", categoryCount=" + categoryCount +
                     ", departmentCount=" + departmentCount +
                     ", positionCount=" + positionCount +
+                    ", roleCount=" + roleCount +
+                    ", permissionCount=" + permissionCount +
                     '}';
         }
     }

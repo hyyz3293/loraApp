@@ -5,141 +5,130 @@
     android:orientation="vertical"
     android:background="@color/white">
 
-<!--    &lt;!&ndash; 标题栏 &ndash;&gt;-->
-<!--    <RelativeLayout-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="56dp"-->
-<!--        android:background="@color/colorPrimary"-->
-<!--        android:elevation="4dp">-->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="93dp">
 
-<!--        <ImageView-->
-<!--            android:id="@+id/btn_back"-->
-<!--            android:layout_width="48dp"-->
-<!--            android:layout_height="48dp"-->
-<!--            android:layout_centerVertical="true"-->
-<!--            android:layout_marginStart="8dp"-->
-<!--            android:background="?attr/selectableItemBackgroundBorderless"-->
-<!--            android:clickable="true"-->
-<!--            android:focusable="true"-->
-<!--            android:padding="12dp"-->
-<!--            android:src="@drawable/ic_arrow_back"-->
-<!--            android:tint="@color/white" />-->
+        <TextView
+            android:textSize="30dp"
+            android:textColor="@color/black"
+            android:text="职位管理"
+            android:layout_centerVertical="true"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-<!--        <TextView-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_centerInParent="true"-->
-<!--            android:text="角色管理"-->
-<!--            android:textColor="@color/white"-->
-<!--            android:textSize="18sp"-->
-<!--            android:textStyle="bold" />-->
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="34dp"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
 
-<!--        <ImageView-->
-<!--            android:id="@+id/btn_add_role"-->
-<!--            android:layout_width="48dp"-->
-<!--            android:layout_height="48dp"-->
-<!--            android:layout_alignParentEnd="true"-->
-<!--            android:layout_centerVertical="true"-->
-<!--            android:layout_marginEnd="8dp"-->
-<!--            android:background="?attr/selectableItemBackgroundBorderless"-->
-<!--            android:clickable="true"-->
-<!--            android:focusable="true"-->
-<!--            android:padding="12dp"-->
-<!--            android:src="@drawable/ic_add"-->
-<!--            android:tint="@color/white" />-->
+            <TextView
+                android:id="@+id/btn_add_role"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="新增职位"
+                android:textStyle="bold"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
 
-<!--    </RelativeLayout>-->
+            <TextView
+                android:id="@+id/back"
+                android:background="@drawable/bg_back_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="#383B40"
+                android:text="返回"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
 
-<!--    &lt;!&ndash; 角色统计 &ndash;&gt;-->
-<!--    <LinearLayout-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:orientation="horizontal"-->
-<!--        android:padding="16dp"-->
-<!--        android:background="@color/background_light">-->
+        </LinearLayout>
 
-<!--        <LinearLayout-->
-<!--            android:layout_width="0dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_weight="1"-->
-<!--            android:orientation="vertical"-->
-<!--            android:gravity="center">-->
+    </RelativeLayout>
 
-<!--            <TextView-->
-<!--                android:id="@+id/tv_total_roles"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="5"-->
-<!--                android:textSize="24sp"-->
-<!--                android:textStyle="bold"-->
-<!--                android:textColor="@color/colorPrimary" />-->
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
 
-<!--            <TextView-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="总角色数"-->
-<!--                android:textSize="12sp"-->
-<!--                android:textColor="@color/text_secondary" />-->
+    <LinearLayout
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="50dp" >
 
-<!--        </LinearLayout>-->
+        <TextView
+            android:id="@+id/position_name"
+            android:text="职位"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
 
-<!--        <LinearLayout-->
-<!--            android:layout_width="0dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_weight="1"-->
-<!--            android:orientation="vertical"-->
-<!--            android:gravity="center">-->
+        <TextView
+            android:id="@+id/position_sort"
+            android:text="排序"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
 
-<!--            <TextView-->
-<!--                android:id="@+id/tv_active_roles"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="4"-->
-<!--                android:textSize="24sp"-->
-<!--                android:textStyle="bold"-->
-<!--                android:textColor="@color/green" />-->
+        <TextView
+            android:id="@+id/position_status"
+            android:text="状态"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
 
-<!--            <TextView-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="启用角色"-->
-<!--                android:textSize="12sp"-->
-<!--                android:textColor="@color/text_secondary" />-->
+        <TextView
+            android:id="@+id/position_operation"
+            android:text="操作"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
 
-<!--        </LinearLayout>-->
+    </LinearLayout>
 
-<!--        <LinearLayout-->
-<!--            android:layout_width="0dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_weight="1"-->
-<!--            android:orientation="vertical"-->
-<!--            android:gravity="center">-->
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
 
-<!--            <TextView-->
-<!--                android:id="@+id/tv_inactive_roles"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="1"-->
-<!--                android:textSize="24sp"-->
-<!--                android:textStyle="bold"-->
-<!--                android:textColor="@color/red" />-->
-
-<!--            <TextView-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="禁用角色"-->
-<!--                android:textSize="12sp"-->
-<!--                android:textColor="@color/text_secondary" />-->
-
-<!--        </LinearLayout>-->
-
-<!--    </LinearLayout>-->
-
-<!--    &lt;!&ndash; 角色列表 &ndash;&gt;-->
-<!--    <androidx.recyclerview.widget.RecyclerView-->
-<!--        android:id="@+id/rv_roles"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="match_parent"-->
-<!--        android:padding="8dp" />-->
+    <!-- 职位列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_roles"
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 </LinearLayout>
