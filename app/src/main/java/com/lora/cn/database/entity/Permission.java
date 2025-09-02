@@ -1,6 +1,7 @@
 package com.lora.cn.database.entity;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * 权限实体类
@@ -17,7 +18,9 @@ public class Permission {
     private int sortOrder; // 排序顺序
     private Date createTime;
     private Date updateTime;
-    
+
+    private List<Permission> child;
+
     public Permission() {
     }
     
@@ -140,7 +143,15 @@ public class Permission {
     public void setSortOrder(int sortOrder) {
         this.sortOrder = sortOrder;
     }
-    
+
+    public List<Permission> getChild() {
+        return child;
+    }
+
+    public void setChild(List<Permission> child) {
+        this.child = child;
+    }
+
     @Override
     public String toString() {
         return "Permission{" +
