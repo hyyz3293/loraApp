@@ -19,7 +19,7 @@ public class Permission {
     private Date createTime;
     private Date updateTime;
 
-    private List<Permission> child;
+    private List<Permission> childList;
 
     public Permission() {
     }
