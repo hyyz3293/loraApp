@@ -17,20 +17,7 @@ import com.lora.cn.database.entity.Department;
  * 科室列表适配器
  */
 public class DepartmentAdapter extends BaseQuickAdapter<Department, QuickViewHolder> {
-    
-//    private OnDepartmentItemClickListener listener;
-//
-//    public interface OnDepartmentItemClickListener {
-//        void onEditClick(Department department);
-//        void onDeleteClick(Department department);
-//        void onItemClick(Department department);
-//        void onStatusChanged(Department department, boolean isEnabled);
-//    }
-//
-//    public void setOnDepartmentItemClickListener(OnDepartmentItemClickListener listener) {
-//        this.listener = listener;
-//    }
-    
+
     @Override
     protected void onBindViewHolder(@NonNull QuickViewHolder holder, int position, @Nullable Department department) {
         if (department == null) return;
@@ -44,38 +31,7 @@ public class DepartmentAdapter extends BaseQuickAdapter<Department, QuickViewHol
         // 设置状态开关
         SwitchCompat switchStatus = holder.getView(R.id.switch_department_status);
         switchStatus.setChecked(department.getStatus() == 1);
-        
 
-        
-//        // 设置开关状态变化监听器
-//        switchStatus.setOnCheckedChangeListener((buttonView, isChecked) -> {
-//            if (listener != null) {
-//                listener.onStatusChanged(department, isChecked);
-//            }
-//        });
-//
-//        // 设置点击事件
-//        holder.itemView.setOnClickListener(v -> {
-//            if (listener != null) {
-//                listener.onItemClick(department);
-//            }
-//        });
-//
-//        // 编辑按钮点击事件
-//        TextView btnEdit = holder.getView(R.id.tv_department_edit);
-//        btnEdit.setOnClickListener(v -> {
-//            if (listener != null) {
-//                listener.onEditClick(department);
-//            }
-//        });
-//
-//        // 删除按钮点击事件
-//        TextView btnDelete = holder.getView(R.id.tv_department_delete);
-//        btnDelete.setOnClickListener(v -> {
-//            if (listener != null) {
-//                listener.onDeleteClick(department);
-//            }
-//        });
     }
     
     @NonNull

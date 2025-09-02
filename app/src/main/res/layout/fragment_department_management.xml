@@ -6,9 +6,9 @@
     android:background="@color/white">
 
     <RelativeLayout
+
         android:layout_width="match_parent"
-        android:layout_height="93dp"
-        android:padding="12dp" >
+        android:layout_height="93dp">
 
         <TextView
             android:textSize="30dp"
@@ -58,12 +58,80 @@
 
     </RelativeLayout>
 
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
+
+    <LinearLayout
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="50dp" >
+
+        <TextView
+            android:id="@+id/depart_name"
+            android:text="科室"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/depart_sort"
+            android:text="排序"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/depart_status"
+            android:text="状态"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/depart_operation"
+            android:text="操作"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
 
     <!-- 科室列表 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_departments"
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="8dp" />
+        android:layout_height="match_parent" />
 
 </LinearLayout>
