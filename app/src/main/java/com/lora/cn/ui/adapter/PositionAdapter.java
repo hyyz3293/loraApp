@@ -33,49 +33,6 @@ public class PositionAdapter extends BaseQuickAdapter<Position, QuickViewHolder>
         // 设置状态开关
         SwitchCompat switchStatus = holder.getView(R.id.switch_position_status);
         switchStatus.setChecked(positionItem.getStatus() == 1);
-        
-        // 为子视图添加点击监听器支持
-        holder.addOnClickListener(R.id.tv_position_fz);
-        holder.addOnClickListener(R.id.tv_position_edit);
-        holder.addOnClickListener(R.id.tv_position_delete);
-        holder.addOnClickListener(R.id.switch_position_status);
-    }
-    
-    /**
-     * 添加职位
-     */
-    public void addPosition(Position position) {
-        if (position != null) {
-            add(position);
-        }
-    }
-    
-    /**
-     * 更新职位
-     */
-    public void updatePosition(Position updatedPosition) {
-        if (updatedPosition != null) {
-            for (int i = 0; i < getItemCount(); i++) {
-                Position position = getItem(i);
-                if (position != null && position.getPositionId() == updatedPosition.getPositionId()) {
-                    set(i, updatedPosition);
-                    break;
-                }
-            }
-        }
-    }
-    
-    /**
-     * 删除职位
-     */
-    public void removePosition(long positionId) {
-        for (int i = 0; i < getItemCount(); i++) {
-            Position position = getItem(i);
-            if (position != null && position.getPositionId() == positionId) {
-                removeAt(i);
-                break;
-            }
-        }
     }
 
     @NonNull

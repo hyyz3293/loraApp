@@ -279,6 +279,38 @@ public class DialogUtils {
         void onConfirm(String newValue);
     }
     
+    /**
+     * 确认对话框回调接口
+     */
+    public interface OnConfirmDialogListener {
+        void onConfirm();
+        void onCancel();
+    }
+    
+    /**
+     * 显示确认对话框
+     * @param context 上下文
+     * @param title 对话框标题
+     * @param message 对话框消息
+     * @param listener 回调监听器
+     */
+    public static void showConfirmDialog(Context context, String title, String message, OnConfirmDialogListener listener) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
+        builder.setTitle(title);
+        builder.setMessage(message);
+        builder.setPositiveButton("确定", (dialog, which) -> {
+            if (listener != null) {
+                listener.onConfirm();
+            }
+        });
+        builder.setNegativeButton("取消", (dialog, which) -> {
+            if (listener != null) {
+                listener.onCancel();
+            }
+        });
+        builder.show();
+    }
+    
     // 在DialogUtils类中添加以下方法
     
     /**

@@ -23,6 +23,7 @@ import com.lora.cn.database.entity.Position;
 import com.lora.cn.ui.adapter.PositionAdapter;
 import com.lora.cn.utils.DialogUtils;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -226,7 +227,7 @@ public class PositionManagementFragment extends Fragment {
      * 显示删除确认对话框
      */
     private void showDeleteConfirmDialog(Position position) {
-        DialogUtils.showConfirmDialog(getContext(), "确认删除", "确定要删除职位 \"" + position.getPositionName() + "\" 吗？", new DialogUtils.OnConfirmListener() {
+        DialogUtils.showConfirmDialog(getContext(), "确认删除", "确定要删除职位 \"" + position.getPositionName() + "\" 吗？", new DialogUtils.OnConfirmDialogListener() {
             @Override
             public void onConfirm() {
                 deletePosition(position.getPositionId());
@@ -254,10 +255,10 @@ public class PositionManagementFragment extends Fragment {
             position.setPositionName(positionName);
             position.setSortOrder(sortOrder);
             position.setStatus(status);
-            position.setCreateTime(System.currentTimeMillis());
-            position.setUpdateTime(System.currentTimeMillis());
+            position.setCreateTime(new Date());
+            position.setUpdateTime(new Date());
 
-            long result = databaseManager.addPosition(position);
+            long result = databaseManager.insertPosition(position);
             if (result > 0) {
                 Toast.makeText(requireContext(), "职位添加成功", Toast.LENGTH_SHORT).show();
                 loadPositions();
@@ -285,10 +286,10 @@ public class PositionManagementFragment extends Fragment {
                 position.setPositionName(positionName);
                 position.setSortOrder(sortOrder);
                 position.setStatus(status);
-                position.setUpdateTime(System.currentTimeMillis());
+                position.setUpdateTime(new Date());
 
-                boolean result = databaseManager.updatePosition(position);
-                if (result) {
+                int result = databaseManager.updatePosition(position);
+                if (result > 0) {
                     Toast.makeText(requireContext(), "职位更新成功", Toast.LENGTH_SHORT).show();
                     loadPositions();
                 } else {
@@ -305,8 +306,8 @@ public class PositionManagementFragment extends Fragment {
      */
     private void deletePosition(long positionId) {
         try {
-            boolean result = databaseManager.deletePosition(positionId);
-            if (result) {
+            int result = databaseManager.deletePosition(positionId);
+            if (result > 0) {
                 Toast.makeText(requireContext(), "职位删除成功", Toast.LENGTH_SHORT).show();
                 loadPositions();
             } else {
@@ -335,10 +336,10 @@ public class PositionManagementFragment extends Fragment {
             newPosition.setPositionName(newPositionName);
             newPosition.setSortOrder(originalPosition.getSortOrder());
             newPosition.setStatus(originalPosition.getStatus());
-            newPosition.setCreateTime(System.currentTimeMillis());
-            newPosition.setUpdateTime(System.currentTimeMillis());
+            newPosition.setCreateTime(new Date());
+            newPosition.setUpdateTime(new Date());
 
-            long result = databaseManager.addPosition(newPosition);
+            long result = databaseManager.insertPosition(newPosition);
             if (result > 0) {
                 Toast.makeText(requireContext(), "职位复制成功", Toast.LENGTH_SHORT).show();
                 loadPositions();
