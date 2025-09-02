@@ -28,6 +28,7 @@ import com.lora.cn.database.entity.Role;
 import com.lora.cn.database.entity.Permission;
 import com.lora.cn.ui.adapter.RoleAdapter;
 import com.lora.cn.ui.adapter.TreePermissionCheckboxAdapter;
+import com.lora.cn.utils.DialogUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -100,10 +101,17 @@ public class RoleManagementFragment extends Fragment {
         });
         
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_permissions, (baseQuickAdapter, view, i) -> {
-            Role role = baseQuickAdapter.getItem(i);
-            if (role != null) {
-                showRolePermissionsDialog(role);
-            }
+//            Role role = baseQuickAdapter.getItem(i);
+//            if (role != null) {
+//                showRolePermissionsDialog(role);
+//            }
+            List<Permission> allPermissions = databaseManager.getPermissionTree();
+            DialogUtils.showRoleDialog(requireContext(), "新增角色", allPermissions, allRoles.get(i), new DialogUtils.OnConfirmListener() {
+                @Override
+                public void onConfirm(String newValue) {
+
+                }
+            });
         });
         
         roleAdapter.addOnItemChildClickListener(R.id.switch_role_status, (baseQuickAdapter, view, i) -> {

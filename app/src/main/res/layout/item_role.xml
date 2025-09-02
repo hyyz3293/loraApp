@@ -1,13 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="76dp"
     android:orientation="vertical"
-    android:padding="16dp"
-     android:layout_marginBottom="8dp">
+    android:paddingLeft="45dp"
+    android:paddingRight="45dp"
+    android:background="@drawable/bg_setting_10"
+    android:layout_marginBottom="15dp">
+
+
+    <TextView
+        android:id="@+id/tv_role_name"
+        android:layout_centerVertical="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="角色名称"
+        android:textSize="22dp"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        />
 
     <!-- 角色基本信息 -->
     <LinearLayout
+        android:visibility="gone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -20,14 +35,7 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tv_role_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="角色名称"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                 />
+
 
             <TextView
                 android:id="@+id/tv_role_description"
@@ -75,6 +83,7 @@
 
     <!-- 创建时间 -->
     <TextView
+        android:visibility="gone"
         android:id="@+id/tv_role_create_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -85,11 +94,12 @@
 
     <!-- 操作按钮 -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_centerVertical="true"
+        android:layout_alignParentRight="true"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="12dp"
-        android:gravity="end">
+       >
 
         <TextView
             android:id="@+id/tv_role_permissions"
@@ -97,7 +107,7 @@
             android:layout_height="wrap_content"
             android:text="权限设置"
             android:textSize="14sp"
-
+            android:visibility="visible"
             android:padding="8dp"
             android:layout_marginEnd="8dp"
             android:clickable="true"
@@ -108,24 +118,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="编辑"
-            android:textSize="14sp"
-
-            android:padding="8dp"
-            android:layout_marginEnd="8dp"
-            android:clickable="true"
-            android:focusable="true" />
+            android:textColor="@color/black"
+            android:textSize="20dp"
+  />
 
         <TextView
             android:id="@+id/tv_role_delete"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="删除"
-            android:textSize="14sp"
-
-            android:padding="8dp"
-            android:clickable="true"
-            android:focusable="true" />
+            android:textSize="20dp"
+            android:textColor="#D10000"
+            android:layout_marginLeft="40dp" />
 
     </LinearLayout>
 
-</LinearLayout>
+</RelativeLayout>

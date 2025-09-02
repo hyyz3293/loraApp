@@ -18,6 +18,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
+import com.lora.cn.database.entity.Permission;
+import com.lora.cn.database.entity.Role;
+import com.lora.cn.ui.adapter.RoleAdapter;
+import com.lora.cn.ui.adapter.RoleTreeAdapter;
 import com.lora.cn.ui.adapter.WifiListAdapter;
 import com.lora.cn.ui.model.WifiItem;
 
@@ -436,4 +440,106 @@ public class DialogUtils {
         
         dialog.show();
     }
+
+
+    public static void showRoleDialog(Context context, String title, List<Permission> allPermissions, Role role, OnConfirmListener onConfirm) {
+        showRoleDialogs(context, title, allPermissions, role, new OnNumberEditListener() {
+            @Override
+            public void onConfirm(String newValue) {
+                if (onConfirm != null) {
+                    onConfirm.onConfirm(newValue);
+                }
+            }
+
+            @Override
+            public void onCancel() {
+                // 默认不处理取消事件
+            }
+        });
+    }
+
+    public static void showRoleDialogs(Context context, String title, List<Permission> allPermissions, Role role, OnNumberEditListener listener) {
+        // 创建对话框
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        // 加载布局
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_role, null);
+        dialog.setContentView(dialogView);
+
+        // 设置对话框属性
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(
+                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.5),
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        // 获取控件
+        TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
+        ImageView btnClose = dialogView.findViewById(R.id.btn_close);
+
+        EditText editNumber = dialogView.findViewById(R.id.edit_number);
+
+        RecyclerView recyclerView = dialogView.findViewById(R.id.role_recycle);
+        RoleTreeAdapter adapter = new RoleTreeAdapter();
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        adapter.submitList(allPermissions);
+        recyclerView.setAdapter(adapter);
+
+        Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
+        Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
+
+        // 设置标题和当前值
+        dialogTitle.setText(title);
+
+        // 关闭按钮点击事件
+        btnClose.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (listener != null) {
+                listener.onCancel();
+            }
+        });
+
+        // 取消按钮点击事件
+        btnCancel.setOnClickListener(v -> {
+            dialog.dismiss();
+            if (listener != null) {
+                listener.onCancel();
+            }
+        });
+
+        // 确定按钮点击事件
+        btnConfirm.setOnClickListener(v -> {
+            String inputValue = editNumber.getText().toString().trim();
+
+            if (TextUtils.isEmpty(inputValue)) {
+                Toast.makeText(context, "请输入数值", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            try {
+                int number = Integer.parseInt(inputValue);
+                if (number < 0 || number > 999) {
+                    Toast.makeText(context, "请输入0-999之间的数字", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                dialog.dismiss();
+                if (listener != null) {
+                    listener.onConfirm(inputValue);
+                }
+
+            } catch (NumberFormatException e) {
+                Toast.makeText(context, "请输入有效数字", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // 显示对话框
+        dialog.show();
+    }
+
+
 }
