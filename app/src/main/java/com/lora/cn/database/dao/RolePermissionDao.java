@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.database.entity.RolePermission;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -26,7 +27,12 @@ public class RolePermissionDao {
         ContentValues values = new ContentValues();
         values.put(DatabaseHelper.COLUMN_RP_ROLE_ID, rolePermission.getRoleId());
         values.put(DatabaseHelper.COLUMN_RP_PERMISSION_ID, rolePermission.getPermissionId());
-        values.put(DatabaseHelper.COLUMN_RP_CREATE_TIME, rolePermission.getCreateTime());
+        // 将Date转换为时间戳字符串存储
+        if (rolePermission.getCreateTime() != null) {
+            values.put(DatabaseHelper.COLUMN_RP_CREATE_TIME, String.valueOf(rolePermission.getCreateTime().getTime()));
+        } else {
+            values.put(DatabaseHelper.COLUMN_RP_CREATE_TIME, String.valueOf(System.currentTimeMillis()));
+        }
         
         return db.insert(DatabaseHelper.TABLE_ROLE_PERMISSIONS, null, values);
     }
@@ -73,7 +79,7 @@ public class RolePermissionDao {
             deleteRolePermissionsByRoleId(roleId);
             
             // 再添加新的权限
-            String currentTime = String.valueOf(System.currentTimeMillis());
+            Date currentTime = new Date();
             for (Integer permissionId : permissionIds) {
                 RolePermission rolePermission = new RolePermission();
                 rolePermission.setRoleId(roleId);
@@ -212,7 +218,18 @@ public class RolePermissionDao {
         rolePermission.setId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_ID)));
         rolePermission.setRoleId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_ROLE_ID)));
         rolePermission.setPermissionId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_PERMISSION_ID)));
-        rolePermission.setCreateTime(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_CREATE_TIME)));
+        // 从数据库读取时间戳并转换为Date
+        String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_CREATE_TIME));
+        if (createTimeStr != null) {
+            try {
+                // 假设数据库存储的是时间戳字符串
+                long timestamp = Long.parseLong(createTimeStr);
+                rolePermission.setCreateTime(new java.util.Date(timestamp));
+            } catch (NumberFormatException e) {
+                // 如果不是时间戳，尝试解析为日期字符串
+                rolePermission.setCreateTime(new java.util.Date());
+            }
+        }
         return rolePermission;
     }
 }

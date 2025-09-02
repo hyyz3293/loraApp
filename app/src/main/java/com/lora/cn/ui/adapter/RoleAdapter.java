@@ -52,12 +52,6 @@ public class RoleAdapter extends BaseQuickAdapter<Role, QuickViewHolder> {
         
         // 设置排序
         holder.setText(R.id.tv_role_sort, String.valueOf(role.getSortOrder()));
-        
-        // 设置点击事件的子视图
-        holder.addOnClickListener(R.id.tv_role_edit);
-        holder.addOnClickListener(R.id.tv_role_delete);
-        holder.addOnClickListener(R.id.tv_role_permissions);
-        holder.addOnClickListener(R.id.switch_role_status);
     }
 
     @NonNull

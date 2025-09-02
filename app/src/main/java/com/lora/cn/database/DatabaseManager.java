@@ -440,6 +440,13 @@ public class DatabaseManager {
     }
     
     /**
+     * 插入角色
+     */
+    public long insertRole(Role role) {
+        return roleDao.insertRole(role);
+    }
+    
+    /**
      * 更新角色
      */
     public boolean updateRole(int roleId, String roleName, String description) {
@@ -454,8 +461,15 @@ public class DatabaseManager {
         
         role.setRoleName(roleName);
         role.setDescription(description);
-        role.setUpdateTime(String.valueOf(System.currentTimeMillis()));
+        role.setUpdateTime(new Date());
         
+        return roleDao.updateRole(role) > 0;
+    }
+    
+    /**
+     * 更新角色
+     */
+    public boolean updateRole(Role role) {
         return roleDao.updateRole(role) > 0;
     }
     

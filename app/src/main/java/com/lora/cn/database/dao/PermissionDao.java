@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.database.entity.Permission;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,8 +30,18 @@ public class PermissionDao {
         values.put(DatabaseHelper.COLUMN_PERMISSION_CATEGORY, permission.getCategory());
         values.put(DatabaseHelper.COLUMN_PERMISSION_DESCRIPTION, permission.getDescription());
         values.put(DatabaseHelper.COLUMN_PERMISSION_STATUS, permission.getStatus());
-        values.put(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME, permission.getCreateTime());
-        values.put(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME, permission.getUpdateTime());
+        // 将Date转换为时间戳字符串存储
+        if (permission.getCreateTime() != null) {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME, String.valueOf(permission.getCreateTime().getTime()));
+        } else {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME, String.valueOf(System.currentTimeMillis()));
+        }
+        
+        if (permission.getUpdateTime() != null) {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME, String.valueOf(permission.getUpdateTime().getTime()));
+        } else {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME, String.valueOf(System.currentTimeMillis()));
+        }
         
         return db.insert(DatabaseHelper.TABLE_PERMISSIONS, null, values);
     }
@@ -46,7 +57,12 @@ public class PermissionDao {
         values.put(DatabaseHelper.COLUMN_PERMISSION_CATEGORY, permission.getCategory());
         values.put(DatabaseHelper.COLUMN_PERMISSION_DESCRIPTION, permission.getDescription());
         values.put(DatabaseHelper.COLUMN_PERMISSION_STATUS, permission.getStatus());
-        values.put(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME, permission.getUpdateTime());
+        // 将Date转换为时间戳字符串存储
+        if (permission.getUpdateTime() != null) {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME, String.valueOf(permission.getUpdateTime().getTime()));
+        } else {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME, String.valueOf(System.currentTimeMillis()));
+        }
         
         return db.update(DatabaseHelper.TABLE_PERMISSIONS, values, 
                 DatabaseHelper.COLUMN_PERMISSION_ID + "=?", 
@@ -227,8 +243,28 @@ public class PermissionDao {
         permission.setCategory(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CATEGORY)));
         permission.setDescription(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_DESCRIPTION)));
         permission.setStatus(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_STATUS)));
-        permission.setCreateTime(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME)));
-        permission.setUpdateTime(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME)));
+        // 将时间戳字符串转换为Date对象
+        String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME));
+        if (createTimeStr != null && !createTimeStr.isEmpty()) {
+            try {
+                permission.setCreateTime(new Date(Long.parseLong(createTimeStr)));
+            } catch (NumberFormatException e) {
+                permission.setCreateTime(new Date());
+            }
+        } else {
+            permission.setCreateTime(new Date());
+        }
+        
+        String updateTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME));
+        if (updateTimeStr != null && !updateTimeStr.isEmpty()) {
+            try {
+                permission.setUpdateTime(new Date(Long.parseLong(updateTimeStr)));
+            } catch (NumberFormatException e) {
+                permission.setUpdateTime(new Date());
+            }
+        } else {
+            permission.setUpdateTime(new Date());
+        }
         return permission;
     }
 }

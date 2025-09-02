@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.database.entity.Role;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -28,8 +29,18 @@ public class RoleDao {
         values.put(DatabaseHelper.COLUMN_ROLE_DESCRIPTION, role.getDescription());
         values.put(DatabaseHelper.COLUMN_ROLE_SORT_ORDER, role.getSortOrder());
         values.put(DatabaseHelper.COLUMN_ROLE_STATUS, role.getStatus());
-        values.put(DatabaseHelper.COLUMN_ROLE_CREATE_TIME, role.getCreateTime());
-        values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, role.getUpdateTime());
+        // 将Date转换为时间戳字符串存储
+        if (role.getCreateTime() != null) {
+            values.put(DatabaseHelper.COLUMN_ROLE_CREATE_TIME, String.valueOf(role.getCreateTime().getTime()));
+        } else {
+            values.put(DatabaseHelper.COLUMN_ROLE_CREATE_TIME, String.valueOf(System.currentTimeMillis()));
+        }
+        
+        if (role.getUpdateTime() != null) {
+            values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, String.valueOf(role.getUpdateTime().getTime()));
+        } else {
+            values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, String.valueOf(System.currentTimeMillis()));
+        }
         
         return db.insert(DatabaseHelper.TABLE_ROLES, null, values);
     }
@@ -44,7 +55,12 @@ public class RoleDao {
         values.put(DatabaseHelper.COLUMN_ROLE_DESCRIPTION, role.getDescription());
         values.put(DatabaseHelper.COLUMN_ROLE_SORT_ORDER, role.getSortOrder());
         values.put(DatabaseHelper.COLUMN_ROLE_STATUS, role.getStatus());
-        values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, role.getUpdateTime());
+        // 将Date转换为时间戳字符串存储
+        if (role.getUpdateTime() != null) {
+            values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, String.valueOf(role.getUpdateTime().getTime()));
+        } else {
+            values.put(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME, String.valueOf(System.currentTimeMillis()));
+        }
         
         return db.update(DatabaseHelper.TABLE_ROLES, values, 
                 DatabaseHelper.COLUMN_ROLE_ID + "=?", 
@@ -179,8 +195,28 @@ public class RoleDao {
         role.setDescription(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_DESCRIPTION)));
         role.setSortOrder(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_SORT_ORDER)));
         role.setStatus(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_STATUS)));
-        role.setCreateTime(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_CREATE_TIME)));
-        role.setUpdateTime(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME)));
+        // 将时间戳字符串转换为Date对象
+        String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_CREATE_TIME));
+        if (createTimeStr != null && !createTimeStr.isEmpty()) {
+            try {
+                role.setCreateTime(new Date(Long.parseLong(createTimeStr)));
+            } catch (NumberFormatException e) {
+                role.setCreateTime(new Date());
+            }
+        } else {
+            role.setCreateTime(new Date());
+        }
+        
+        String updateTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME));
+        if (updateTimeStr != null && !updateTimeStr.isEmpty()) {
+            try {
+                role.setUpdateTime(new Date(Long.parseLong(updateTimeStr)));
+            } catch (NumberFormatException e) {
+                role.setUpdateTime(new Date());
+            }
+        } else {
+            role.setUpdateTime(new Date());
+        }
         return role;
     }
 }

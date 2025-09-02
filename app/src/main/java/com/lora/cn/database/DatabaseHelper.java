@@ -75,6 +75,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ROLE_PERMISSION_ROLE_ID = "role_id";
     public static final String COLUMN_ROLE_PERMISSION_PERMISSION_ID = "permission_id";
     public static final String COLUMN_ROLE_PERMISSION_CREATE_TIME = "create_time";
+    public static final String COLUMN_RP_CREATE_TIME = "create_time"; // 别名
+    public static final String COLUMN_RP_ROLE_ID = "role_id"; // 别名
+    public static final String COLUMN_RP_PERMISSION_ID = "permission_id"; // 别名
+    public static final String COLUMN_RP_ID = "id"; // 别名
     
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 

@@ -191,7 +191,7 @@ public class RoleManagementFragment extends Fragment {
                             for (Long id : selectedPermissionIds) {
                                 permissionIds.add(id.intValue());
                             }
-                            databaseManager.setRolePermissions(roleId, permissionIds);
+                            databaseManager.setRolePermissions((int)roleId, permissionIds);
                         }
                         
                         allRoles.add(newRole);
@@ -229,7 +229,7 @@ public class RoleManagementFragment extends Fragment {
         permissionAdapter.setPermissions(allPermissions);
 
         // 加载角色当前权限
-        List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId(role.getRoleId());
+        List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
         List<Long> longPermissionIds = new ArrayList<>();
         for (Integer id : currentPermissionIds) {
             longPermissionIds.add(id.longValue());
@@ -274,7 +274,11 @@ public class RoleManagementFragment extends Fragment {
                     if (success) {
                         // 更新角色权限
                         List<Long> selectedPermissionIds = permissionAdapter.getSelectedPermissionIds();
-                        databaseManager.setRolePermissions(role.getRoleId(), selectedPermissionIds);
+                        List<Integer> permissionIds = new ArrayList<>();
+                        for (Long id : selectedPermissionIds) {
+                            permissionIds.add(id.intValue());
+                        }
+                        databaseManager.setRolePermissions((int)role.getRoleId(), permissionIds);
                         
                         roleAdapter.updateRole(role);
                         Toast.makeText(requireContext(), "角色更新成功", Toast.LENGTH_SHORT).show();
@@ -291,10 +295,10 @@ public class RoleManagementFragment extends Fragment {
                 .setTitle("删除确认")
                 .setMessage("确定要删除角色 \"" + role.getRoleName() + "\" 吗？\n\n注意：删除角色将同时删除该角色的所有权限关联。")
                 .setPositiveButton("确定", (dialog, which) -> {
-                    boolean success = databaseManager.deleteRole(role.getRoleId());
+                    boolean success = databaseManager.deleteRole((int)role.getRoleId());
                     if (success) {
                         allRoles.remove(role);
-                        roleAdapter.removeRole(role.getRoleId());
+                        roleAdapter.removeRole((int)role.getRoleId());
                         Toast.makeText(requireContext(), "角色删除成功", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(requireContext(), "角色删除失败", Toast.LENGTH_SHORT).show();
@@ -321,7 +325,7 @@ public class RoleManagementFragment extends Fragment {
         permissionAdapter.setPermissions(allPermissions);
 
         // 加载角色当前权限
-        List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId(role.getRoleId());
+        List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
         List<Long> longPermissionIds = new ArrayList<>();
         for (Integer id : currentPermissionIds) {
             longPermissionIds.add(id.longValue());
@@ -338,7 +342,7 @@ public class RoleManagementFragment extends Fragment {
                     for (Long id : selectedPermissionIds) {
                         permissionIds.add(id.intValue());
                     }
-                    boolean success = databaseManager.setRolePermissions(role.getRoleId(), permissionIds);
+                    boolean success = databaseManager.setRolePermissions((int)role.getRoleId(), permissionIds);
                     
                     if (success) {
                         Toast.makeText(requireContext(), "权限设置保存成功", Toast.LENGTH_SHORT).show();
