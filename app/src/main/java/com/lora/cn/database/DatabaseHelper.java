@@ -39,6 +39,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_DEPARTMENT_CREATE_TIME = "create_time";
     public static final String COLUMN_DEPARTMENT_UPDATE_TIME = "update_time";
     
+    // 职位表
+    public static final String TABLE_POSITIONS = "positions";
+    public static final String COLUMN_POSITION_ID = "position_id";
+    public static final String COLUMN_POSITION_NAME = "position_name";
+    public static final String COLUMN_POSITION_SORT_ORDER = "sort_order";
+    public static final String COLUMN_POSITION_STATUS = "status";
+    public static final String COLUMN_POSITION_CREATE_TIME = "create_time";
+    public static final String COLUMN_POSITION_UPDATE_TIME = "update_time";
+    
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 
         "CREATE TABLE " + TABLE_GROUPS + " (" +
@@ -74,6 +83,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_DEPARTMENT_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
         ")";
     
+    // 创建职位表的SQL语句
+    private static final String CREATE_TABLE_POSITIONS = 
+        "CREATE TABLE " + TABLE_POSITIONS + " (" +
+        COLUMN_POSITION_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_POSITION_NAME + " TEXT NOT NULL UNIQUE, " +
+        COLUMN_POSITION_SORT_ORDER + " INTEGER DEFAULT 0, " +
+        COLUMN_POSITION_STATUS + " INTEGER DEFAULT 1, " +
+        COLUMN_POSITION_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        COLUMN_POSITION_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
+        ")";
+    
     // 创建索引的SQL语句
     private static final String CREATE_INDEX_CATEGORIES_GROUP_ID = 
         "CREATE INDEX idx_categories_group_id ON " + TABLE_CATEGORIES + 
@@ -106,6 +126,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 创建科室表
         db.execSQL(CREATE_TABLE_DEPARTMENTS);
         
+        // 创建职位表
+        db.execSQL(CREATE_TABLE_POSITIONS);
+        
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
         
@@ -116,6 +139,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // 删除旧表
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_DEPARTMENTS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_CATEGORIES);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_GROUPS);

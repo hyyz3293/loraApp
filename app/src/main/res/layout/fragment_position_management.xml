@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="93dp">
+
+        <TextView
+            android:textSize="30dp"
+            android:textColor="@color/black"
+            android:text="职位管理"
+            android:layout_centerVertical="true"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="34dp"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/btn_add_position"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="新增职位"
+                android:textStyle="bold"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
+
+            <TextView
+                android:id="@+id/back"
+                android:background="@drawable/bg_back_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="#383B40"
+                android:text="返回"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
+
+    <LinearLayout
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="50dp" >
+
+        <TextView
+            android:id="@+id/position_name"
+            android:text="职位"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/position_sort"
+            android:text="排序"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/position_status"
+            android:text="状态"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/position_operation"
+            android:text="操作"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
+
+    <!-- 职位列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_positions"
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</LinearLayout>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="60dp"
+    android:orientation="horizontal">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <TextView
+            android:id="@+id/tv_position_name"
+            android:text="职位"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/tv_position_sort"
+            android:text="排序"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:id="@+id/position_status"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" >
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_position_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:checked="true" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" >
+
+            <TextView
+                android:id="@+id/tv_position_fz"
+                android:visibility="gone"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="10dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="复制"
+                android:textStyle="bold"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp" />
+
+            <TextView
+                android:id="@+id/tv_position_edit"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center|left"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="编辑"
+                android:textColor="@color/black"
+                android:textSize="16dp"
+                android:textStyle="bold"
+                />
+
+            <TextView
+                android:id="@+id/tv_position_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="删除"
+                android:textColor="#D10000"
+                android:textSize="16dp"
+                android:textStyle="bold"
+                />
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:layout_alignParentBottom="true"
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
+
+</RelativeLayout>

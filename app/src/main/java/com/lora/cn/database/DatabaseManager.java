@@ -4,9 +4,11 @@ import android.content.Context;
 import com.lora.cn.database.dao.CategoryDao;
 import com.lora.cn.database.dao.DepartmentDao;
 import com.lora.cn.database.dao.GroupDao;
+import com.lora.cn.database.dao.PositionDao;
 import com.lora.cn.database.entity.Category;
 import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.Group;
+import com.lora.cn.database.entity.Position;
 
 import java.util.List;
 
@@ -20,12 +22,14 @@ public class DatabaseManager {
     private GroupDao groupDao;
     private CategoryDao categoryDao;
     private DepartmentDao departmentDao;
+    private PositionDao positionDao;
     
     private DatabaseManager(Context context) {
         dbHelper = DatabaseHelper.getInstance(context);
         groupDao = new GroupDao(dbHelper);
         categoryDao = new CategoryDao(dbHelper);
         departmentDao = new DepartmentDao(dbHelper);
+        positionDao = new PositionDao(dbHelper);
     }
     
     /**
@@ -307,6 +311,84 @@ public class DatabaseManager {
         return departmentDao.getDepartmentCount();
     }
     
+    // ==================== 职位相关操作 ====================
+    
+    /**
+     * 添加职位
+     */
+    public long addPosition(String positionName, int sortOrder, int status) {
+        if (positionDao.isPositionNameExists(positionName)) {
+            throw new IllegalArgumentException("职位名称已存在: " + positionName);
+        }
+        
+        Position position = new Position();
+        position.setPositionName(positionName);
+        position.setSortOrder(sortOrder);
+        position.setStatus(status);
+        
+        return positionDao.insertPosition(position);
+    }
+    
+    /**
+     * 插入职位对象
+     */
+    public long insertPosition(Position position) {
+        if (positionDao.isPositionNameExists(position.getPositionName())) {
+            throw new IllegalArgumentException("职位名称已存在: " + position.getPositionName());
+        }
+        
+        return positionDao.insertPosition(position);
+    }
+    
+    /**
+     * 更新职位
+     */
+    public int updatePosition(Position position) {
+        return positionDao.updatePosition(position);
+    }
+    
+    /**
+     * 删除职位
+     */
+    public int deletePosition(long positionId) {
+        return positionDao.deletePosition(positionId);
+    }
+    
+    /**
+     * 根据ID获取职位
+     */
+    public Position getPositionById(long positionId) {
+        return positionDao.getPositionById(positionId);
+    }
+    
+    /**
+     * 根据名称获取职位
+     */
+    public Position getPositionByName(String positionName) {
+        return positionDao.getPositionByName(positionName);
+    }
+    
+    /**
+     * 获取所有职位
+     */
+    public List<Position> getAllPositions() {
+        return positionDao.getAllPositions();
+    }
+    
+    /**
+     * 检查职位名称是否存在
+     */
+    public boolean isPositionNameExists(String positionName) {
+        return positionDao.isPositionNameExists(positionName);
+    }
+    
+    /**
+     * 获取职位总数
+     */
+    public int getPositionCount() {
+        return positionDao.getPositionCount();
+    }
+    
     // ==================== 统计相关操作 ====================
     
     /**
@@ -316,7 +398,8 @@ public class DatabaseManager {
         return new DatabaseStats(
             getGroupCount(),
             getCategoryCount(),
-            getDepartmentCount()
+            getDepartmentCount(),
+            getPositionCount()
         );
     }
     
@@ -327,11 +410,13 @@ public class DatabaseManager {
         private int groupCount;
         private int categoryCount;
         private int departmentCount;
+        private int positionCount;
         
-        public DatabaseStats(int groupCount, int categoryCount, int departmentCount) {
+        public DatabaseStats(int groupCount, int categoryCount, int departmentCount, int positionCount) {
             this.groupCount = groupCount;
             this.categoryCount = categoryCount;
             this.departmentCount = departmentCount;
+            this.positionCount = positionCount;
         }
         
         public int getGroupCount() {
@@ -346,12 +431,17 @@ public class DatabaseManager {
             return departmentCount;
         }
         
+        public int getPositionCount() {
+            return positionCount;
+        }
+        
         @Override
         public String toString() {
             return "DatabaseStats{" +
                     "groupCount=" + groupCount +
                     ", categoryCount=" + categoryCount +
                     ", departmentCount=" + departmentCount +
+                    ", positionCount=" + positionCount +
                     '}';
         }
     }
