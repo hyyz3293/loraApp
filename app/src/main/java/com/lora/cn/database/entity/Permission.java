@@ -145,11 +145,11 @@ public class Permission {
     }
 
     public List<Permission> getChild() {
-        return child;
+        return childList;
     }
 
     public void setChild(List<Permission> child) {
-        this.child = child;
+        this.childList = child;
     }
 
     @Override
