@@ -25,7 +25,7 @@ import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Role;
 import com.lora.cn.database.entity.Permission;
 import com.lora.cn.ui.adapter.RoleAdapter;
-import com.lora.cn.ui.adapter.PermissionCheckboxAdapter;
+import com.lora.cn.ui.adapter.TreePermissionCheckboxAdapter;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -136,12 +136,12 @@ public class RoleManagementFragment extends Fragment {
         switchStatus.setChecked(true);
 
         // 设置权限选择列表
-        PermissionCheckboxAdapter permissionAdapter = new PermissionCheckboxAdapter();
+        TreePermissionCheckboxAdapter permissionAdapter = new TreePermissionCheckboxAdapter();
         rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvPermissions.setAdapter(permissionAdapter);
 
-        // 加载所有权限
-        List<Permission> allPermissions = databaseManager.getAllPermissions();
+        // 加载所有权限（使用树形权限获取方法）
+        List<Permission> allPermissions = databaseManager.getPermissionTree();
         permissionAdapter.setPermissions(allPermissions);
 
         new AlertDialog.Builder(requireContext())
@@ -220,12 +220,12 @@ public class RoleManagementFragment extends Fragment {
         switchStatus.setChecked(role.getStatus() == 1);
 
         // 设置权限选择列表
-        PermissionCheckboxAdapter permissionAdapter = new PermissionCheckboxAdapter();
+        TreePermissionCheckboxAdapter permissionAdapter = new TreePermissionCheckboxAdapter();
         rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvPermissions.setAdapter(permissionAdapter);
 
-        // 加载所有权限
-        List<Permission> allPermissions = databaseManager.getAllPermissions();
+        // 加载所有权限（使用树形权限获取方法）
+        List<Permission> allPermissions = databaseManager.getPermissionTree();
         permissionAdapter.setPermissions(allPermissions);
 
         // 加载角色当前权限
@@ -316,12 +316,12 @@ public class RoleManagementFragment extends Fragment {
         tvRoleName.setText("角色：" + role.getRoleName());
 
         // 设置权限选择列表
-        PermissionCheckboxAdapter permissionAdapter = new PermissionCheckboxAdapter();
+        TreePermissionCheckboxAdapter permissionAdapter = new TreePermissionCheckboxAdapter();
         rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvPermissions.setAdapter(permissionAdapter);
 
-        // 加载所有权限
-        List<Permission> allPermissions = databaseManager.getAllPermissions();
+        // 加载所有权限（使用树形权限获取方法）
+        List<Permission> allPermissions = databaseManager.getPermissionTree();
         permissionAdapter.setPermissions(allPermissions);
 
         // 加载角色当前权限

@@ -592,6 +592,71 @@ public class DatabaseManager {
         return rolePermissionDao.getPermissionIdsByRoleId(roleId);
     }
     
+    // ==================== 树形权限管理操作 ====================
+    
+    /**
+     * 获取根权限列表（顶级权限）
+     */
+    public List<Permission> getRootPermissions() {
+        return permissionDao.getRootPermissions();
+    }
+    
+    /**
+     * 根据父权限ID获取子权限列表
+     */
+    public List<Permission> getChildPermissions(int parentId) {
+        return permissionDao.getChildPermissions(parentId);
+    }
+    
+    /**
+     * 获取指定层级的权限列表
+     */
+    public List<Permission> getPermissionsByLevel(int level) {
+        return permissionDao.getPermissionsByLevel(level);
+    }
+    
+    /**
+     * 获取完整的权限树结构
+     */
+    public List<Permission> getPermissionTree() {
+        return permissionDao.getPermissionTree();
+    }
+    
+    /**
+     * 检查权限是否有子权限
+     */
+    public boolean hasChildPermissions(int permissionId) {
+        return permissionDao.hasChildPermissions(permissionId);
+    }
+    
+    /**
+     * 获取权限的所有祖先权限ID列表
+     */
+    public List<Integer> getAncestorPermissionIds(int permissionId) {
+        return permissionDao.getAncestorPermissionIds(permissionId);
+    }
+    
+    /**
+     * 获取权限的所有后代权限ID列表
+     */
+    public List<Integer> getDescendantPermissionIds(int permissionId) {
+        return permissionDao.getDescendantPermissionIds(permissionId);
+    }
+    
+    /**
+     * 根据权限ID获取权限信息
+     */
+    public Permission getPermissionById(int permissionId) {
+        return permissionDao.getPermissionById(permissionId);
+    }
+    
+    /**
+     * 根据权限代码获取权限信息
+     */
+    public Permission getPermissionByCode(String permissionCode) {
+        return permissionDao.getPermissionByCode(permissionCode);
+    }
+    
     /**
      * 数据库统计信息类
      */

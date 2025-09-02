@@ -12,6 +12,9 @@ public class Permission {
     private String category; // 权限分类，如 "terminal", "log", "setting" 等
     private String description; // 权限描述
     private int status; // 状态（0/1 开关）
+    private Long parentId; // 父权限ID，顶级权限为null
+    private int level; // 权限层级，从0开始
+    private int sortOrder; // 排序顺序
     private Date createTime;
     private Date updateTime;
     
@@ -24,6 +27,19 @@ public class Permission {
         this.category = category;
         this.description = description;
         this.status = status;
+        this.level = 0;
+        this.sortOrder = 0;
+    }
+    
+    public Permission(String permissionCode, String permissionName, String category, String description, int status, Long parentId, int level, int sortOrder) {
+        this.permissionCode = permissionCode;
+        this.permissionName = permissionName;
+        this.category = category;
+        this.description = description;
+        this.status = status;
+        this.parentId = parentId;
+        this.level = level;
+        this.sortOrder = sortOrder;
     }
     
     public Permission(long permissionId, String permissionCode, String permissionName, String category, String description, int status, Date createTime, Date updateTime) {
@@ -101,6 +117,30 @@ public class Permission {
         this.updateTime = updateTime;
     }
     
+    public Long getParentId() {
+        return parentId;
+    }
+    
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
+    }
+    
+    public int getLevel() {
+        return level;
+    }
+    
+    public void setLevel(int level) {
+        this.level = level;
+    }
+    
+    public int getSortOrder() {
+        return sortOrder;
+    }
+    
+    public void setSortOrder(int sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+    
     @Override
     public String toString() {
         return "Permission{" +
@@ -110,6 +150,9 @@ public class Permission {
                 ", category='" + category + '\'' +
                 ", description='" + description + '\'' +
                 ", status=" + status +
+                ", parentId=" + parentId +
+                ", level=" + level +
+                ", sortOrder=" + sortOrder +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
                 '}';

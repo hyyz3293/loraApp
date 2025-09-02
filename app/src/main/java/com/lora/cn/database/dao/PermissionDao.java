@@ -30,6 +30,14 @@ public class PermissionDao {
         values.put(DatabaseHelper.COLUMN_PERMISSION_CATEGORY, permission.getCategory());
         values.put(DatabaseHelper.COLUMN_PERMISSION_DESCRIPTION, permission.getDescription());
         values.put(DatabaseHelper.COLUMN_PERMISSION_STATUS, permission.getStatus());
+        
+        // 添加树形结构字段
+        if (permission.getParentId() != null) {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_PARENT_ID, permission.getParentId());
+        }
+        values.put(DatabaseHelper.COLUMN_PERMISSION_LEVEL, permission.getLevel());
+        values.put(DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER, permission.getSortOrder());
+        
         // 将Date转换为时间戳字符串存储
         if (permission.getCreateTime() != null) {
             values.put(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME, String.valueOf(permission.getCreateTime().getTime()));
@@ -57,6 +65,14 @@ public class PermissionDao {
         values.put(DatabaseHelper.COLUMN_PERMISSION_CATEGORY, permission.getCategory());
         values.put(DatabaseHelper.COLUMN_PERMISSION_DESCRIPTION, permission.getDescription());
         values.put(DatabaseHelper.COLUMN_PERMISSION_STATUS, permission.getStatus());
+        
+        // 添加树形结构字段
+        if (permission.getParentId() != null) {
+            values.put(DatabaseHelper.COLUMN_PERMISSION_PARENT_ID, permission.getParentId());
+        }
+        values.put(DatabaseHelper.COLUMN_PERMISSION_LEVEL, permission.getLevel());
+        values.put(DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER, permission.getSortOrder());
+        
         // 将Date转换为时间戳字符串存储
         if (permission.getUpdateTime() != null) {
             values.put(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME, String.valueOf(permission.getUpdateTime().getTime()));
@@ -243,6 +259,23 @@ public class PermissionDao {
         permission.setCategory(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CATEGORY)));
         permission.setDescription(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_DESCRIPTION)));
         permission.setStatus(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_STATUS)));
+        
+        // 添加树形结构字段
+        int parentIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_PARENT_ID);
+        if (parentIdIndex >= 0 && !cursor.isNull(parentIdIndex)) {
+            permission.setParentId(cursor.getInt(parentIdIndex));
+        }
+        
+        int levelIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_LEVEL);
+        if (levelIndex >= 0) {
+            permission.setLevel(cursor.getInt(levelIndex));
+        }
+        
+        int sortOrderIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER);
+        if (sortOrderIndex >= 0) {
+            permission.setSortOrder(cursor.getInt(sortOrderIndex));
+        }
+        
         // 将时间戳字符串转换为Date对象
         String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME));
         if (createTimeStr != null && !createTimeStr.isEmpty()) {
@@ -266,5 +299,128 @@ public class PermissionDao {
             permission.setUpdateTime(new Date());
         }
         return permission;
+    }
+    
+    /**
+     * 获取根权限列表（顶级权限）
+     */
+    public List<Permission> getRootPermissions() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<Permission> permissions = new ArrayList<>();
+        
+        Cursor cursor = db.query(DatabaseHelper.TABLE_PERMISSIONS, null,
+                DatabaseHelper.COLUMN_PERMISSION_PARENT_ID + " IS NULL",
+                null, null, null,
+                DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER + " ASC");
+        
+        while (cursor.moveToNext()) {
+            permissions.add(cursorToPermission(cursor));
+        }
+        cursor.close();
+        return permissions;
+    }
+    
+    /**
+     * 根据父权限ID获取子权限列表
+     */
+    public List<Permission> getChildPermissions(int parentId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<Permission> permissions = new ArrayList<>();
+        
+        Cursor cursor = db.query(DatabaseHelper.TABLE_PERMISSIONS, null,
+                DatabaseHelper.COLUMN_PERMISSION_PARENT_ID + "=?",
+                new String[]{String.valueOf(parentId)}, null, null,
+                DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER + " ASC");
+        
+        while (cursor.moveToNext()) {
+            permissions.add(cursorToPermission(cursor));
+        }
+        cursor.close();
+        return permissions;
+    }
+    
+    /**
+     * 获取指定层级的权限列表
+     */
+    public List<Permission> getPermissionsByLevel(int level) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<Permission> permissions = new ArrayList<>();
+        
+        Cursor cursor = db.query(DatabaseHelper.TABLE_PERMISSIONS, null,
+                DatabaseHelper.COLUMN_PERMISSION_LEVEL + "=?",
+                new String[]{String.valueOf(level)}, null, null,
+                DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER + " ASC");
+        
+        while (cursor.moveToNext()) {
+            permissions.add(cursorToPermission(cursor));
+        }
+        cursor.close();
+        return permissions;
+    }
+    
+    /**
+     * 获取完整的权限树结构
+     */
+    public List<Permission> getPermissionTree() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        List<Permission> allPermissions = new ArrayList<>();
+        
+        Cursor cursor = db.query(DatabaseHelper.TABLE_PERMISSIONS, null, null, null, null, null,
+                DatabaseHelper.COLUMN_PERMISSION_LEVEL + " ASC, " + DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER + " ASC");
+        
+        while (cursor.moveToNext()) {
+            allPermissions.add(cursorToPermission(cursor));
+        }
+        cursor.close();
+        return allPermissions;
+    }
+    
+    /**
+     * 检查权限是否有子权限
+     */
+    public boolean hasChildPermissions(int permissionId) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query(DatabaseHelper.TABLE_PERMISSIONS,
+                new String[]{"COUNT(*)"},
+                DatabaseHelper.COLUMN_PERMISSION_PARENT_ID + "=?",
+                new String[]{String.valueOf(permissionId)}, null, null, null);
+        
+        boolean hasChildren = false;
+        if (cursor.moveToFirst()) {
+            hasChildren = cursor.getInt(0) > 0;
+        }
+        cursor.close();
+        return hasChildren;
+    }
+    
+    /**
+     * 获取权限的所有祖先权限ID列表
+     */
+    public List<Integer> getAncestorPermissionIds(int permissionId) {
+        List<Integer> ancestors = new ArrayList<>();
+        Permission permission = getPermissionById(permissionId);
+        
+        while (permission != null && permission.getParentId() != null) {
+            ancestors.add(0, permission.getParentId()); // 添加到列表开头
+            permission = getPermissionById(permission.getParentId());
+        }
+        
+        return ancestors;
+    }
+    
+    /**
+     * 获取权限的所有后代权限ID列表
+     */
+    public List<Integer> getDescendantPermissionIds(int permissionId) {
+        List<Integer> descendants = new ArrayList<>();
+        List<Permission> children = getChildPermissions(permissionId);
+        
+        for (Permission child : children) {
+            descendants.add(child.getPermissionId());
+            // 递归获取子权限的后代
+            descendants.addAll(getDescendantPermissionIds(child.getPermissionId()));
+        }
+        
+        return descendants;
     }
 }
