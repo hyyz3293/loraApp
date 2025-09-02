@@ -331,6 +331,9 @@ public class RoleManagementFragment extends Fragment {
                 LogUtils.e("---" + new Gson().toJson(permission));
             }
         }
+
+        LogUtils.e("---" + new Gson().toJson(allPermissions));
+
         permissionAdapter.setPermissions(allPermissions);
 
         // 加载角色当前权限

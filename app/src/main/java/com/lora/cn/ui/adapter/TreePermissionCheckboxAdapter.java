@@ -77,10 +77,23 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         for (List<Permission> children : childrenMap.values()) {
             children.sort((p1, p2) -> Integer.compare(p1.getSortOrder(), p2.getSortOrder()));
         }
+        
+        // 调试日志：输出父子关系映射
+        android.util.Log.e("TreeAdapter", "buildChildrenMap - childrenMap size: " + childrenMap.size());
+        for (Long parentId : childrenMap.keySet()) {
+            List<Permission> children = childrenMap.get(parentId);
+            android.util.Log.e("TreeAdapter", "Parent ID: " + parentId + ", Children count: " + (children != null ? children.size() : 0));
+        }
     }
 
     private void buildDisplayList() {
         displayPermissions.clear();
+        
+        // 调试日志：输出所有权限信息
+        android.util.Log.e("TreeAdapter", "buildDisplayList - allPermissions size: " + allPermissions.size());
+        for (Permission p : allPermissions) {
+            android.util.Log.e("TreeAdapter", "All permission: ID=" + p.getPermissionId() + ", name=" + p.getPermissionName() + ", parentId=" + p.getParentId());
+        }
         
         // 查找根权限（parentId为null或0的权限）
         List<Permission> rootPermissions = new ArrayList<>();
@@ -93,22 +106,37 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         // 按sortOrder排序根权限
         rootPermissions.sort((p1, p2) -> Integer.compare(p1.getSortOrder(), p2.getSortOrder()));
         
+        // 调试日志：输出根权限信息
+        android.util.Log.e("TreeAdapter", "buildDisplayList - root permissions count: " + rootPermissions.size());
+        for (Permission root : rootPermissions) {
+            android.util.Log.e("TreeAdapter", "Root permission: ID=" + root.getPermissionId() + ", name=" + root.getPermissionName() + ", parentId=" + root.getParentId());
+        }
+        
         // 递归添加权限到显示列表
         for (Permission rootPermission : rootPermissions) {
             addPermissionToDisplayList(rootPermission, 0);
         }
+        
+        android.util.Log.e("TreeAdapter", "buildDisplayList - final displayPermissions size: " + displayPermissions.size());
     }
 
     private void addPermissionToDisplayList(Permission permission, int level) {
         displayPermissions.add(permission);
+        android.util.Log.e("TreeAdapter", "Added to displayPermissions: ID=" + permission.getPermissionId() + ", name=" + permission.getPermissionName() + ", level=" + level);
         
         // 如果权限已展开，添加其子权限
         if (expandedPermissionIds.contains(permission.getPermissionId())) {
             List<Permission> children = childrenMap.get(permission.getPermissionId());
             if (children != null) {
+                android.util.Log.e("TreeAdapter", "Permission " + permission.getPermissionId() + " is expanded, adding " + children.size() + " children");
                 for (Permission child : children) {
                     addPermissionToDisplayList(child, level + 1);
                 }
+            }
+        } else {
+            List<Permission> children = childrenMap.get(permission.getPermissionId());
+            if (children != null && children.size() > 0) {
+                android.util.Log.e("TreeAdapter", "Permission " + permission.getPermissionId() + " is NOT expanded, has " + children.size() + " children but not showing them");
             }
         }
     }

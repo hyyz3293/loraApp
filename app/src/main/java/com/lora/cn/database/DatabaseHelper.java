@@ -220,8 +220,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
         
-        // 插入初始权限数据
-        insertInitialPermissions(db);
+        // 插入树形权限数据
+        insertTreePermissions(db);
         
         // 插入初始数据
         insertInitialData(db);
