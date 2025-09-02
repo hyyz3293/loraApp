@@ -137,29 +137,82 @@ public class DepartmentManagementFragment extends Fragment {
 
     
     private void showAddDepartmentDialog() {
-        DialogUtils.showTextEditDialog(
-                getContext(),
-                "新增科室",
-                "科室名称",
-                "",
-                "",
-                newValue -> {
-                    addDepartment(newValue, 1, 1);
-                }
-        );
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_department, null);
+        
+        EditText etDepartmentName = dialogView.findViewById(R.id.et_department_name);
+        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
+        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
+        
+        // 设置默认值
+        etSortOrder.setText("1");
+        switchStatus.setChecked(true);
+        
+        new AlertDialog.Builder(getContext())
+                .setTitle("新增科室")
+                .setView(dialogView)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    String name = etDepartmentName.getText().toString().trim();
+                    String sortOrderStr = etSortOrder.getText().toString().trim();
+                    
+                    if (TextUtils.isEmpty(name)) {
+                        Toast.makeText(getContext(), "请输入科室名称", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    
+                    int sortOrder = 1;
+                    if (!TextUtils.isEmpty(sortOrderStr)) {
+                        try {
+                            sortOrder = Integer.parseInt(sortOrderStr);
+                        } catch (NumberFormatException e) {
+                            sortOrder = 1;
+                        }
+                    }
+                    
+                    int status = switchStatus.isChecked() ? 1 : 0;
+                    addDepartment(name, sortOrder, status);
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
     
     private void showEditDepartmentDialog(Department department) {
-        DialogUtils.showTextEditDialog(
-                getContext(),
-                "编辑科室",
-                "科室名称",
-                department.getDepartmentName(),
-                "",
-                newValue -> {
-                    updateDepartment((int)department.getDepartmentId(), newValue, department.getSortOrder(), department.getStatus());
-                }
-        );
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_department, null);
+        
+        EditText etDepartmentName = dialogView.findViewById(R.id.et_department_name);
+        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
+        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
+        
+        // 设置当前值
+        etDepartmentName.setText(department.getDepartmentName());
+        etSortOrder.setText(String.valueOf(department.getSortOrder()));
+        switchStatus.setChecked(department.getStatus() == 1);
+        
+        new AlertDialog.Builder(getContext())
+                .setTitle("编辑科室")
+                .setView(dialogView)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    String name = etDepartmentName.getText().toString().trim();
+                    String sortOrderStr = etSortOrder.getText().toString().trim();
+                    
+                    if (TextUtils.isEmpty(name)) {
+                        Toast.makeText(getContext(), "请输入科室名称", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    
+                    int sortOrder = department.getSortOrder();
+                    if (!TextUtils.isEmpty(sortOrderStr)) {
+                        try {
+                            sortOrder = Integer.parseInt(sortOrderStr);
+                        } catch (NumberFormatException e) {
+                            sortOrder = department.getSortOrder();
+                        }
+                    }
+                    
+                    int status = switchStatus.isChecked() ? 1 : 0;
+                    updateDepartment((int)department.getDepartmentId(), name, sortOrder, status);
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
     
 
