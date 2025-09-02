@@ -172,7 +172,7 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
 
         public void bind(Permission permission) {
             // 设置缩进（根据层级）
-            int level = permission.getLevel() != null ? permission.getLevel() : 0;
+            int level = permission.getLevel();
             ViewGroup.LayoutParams params = indentView.getLayoutParams();
             params.width = level * 40; // 每级缩进40dp
             indentView.setLayoutParams(params);

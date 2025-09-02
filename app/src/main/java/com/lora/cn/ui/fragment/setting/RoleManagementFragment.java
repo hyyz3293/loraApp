@@ -19,7 +19,9 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
+import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Role;
@@ -320,8 +322,15 @@ public class RoleManagementFragment extends Fragment {
         rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvPermissions.setAdapter(permissionAdapter);
 
+        LogUtils.e("---showRolePermissionsDialog" );
+
         // 加载所有权限（使用树形权限获取方法）
         List<Permission> allPermissions = databaseManager.getPermissionTree();
+        if (allPermissions.size() >  0) {
+            for (Permission permission : allPermissions) {
+                LogUtils.e("---" + new Gson().toJson(permission));
+            }
+        }
         permissionAdapter.setPermissions(allPermissions);
 
         // 加载角色当前权限
