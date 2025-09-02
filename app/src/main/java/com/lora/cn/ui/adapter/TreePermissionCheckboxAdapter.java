@@ -48,6 +48,14 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         // 构建父子关系映射
         buildChildrenMap(allPermissions);
         
+        // 默认展开所有根权限，让用户能看到完整的权限树结构
+        expandedPermissionIds.clear();
+        for (Permission permission : allPermissions) {
+            if (permission.getParentId() == null || permission.getParentId() == 0) {
+                expandedPermissionIds.add(permission.getPermissionId());
+            }
+        }
+        
         // 构建显示列表（只显示根权限和已展开的子权限）
         buildDisplayList();
         
