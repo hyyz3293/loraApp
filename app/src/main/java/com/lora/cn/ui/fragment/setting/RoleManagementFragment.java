@@ -101,17 +101,43 @@ public class RoleManagementFragment extends Fragment {
         });
         
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_permissions, (baseQuickAdapter, view, i) -> {
-//            Role role = baseQuickAdapter.getItem(i);
-//            if (role != null) {
-//                showRolePermissionsDialog(role);
-//            }
-            List<Permission> allPermissions = databaseManager.getPermissionTree();
-            DialogUtils.showRoleDialog(requireContext(), "新增角色", allPermissions, allRoles.get(i), new DialogUtils.OnConfirmListener() {
-                @Override
-                public void onConfirm(String newValue) {
+            Role role = baseQuickAdapter.getItem(i);
+            if (role != null) {
+                List<Permission> allPermissions = databaseManager.getPermissionTree();
+//                 for (Permission permission : allPermissions) {
+//                     LogUtils.e(new Gson().toJson(permission));
+//                 }
 
-                }
-            });
+
+                // 获取角色当前权限
+                List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
+                
+                DialogUtils.showRoleDialog(requireContext(), "" + role.getRoleName(), allPermissions, role, currentPermissionIds, new DialogUtils.OnConfirmListener() {
+                    @Override
+                    public void onConfirm(String selectedPermissionIds) {
+                        // 解析选中的权限ID字符串
+                        List<Integer> permissionIds = new ArrayList<>();
+                        if (!selectedPermissionIds.isEmpty()) {
+                            String[] idArray = selectedPermissionIds.split(",");
+                            for (String idStr : idArray) {
+                                try {
+                                    permissionIds.add(Integer.parseInt(idStr.trim()));
+                                } catch (NumberFormatException e) {
+                                    // 忽略无效的ID
+                                }
+                            }
+                        }
+                        
+                        // 保存角色权限到数据库
+                        boolean success = databaseManager.setRolePermissions((int)role.getRoleId(), permissionIds);
+                        if (success) {
+                            Toast.makeText(requireContext(), "权限设置保存成功", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(), "权限设置保存失败", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            }
         });
         
         roleAdapter.addOnItemChildClickListener(R.id.switch_role_status, (baseQuickAdapter, view, i) -> {

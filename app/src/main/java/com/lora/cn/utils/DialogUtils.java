@@ -17,14 +17,18 @@ import android.widget.Toast;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.blankj.utilcode.util.LogUtils;
+import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.database.entity.Permission;
 import com.lora.cn.database.entity.Role;
 import com.lora.cn.ui.adapter.RoleAdapter;
 import com.lora.cn.ui.adapter.RoleTreeAdapter;
+import com.lora.cn.ui.adapter.TreePermissionCheckboxAdapter;
 import com.lora.cn.ui.adapter.WifiListAdapter;
 import com.lora.cn.ui.model.WifiItem;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DialogUtils {
@@ -443,7 +447,23 @@ public class DialogUtils {
 
 
     public static void showRoleDialog(Context context, String title, List<Permission> allPermissions, Role role, OnConfirmListener onConfirm) {
-        showRoleDialogs(context, title, allPermissions, role, new OnNumberEditListener() {
+        showRoleDialogs(context, title, allPermissions, role, null, new OnNumberEditListener() {
+            @Override
+            public void onConfirm(String newValue) {
+                if (onConfirm != null) {
+                    onConfirm.onConfirm(newValue);
+                }
+            }
+
+            @Override
+            public void onCancel() {
+                // 默认不处理取消事件
+            }
+        });
+    }
+    
+    public static void showRoleDialog(Context context, String title, List<Permission> allPermissions, Role role, List<Integer> currentPermissionIds, OnConfirmListener onConfirm) {
+        showRoleDialogs(context, title, allPermissions, role, currentPermissionIds, new OnNumberEditListener() {
             @Override
             public void onConfirm(String newValue) {
                 if (onConfirm != null) {
@@ -458,7 +478,7 @@ public class DialogUtils {
         });
     }
 
-    public static void showRoleDialogs(Context context, String title, List<Permission> allPermissions, Role role, OnNumberEditListener listener) {
+    public static void showRoleDialogs(Context context, String title, List<Permission> allPermissions, Role role, List<Integer> currentPermissionIds, OnNumberEditListener listener) {
         // 创建对话框
         Dialog dialog = new Dialog(context);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -472,27 +492,58 @@ public class DialogUtils {
         if (window != null) {
             window.setBackgroundDrawableResource(android.R.color.transparent);
             window.setLayout(
-                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.5),
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.6),
+                    (int) (context.getResources().getDisplayMetrics().heightPixels * 0.8)
             );
         }
 
         // 获取控件
         TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
+        TextView dialogTitlestart = dialogView.findViewById(R.id.edit_number_hint);
+        dialogTitlestart.setText("角色名称");
         ImageView btnClose = dialogView.findViewById(R.id.btn_close);
 
         EditText editNumber = dialogView.findViewById(R.id.edit_number);
+        editNumber.setVisibility(View.VISIBLE); // 隐藏数字输入框，因为这里是权限选择
 
         RecyclerView recyclerView = dialogView.findViewById(R.id.role_recycle);
-        RoleTreeAdapter adapter = new RoleTreeAdapter();
+        TreePermissionCheckboxAdapter adapter = new TreePermissionCheckboxAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
-        adapter.submitList(allPermissions);
+
+        if (!allPermissions.isEmpty() && !currentPermissionIds.isEmpty()) {
+            for (int i = 0; i < allPermissions.size(); i++) {
+                for (int j = 0; j < currentPermissionIds.size(); j++) {
+                    if (allPermissions.get(i).getPermissionId() == currentPermissionIds.get(j)) {
+                        allPermissions.get(i).isSelect = true;
+                    }
+                }
+            }
+        }
+
+        LogUtils.e("allPermissions:" + new Gson().toJson(allPermissions));
+        List<Permission> permissionTree = PermissionTreeConverter.convertToTree(allPermissions);
+        LogUtils.e("permissionTree:" + new Gson().toJson(permissionTree));
+        
+        // 将树形结构转换回扁平列表，因为RoleTreeAdapter需要扁平化的数据
+        List<Permission> flatPermissions = PermissionTreeBuilder.flattenPermissionTree(permissionTree);
+        
+        // 设置权限数据到适配器
+        adapter.setPermissions(flatPermissions);
+        
+        // 设置当前选中的权限
+        List<Long> currentPermissionLongIds = new ArrayList<>();
+        if (currentPermissionIds != null) {
+            for (Integer id : currentPermissionIds) {
+                currentPermissionLongIds.add(id.longValue());
+            }
+        }
+        adapter.setSelectedPermissions(currentPermissionLongIds);
         recyclerView.setAdapter(adapter);
 
         Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
         Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
 
-        // 设置标题和当前值
+        // 设置标题
         dialogTitle.setText(title);
 
         // 关闭按钮点击事件
@@ -513,27 +564,27 @@ public class DialogUtils {
 
         // 确定按钮点击事件
         btnConfirm.setOnClickListener(v -> {
-            String inputValue = editNumber.getText().toString().trim();
-
-            if (TextUtils.isEmpty(inputValue)) {
-                Toast.makeText(context, "请输入数值", Toast.LENGTH_SHORT).show();
-                return;
+            // 获取选中的权限ID
+            List<Long> selectedIds = adapter.getSelectedPermissionIds();
+            
+            // 将Long类型转换为Integer类型
+            List<Integer> selectedIntegerIds = new ArrayList<>();
+            for (Long id : selectedIds) {
+                selectedIntegerIds.add(id.intValue());
             }
-
-            try {
-                int number = Integer.parseInt(inputValue);
-                if (number < 0 || number > 999) {
-                    Toast.makeText(context, "请输入0-999之间的数字", Toast.LENGTH_SHORT).show();
-                    return;
+            
+            // 将选中的权限ID转换为逗号分隔的字符串
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < selectedIntegerIds.size(); i++) {
+                sb.append(selectedIntegerIds.get(i));
+                if (i < selectedIntegerIds.size() - 1) {
+                    sb.append(",");
                 }
-
-                dialog.dismiss();
-                if (listener != null) {
-                    listener.onConfirm(inputValue);
-                }
-
-            } catch (NumberFormatException e) {
-                Toast.makeText(context, "请输入有效数字", Toast.LENGTH_SHORT).show();
+            }
+            
+            dialog.dismiss();
+            if (listener != null) {
+                listener.onConfirm(sb.toString());
             }
         });
 

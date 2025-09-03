@@ -19,6 +19,10 @@ public class Permission {
     private Date createTime;
     private Date updateTime;
 
+    public boolean isParent = false;
+    public boolean isSelect = false;
+    public boolean isExpand = false;
+
     private List<Permission> childList;
 
     public Permission() {
@@ -151,6 +155,33 @@ public class Permission {
     public void setChild(List<Permission> child) {
         this.childList = child;
     }
+
+
+    public boolean isParent() {
+        return isParent;
+    }
+
+    public void setParent(boolean parent) {
+        isParent = parent;
+    }
+
+    public boolean isSelect() {
+        return isSelect;
+    }
+
+    public void setSelect(boolean select) {
+        isSelect = select;
+    }
+
+    public boolean isExpand() {
+        return isExpand;
+    }
+
+    public void setExpand(boolean expand) {
+        isExpand = expand;
+    }
+
+
 
     @Override
     public String toString() {
