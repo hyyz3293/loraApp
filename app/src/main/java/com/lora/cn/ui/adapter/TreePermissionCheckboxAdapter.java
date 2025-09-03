@@ -46,13 +46,13 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         this.allPermissions = new ArrayList<>(allPermissions);
         
         // 构建父子关系映射
-        buildChildrenMap(allPermissions);
+        buildChildrenMapFromTree(allPermissions);
         
         // 默认展开所有根权限，让用户能看到完整的权限树结构
-       expandedPermissionIds.clear();
+        expandedPermissionIds.clear();
         for (Permission permission : allPermissions) {
             // 展开所有有子权限的节点
-            List<Permission> children = childrenMap.get(permission.getPermissionId());
+            List<Permission> children = permission.getChildList();
             if (children != null && !children.isEmpty()) {
                 expandedPermissionIds.add(permission.getPermissionId());
             }
@@ -63,26 +63,28 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         notifyDataSetChanged();
     }
 
-    private void buildChildrenMap(List<Permission> allPermissions) {
+    private void buildChildrenMapFromTree(List<Permission> treePermissions) {
         childrenMap.clear();
         
-        for (Permission permission : allPermissions) {
-            Long parentId = permission.getParentId();
-            if (parentId != null && parentId > 0) {
-                childrenMap.computeIfAbsent(parentId, k -> new ArrayList<>()).add(permission);
-            }
-        }
-        
-        // 对每个父权限的子权限按sortOrder排序
-        for (List<Permission> children : childrenMap.values()) {
-            children.sort((p1, p2) -> Integer.compare(p1.getSortOrder(), p2.getSortOrder()));
-        }
+        // 递归构建childrenMap，使用Permission对象中已经构建好的childList
+        buildChildrenMapRecursive(treePermissions);
         
         // 调试日志：输出父子关系映射
-        android.util.Log.e("TreeAdapter", "buildChildrenMap - childrenMap size: " + childrenMap.size());
+        android.util.Log.e("TreeAdapter", "buildChildrenMapFromTree - childrenMap size: " + childrenMap.size());
         for (Long parentId : childrenMap.keySet()) {
             List<Permission> children = childrenMap.get(parentId);
             android.util.Log.e("TreeAdapter", "Parent ID: " + parentId + ", Children count: " + (children != null ? children.size() : 0));
+        }
+    }
+    
+    private void buildChildrenMapRecursive(List<Permission> permissions) {
+        for (Permission permission : permissions) {
+            List<Permission> children = permission.getChildList();
+            if (children != null && !children.isEmpty()) {
+                childrenMap.put(permission.getPermissionId(), new ArrayList<>(children));
+                // 递归处理子权限
+                buildChildrenMapRecursive(children);
+            }
         }
     }
 

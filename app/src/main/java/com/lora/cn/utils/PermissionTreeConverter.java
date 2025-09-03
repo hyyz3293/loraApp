@@ -10,11 +10,15 @@ import java.util.Map;
 public class PermissionTreeConverter {
 
     public static List<Permission> convertToTree(List<Permission> permissions) {
-        // 创建存储节点的Map和结果列表
+        if (permissions == null || permissions.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // Create Map to store nodes and result list
         Map<Long, Permission> nodeMap = new HashMap<>();
         List<Permission> rootNodes = new ArrayList<>();
-
-        // 第一遍遍历：创建所有节点并存入Map
+        
+        // First pass: create all nodes and store in Map
         for (Permission permission : permissions) {
             Permission node = new Permission();
             node.setPermissionId(permission.getPermissionId());
@@ -25,17 +29,13 @@ public class PermissionTreeConverter {
             node.setLevel(permission.getLevel());
             node.setSortOrder(permission.getSortOrder());
             node.setStatus(permission.getStatus());
-//            node.setCreateTime(permission.getCreateTime());
-//            node.setUpdateTime(permission.getUpdateTime());
             node.setExpand(permission.isExpand());
             node.setParent(permission.isParent());
             node.setSelect(permission.isSelect());
-            node.setChild(new ArrayList<>());
-
-            // 如果有parentId，设置parentId
-            if (permission.getLevel() > 0) {
-                node.setParentId(permission.getParentId());
-            }
+            node.setChildList(new ArrayList<>());
+            
+            // 设置parentId（包括null的情况）
+            node.setParentId(permission.getParentId());
 
             nodeMap.put(permission.getPermissionId(), node);
         }
@@ -43,23 +43,27 @@ public class PermissionTreeConverter {
         // 第二遍遍历：建立父子关系
         for (Permission permission : permissions) {
             Permission currentNode = nodeMap.get(permission.getPermissionId());
+            Long parentId = permission.getParentId();
 
-            if (permission.getLevel() == 0) {
-                // 顶级节点，添加到根节点列表
+            // Check if it's a root node (parentId is null or 0)
+            if (parentId == null || parentId == 0) {
+                // Root node, add to root node list
                 rootNodes.add(currentNode);
             } else {
-                // 子节点，找到父节点并添加到父节点的children列表
-                Long parentId = permission.getParentId();
+                // Child node, find parent node and add to parent's children list
                 Permission parentNode = nodeMap.get(parentId);
                 if (parentNode != null) {
-                    parentNode.getChild().add(currentNode);
-                    // 确保父节点的isParent设置为true
+                    parentNode.getChildList().add(currentNode);
+                    // Ensure parent node's isParent is set to true
                     parentNode.setParent(true);
+                } else {
+                    // If parent node not found, treat as root node
+                    rootNodes.add(currentNode);
                 }
             }
         }
 
-        // 按sortOrder排序
+        // Sort entire tree by sortOrder
         sortNodes(rootNodes);
 
         return rootNodes;
@@ -73,10 +77,10 @@ public class PermissionTreeConverter {
         // 按sortOrder排序当前层级
         nodes.sort((n1, n2) -> Integer.compare(n1.getSortOrder(), n2.getSortOrder()));
 
-        // 递归排序子节点
+        // Recursively sort child nodes
         for (Permission node : nodes) {
-            if (node.getChild() != null && !node.getChild().isEmpty()) {
-                sortNodes(node.getChild());
+            if (node.getChildList() != null && !node.getChildList().isEmpty()) {
+                sortNodes(node.getChildList());
             }
         }
     }

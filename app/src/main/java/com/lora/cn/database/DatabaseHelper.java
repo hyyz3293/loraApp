@@ -250,10 +250,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         
         if (oldVersion < 5) {
-            // 版本4升级到版本5：为权限表添加树形结构字段
-            db.execSQL("ALTER TABLE " + TABLE_PERMISSIONS + " ADD COLUMN " + COLUMN_PERMISSION_PARENT_ID + " INTEGER");
-            db.execSQL("ALTER TABLE " + TABLE_PERMISSIONS + " ADD COLUMN " + COLUMN_PERMISSION_LEVEL + " INTEGER DEFAULT 0");
-            db.execSQL("ALTER TABLE " + TABLE_PERMISSIONS + " ADD COLUMN " + COLUMN_PERMISSION_SORT_ORDER + " INTEGER DEFAULT 0");
+            // 版本4升级到版本5：更新权限数据为树形结构
+            // 注意：parent_id、level、sort_order字段在版本4创建表时已经存在
             
             // 清空现有权限数据并重新插入树形权限数据
             db.execSQL("DELETE FROM " + TABLE_PERMISSIONS);

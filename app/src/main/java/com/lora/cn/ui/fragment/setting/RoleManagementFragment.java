@@ -29,6 +29,7 @@ import com.lora.cn.database.entity.Permission;
 import com.lora.cn.ui.adapter.RoleAdapter;
 import com.lora.cn.ui.adapter.TreePermissionCheckboxAdapter;
 import com.lora.cn.utils.DialogUtils;
+import com.lora.cn.utils.PermissionTreeConverter;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -177,8 +178,9 @@ public class RoleManagementFragment extends Fragment {
         rvPermissions.setAdapter(permissionAdapter);
 
         // 加载所有权限（使用树形权限获取方法）
-        List<Permission> allPermissions = databaseManager.getPermissionTree();
-        permissionAdapter.setPermissions(allPermissions);
+        List<Permission> flatPermissions = databaseManager.getPermissionTree();
+        List<Permission> treePermissions = PermissionTreeConverter.convertToTree(flatPermissions);
+        permissionAdapter.setPermissions(treePermissions);
 
         new AlertDialog.Builder(requireContext())
                 .setTitle("新增角色")
@@ -359,16 +361,18 @@ public class RoleManagementFragment extends Fragment {
         LogUtils.e("---showRolePermissionsDialog" );
 
         // 加载所有权限（使用树形权限获取方法）
-        List<Permission> allPermissions = databaseManager.getPermissionTree();
-        if (allPermissions.size() >  0) {
-            for (Permission permission : allPermissions) {
-                LogUtils.e("---" + new Gson().toJson(permission));
+        List<Permission> flatPermissions = databaseManager.getPermissionTree();
+        List<Permission> treePermissions = PermissionTreeConverter.convertToTree(flatPermissions);
+        
+        if (treePermissions.size() > 0) {
+            for (Permission permission : treePermissions) {
+                LogUtils.e("---Tree Permission: " + new Gson().toJson(permission));
             }
         }
 
-        LogUtils.e("---" + new Gson().toJson(allPermissions));
+        LogUtils.e("---Tree Permissions: " + new Gson().toJson(treePermissions));
 
-        permissionAdapter.setPermissions(allPermissions);
+        permissionAdapter.setPermissions(treePermissions);
 
         // 加载角色当前权限
         List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());

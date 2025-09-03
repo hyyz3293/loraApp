@@ -4,18 +4,18 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 权限实体类
+ * Permission Entity Class
  */
 public class Permission {
     private long permissionId;
-    private String permissionCode; // 权限代码，如 "terminal_list", "terminal_add" 等
-    private String permissionName; // 权限名称，如 "终端列表", "添加终端" 等
-    private String category; // 权限分类，如 "terminal", "log", "setting" 等
-    private String description; // 权限描述
-    private int status; // 状态（0/1 开关）
-    private Long parentId; // 父权限ID，顶级权限为null
-    private int level; // 权限层级，从0开始
-    private int sortOrder; // 排序顺序
+    private String permissionCode; // Permission code, e.g. "terminal_list", "terminal_add"
+    private String permissionName; // Permission name, e.g. "Terminal List", "Add Terminal"
+    private String category; // Permission category, e.g. "terminal", "log", "setting"
+    private String description; // Permission description
+    private int status; // Status (0/1 switch)
+    private Long parentId; // Parent permission ID, null for top-level permissions
+    private int level; // Permission level, starting from 0
+    private int sortOrder; // Sort order
     private Date createTime;
     private Date updateTime;
 
@@ -154,6 +154,14 @@ public class Permission {
 
     public void setChild(List<Permission> child) {
         this.childList = child;
+    }
+
+    public List<Permission> getChildList() {
+        return childList;
+    }
+
+    public void setChildList(List<Permission> childList) {
+        this.childList = childList;
     }
 
 
