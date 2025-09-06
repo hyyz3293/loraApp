@@ -105,15 +105,11 @@ public class RoleManagementFragment extends Fragment {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
                 List<Permission> allPermissions = databaseManager.getPermissionTree();
-//                 for (Permission permission : allPermissions) {
-//                     LogUtils.e(new Gson().toJson(permission));
-//                 }
-
 
                 // 获取角色当前权限
                 List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
                 
-                DialogUtils.showRoleDialog(requireContext(), "" + role.getRoleName(), allPermissions, role, currentPermissionIds, new DialogUtils.OnConfirmListener() {
+                DialogUtils.showRoleDialog(requireContext(), "", allPermissions, role, currentPermissionIds, new DialogUtils.OnConfirmListener() {
                     @Override
                     public void onConfirm(String selectedPermissionIds) {
                         // 解析选中的权限ID字符串
@@ -128,7 +124,6 @@ public class RoleManagementFragment extends Fragment {
                                 }
                             }
                         }
-                        
                         // 保存角色权限到数据库
                         boolean success = databaseManager.setRolePermissions((int)role.getRoleId(), permissionIds);
                         if (success) {

@@ -478,7 +478,7 @@ public class DialogUtils {
         });
     }
 
-    public static void showRoleDialogs(Context context, String title, List<Permission> allPermissions, Role role, List<Integer> currentPermissionIds, OnNumberEditListener listener) {
+    private static void showRoleDialogs(Context context, String title, List<Permission> allPermissions, Role role, List<Integer> currentPermissionIds, OnNumberEditListener listener) {
         // 创建对话框
         Dialog dialog = new Dialog(context);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -499,6 +499,10 @@ public class DialogUtils {
 
         // 获取控件
         TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
+        dialogTitle.setText("编辑角色");
+        if (role == null) {
+            dialogTitle.setText("新增角色");
+        }
         TextView dialogTitlestart = dialogView.findViewById(R.id.edit_number_hint);
         dialogTitlestart.setText("角色名称");
         ImageView btnClose = dialogView.findViewById(R.id.btn_close);
