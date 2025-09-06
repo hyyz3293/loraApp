@@ -329,7 +329,7 @@ public class RoleManagementFragment extends Fragment {
         // 获取所有权限
         List<Permission> allPermissions = databaseManager.getPermissionTree();
         
-        DialogUtils.showRoleDialog(requireContext(), "新增角色", allPermissions, null, new DialogUtils.OnConfirmListener() {
+        DialogUtils.showRoleDialog(requireContext(), "新增角色", allPermissions, null, new ArrayList<>(), new DialogUtils.OnConfirmListener() {
             @Override
             public void onConfirm(String result) {
                 // 解析返回数据：角色名称|权限ID列表

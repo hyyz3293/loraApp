@@ -522,7 +522,7 @@ public class DialogUtils {
         TreePermissionCheckboxAdapter adapter = new TreePermissionCheckboxAdapter();
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
 
-        if (!allPermissions.isEmpty() && !currentPermissionIds.isEmpty()) {
+        if (!allPermissions.isEmpty() && currentPermissionIds != null && !currentPermissionIds.isEmpty()) {
             for (int i = 0; i < allPermissions.size(); i++) {
                 for (int j = 0; j < currentPermissionIds.size(); j++) {
                     if (allPermissions.get(i).getPermissionId() == currentPermissionIds.get(j)) {
