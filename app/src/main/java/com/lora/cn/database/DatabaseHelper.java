@@ -11,7 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 7;
+    private static final int DATABASE_VERSION = 8;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -312,6 +312,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(CREATE_TABLE_USERS);
         }
         
+        if (oldVersion < 8) {
+            // 版本7升级到版本8：插入默认管理员用户
+            insertDefaultAdminUser(db);
+        }
+        
         // 如果需要完全重建数据库，可以取消注释以下代码
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_DEPARTMENTS);
@@ -365,6 +370,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 插入默认管理员角色
         insertDefaultAdminRole(db);
+        
+        // 插入默认管理员用户
+        insertDefaultAdminUser(db);
     }
     
     /**
@@ -385,6 +393,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + 
                   COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + 
                   ") SELECT " + adminRoleId + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
+    }
+    
+    /**
+     * 插入默认管理员用户
+     */
+    private void insertDefaultAdminUser(SQLiteDatabase db) {
+        // 插入默认管理员用户 admin/123456
+        db.execSQL("INSERT INTO " + TABLE_USERS + " (" + 
+                  COLUMN_USER_NAME + ", " + COLUMN_USER_ACCOUNT + ", " + 
+                  COLUMN_USER_PASSWORD + ", " + COLUMN_USER_ROLE_ID + ", " + 
+                  COLUMN_USER_STATUS + ", " + COLUMN_USER_GENDER + 
+                  ") VALUES ('管理员', 'admin', '123456', 1, 1, 1)");
     }
     
     /**
