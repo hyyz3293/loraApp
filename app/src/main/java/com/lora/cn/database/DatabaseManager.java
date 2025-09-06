@@ -8,6 +8,7 @@ import com.lora.cn.database.dao.PositionDao;
 import com.lora.cn.database.dao.RoleDao;
 import com.lora.cn.database.dao.PermissionDao;
 import com.lora.cn.database.dao.RolePermissionDao;
+import com.lora.cn.database.dao.UserDao;
 import com.lora.cn.database.entity.Category;
 import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.Group;
@@ -15,6 +16,7 @@ import com.lora.cn.database.entity.Position;
 import com.lora.cn.database.entity.Role;
 import com.lora.cn.database.entity.Permission;
 import com.lora.cn.database.entity.RolePermission;
+import com.lora.cn.database.entity.User;
 
 import java.util.Date;
 import java.util.List;
@@ -33,6 +35,7 @@ public class DatabaseManager {
     private RoleDao roleDao;
     private PermissionDao permissionDao;
     private RolePermissionDao rolePermissionDao;
+    private UserDao userDao;
     
     private DatabaseManager(Context context) {
         dbHelper = DatabaseHelper.getInstance(context);
@@ -43,6 +46,7 @@ public class DatabaseManager {
         roleDao = new RoleDao(dbHelper);
         permissionDao = new PermissionDao(dbHelper);
         rolePermissionDao = new RolePermissionDao(dbHelper);
+        userDao = new UserDao(dbHelper);
     }
     
     /**
@@ -655,6 +659,108 @@ public class DatabaseManager {
      */
     public Permission getPermissionByCode(String permissionCode) {
         return permissionDao.getPermissionByCode(permissionCode);
+    }
+    
+    // ==================== 用户管理相关方法 ====================
+    
+    /**
+     * 添加用户
+     */
+    public long addUser(User user) {
+        if (user.getUserName() == null || user.getUserName().trim().isEmpty()) {
+            return -1;
+        }
+        if (user.getUserAccount() == null || user.getUserAccount().trim().isEmpty()) {
+            return -1;
+        }
+        if (user.getUserPassword() == null || user.getUserPassword().trim().isEmpty()) {
+            return -1;
+        }
+        
+        return userDao.insertUser(user);
+    }
+    
+    /**
+     * 更新用户信息
+     */
+    public boolean updateUser(User user) {
+        if (user.getUserId() <= 0) {
+            return false;
+        }
+        return userDao.updateUser(user) > 0;
+    }
+    
+    /**
+     * 更新用户密码
+     */
+    public boolean updateUserPassword(long userId, String newPassword) {
+        if (userId <= 0 || newPassword == null || newPassword.trim().isEmpty()) {
+            return false;
+        }
+        return userDao.updateUserPassword(userId, newPassword) > 0;
+    }
+    
+    /**
+     * 删除用户
+     */
+    public boolean deleteUser(long userId) {
+        return userDao.deleteUser(userId) > 0;
+    }
+    
+    /**
+     * 根据用户ID获取用户信息
+     */
+    public User getUserById(long userId) {
+        return userDao.getUserById(userId);
+    }
+    
+    /**
+     * 根据用户账号获取用户信息
+     */
+    public User getUserByAccount(String userAccount) {
+        return userDao.getUserByAccount(userAccount);
+    }
+    
+    /**
+     * 获取所有用户
+     */
+    public List<User> getAllUsers() {
+        return userDao.getAllUsers();
+    }
+    
+    /**
+     * 获取启用状态的用户
+     */
+    public List<User> getActiveUsers() {
+        return userDao.getActiveUsers();
+    }
+    
+    /**
+     * 根据角色ID获取用户列表
+     */
+    public List<User> getUsersByRoleId(int roleId) {
+        return userDao.getUsersByRoleId(roleId);
+    }
+    
+    /**
+     * 检查用户账号是否已存在
+     */
+    public boolean isUserAccountExists(String userAccount) {
+        return userDao.isUserAccountExists(userAccount);
+    }
+    
+    /**
+     * 用户认证
+     */
+    public User authenticateUser(String userAccount, String password) {
+        return userDao.authenticateUser(userAccount, password);
+    }
+    
+    /**
+     * 获取用户总数
+     */
+    public int getUserCount() {
+        return getAllUsers().size();
     }
     
     /**

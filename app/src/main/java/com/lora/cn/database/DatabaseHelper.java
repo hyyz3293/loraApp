@@ -83,6 +83,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_RP_PERMISSION_ID = "permission_id"; // 别名
     public static final String COLUMN_RP_ID = "id"; // 别名
     
+    // 用户表
+    public static final String TABLE_USERS = "users";
+    public static final String COLUMN_USER_ID = "user_id";
+    public static final String COLUMN_USER_NAME = "user_name";
+    public static final String COLUMN_USER_ACCOUNT = "user_account";
+    public static final String COLUMN_USER_PASSWORD = "user_password";
+    public static final String COLUMN_USER_ROLE_ID = "role_id";
+    public static final String COLUMN_USER_STATUS = "status";
+    public static final String COLUMN_USER_POSITION_ID = "position_id";
+    public static final String COLUMN_USER_DEPARTMENT_ID = "department_id";
+    public static final String COLUMN_USER_CODE = "user_code";
+    public static final String COLUMN_USER_GENDER = "gender";
+    public static final String COLUMN_USER_PHONE = "phone";
+    public static final String COLUMN_USER_CREATE_TIME = "create_time";
+    public static final String COLUMN_USER_UPDATE_TIME = "update_time";
+    
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 
         "CREATE TABLE " + TABLE_GROUPS + " (" +
@@ -173,6 +189,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         "UNIQUE(" + COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + ")" +
         ")";
     
+    // 创建用户表的SQL语句
+    private static final String CREATE_TABLE_USERS = 
+        "CREATE TABLE " + TABLE_USERS + " (" +
+        COLUMN_USER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_USER_NAME + " TEXT NOT NULL, " +
+        COLUMN_USER_ACCOUNT + " TEXT NOT NULL UNIQUE, " +
+        COLUMN_USER_PASSWORD + " TEXT NOT NULL, " +
+        COLUMN_USER_ROLE_ID + " INTEGER NOT NULL, " +
+        COLUMN_USER_STATUS + " INTEGER DEFAULT 1, " +
+        COLUMN_USER_POSITION_ID + " INTEGER, " +
+        COLUMN_USER_DEPARTMENT_ID + " INTEGER, " +
+        COLUMN_USER_CODE + " TEXT, " +
+        COLUMN_USER_GENDER + " INTEGER DEFAULT 1, " +
+        COLUMN_USER_PHONE + " TEXT, " +
+        COLUMN_USER_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        COLUMN_USER_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        "FOREIGN KEY (" + COLUMN_USER_ROLE_ID + ") REFERENCES " + 
+        TABLE_ROLES + "(" + COLUMN_ROLE_ID + ") ON DELETE RESTRICT, " +
+        "FOREIGN KEY (" + COLUMN_USER_POSITION_ID + ") REFERENCES " + 
+        TABLE_POSITIONS + "(" + COLUMN_POSITION_ID + ") ON DELETE SET NULL, " +
+        "FOREIGN KEY (" + COLUMN_USER_DEPARTMENT_ID + ") REFERENCES " + 
+        TABLE_DEPARTMENTS + "(" + COLUMN_DEPARTMENT_ID + ") ON DELETE SET NULL" +
+        ")";
+    
     // 创建索引的SQL语句
     private static final String CREATE_INDEX_CATEGORIES_GROUP_ID = 
         "CREATE INDEX idx_categories_group_id ON " + TABLE_CATEGORIES + 
@@ -216,6 +256,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 创建角色权限关联表
         db.execSQL(CREATE_TABLE_ROLE_PERMISSIONS);
+        
+        // 创建用户表
+        db.execSQL(CREATE_TABLE_USERS);
         
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);

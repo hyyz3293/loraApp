@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="76dp"
+    android:orientation="vertical"
+    android:paddingLeft="45dp"
+    android:paddingRight="45dp"
+    android:background="@drawable/bg_setting_10"
+    android:layout_marginBottom="15dp">
+
+    <!-- 用户基本信息 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- 用户姓名和账号 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_user_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="用户姓名"
+                android:textSize="16sp"
+                android:textColor="@color/black"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_user_account"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="用户账号"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:layout_marginTop="2dp" />
+
+        </LinearLayout>
+
+        <!-- 用户角色 -->
+        <TextView
+            android:id="@+id/tv_user_role"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="角色名称"
+            android:textSize="14sp"
+            android:textColor="#333333"
+            android:gravity="center" />
+
+        <!-- 状态开关 -->
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_user_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:checked="true" />
+
+        <!-- 操作按钮 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_user_reset_password"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="10dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="重置密码"
+                android:textStyle="bold"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp" />
+
+            <TextView
+                android:id="@+id/tv_user_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:layout_marginRight="5dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="10dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="编辑"
+                android:textStyle="bold"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp" />
+
+            <TextView
+                android:id="@+id/tv_user_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="10dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="删除"
+                android:textStyle="bold"
+                android:paddingLeft="8dp"
+                android:paddingRight="8dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</RelativeLayout>
