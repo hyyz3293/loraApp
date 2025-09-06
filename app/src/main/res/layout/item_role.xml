@@ -105,9 +105,10 @@
             android:id="@+id/tv_role_permissions"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+
             android:text="权限设置"
             android:textSize="14sp"
-            android:visibility="visible"
+            android:visibility="gone"
             android:padding="8dp"
             android:layout_marginEnd="8dp"
             android:clickable="true"

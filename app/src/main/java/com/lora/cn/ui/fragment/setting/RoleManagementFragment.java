@@ -84,13 +84,13 @@ public class RoleManagementFragment extends Fragment {
         });
         
         // 新增按钮
-        btnAddRole.setOnClickListener(v -> showAddRoleDialog());
+        btnAddRole.setOnClickListener(v -> showAddRoleDialogNew());
 
         // 设置适配器点击监听器
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_edit, (baseQuickAdapter, view, i) -> {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
-                showEditRoleDialog(role);
+                showEditRoleDialogNew(role);
             }
         });
         
@@ -322,6 +322,123 @@ public class RoleManagementFragment extends Fragment {
                 })
                 .setNegativeButton("取消", null)
                 .show();
+    }
+
+    // 使用新的DialogUtils方法新增角色
+    private void showAddRoleDialogNew() {
+        // 获取所有权限
+        List<Permission> allPermissions = databaseManager.getPermissionTree();
+        
+        DialogUtils.showRoleDialog(requireContext(), "新增角色", allPermissions, null, new DialogUtils.OnConfirmListener() {
+            @Override
+            public void onConfirm(String result) {
+                // 解析返回数据：角色名称|权限ID列表
+                String[] parts = result.split("\\|", 2);
+                if (parts.length < 1) {
+                    Toast.makeText(requireContext(), "数据格式错误", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                String roleName = parts[0].trim();
+                String permissionIdsStr = parts.length > 1 ? parts[1] : "";
+                
+                // 检查角色名称是否已存在
+                if (databaseManager.isRoleNameExists(roleName)) {
+                    Toast.makeText(requireContext(), "角色名称已存在", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                // 创建新角色
+                Role newRole = new Role();
+                newRole.setRoleName(roleName);
+                newRole.setDescription(null);
+                newRole.setSortOrder(allRoles.size() + 1);
+                newRole.setStatus(1); // 默认启用
+                newRole.setCreateTime(new Date());
+                newRole.setUpdateTime(new Date());
+                
+                long roleId = databaseManager.insertRole(newRole);
+                if (roleId > 0) {
+                    newRole.setRoleId(roleId);
+                    
+                    // 设置角色权限
+                    if (!permissionIdsStr.isEmpty()) {
+                        List<Integer> permissionIds = new ArrayList<>();
+                        String[] idArray = permissionIdsStr.split(",");
+                        for (String idStr : idArray) {
+                            try {
+                                permissionIds.add(Integer.parseInt(idStr.trim()));
+                            } catch (NumberFormatException e) {
+                                // 忽略无效的ID
+                            }
+                        }
+                        databaseManager.setRolePermissions((int)roleId, permissionIds);
+                    }
+                    
+                    allRoles.add(newRole);
+                    roleAdapter.addRole(newRole);
+                    Toast.makeText(requireContext(), "角色添加成功", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), "角色添加失败", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+    
+    // 使用新的DialogUtils方法编辑角色
+    private void showEditRoleDialogNew(Role role) {
+        // 获取所有权限
+        List<Permission> allPermissions = databaseManager.getPermissionTree();
+        
+        // 获取角色当前权限
+        List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
+        
+        DialogUtils.showRoleDialog(requireContext(), "编辑角色", allPermissions, role, currentPermissionIds, new DialogUtils.OnConfirmListener() {
+            @Override
+            public void onConfirm(String result) {
+                // 解析返回数据：角色名称|权限ID列表
+                String[] parts = result.split("\\|", 2);
+                if (parts.length < 1) {
+                    Toast.makeText(requireContext(), "数据格式错误", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                String roleName = parts[0].trim();
+                String permissionIdsStr = parts.length > 1 ? parts[1] : "";
+                
+                // 检查角色名称是否已存在（排除当前角色）
+                if (!roleName.equals(role.getRoleName()) && databaseManager.isRoleNameExists(roleName)) {
+                    Toast.makeText(requireContext(), "角色名称已存在", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                // 更新角色信息
+                role.setRoleName(roleName);
+                role.setUpdateTime(new Date());
+                
+                boolean success = databaseManager.updateRole(role);
+                if (success) {
+                    // 更新角色权限
+                    List<Integer> permissionIds = new ArrayList<>();
+                    if (!permissionIdsStr.isEmpty()) {
+                        String[] idArray = permissionIdsStr.split(",");
+                        for (String idStr : idArray) {
+                            try {
+                                permissionIds.add(Integer.parseInt(idStr.trim()));
+                            } catch (NumberFormatException e) {
+                                // 忽略无效的ID
+                            }
+                        }
+                    }
+                    databaseManager.setRolePermissions((int)role.getRoleId(), permissionIds);
+                    
+                    roleAdapter.updateRole(role);
+                    Toast.makeText(requireContext(), "角色更新成功", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), "角色更新失败", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private void showDeleteConfirmDialog(Role role) {

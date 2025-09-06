@@ -499,16 +499,24 @@ public class DialogUtils {
 
         // 获取控件
         TextView dialogTitle = dialogView.findViewById(R.id.dialog_title);
-        dialogTitle.setText("编辑角色");
-        if (role == null) {
-            dialogTitle.setText("新增角色");
-        }
         TextView dialogTitlestart = dialogView.findViewById(R.id.edit_number_hint);
         dialogTitlestart.setText("角色名称");
         ImageView btnClose = dialogView.findViewById(R.id.btn_close);
 
         EditText editNumber = dialogView.findViewById(R.id.edit_number);
-        editNumber.setVisibility(View.VISIBLE); // 隐藏数字输入框，因为这里是权限选择
+        editNumber.setVisibility(View.VISIBLE); // 显示角色名称输入框
+        
+        // 根据role是否为null判断是新增还是修改
+        if (role == null) {
+            // 新增角色
+            dialogTitle.setText("新增角色");
+            editNumber.setHint("请输入角色名称");
+        } else {
+            // 修改角色
+            dialogTitle.setText("编辑角色");
+            editNumber.setText(role.getRoleName());
+            editNumber.setHint("请输入角色名称");
+        }
 
         RecyclerView recyclerView = dialogView.findViewById(R.id.role_recycle);
         TreePermissionCheckboxAdapter adapter = new TreePermissionCheckboxAdapter();
@@ -565,6 +573,15 @@ public class DialogUtils {
 
         // 确定按钮点击事件
         btnConfirm.setOnClickListener(v -> {
+            // 获取角色名称
+            String roleName = editNumber.getText().toString().trim();
+            
+            // 验证角色名称
+            if (TextUtils.isEmpty(roleName)) {
+                Toast.makeText(context, "请输入角色名称", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
             // 获取选中的权限ID
             List<Long> selectedIds = adapter.getSelectedPermissionIds();
             
@@ -583,9 +600,12 @@ public class DialogUtils {
                 }
             }
             
+            // 构造返回数据：角色名称|权限ID列表
+            String result = roleName + "|" + sb.toString();
+            
             dialog.dismiss();
             if (listener != null) {
-                listener.onConfirm(sb.toString());
+                listener.onConfirm(result);
             }
         });
 
