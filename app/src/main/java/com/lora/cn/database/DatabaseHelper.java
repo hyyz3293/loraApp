@@ -314,6 +314,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
                   COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('高级设置', '系统高级功能设置', 3)");
+        
+        // 插入默认管理员角色
+        insertDefaultAdminRole(db);
+    }
+    
+    /**
+     * 插入默认管理员角色
+     */
+    private void insertDefaultAdminRole(SQLiteDatabase db) {
+        // 插入管理员角色
+        db.execSQL("INSERT INTO " + TABLE_ROLES + " (" + 
+                  COLUMN_ROLE_NAME + ", " + COLUMN_ROLE_DESCRIPTION + ", " + 
+                  COLUMN_ROLE_SORT_ORDER + ", " + COLUMN_ROLE_STATUS + 
+                  ") VALUES ('管理员', '系统管理员，拥有所有权限', 1, 1)");
+        
+        // 获取管理员角色ID（应该是1，因为是第一个插入的角色）
+        long adminRoleId = 1;
+        
+        // 为管理员角色分配所有权限
+        // 查询所有权限ID并分配给管理员角色
+        db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + 
+                  COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + 
+                  ") SELECT " + adminRoleId + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
     }
     
     /**
