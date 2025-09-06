@@ -697,21 +697,21 @@ public class DatabaseManager {
         if (userId <= 0 || newPassword == null || newPassword.trim().isEmpty()) {
             return false;
         }
-        return userDao.updateUserPassword(userId, newPassword) > 0;
+        return userDao.updateUserPassword((int) userId, newPassword) > 0;
     }
     
     /**
      * 删除用户
      */
     public boolean deleteUser(long userId) {
-        return userDao.deleteUser(userId) > 0;
+        return userDao.deleteUser((int) userId) > 0;
     }
     
     /**
      * 根据用户ID获取用户信息
      */
     public User getUserById(long userId) {
-        return userDao.getUserById(userId);
+        return userDao.getUserById((int) userId);
     }
     
     /**
@@ -746,7 +746,14 @@ public class DatabaseManager {
      * 检查用户账号是否已存在
      */
     public boolean isUserAccountExists(String userAccount) {
-        return userDao.isUserAccountExists(userAccount);
+        return userDao.isUserAccountExists(userAccount, 0);
+    }
+    
+    /**
+     * 检查用户账号是否已存在（排除指定用户ID）
+     */
+    public boolean isUserAccountExists(String userAccount, int excludeUserId) {
+        return userDao.isUserAccountExists(userAccount, excludeUserId);
     }
     
     /**

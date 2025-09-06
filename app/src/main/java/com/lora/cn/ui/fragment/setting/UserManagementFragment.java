@@ -183,20 +183,14 @@ public class UserManagementFragment extends Fragment {
         }
         
         String title = isEdit ? "编辑用户" : "新增用户";
-        new AlertDialog.Builder(requireContext())
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle(title)
                 .setView(dialogView)
                 .setPositiveButton("确定", null)
                 .setNegativeButton("取消", null)
-                .create()
-                .show();
+                .create();
         
         // 设置确定按钮点击事件
-        AlertDialog dialog = (AlertDialog) ((AlertDialog.Builder) new AlertDialog.Builder(requireContext())
-                .setTitle(title)
-                .setView(dialogView)
-                .setPositiveButton("确定", null)
-                .setNegativeButton("取消", null)).create();
         
         dialog.setOnShowListener(dialogInterface -> {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {

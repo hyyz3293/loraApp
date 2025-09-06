@@ -260,7 +260,7 @@ public class UserDao {
         }
         
         user.setUserCode(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_CODE)));
-        user.setGender(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_GENDER)));
+        user.setGender(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_GENDER)));
         user.setPhone(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_PHONE)));
         
         // 将时间戳字符串转换为Date对象

@@ -11,7 +11,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 7;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -305,6 +305,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             // 版本5升级到版本6：更新树形权限数据
             db.execSQL("DELETE FROM " + TABLE_PERMISSIONS);
             insertTreePermissions(db);
+        }
+        
+        if (oldVersion < 7) {
+            // 版本6升级到版本7：创建用户表
+            db.execSQL(CREATE_TABLE_USERS);
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
