@@ -455,28 +455,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('terminal_edit', '编辑', 'terminal', '编辑终端信息', 1, 6, 2, 1)");
+                ") VALUES ('terminal_edit', '编辑', 'terminal', '编辑终端信息', 1, 8, 2, 1)");
 
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('terminal_delete', '删除', 'terminal', '删除终端设备', 1, 6, 2, 2)");
+                ") VALUES ('terminal_delete', '删除', 'terminal', '删除终端设备', 1, 8, 2, 2)");
 
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('terminal_mark', '标记', 'terminal', '标记终端状态', 1, 6, 2, 3)");
+                ") VALUES ('terminal_mark', '标记', 'terminal', '标记终端状态', 1, 8, 2, 3)");
 
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('terminal_confirm', '确认处理', 'terminal', '确认终端处理结果', 1, 6, 2, 4)");
+                ") VALUES ('terminal_confirm', '确认处理', 'terminal', '确认终端处理结果', 1, 8, 2, 4)");
 
         // Level 1 - 日志信息的子权限
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +

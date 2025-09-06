@@ -521,14 +521,11 @@ public class DialogUtils {
         }
 
         LogUtils.e("allPermissions:" + new Gson().toJson(allPermissions));
-        List<Permission> permissionTree = PermissionTreeConverter.convertToTree(allPermissions);
+        List<Permission> permissionTree = PermissionTreeBuilder.buildTree(allPermissions);
         LogUtils.e("permissionTree:" + new Gson().toJson(permissionTree));
         
-        // 将树形结构转换回扁平列表，因为RoleTreeAdapter需要扁平化的数据
-        List<Permission> flatPermissions = PermissionTreeBuilder.flattenPermissionTree(permissionTree);
-        
-        // 设置权限数据到适配器
-        adapter.setPermissions(flatPermissions);
+        // 直接使用树形结构，TreePermissionCheckboxAdapter已经支持树形数据
+        adapter.setPermissions(permissionTree);
         
         // 设置当前选中的权限
         List<Long> currentPermissionLongIds = new ArrayList<>();

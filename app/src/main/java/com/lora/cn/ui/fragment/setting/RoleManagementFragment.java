@@ -263,8 +263,9 @@ public class RoleManagementFragment extends Fragment {
         rvPermissions.setAdapter(permissionAdapter);
 
         // 加载所有权限（使用树形权限获取方法）
-        List<Permission> allPermissions = databaseManager.getPermissionTree();
-        permissionAdapter.setPermissions(allPermissions);
+        List<Permission> flatPermissions = databaseManager.getPermissionTree();
+        List<Permission> treePermissions = PermissionTreeConverter.convertToTree(flatPermissions);
+        permissionAdapter.setPermissions(treePermissions);
 
         // 加载角色当前权限
         List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
