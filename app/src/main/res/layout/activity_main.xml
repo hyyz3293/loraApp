@@ -80,17 +80,6 @@
                 android:layout_width="1dp"
                 android:layout_height="20dp" />
 
-            <TextView
-                android:id="@+id/btn_debug"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="调试"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                android:padding="8dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:layout_marginLeft="18dp" />
-
             <ImageView
                 android:id="@+id/logout"
                 android:layout_width="wrap_content"

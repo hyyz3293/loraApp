@@ -19,8 +19,6 @@ import com.lora.cn.ui.adapter.MainPagerAdapter;
 import com.lora.cn.ui.adapter.MenuTabAdapter;
 import com.lora.cn.ui.model.MenuTab;
 import com.lora.cn.ui.fragment.setting.user.UserInfoFragment;
-import com.lora.cn.ui.fragment.setting.user.UserInfoEditFragment;
-import com.lora.cn.ui.fragment.setting.user.PasswordChangeFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +32,6 @@ public class MainActivity extends AppCompatActivity {
     private List<MenuTab> menuTabs;
     private ImageView btnLogout;
     private TextView tvUserName;
-    private TextView btnDebug;
     private FrameLayout fragmentUserInfoContainer;
     private UserInfoFragment userInfoFragment;
     
@@ -61,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.view_pager);
         btnLogout = findViewById(R.id.logout);
         tvUserName = findViewById(R.id.tv_user_name);
-        btnDebug = findViewById(R.id.btn_debug);
         fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
     }
     
@@ -104,12 +100,7 @@ public class MainActivity extends AppCompatActivity {
         });
         
         btnLogout.setOnClickListener(v -> logout());
-        
-        btnDebug.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, com.lora.cn.DatabaseDebugActivity.class);
-            startActivity(intent);
-        });
-        
+
         tvUserName.setOnClickListener(v -> toggleUserInfo());
     }
 
