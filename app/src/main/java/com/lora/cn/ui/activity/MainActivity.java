@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.blankj.utilcode.util.SPUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.ui.adapter.MainPagerAdapter;
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         initMenuTabs();
         initViewPager();
         initListeners();
+        initUserInfo();
         
         // 默认显示终端列表
         menuTabs.get(0).setSelected(true);
@@ -91,6 +93,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void initUserInfo() {
+        // 获取当前登录用户名并设置到tvUserName
+        String currentUserName = SPUtils.getInstance().getString("current_user_name", "用户");
+        tvUserName.setText(currentUserName);
+    }
+    
     private void initListeners() {
         menuTabAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener<MenuTab>() {
             @Override
