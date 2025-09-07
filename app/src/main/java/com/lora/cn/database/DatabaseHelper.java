@@ -1,8 +1,10 @@
 package com.lora.cn.database;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 /**
  * 数据库帮助类
@@ -313,7 +315,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         
         if (oldVersion < 8) {
-            // 版本7升级到版本8：插入默认管理员用户
+            // 版本7升级到版本8：插入默认管理员角色和用户
+            // 注意：权限数据在版本4升级时已经插入，这里不需要重复插入
+            // 插入默认管理员角色
+            insertDefaultAdminRole(db);
+            // 插入默认管理员用户
             insertDefaultAdminUser(db);
         }
         
@@ -368,6 +374,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
                   COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('高级设置', '系统高级功能设置', 3)");
         
+        // 注意：权限数据已经通过insertTreePermissions插入，这里不需要重复插入
+        
         // 插入默认管理员角色
         insertDefaultAdminRole(db);
         
@@ -379,32 +387,81 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      * 插入默认管理员角色
      */
     private void insertDefaultAdminRole(SQLiteDatabase db) {
-        // 插入管理员角色
-        db.execSQL("INSERT INTO " + TABLE_ROLES + " (" + 
-                  COLUMN_ROLE_NAME + ", " + COLUMN_ROLE_DESCRIPTION + ", " + 
-                  COLUMN_ROLE_SORT_ORDER + ", " + COLUMN_ROLE_STATUS + 
-                  ") VALUES ('管理员', '系统管理员，拥有所有权限', 1, 1)");
+        // 检查管理员角色是否已存在
+        android.database.Cursor cursor = db.rawQuery("SELECT " + COLUMN_ROLE_ID + " FROM " + TABLE_ROLES + " WHERE " + COLUMN_ROLE_NAME + " = '管理员'", null);
+        long adminRoleId;
         
-        // 获取管理员角色ID（应该是1，因为是第一个插入的角色）
-        long adminRoleId = 1;
+        if (cursor.moveToFirst()) {
+            // 管理员角色已存在，获取其ID
+            adminRoleId = cursor.getLong(0);
+            cursor.close();
+        } else {
+            cursor.close();
+            // 插入管理员角色
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_ROLE_NAME, "管理员");
+            values.put(COLUMN_ROLE_DESCRIPTION, "系统管理员，拥有所有权限");
+            values.put(COLUMN_ROLE_SORT_ORDER, 1);
+            values.put(COLUMN_ROLE_STATUS, 1);
+            
+            adminRoleId = db.insert(TABLE_ROLES, null, values);
+        }
         
-        // 为管理员角色分配所有权限
-        // 查询所有权限ID并分配给管理员角色
-        db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + 
-                  COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + 
-                  ") SELECT " + adminRoleId + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
+        // 检查是否已经分配了权限
+        cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_ROLE_PERMISSIONS + " WHERE " + COLUMN_ROLE_PERMISSION_ROLE_ID + " = ?", new String[]{String.valueOf(adminRoleId)});
+        int permissionCount = 0;
+        if (cursor.moveToFirst()) {
+            permissionCount = cursor.getInt(0);
+        }
+        cursor.close();
+        
+        // 如果还没有分配权限，则为管理员角色分配所有权限
+        if (permissionCount == 0) {
+            db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + 
+                      COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + 
+                      ") SELECT " + adminRoleId + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
+        }
     }
     
     /**
      * 插入默认管理员用户
      */
     private void insertDefaultAdminUser(SQLiteDatabase db) {
+        // 检查admin用户是否已存在
+        android.database.Cursor cursor = db.rawQuery("SELECT " + COLUMN_USER_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + " = 'admin'", null);
+        
+        if (cursor.moveToFirst()) {
+            // admin用户已存在，不需要重复插入
+            cursor.close();
+            return;
+        }
+        cursor.close();
+        
+        // 获取管理员角色ID
+        cursor = db.rawQuery("SELECT " + COLUMN_ROLE_ID + " FROM " + TABLE_ROLES + " WHERE " + COLUMN_ROLE_NAME + " = '管理员'", null);
+        long adminRoleId = 1; // 默认值
+        
+        if (cursor.moveToFirst()) {
+            adminRoleId = cursor.getLong(0);
+        }
+        cursor.close();
+        
         // 插入默认管理员用户 admin/123456
-        db.execSQL("INSERT INTO " + TABLE_USERS + " (" + 
-                  COLUMN_USER_NAME + ", " + COLUMN_USER_ACCOUNT + ", " + 
-                  COLUMN_USER_PASSWORD + ", " + COLUMN_USER_ROLE_ID + ", " + 
-                  COLUMN_USER_STATUS + ", " + COLUMN_USER_GENDER + 
-                  ") VALUES ('管理员', 'admin', '123456', 1, 1, 1)");
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_USER_NAME, "管理员");
+        values.put(COLUMN_USER_ACCOUNT, "admin");
+        values.put(COLUMN_USER_PASSWORD, "123456");
+        values.put(COLUMN_USER_ROLE_ID, adminRoleId);
+        values.put(COLUMN_USER_STATUS, 1);
+        values.put(COLUMN_USER_GENDER, 1);
+        
+        long userId = db.insert(TABLE_USERS, null, values);
+        
+        if (userId > 0) {
+            Log.d("DatabaseHelper", "默认管理员用户创建成功，用户ID: " + userId + ", 角色ID: " + adminRoleId);
+        } else {
+            Log.e("DatabaseHelper", "默认管理员用户创建失败");
+        }
     }
     
     /**

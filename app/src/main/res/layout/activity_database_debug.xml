@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="数据库调试信息"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="20dp" />
+
+        <Button
+            android:id="@+id/btn_check_database"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="检查数据库状态"
+            android:layout_marginBottom="10dp" />
+
+        <Button
+            android:id="@+id/btn_recreate_admin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="重新创建管理员数据"
+            android:layout_marginBottom="20dp" />
+
+        <TextView
+            android:id="@+id/tv_debug_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="点击按钮开始检查..."
+            android:textSize="14sp"
+            android:fontFamily="monospace"
+            android:background="#f0f0f0"
+            android:padding="10dp" />
+
+    </LinearLayout>
+
+</ScrollView>
