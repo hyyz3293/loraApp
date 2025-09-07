@@ -14,7 +14,6 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.blankj.utilcode.util.LogUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
 import com.lora.cn.constant.SpConstant;
@@ -138,7 +137,6 @@ public class LoginActivity extends AppCompatActivity {
                 Toast.makeText(this, "账号或者密码错误！", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            LogUtils.e("登录验证失败：" + e.getMessage());
             Toast.makeText(this, "登录验证失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
 
