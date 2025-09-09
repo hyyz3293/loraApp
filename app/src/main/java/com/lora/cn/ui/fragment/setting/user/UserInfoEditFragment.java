@@ -14,7 +14,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.User;
+import com.lora.cn.database.entity.Position;
+import com.lora.cn.database.entity.Department;
+import com.blankj.utilcode.util.LogUtils;
 
 public class UserInfoEditFragment extends Fragment {
 
@@ -27,6 +33,8 @@ public class UserInfoEditFragment extends Fragment {
     private TextView btnCancel;
     private TextView btnSave;
 
+    private DatabaseManager databaseManager;
+    private User currentUser;
     private OnUserInfoEditListener listener;
 
     public interface OnUserInfoEditListener {
@@ -81,6 +89,9 @@ public class UserInfoEditFragment extends Fragment {
         btnCancel = view.findViewById(R.id.btn_cancel);
         btnSave = view.findViewById(R.id.btn_save);
         
+        // 初始化数据库管理器
+        databaseManager = DatabaseManager.getInstance(getContext());
+        
         // 设置性别Spinner
         String[] genderOptions = {"男", "女"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, genderOptions);
@@ -103,9 +114,51 @@ public class UserInfoEditFragment extends Fragment {
     }
 
     private void loadDefaultData() {
-        // 加载默认数据
+        try {
+            // 从SharedPreferences获取当前登录用户ID
+            long currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
+            if (currentUserId != -1) {
+                // 从数据库获取用户信息
+                currentUser = databaseManager.getUserById(currentUserId);
+                if (currentUser != null) {
+                    // 填充用户信息
+                    etUserName.setText(currentUser.getUserName());
+                    
+                    // 设置性别
+                    if ("男".equals(currentUser.getGender())) {
+                        spGender.setSelection(0);
+                    } else {
+                        spGender.setSelection(1);
+                    }
+                    
+                    // 获取并设置职位信息
+                    if (currentUser.getPositionId() > 0) {
+                        Position position = databaseManager.getPositionById((int) currentUser.getPositionId());
+                        if (position != null) {
+                            etPosition.setText(position.getPositionName());
+                        }
+                    }
+                    
+                    // 获取并设置科室信息
+                    if (currentUser.getDepartmentId() > 0) {
+                        Department department = databaseManager.getDepartmentById((int) currentUser.getDepartmentId());
+                        if (department != null) {
+                            etDepartment.setText(department.getDepartmentName());
+                        }
+                    }
+                    
+                    etUserId.setText(currentUser.getUserCode());
+                    etPhone.setText(currentUser.getPhone() != null ? currentUser.getPhone() : "");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            LogUtils.e("UserInfoEditFragment", "加载用户数据失败: " + e.getMessage());
+        }
+        
+        // 如果获取失败，使用默认数据
         etUserName.setText("管理员A");
-        spGender.setSelection(1); // 选择"女"
+        spGender.setSelection(1);
         etPosition.setText("护士长");
         etDepartment.setText("内1科");
         etUserId.setText("HS0001");
@@ -142,20 +195,40 @@ public class UserInfoEditFragment extends Fragment {
     }
 
     private void saveUserInfo() {
-        String userName = etUserName.getText().toString().trim();
-        String gender = spGender.getSelectedItem().toString();
-        String position = etPosition.getText().toString().trim();
-        String department = etDepartment.getText().toString().trim();
-        String userId = etUserId.getText().toString().trim();
-        String phone = etPhone.getText().toString().trim();
-
-        UserInfo userInfo = new UserInfo(userName, gender, position, department, userId, phone);
-        
-        if (listener != null) {
-            listener.onSaveUserInfo(userInfo);
+        try {
+            if (currentUser != null) {
+                String userName = etUserName.getText().toString().trim();
+                String gender = spGender.getSelectedItem().toString();
+                String phone = etPhone.getText().toString().trim();
+                
+                // 更新用户信息
+                currentUser.setUserName(userName);
+                currentUser.setGender(gender);
+                currentUser.setPhone(phone);
+                
+                // 保存到数据库
+                boolean success = databaseManager.updateUser(currentUser);
+                if (success) {
+                    UserInfo userInfo = new UserInfo(userName, gender, 
+                        etPosition.getText().toString().trim(),
+                        etDepartment.getText().toString().trim(),
+                        etUserId.getText().toString().trim(), phone);
+                    
+                    if (listener != null) {
+                        listener.onSaveUserInfo(userInfo);
+                    }
+                    
+                    Toast.makeText(getContext(), "用户信息保存成功", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "用户信息保存失败", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getContext(), "用户信息获取失败，无法保存", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            LogUtils.e("UserInfoEditFragment", "保存用户信息失败: " + e.getMessage());
+            Toast.makeText(getContext(), "用户信息保存失败", Toast.LENGTH_SHORT).show();
         }
-
-        Toast.makeText(getContext(), "用户信息保存成功", Toast.LENGTH_SHORT).show();
     }
 
     public void setUserInfo(UserInfo userInfo) {

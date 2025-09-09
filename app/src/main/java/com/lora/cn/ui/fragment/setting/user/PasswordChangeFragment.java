@@ -13,7 +13,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.User;
+import com.blankj.utilcode.util.LogUtils;
 
 public class PasswordChangeFragment extends Fragment {
 
@@ -23,6 +27,8 @@ public class PasswordChangeFragment extends Fragment {
     private TextView btnCancelPassword;
     private TextView btnSavePassword;
 
+    private DatabaseManager databaseManager;
+    private User currentUser;
     private OnPasswordChangeListener listener;
 
     public interface OnPasswordChangeListener {
@@ -54,6 +60,10 @@ public class PasswordChangeFragment extends Fragment {
         etConfirmPassword = view.findViewById(R.id.et_confirm_password);
         btnCancelPassword = view.findViewById(R.id.btn_cancel_password);
         btnSavePassword = view.findViewById(R.id.btn_save_password);
+        
+        // 初始化数据库管理器
+        databaseManager = DatabaseManager.getInstance(getContext());
+        loadCurrentUser();
     }
 
     private void initListeners() {
@@ -118,14 +128,40 @@ public class PasswordChangeFragment extends Fragment {
         String oldPassword = etOldPassword.getText().toString().trim();
         String newPassword = etNewPassword.getText().toString().trim();
 
-        if (listener != null) {
-            listener.onSavePassword(oldPassword, newPassword);
+        try {
+            if (currentUser == null) {
+                Toast.makeText(getContext(), "用户信息获取失败", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // 验证原密码
+            if (!oldPassword.equals(currentUser.getUserPassword())) {
+                Toast.makeText(getContext(), "原密码不正确", Toast.LENGTH_SHORT).show();
+                etOldPassword.requestFocus();
+                return;
+            }
+            
+            // 更新密码
+            boolean success = databaseManager.updateUserPassword(currentUser.getUserId(), newPassword);
+            if (success) {
+                // 更新当前用户对象的密码
+                currentUser.setUserPassword(newPassword);
+                
+                if (listener != null) {
+                    listener.onSavePassword(oldPassword, newPassword);
+                }
+                
+                Toast.makeText(getContext(), "密码修改成功", Toast.LENGTH_SHORT).show();
+                
+                // 清空输入框
+                clearInputs();
+            } else {
+                Toast.makeText(getContext(), "密码修改失败", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            LogUtils.e("PasswordChangeFragment", "修改密码失败: " + e.getMessage());
+            Toast.makeText(getContext(), "密码修改失败", Toast.LENGTH_SHORT).show();
         }
-
-        Toast.makeText(getContext(), "密码修改成功", Toast.LENGTH_SHORT).show();
-        
-        // 清空输入框
-        clearInputs();
     }
 
     private void clearInputs() {
@@ -136,5 +172,23 @@ public class PasswordChangeFragment extends Fragment {
 
     public void resetForm() {
         clearInputs();
+    }
+    
+    private void loadCurrentUser() {
+        try {
+            // 从SharedPreferences获取当前登录用户ID
+            long currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
+            if (currentUserId != -1) {
+                // 从数据库获取用户信息
+                currentUser = databaseManager.getUserById(currentUserId);
+                if (currentUser == null) {
+                    LogUtils.e("PasswordChangeFragment", "无法获取当前用户信息");
+                }
+            } else {
+                LogUtils.e("PasswordChangeFragment", "未找到当前登录用户ID");
+            }
+        } catch (Exception e) {
+            LogUtils.e("PasswordChangeFragment", "加载用户信息失败: " + e.getMessage());
+        }
     }
 }
