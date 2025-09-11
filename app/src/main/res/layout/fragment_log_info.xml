@@ -8,9 +8,7 @@
     android:layout_marginBottom="20dp"
     android:orientation="vertical">
 
-
     <LinearLayout
-        android:paddingTop="23dp"
         android:paddingBottom="23dp"
         android:paddingLeft="34dp"
         android:paddingRight="34dp"
@@ -21,7 +19,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="93dp"
+            android:layout_height="80dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="12dp" >

@@ -14,7 +14,6 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.blankj.utilcode.util.LogUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
 import com.lora.cn.constant.SpConstant;
@@ -129,10 +128,6 @@ public class LoginActivity extends AppCompatActivity {
                 SPUtils.getInstance().put("current_user_id", authenticatedUser.getUserId());
                 SPUtils.getInstance().put("current_user_name", authenticatedUser.getUserName());
                 SPUtils.getInstance().put("current_user_account", authenticatedUser.getUserAccount());
-
-                LogUtils.e("current_user_id:" + authenticatedUser.getUserId());
-                LogUtils.e("current_user_name:" + authenticatedUser.getUserName());
-                LogUtils.e("current_user_account:" + authenticatedUser.getUserAccount());
                 
                 Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);

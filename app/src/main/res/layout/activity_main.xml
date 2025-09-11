@@ -12,7 +12,7 @@
     <LinearLayout
         android:id="@+id/top_navigation"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="76dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingLeft="20dp"
@@ -38,7 +38,7 @@
                 android:layout_height="wrap_content"
                 android:text="终端监控中心"
                 android:textColor="@color/black"
-                android:textSize="28sp"
+                android:textSize="28dp"
                 android:textStyle="bold" />
 
         </LinearLayout>

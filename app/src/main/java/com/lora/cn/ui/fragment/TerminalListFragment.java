@@ -71,9 +71,17 @@ public class TerminalListFragment extends Fragment {
         terminalList.add(new Terminal("终端002", "科室一", "病房102", R.mipmap.ic_xh_3, "在线", R.mipmap.ic_red_sd, "92%", false));
         terminalList.add(new Terminal("终端003", "科室二", "病房201", R.mipmap.ic_ds, "异常", R.mipmap.ic_red_sd, "15%", true));
         terminalList.add(new Terminal("终端004", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
-        
+        terminalList.add(new Terminal("终端006", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
+        terminalList.add(new Terminal("终端009", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
+        terminalList.add(new Terminal("终端001", "科室一", "病房101", R.mipmap.ic_xh_3, "在线", R.mipmap.ic_red_sd, "85%", true));
+        terminalList.add(new Terminal("终端002", "科室一", "病房102", R.mipmap.ic_xh_3, "在线", R.mipmap.ic_red_sd, "92%", false));
+        terminalList.add(new Terminal("终端003", "科室二", "病房201", R.mipmap.ic_ds, "异常", R.mipmap.ic_red_sd, "15%", true));
+        terminalList.add(new Terminal("终端004", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
+        terminalList.add(new Terminal("终端006", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
+        terminalList.add(new Terminal("终端009", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
+
         // 设置终端列表RecyclerView
-        GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 5);
+        GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 4);
         terminalRecycle.setLayoutManager(terminalLayoutManager);
         
         terminalAdapter = new TerminalAdapter();

@@ -6,12 +6,12 @@
 
     <LinearLayout
         android:background="@drawable/bg_white_12"
-        android:paddingTop="23dp"
         android:paddingBottom="23dp"
         android:paddingLeft="34dp"
         android:layout_marginRight="20dp"
         android:layout_marginLeft="20dp"
         android:paddingRight="34dp"
+
         android:layout_width="match_parent"
         android:layout_weight="1"
         android:orientation="vertical"
@@ -19,7 +19,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="93dp"
+            android:layout_height="80dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="12dp" >
@@ -159,9 +159,7 @@
     </LinearLayout>
 
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"/>
+
 
     <RelativeLayout
         android:background="#F1F5F9"
