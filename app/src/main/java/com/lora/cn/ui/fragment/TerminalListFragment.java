@@ -14,11 +14,15 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.User;
 import com.lora.cn.ui.adapter.TerminalStatusAdapter;
 import com.lora.cn.ui.adapter.TerminalAdapter;
 import com.lora.cn.ui.model.TerminalStatus;
 import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.ui.constants.TerminalStatusConstants;
+import com.blankj.utilcode.util.SPUtils;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,14 +34,36 @@ public class TerminalListFragment extends Fragment {
     private TerminalStatusAdapter terminalStatusAdapter;
     private TerminalAdapter terminalAdapter;
     private int currentStatusIndex = 0;
+    
+    // 权限相关
+    private DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_terminal_list, container, false);
         
+        // 初始化数据库管理器
+        databaseManager = DatabaseManager.getInstance(requireContext());
+        
+        // 初始化用户角色ID
+        long userId = SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            User user = databaseManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = (int)user.getRoleId();
+            }
+        }
+        
         initViews(view);
-        initTerminalStatus();
+        
+        // 检查查看终端列表权限
+        if (hasPermission("terminal_view")) {
+            initTerminalStatus();
+        } else {
+            Toast.makeText(requireContext(), "您没有查看终端列表的权限", Toast.LENGTH_SHORT).show();
+        }
         
         return view;
     }
@@ -88,11 +114,31 @@ public class TerminalListFragment extends Fragment {
         terminalRecycle.setAdapter(terminalAdapter);
         
         terminalAdapter.submitList(terminalList);
+        
+        // 设置终端点击事件监听器
+        terminalAdapter.setOnItemClickListener((adapter, view, position) -> {
+            if (hasPermission("terminal_view")) {
+                Terminal terminal = terminalList.get(position);
+                onTerminalClick(position, terminal);
+            } else {
+                Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void onTerminalClick(int position, Terminal terminal) {
         // TODO: 处理终端点击事件
         // 可以跳转到终端详情页面或显示更多信息
+    }
+    
+    /**
+     * 检查当前用户是否有指定权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        return databaseManager.hasPermission(currentUserRoleId, permissionCode);
     }
 
     public static TerminalListFragment newInstance() {

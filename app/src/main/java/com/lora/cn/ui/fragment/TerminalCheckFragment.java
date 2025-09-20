@@ -15,10 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.User;
 import com.lora.cn.ui.adapter.TerminalChartAdapter;
 import com.lora.cn.ui.model.ChartItem;
 import com.lora.cn.ui.model.TerminalChartData;
 import com.lora.cn.ui.view.PieChartView;
+import com.blankj.utilcode.util.SPUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,11 +44,27 @@ public class TerminalCheckFragment extends Fragment {
     // 数据字段
     private int remainingCount = 1;
     private boolean isChecking = false;
+    
+    // 权限相关
+    private DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_terminal_check, container, false);
+        
+        // 初始化数据库管理器
+        databaseManager = DatabaseManager.getInstance(requireContext());
+        
+        // 初始化用户角色ID
+        long userId = SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            User user = databaseManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = (int)user.getRoleId();
+            }
+        }
         
         initViews(view);
         initData();
@@ -87,6 +106,11 @@ public class TerminalCheckFragment extends Fragment {
     private void initListeners() {
         // 开始清点按钮点击事件
         addTerminal.setOnClickListener(v -> {
+            if (!hasPermission("terminal_check")) {
+                Toast.makeText(getContext(), "您没有终端清点的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
             if (remainingCount <= 0) {
                 Toast.makeText(getContext(), "今日清点次数已用完", Toast.LENGTH_SHORT).show();
                 return;
@@ -306,6 +330,16 @@ public class TerminalCheckFragment extends Fragment {
      */
     public boolean isChecking() {
         return isChecking;
+    }
+    
+    /**
+     * 检查当前用户是否有指定权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        return databaseManager.hasPermission(currentUserRoleId, permissionCode);
     }
 
     public static TerminalCheckFragment newInstance() {

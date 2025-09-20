@@ -15,11 +15,15 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.blankj.utilcode.util.PermissionUtils;
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.User;
 import com.lora.cn.ui.adapter.TerminalSettingDeviceAdapter;
 import com.lora.cn.ui.fragment.setting.device.IpConfigFragment;
 import com.lora.cn.ui.fragment.setting.device.WifiSettingFragment;
 import com.lora.cn.ui.model.SettingItem;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,14 +33,37 @@ public class DeviceSettingFragment extends Fragment {
     private RecyclerView terminalSettingRecycle;
     private TerminalSettingDeviceAdapter terminalSettingAdapter;
     private TextView mTvBack;
+    
+    // 权限相关
+    private DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_device_setting, container, false);
 
+        // 初始化数据库管理器
+        databaseManager = DatabaseManager.getInstance(requireContext());
+        
+        // 初始化用户角色ID
+        long userId = SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            User user = databaseManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = (int)user.getRoleId();
+            }
+        }
+        
         initViews(view);
-        initSettingData();
+        
+        // 检查设备设置权限
+        if (hasPermission("device_setting")) {
+            initSettingData();
+        } else {
+            Toast.makeText(requireContext(), "您没有设备设置的权限", Toast.LENGTH_SHORT).show();
+        }
+        
         initListener();
 
         return view;
@@ -78,8 +105,13 @@ public class DeviceSettingFragment extends Fragment {
         // 设置点击事件监听器
         terminalSettingAdapter.setOnItemClickListener((adapter, view, position) -> {
             SettingItem settingItem = settingList.get(position);
-            if (settingItem.getViewType() == 0 || settingItem.getIndex() < 3)
-                onSettingClick(position, settingItem);
+            if (settingItem.getViewType() == 0 || settingItem.getIndex() < 3) {
+                if (hasPermission("device_setting")) {
+                    onSettingClick(position, settingItem);
+                } else {
+                    Toast.makeText(requireContext(), "您没有修改设备设置的权限", Toast.LENGTH_SHORT).show();
+                }
+            }
         });
 
         // 提交数据到适配器
@@ -126,6 +158,17 @@ public class DeviceSettingFragment extends Fragment {
 
 
     }
+    
+    /**
+     * 检查当前用户是否有指定权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        return databaseManager.hasPermission(currentUserRoleId, permissionCode);
+    }
+    
     public static DeviceSettingFragment newInstance() {
         return new DeviceSettingFragment();
     }

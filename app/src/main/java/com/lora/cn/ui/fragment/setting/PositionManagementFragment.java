@@ -20,7 +20,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Position;
+import com.lora.cn.database.entity.User;
 import com.lora.cn.ui.adapter.PositionAdapter;
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.utils.DialogUtils;
 
 import java.util.Date;
@@ -36,6 +38,7 @@ public class PositionManagementFragment extends Fragment {
     private TextView btnAddPosition;
     private TextView btnBack;
     private DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
 
     @Nullable
     @Override
@@ -60,6 +63,15 @@ public class PositionManagementFragment extends Fragment {
         
         // 初始化数据库管理器
         databaseManager = DatabaseManager.getInstance(requireContext());
+        
+        // 初始化用户角色ID
+        long userId = SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            User user = databaseManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = (int)user.getRoleId();
+            }
+        }
     }
     
     private void setupRecyclerView() {
@@ -77,35 +89,60 @@ public class PositionManagementFragment extends Fragment {
         });
         
         // 新增按钮
-        btnAddPosition.setOnClickListener(v -> showAddPositionDialog());
+        btnAddPosition.setOnClickListener(v -> {
+            if (hasPermission("position_add")) {
+                showAddPositionDialog();
+            } else {
+                Toast.makeText(requireContext(), "您没有新增职位的权限", Toast.LENGTH_SHORT).show();
+            }
+        });
         
         // 设置适配器点击监听器
         positionAdapter.addOnItemChildClickListener(R.id.tv_position_fz, (baseQuickAdapter, view, i) -> {
             Position position = baseQuickAdapter.getItem(i);
             if (position != null) {
-                copyPosition(position);
+                if (hasPermission("position_add")) {
+                    copyPosition(position);
+                } else {
+                    Toast.makeText(requireContext(), "您没有复制职位的权限", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         
         positionAdapter.addOnItemChildClickListener(R.id.tv_position_edit, (baseQuickAdapter, view, i) -> {
             Position position = baseQuickAdapter.getItem(i);
             if (position != null) {
-                showEditPositionDialog(position);
+                if (hasPermission("position_edit")) {
+                    showEditPositionDialog(position);
+                } else {
+                    Toast.makeText(requireContext(), "您没有编辑职位的权限", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         
         positionAdapter.addOnItemChildClickListener(R.id.tv_position_delete, (baseQuickAdapter, view, i) -> {
             Position position = baseQuickAdapter.getItem(i);
             if (position != null) {
-                showDeleteConfirmDialog(position);
+                if (hasPermission("position_delete")) {
+                    showDeleteConfirmDialog(position);
+                } else {
+                    Toast.makeText(requireContext(), "您没有删除职位的权限", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         
         positionAdapter.addOnItemChildClickListener(R.id.switch_position_status, (baseQuickAdapter, view, i) -> {
             Position position = baseQuickAdapter.getItem(i);
             if (position != null) {
-                SwitchCompat switchStatus = (SwitchCompat) view;
-                togglePositionStatus(position, switchStatus.isChecked());
+                if (hasPermission("position_edit")) {
+                    SwitchCompat switchStatus = (SwitchCompat) view;
+                    togglePositionStatus(position, switchStatus.isChecked());
+                } else {
+                    Toast.makeText(requireContext(), "您没有修改职位状态的权限", Toast.LENGTH_SHORT).show();
+                    // 恢复开关状态
+                    SwitchCompat switchStatus = (SwitchCompat) view;
+                    switchStatus.setChecked(!switchStatus.isChecked());
+                }
             }
         });
     }
@@ -358,6 +395,16 @@ public class PositionManagementFragment extends Fragment {
         int newStatus = isChecked ? 1 : 0;
         updatePosition(position.getPositionId(), position.getPositionName(), 
                        position.getSortOrder(), newStatus);
+    }
+
+    /**
+     * 检查当前用户是否有指定权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        return databaseManager.hasPermission(currentUserRoleId, permissionCode);
     }
 
     public static PositionManagementFragment newInstance() {

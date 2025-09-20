@@ -12,7 +12,9 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.ui.adapter.TerminalSettingAdapter;
 import com.lora.cn.ui.fragment.setting.PositionManagementFragment;
 import com.lora.cn.ui.fragment.setting.DepartmentManagementFragment;
@@ -31,17 +33,26 @@ public class SettingsFragment extends Fragment {
     private TerminalSettingAdapter terminalSettingAdapter;
     private View settingsMainContainer;
     private View settingsFragmentContainer;
+    private DatabaseManager databaseManager;
+    private int currentUserRoleId;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_settings, container, false);
         
+        initDatabase();
         initViews(view);
         initSettingData();
         setupBackStackListener();
         
         return view;
+    }
+    
+    private void initDatabase() {
+        databaseManager = DatabaseManager.getInstance(requireContext());
+        // 获取当前登录用户的角色ID
+        currentUserRoleId = SPUtils.getInstance().getInt("current_user_role_id", -1);
     }
 
     private void initViews(View view) {
@@ -51,14 +62,28 @@ public class SettingsFragment extends Fragment {
     }
 
     private void initSettingData() {
-        // 创建设置项数据
+        // 创建设置项数据，根据权限过滤
         List<SettingItem> settingList = new ArrayList<>();
-        settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting3, "角色管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting5, "科室管理"));
-        settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
+        
+        // 检查各项权限并添加对应设置项
+        if (hasPermission("DEVICE_SETTING")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
+        }
+        if (hasPermission("GROUP_MANAGEMENT")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
+        }
+        if (hasPermission("ROLE_MANAGEMENT")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting3, "角色管理"));
+        }
+        if (hasPermission("USER_MANAGEMENT")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
+        }
+        if (hasPermission("DEPARTMENT_MANAGEMENT")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting5, "科室管理"));
+        }
+        if (hasPermission("POSITION_MANAGEMENT")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
+        }
 
 
         // 设置RecyclerView
@@ -80,26 +105,39 @@ public class SettingsFragment extends Fragment {
 
     private void onSettingClick(int position, SettingItem settingItem) {
         Fragment targetFragment = null;
+        String settingName = settingItem.getTitle();
         
-        // 根据位置跳转到不同的Fragment
-        switch (position) {
-            case 0: // 设备设置
-                targetFragment = DeviceSettingFragment.newInstance();
+        // 根据设置项名称跳转到不同的Fragment
+        switch (settingName) {
+            case "设备设置":
+                if (hasPermission("DEVICE_SETTING")) {
+                    targetFragment = DeviceSettingFragment.newInstance();
+                }
                 break;
-            case 1: // 分组管理
-                targetFragment = GroupManagementFragment.newInstance();
+            case "分组管理":
+                if (hasPermission("GROUP_MANAGEMENT")) {
+                    targetFragment = GroupManagementFragment.newInstance();
+                }
                 break;
-            case 2: // 角色管理
-                targetFragment = RoleManagementFragment.newInstance();
+            case "角色管理":
+                if (hasPermission("ROLE_MANAGEMENT")) {
+                    targetFragment = RoleManagementFragment.newInstance();
+                }
                 break;
-            case 3: // 用户管理
-                targetFragment = UserManagementFragment.newInstance();
+            case "用户管理":
+                if (hasPermission("USER_MANAGEMENT")) {
+                    targetFragment = UserManagementFragment.newInstance();
+                }
                 break;
-            case 4: // 科室管理
-                targetFragment = DepartmentManagementFragment.newInstance();
+            case "科室管理":
+                if (hasPermission("DEPARTMENT_MANAGEMENT")) {
+                    targetFragment = DepartmentManagementFragment.newInstance();
+                }
                 break;
-            case 5: // 职位管理
-                targetFragment = PositionManagementFragment.newInstance();
+            case "职位管理":
+                if (hasPermission("POSITION_MANAGEMENT")) {
+                    targetFragment = PositionManagementFragment.newInstance();
+                }
                 break;
         }
         
@@ -125,6 +163,18 @@ public class SettingsFragment extends Fragment {
                 settingsFragmentContainer.setVisibility(View.GONE);
             }
         });
+    }
+    
+    /**
+     * 检查当前用户是否有指定权限
+     * @param permissionCode 权限代码
+     * @return 是否有权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        return databaseManager.hasPermission(currentUserRoleId, permissionCode);
     }
 
     public static SettingsFragment newInstance() {

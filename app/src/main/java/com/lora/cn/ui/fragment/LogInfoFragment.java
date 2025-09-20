@@ -12,8 +12,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.User;
 import com.lora.cn.ui.adapter.TerminalLogAdapter;
 import com.lora.cn.ui.model.TerminalLog;
+import com.blankj.utilcode.util.SPUtils;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,14 +26,34 @@ public class LogInfoFragment extends Fragment {
 
     private RecyclerView terminalLogRecycle;
     private TerminalLogAdapter terminalLogAdapter;
+    private DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_log_info, container, false);
 
+        // 初始化数据库管理器
+        databaseManager = DatabaseManager.getInstance(requireContext());
+        
+        // 初始化用户角色ID
+        long userId = SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            User user = databaseManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = (int)user.getRoleId();
+            }
+        }
+        
         initViews(view);
-        initLogData();
+        
+        // 检查查看日志权限
+        if (hasPermission("log_view")) {
+            initLogData();
+        } else {
+            Toast.makeText(requireContext(), "您没有查看日志的权限", Toast.LENGTH_SHORT).show();
+        }
         
         return view;
     }
@@ -61,8 +85,12 @@ public class LogInfoFragment extends Fragment {
         
         // 设置点击事件监听器
         terminalLogAdapter.setOnItemClickListener((adapter, view, position) -> {
-            TerminalLog log = logList.get(position);
-            onLogClick(position, log);
+            if (hasPermission("log_view")) {
+                TerminalLog log = logList.get(position);
+                onLogClick(position, log);
+            } else {
+                Toast.makeText(requireContext(), "您没有查看日志详情的权限", Toast.LENGTH_SHORT).show();
+            }
         });
         
         // 提交数据到适配器
@@ -72,6 +100,16 @@ public class LogInfoFragment extends Fragment {
     private void onLogClick(int position, TerminalLog log) {
         // TODO: 处理日志点击事件
         // 可以显示日志详情或执行相关操作
+    }
+    
+    /**
+     * 检查当前用户是否有指定权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        return databaseManager.hasPermission(currentUserRoleId, permissionCode);
     }
 
     public static LogInfoFragment newInstance() {

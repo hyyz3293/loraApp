@@ -25,7 +25,9 @@ import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Group;
+import com.lora.cn.database.entity.User;
 import com.lora.cn.ui.adapter.GroupAdapter;
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.ui.fragment.setting.group.CategoryManagementFragment;
 import com.lora.cn.utils.DialogUtils;
 
@@ -46,6 +48,7 @@ public class GroupManagementFragment extends Fragment  {
     private GroupAdapter groupAdapter;
     private DatabaseManager dbManager;
     private List<Group> allGroups;
+    private int currentUserRoleId = -1;
 
     @Nullable
     @Override
@@ -76,6 +79,15 @@ public class GroupManagementFragment extends Fragment  {
         // 初始化数据库管理器
         dbManager = DatabaseManager.getInstance(requireContext());
         allGroups = new ArrayList<>();
+        
+        // 初始化用户角色ID
+        long userId = SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            User user = dbManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = (int)user.getRoleId();
+            }
+        }
     }
 
     private void setupRecyclerView() {
@@ -93,7 +105,13 @@ public class GroupManagementFragment extends Fragment  {
         });
         
         // 新增按钮
-        btnAdd.setOnClickListener(v -> showAddGroupDialog());
+        btnAdd.setOnClickListener(v -> {
+            if (hasPermission("group_add")) {
+                showAddGroupDialog();
+            } else {
+                Toast.makeText(requireContext(), "您没有新增分组的权限", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         // 搜索按钮
         btnSearch.setOnClickListener(v -> performSearch());
@@ -276,11 +294,19 @@ public class GroupManagementFragment extends Fragment  {
 
 
     public void onEditClick(Group group) {
-        showEditGroupDialog(group);
+        if (hasPermission("group_edit")) {
+            showEditGroupDialog(group);
+        } else {
+            Toast.makeText(requireContext(), "您没有编辑分组的权限", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void onDeleteClick(Group group) {
-        deleteGroup(group);
+        if (hasPermission("group_delete")) {
+            deleteGroup(group);
+        } else {
+            Toast.makeText(requireContext(), "您没有删除分组的权限", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void onItemClickItem(Group group) {
@@ -295,6 +321,16 @@ public class GroupManagementFragment extends Fragment  {
         transaction.replace(R.id.settings_fragment_container, categoryFragment);
         transaction.addToBackStack(null);
         transaction.commit();
+    }
+
+    /**
+     * 检查当前用户是否有指定权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        return dbManager.hasPermission(currentUserRoleId, permissionCode);
     }
 
     public static GroupManagementFragment newInstance() {

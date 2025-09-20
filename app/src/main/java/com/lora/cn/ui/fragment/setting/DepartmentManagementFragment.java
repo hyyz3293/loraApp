@@ -23,8 +23,11 @@ import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Department;
+import com.lora.cn.database.entity.User;
 import com.lora.cn.ui.adapter.DepartmentAdapter;
 import com.lora.cn.utils.DialogUtils;
+import com.blankj.utilcode.util.SPUtils;
+import com.lora.cn.constant.SpConstant;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +41,7 @@ public class DepartmentManagementFragment extends Fragment {
     private DepartmentAdapter departmentAdapter;
     private DatabaseManager dbManager;
     private List<Department> allDepartments = new ArrayList<>();
+    private long currentUserRoleId;
 
     @Nullable
     @Override
@@ -63,6 +67,15 @@ public class DepartmentManagementFragment extends Fragment {
         // 初始化数据库管理器
         dbManager = DatabaseManager.getInstance(requireContext());
         allDepartments = new ArrayList<>();
+        
+        // 初始化用户角色ID
+        long userId = SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            User user = dbManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = user.getRoleId();
+            }
+        }
     }
     
     private void setupRecyclerView() {
@@ -79,8 +92,12 @@ public class DepartmentManagementFragment extends Fragment {
             }
         });
         
-        // 新增按钮
-        btnAdd.setOnClickListener(v -> showAddDepartmentDialog());
+        // 新增按钮 - 检查权限
+        if (hasPermission("DEPARTMENT_ADD")) {
+            btnAdd.setOnClickListener(v -> showAddDepartmentDialog());
+        } else {
+            btnAdd.setVisibility(View.GONE);
+        }
         
         // 设置适配器点击监听器
         departmentAdapter.addOnItemChildClickListener(R.id.tv_department_fz, new BaseQuickAdapter.OnItemChildClickListener<Department>() {
@@ -97,8 +114,10 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department department = baseQuickAdapter.getItem(i);
-                if (department != null) {
+                if (department != null && hasPermission("DEPARTMENT_EDIT")) {
                     onEditClick(department);
+                } else {
+                    Toast.makeText(requireContext(), "您没有编辑科室的权限", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -107,8 +126,10 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department department = baseQuickAdapter.getItem(i);
-                if (department != null) {
+                if (department != null && hasPermission("DEPARTMENT_DELETE")) {
                     onDeleteClick(department);
+                } else {
+                    Toast.makeText(requireContext(), "您没有删除科室的权限", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -117,9 +138,14 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department department = baseQuickAdapter.getItem(i);
-                if (department != null) {
+                if (department != null && hasPermission("DEPARTMENT_STATUS")) {
                     SwitchCompat switchStatus = (SwitchCompat) view;
                     onStatusChanged(department, switchStatus.isChecked());
+                } else {
+                    // 恢复开关状态
+                    SwitchCompat switchStatus = (SwitchCompat) view;
+                    switchStatus.setChecked(department.getStatus() == 1);
+                    Toast.makeText(requireContext(), "您没有修改科室状态的权限", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -296,6 +322,16 @@ public class DepartmentManagementFragment extends Fragment {
          updateDepartment((int)department.getDepartmentId(), department.getDepartmentName(), 
                          department.getSortOrder(), newStatus);
      }
+
+    /**
+     * 检查当前用户是否有指定权限
+     */
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId <= 0) {
+            return false;
+        }
+        return dbManager.hasPermission((int)currentUserRoleId, permissionCode);
+    }
 
     public static DepartmentManagementFragment newInstance() {
         return new DepartmentManagementFragment();
