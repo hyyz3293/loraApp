@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_dialog_rounded">
+
+    <!-- 标题 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="添加终端设备"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <!-- 搜索状态显示 -->
+    <LinearLayout
+        android:id="@+id/ll_search_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/pb_searching"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:id="@+id/tv_search_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="正在搜索终端设备..."
+            android:textSize="14sp"
+            android:textColor="#666666" />
+
+    </LinearLayout>
+
+    <!-- 搜索到的终端列表 -->
+    <TextView
+        android:id="@+id/tv_found_terminals_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="发现的终端设备："
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_found_terminals"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="200dp"
+        android:layout_marginBottom="20dp"
+        android:visibility="gone" />
+
+    <!-- 无设备提示 -->
+    <TextView
+        android:id="@+id/tv_no_devices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="未发现新的终端设备"
+        android:textSize="14sp"
+        android:textColor="#999999"
+        android:gravity="center"
+        android:padding="20dp"
+        android:visibility="gone" />
+
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <TextView
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="取消"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:background="@drawable/bg_btn_cancel"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:id="@+id/btn_search"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="开始搜索"
+            android:textSize="14sp"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:background="@drawable/bg_btn_primary" />
+
+    </LinearLayout>
+
+</LinearLayout>

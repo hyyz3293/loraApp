@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:background="@drawable/bg_item_selectable"
+    android:gravity="center_vertical">
+
+    <!-- 终端信息 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_terminal_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="终端设备"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/black" />
+
+        <TextView
+            android:id="@+id/tv_terminal_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ID: 12345678"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tv_signal_strength"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="信号强度: -65dBm"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+    <!-- 添加按钮 -->
+    <TextView
+        android:id="@+id/btn_add_terminal"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:text="添加"
+        android:textSize="12sp"
+        android:textColor="@color/white"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:background="@drawable/bg_btn_primary" />
+
+</LinearLayout>

@@ -13,6 +13,8 @@ import com.chad.library.adapter4.viewholder.QuickViewHolder;
 import com.lora.cn.R;
 import com.lora.cn.ui.model.Terminal;
 
+import java.util.List;
+
 public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder> {
 
     @Override
@@ -44,6 +46,13 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
     @Override
     protected QuickViewHolder onCreateViewHolder(@NonNull Context context, @NonNull ViewGroup viewGroup, int i) {
         return new QuickViewHolder(R.layout.item_terminal, viewGroup);
+    }
+
+    /**
+     * 更新终端列表数据
+     */
+    public void updateTerminals(List<Terminal> terminals) {
+        submitList(terminals);
     }
 
 }

@@ -101,6 +101,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_USER_CREATE_TIME = "create_time";
     public static final String COLUMN_USER_UPDATE_TIME = "update_time";
     
+    // 终端表
+    public static final String TABLE_TERMINALS = "terminals";
+    public static final String COLUMN_TERMINAL_ID = "terminal_id";
+    public static final String COLUMN_TERMINAL_DEVICE_ID = "terminal_device_id";
+    public static final String COLUMN_TERMINAL_NAME = "terminal_name";
+    public static final String COLUMN_TERMINAL_STATUS = "status";
+    public static final String COLUMN_TERMINAL_SIGNAL_STRENGTH = "signal_strength";
+    public static final String COLUMN_TERMINAL_DEPARTMENT = "department";
+    public static final String COLUMN_TERMINAL_LOCATION = "location";
+    public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
+    public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
+    
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 
         "CREATE TABLE " + TABLE_GROUPS + " (" +
@@ -215,6 +227,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         TABLE_DEPARTMENTS + "(" + COLUMN_DEPARTMENT_ID + ") ON DELETE SET NULL" +
         ")";
     
+    // 创建终端表的SQL语句
+    private static final String CREATE_TABLE_TERMINALS = 
+        "CREATE TABLE " + TABLE_TERMINALS + " (" +
+        COLUMN_TERMINAL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_TERMINAL_DEVICE_ID + " TEXT NOT NULL UNIQUE, " +
+        COLUMN_TERMINAL_NAME + " TEXT NOT NULL, " +
+        COLUMN_TERMINAL_STATUS + " TEXT DEFAULT '在线', " +
+        COLUMN_TERMINAL_SIGNAL_STRENGTH + " INTEGER DEFAULT 0, " +
+        COLUMN_TERMINAL_DEPARTMENT + " TEXT, " +
+        COLUMN_TERMINAL_LOCATION + " TEXT, " +
+        COLUMN_TERMINAL_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        COLUMN_TERMINAL_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
+        ")";
+    
     // 创建索引的SQL语句
     private static final String CREATE_INDEX_CATEGORIES_GROUP_ID = 
         "CREATE INDEX idx_categories_group_id ON " + TABLE_CATEGORIES + 
@@ -261,6 +287,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 创建用户表
         db.execSQL(CREATE_TABLE_USERS);
+        
+        // 创建终端表
+        db.execSQL(CREATE_TABLE_TERMINALS);
         
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
@@ -745,12 +774,70 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('user_reset_password', '重置密码', 'user', '重置用户密码', 1, 6, 1, 4)");
-
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
-                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
-                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
-                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
-                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('user_disable', '启用/禁用', 'user', '启用或禁用用户账户', 1, 6, 1, 5)");
+    }
+    
+    // 终端相关的数据库操作方法
+    
+    /**
+     * 检查终端是否已存在
+     */
+    public boolean isTerminalExists(String terminalDeviceId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT COUNT(*) FROM " + TABLE_TERMINALS + 
+                      " WHERE " + COLUMN_TERMINAL_DEVICE_ID + " = ?";
+        android.database.Cursor cursor = db.rawQuery(query, new String[]{terminalDeviceId});
+        
+        boolean exists = false;
+        if (cursor.moveToFirst()) {
+            exists = cursor.getInt(0) > 0;
+        }
+        cursor.close();
+        return exists;
+    }
+    
+    /**
+     * 添加新终端到数据库
+     */
+    public long addTerminal(com.lora.cn.ui.model.Terminal terminal) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        
+        values.put(COLUMN_TERMINAL_DEVICE_ID, terminal.getTerminalId());
+        values.put(COLUMN_TERMINAL_NAME, terminal.getTerminalName());
+        values.put(COLUMN_TERMINAL_STATUS, terminal.getStatus());
+        values.put(COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
+        values.put(COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
+        values.put(COLUMN_TERMINAL_LOCATION, terminal.getLocation());
+        
+        long result = db.insert(TABLE_TERMINALS, null, values);
+        return result;
+    }
+    
+    /**
+     * 获取所有终端列表
+     */
+    public java.util.List<com.lora.cn.ui.model.Terminal> getAllTerminals() {
+        java.util.List<com.lora.cn.ui.model.Terminal> terminals = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        String query = "SELECT * FROM " + TABLE_TERMINALS + " ORDER BY " + COLUMN_TERMINAL_CREATE_TIME + " DESC";
+        android.database.Cursor cursor = db.rawQuery(query, null);
+        
+        if (cursor.moveToFirst()) {
+            do {
+                com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
+                terminal.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_ID)));
+                terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_ID)));
+                terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_NAME)));
+                terminal.setStatus(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS)));
+                terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+                terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
+                terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
+                
+                terminals.add(terminal);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return terminals;
     }
 }
