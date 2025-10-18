@@ -41,6 +41,18 @@
                 android:layout_height="32dp" />
 
             <TextView
+                android:id="@+id/auto_fill"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="自动获取"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
+
+            <TextView
                 android:id="@+id/back"
                 android:background="@drawable/bg_back_4"
                 android:textSize="16dp"

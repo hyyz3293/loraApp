@@ -22,7 +22,9 @@ import com.lora.cn.ui.fragment.setting.DeviceSettingFragment;
 import com.lora.cn.ui.fragment.setting.GroupManagementFragment;
 import com.lora.cn.ui.fragment.setting.RoleManagementFragment;
 import com.lora.cn.ui.fragment.setting.UserManagementFragment;
+import com.lora.cn.ui.fragment.setting.device.IpConfigFragment;
 import com.lora.cn.ui.model.SettingItem;
+import com.lora.cn.database.entity.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,8 +53,15 @@ public class SettingsFragment extends Fragment {
     
     private void initDatabase() {
         databaseManager = DatabaseManager.getInstance(requireContext());
-        // 获取当前登录用户的角色ID
-        currentUserRoleId = SPUtils.getInstance().getInt("current_user_role_id", -1);
+        // 获取当前登录用户的角色ID（通过 current_user_id 反查）
+        long currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
+        currentUserRoleId = -1;
+        if (currentUserId != -1) {
+            User user = databaseManager.getUserById(currentUserId);
+            if (user != null) {
+                currentUserRoleId = (int) user.getRoleId();
+            }
+        }
     }
 
     private void initViews(View view) {
@@ -66,22 +75,26 @@ public class SettingsFragment extends Fragment {
         List<SettingItem> settingList = new ArrayList<>();
         
         // 检查各项权限并添加对应设置项
-        if (hasPermission("DEVICE_SETTING")) {
+        if (hasPermission("setting_device")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
         }
-        if (hasPermission("GROUP_MANAGEMENT")) {
+        if (hasPermission("setting_ip")) {
+            // 直接增加网关IP配置的快捷入口
+            settingList.add(new SettingItem(R.mipmap.ic_setting1, "网关IP配置"));
+        }
+        if (hasPermission("setting")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
         }
-        if (hasPermission("ROLE_MANAGEMENT")) {
+        if (hasPermission("role_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting3, "角色管理"));
         }
-        if (hasPermission("USER_MANAGEMENT")) {
+        if (hasPermission("user_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
         }
-        if (hasPermission("DEPARTMENT_MANAGEMENT")) {
+        if (hasPermission("setting")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting5, "科室管理"));
         }
-        if (hasPermission("POSITION_MANAGEMENT")) {
+        if (hasPermission("setting")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
         }
 
@@ -101,6 +114,7 @@ public class SettingsFragment extends Fragment {
         
         // 提交数据到适配器
         terminalSettingAdapter.submitList(settingList);
+        terminalSettingAdapter.notifyDataSetChanged();
     }
 
     private void onSettingClick(int position, SettingItem settingItem) {
@@ -110,32 +124,37 @@ public class SettingsFragment extends Fragment {
         // 根据设置项名称跳转到不同的Fragment
         switch (settingName) {
             case "设备设置":
-                if (hasPermission("DEVICE_SETTING")) {
+                if (hasPermission("setting_device")) {
                     targetFragment = DeviceSettingFragment.newInstance();
                 }
                 break;
+            case "网关IP配置":
+                if (hasPermission("setting_ip")) {
+                    targetFragment = IpConfigFragment.newInstance();
+                }
+                break;
             case "分组管理":
-                if (hasPermission("GROUP_MANAGEMENT")) {
+                if (hasPermission("setting")) {
                     targetFragment = GroupManagementFragment.newInstance();
                 }
                 break;
             case "角色管理":
-                if (hasPermission("ROLE_MANAGEMENT")) {
+                if (hasPermission("role_management")) {
                     targetFragment = RoleManagementFragment.newInstance();
                 }
                 break;
             case "用户管理":
-                if (hasPermission("USER_MANAGEMENT")) {
+                if (hasPermission("user_management")) {
                     targetFragment = UserManagementFragment.newInstance();
                 }
                 break;
             case "科室管理":
-                if (hasPermission("DEPARTMENT_MANAGEMENT")) {
+                if (hasPermission("setting")) {
                     targetFragment = DepartmentManagementFragment.newInstance();
                 }
                 break;
             case "职位管理":
-                if (hasPermission("POSITION_MANAGEMENT")) {
+                if (hasPermission("setting")) {
                     targetFragment = PositionManagementFragment.newInstance();
                 }
                 break;

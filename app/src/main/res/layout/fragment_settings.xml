@@ -8,7 +8,7 @@
         android:id="@+id/settings_main_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/bg_white_12"
+        android:background="@color/black"
         android:layout_marginLeft="20dp"
         android:layout_marginRight="20dp"
         android:layout_marginBottom="20dp"
@@ -26,6 +26,7 @@
     <!-- 子Fragment容器 -->
     <FrameLayout
         android:id="@+id/settings_fragment_container"
+        android:background="@color/trans"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone" />

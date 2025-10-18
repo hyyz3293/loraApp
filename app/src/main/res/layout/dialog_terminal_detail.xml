@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/bg_dialog_rounded">
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="终端详情"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:paddingBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tv_device_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="设备名称"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:paddingTop="4dp" />
+
+    <TextView
+        android:id="@+id/tv_device_id"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="设备ID"
+        android:textSize="14sp"
+        android:textColor="#383B40"
+        android:paddingTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_department"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="所属科室"
+        android:textSize="14sp"
+        android:textColor="#383B40"
+        android:paddingTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="位置信息"
+        android:textSize="14sp"
+        android:textColor="#383B40"
+        android:paddingTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_signal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="信号强度"
+        android:textSize="14sp"
+        android:textColor="#383B40"
+        android:paddingTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_battery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="电池电量"
+        android:textSize="14sp"
+        android:textColor="#383B40"
+        android:paddingTop="2dp" />
+
+    <!-- 电量进度条 -->
+    <ProgressBar
+        android:id="@+id/pb_battery"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:progress="0"
+        android:max="100"
+        android:progressTint="@color/colorPrimary"
+        android:indeterminate="false"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="状态"
+        android:textSize="14sp"
+        android:textColor="#383B40"
+        android:paddingTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="时间"
+        android:textSize="14sp"
+        android:textColor="#383B40"
+        android:paddingTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_payload"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="原始HEX"
+        android:textSize="12sp"
+        android:textColor="#636363"
+        android:paddingTop="8dp"
+        android:background="@drawable/bg_white_3"
+        android:padding="8dp"
+        android:maxLines="6"
+        android:scrollbars="vertical" />
+
+    <!-- 操作区：复制与刷新 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingTop="10dp">
+
+        <TextView
+            android:id="@+id/btn_copy"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="复制HEX"
+            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/bg_btn_primary"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/btn_refresh"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="刷新信息"
+            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/bg_btn_primary" />
+    </LinearLayout>
+
+    <!-- 刷新状态 -->
+    <TextView
+        android:id="@+id/tv_refresh_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="#636363"
+        android:paddingTop="6dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="horizontal"
+        android:paddingTop="12dp">
+
+        <TextView
+            android:id="@+id/btn_close"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="关闭"
+            android:textSize="12sp"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:background="@drawable/bg_btn_cancel" />
+    </LinearLayout>
+
+</LinearLayout>

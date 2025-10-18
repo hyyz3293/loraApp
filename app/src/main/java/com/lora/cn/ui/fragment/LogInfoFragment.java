@@ -49,7 +49,7 @@ public class LogInfoFragment extends Fragment {
         initViews(view);
         
         // 检查查看日志权限
-        if (hasPermission("log_view")) {
+        if (hasPermission("log_info")) {
             initLogData();
         } else {
             Toast.makeText(requireContext(), "您没有查看日志的权限", Toast.LENGTH_SHORT).show();
@@ -85,7 +85,7 @@ public class LogInfoFragment extends Fragment {
         
         // 设置点击事件监听器
         terminalLogAdapter.setOnItemClickListener((adapter, view, position) -> {
-            if (hasPermission("log_view")) {
+            if (hasPermission("log_info")) {
                 TerminalLog log = logList.get(position);
                 onLogClick(position, log);
             } else {

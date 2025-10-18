@@ -26,6 +26,7 @@ import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.ui.constants.TerminalStatusConstants;
 import com.lora.cn.utils.LoRaProtocolParser;
 import com.lora.cn.dialog.AddTerminalDialog;
+import com.lora.cn.dialog.TerminalDetailDialog;
 import com.blankj.utilcode.util.SPUtils;
 
 import java.util.ArrayList;
@@ -66,7 +67,7 @@ public class TerminalListFragment extends Fragment {
         initViews(view);
         
         // 检查查看终端列表权限
-        if (hasPermission("terminal_view")) {
+        if (hasPermission("terminal_list")) {
             initTerminalStatus();
         } else {
             Toast.makeText(requireContext(), "您没有查看终端列表的权限", Toast.LENGTH_SHORT).show();
@@ -110,18 +111,7 @@ public class TerminalListFragment extends Fragment {
     private void initTerminalList() {
         // 创建示例终端数据
         List<Terminal> terminalList = new ArrayList<>();
-        terminalList.add(new Terminal("终端001", "科室一", "病房101", R.mipmap.ic_xh_3, "在线", R.mipmap.ic_red_sd, "85%", true));
-        terminalList.add(new Terminal("终端002", "科室一", "病房102", R.mipmap.ic_xh_3, "在线", R.mipmap.ic_red_sd, "92%", false));
-        terminalList.add(new Terminal("终端003", "科室二", "病房201", R.mipmap.ic_ds, "异常", R.mipmap.ic_red_sd, "15%", true));
-        terminalList.add(new Terminal("终端004", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
-        terminalList.add(new Terminal("终端006", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
-        terminalList.add(new Terminal("终端009", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
-        terminalList.add(new Terminal("终端001", "科室一", "病房101", R.mipmap.ic_xh_3, "在线", R.mipmap.ic_red_sd, "85%", true));
-        terminalList.add(new Terminal("终端002", "科室一", "病房102", R.mipmap.ic_xh_3, "在线", R.mipmap.ic_red_sd, "92%", false));
-        terminalList.add(new Terminal("终端003", "科室二", "病房201", R.mipmap.ic_ds, "异常", R.mipmap.ic_red_sd, "15%", true));
-        terminalList.add(new Terminal("终端004", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
-        terminalList.add(new Terminal("终端006", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
-        terminalList.add(new Terminal("终端009", "科室二", "病房202", R.mipmap.ic_xh_no, "离线", R.mipmap.ic_red_sd, "0%", false));
+
 
         // 设置终端列表RecyclerView
         GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 4);
@@ -134,7 +124,7 @@ public class TerminalListFragment extends Fragment {
         
         // 设置终端点击事件监听器
         adapter.setOnItemClickListener((adapter, view, position) -> {
-            if (hasPermission("terminal_view")) {
+            if (hasPermission("terminal_detail")) {
                 Terminal terminal = terminalList.get(position);
                 onTerminalClick(position, terminal);
             } else {
@@ -144,8 +134,50 @@ public class TerminalListFragment extends Fragment {
     }
 
     private void onTerminalClick(int position, Terminal terminal) {
-        // TODO: 处理终端点击事件
-        // 可以跳转到终端详情页面或显示更多信息
+        // 将UI层的 Terminal 映射为协议层的 TerminalInfo，用于详情弹窗
+        LoRaProtocolParser.TerminalInfo info = new LoRaProtocolParser.TerminalInfo();
+        info.deviceId = terminal.getTerminalId();
+        // 优先使用数据库中的 terminalName，其次回退示例数据的 name
+        info.deviceName = terminal.getTerminalName() != null && !terminal.getTerminalName().isEmpty()
+                ? terminal.getTerminalName() : terminal.getName();
+        info.department = terminal.getDepartment();
+        info.location = terminal.getLocation();
+        info.signalStrength = terminal.getSignalStrength();
+        info.status = mapStatusToInt(terminal.getStatus(), terminal.getStatusText());
+        info.batteryLevel = parseBatteryPercent(terminal.getBatteryText());
+        info.timestamp = System.currentTimeMillis();
+        info.payloadHex = ""; // 列表数据无原始HEX，详情支持刷新获取
+
+        TerminalDetailDialog dialog = new TerminalDetailDialog(requireContext(), info);
+        dialog.show();
+    }
+
+    private int parseBatteryPercent(String batteryText) {
+        if (batteryText == null) return 0;
+        try {
+            String t = batteryText.trim();
+            if (t.endsWith("%")) {
+                t = t.substring(0, t.length() - 1);
+            }
+            return Math.max(0, Math.min(100, Integer.parseInt(t)));
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private int mapStatusToInt(String status, String statusText) {
+        String s = status != null ? status : statusText;
+        if (s == null) return 1;
+        switch (s) {
+            case "在线":
+                return 1;
+            case "离线":
+                return 0;
+            case "异常":
+                return 2;
+            default:
+                return 1;
+        }
     }
     
     /**

@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,6 +21,7 @@ import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.utils.LoRaProtocolParser;
+import com.lora.cn.network.GatewayClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +43,7 @@ public class AddTerminalDialog extends Dialog {
     private List<LoRaProtocolParser.TerminalInfo> foundTerminals;
     private Handler handler;
     private OnTerminalAddedListener listener;
+    private GatewayClient gatewayClient;
     
     public interface OnTerminalAddedListener {
         void onTerminalAdded(LoRaProtocolParser.TerminalInfo terminalInfo);
@@ -51,6 +54,7 @@ public class AddTerminalDialog extends Dialog {
         this.context = context;
         this.foundTerminals = new ArrayList<>();
         this.handler = new Handler(Looper.getMainLooper());
+        this.gatewayClient = new GatewayClient();
         initDialog();
     }
     
@@ -100,19 +104,104 @@ public class AddTerminalDialog extends Dialog {
         tvNoDevices.setVisibility(View.GONE);
         
         btnSearch.setText("停止搜索");
-        tvSearchStatus.setText("正在搜索终端设备...");
+        tvSearchStatus.setText("正在检查网络连接...");
         
         // 清空之前的搜索结果
         foundTerminals.clear();
         adapter.notifyDataSetChanged();
         
-        // 模拟LoRa搜索过程
-        simulateLoRaSearch();
+        // 真实网关搜索
+        gatewayClient.startScan(new GatewayClient.ScanListener() {
+            @Override
+            public void onDeviceFound(LoRaProtocolParser.TerminalInfo info) {
+                handler.post(() -> {
+                    if (llSearchStatus.getVisibility() == View.VISIBLE) {
+                        foundTerminals.add(info);
+                        adapter.notifyItemInserted(foundTerminals.size() - 1);
+                        tvSearchStatus.setText("发现 " + foundTerminals.size() + " 个设备");
+                    }
+                });
+            }
+
+            @Override
+            public void onStatus(String msg) {
+                handler.post(() -> {
+                    tvSearchStatus.setText(msg);
+                    Log.d("AddTerminalDialog", "扫描状态: " + msg);
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e("AddTerminalDialog", "扫描错误: " + error);
+                handler.post(() -> {
+                    // 显示详细的错误信息和解决建议
+                    showDetailedError(error);
+                    stopSearching();
+                });
+            }
+
+            @Override
+            public void onComplete() {
+                handler.post(() -> stopSearching());
+            }
+        });
+    }
+    
+    private void showDetailedError(String error) {
+        // 创建详细的错误对话框
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(context);
+        builder.setTitle("网关连接失败");
+        
+        String detailedMessage = error;
+        String suggestions = "";
+        
+        // 根据错误类型提供具体的解决建议
+        if (error.contains("Connection refused") || error.contains("连接被拒绝")) {
+            suggestions = "\n\n解决建议：\n" +
+                    "1. 检查网关设备是否开机并正常运行\n" +
+                    "2. 确认网关服务是否在端口6000上运行\n" +
+                    "3. 检查网关设备的防火墙设置\n" +
+                    "4. 尝试重启网关设备";
+        } else if (error.contains("timeout") || error.contains("超时")) {
+            suggestions = "\n\n解决建议：\n" +
+                    "1. 检查网络连接是否稳定\n" +
+                    "2. 确认设备与网关在同一网络中\n" +
+                    "3. 检查网关设备负载是否过高\n" +
+                    "4. 尝试移动到网关设备附近";
+        } else if (error.contains("无法ping通") || error.contains("网络不可达")) {
+            suggestions = "\n\n解决建议：\n" +
+                    "1. 检查网关IP地址是否正确\n" +
+                    "2. 确认设备已连接到正确的WiFi网络\n" +
+                    "3. 检查路由器设置，确保设备间可以通信\n" +
+                    "4. 尝试重新连接WiFi网络";
+        } else if (error.contains("HTTP明文流量")) {
+            suggestions = "\n\n解决建议：\n" +
+                    "1. 应用已更新网络安全配置\n" +
+                    "2. 请重新安装应用或清除应用数据\n" +
+                    "3. 如问题持续，请联系技术支持";
+        } else {
+            suggestions = "\n\n通用解决建议：\n" +
+                    "1. 检查网关设备状态和网络连接\n" +
+                    "2. 确认IP地址和端口配置正确\n" +
+                    "3. 重启网关设备和移动设备\n" +
+                    "4. 如问题持续，请联系技术支持";
+        }
+        
+        builder.setMessage(detailedMessage + suggestions);
+        builder.setPositiveButton("确定", null);
+        builder.setNeutralButton("重试", (dialog, which) -> {
+            dialog.dismiss();
+            startSearching();
+        });
+        
+        builder.create().show();
     }
     
     private void stopSearching() {
         llSearchStatus.setVisibility(View.GONE);
         btnSearch.setText("开始搜索");
+        gatewayClient.stopScan();
         
         if (foundTerminals.isEmpty()) {
             tvNoDevices.setVisibility(View.VISIBLE);
@@ -120,43 +209,6 @@ public class AddTerminalDialog extends Dialog {
             tvFoundTerminalsTitle.setVisibility(View.VISIBLE);
             rvFoundTerminals.setVisibility(View.VISIBLE);
         }
-    }
-    
-    private void simulateLoRaSearch() {
-        // 模拟搜索过程，实际应用中这里会调用真实的LoRa通信
-        handler.postDelayed(() -> {
-            if (llSearchStatus.getVisibility() == View.VISIBLE) {
-                // 模拟发现新设备
-                LoRaProtocolParser.TerminalInfo terminalInfo = generateRandomTerminal();
-                foundTerminals.add(terminalInfo);
-                adapter.notifyItemInserted(foundTerminals.size() - 1);
-                
-                tvSearchStatus.setText("发现 " + foundTerminals.size() + " 个设备");
-                
-                // 继续搜索
-                if (foundTerminals.size() < 5) { // 最多搜索5个设备
-                    simulateLoRaSearch();
-                } else {
-                    stopSearching();
-                }
-            }
-        }, 2000 + new Random().nextInt(3000)); // 2-5秒随机间隔
-    }
-    
-    private LoRaProtocolParser.TerminalInfo generateRandomTerminal() {
-        Random random = new Random();
-        String terminalId = String.format("%08d", random.nextInt(100000000));
-        String terminalName = "终端设备-" + terminalId.substring(4);
-        int signalStrength = -30 - random.nextInt(50); // -30 到 -80 dBm
-        
-        LoRaProtocolParser.TerminalInfo terminalInfo = new LoRaProtocolParser.TerminalInfo();
-        terminalInfo.deviceId = terminalId;
-        terminalInfo.deviceName = terminalName;
-        terminalInfo.signalStrength = signalStrength;
-        terminalInfo.status = 1; // 1表示在线
-        terminalInfo.timestamp = System.currentTimeMillis();
-        
-        return terminalInfo;
     }
     
     private void addTerminalToDatabase(LoRaProtocolParser.TerminalInfo terminalInfo) {
@@ -243,6 +295,12 @@ public class AddTerminalDialog extends Dialog {
                     listener.onAddTerminalClick(terminal);
                 }
             });
+
+            holder.btnDetail.setOnClickListener(v -> {
+                Context ctx = holder.itemView.getContext();
+                TerminalDetailDialog dialog = new TerminalDetailDialog(ctx, terminal);
+                dialog.show();
+            });
         }
         
         @Override
@@ -255,6 +313,7 @@ public class AddTerminalDialog extends Dialog {
             TextView tvTerminalId;
             TextView tvSignalStrength;
             TextView btnAddTerminal;
+            TextView btnDetail;
             
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -262,6 +321,7 @@ public class AddTerminalDialog extends Dialog {
                 tvTerminalId = itemView.findViewById(R.id.tv_terminal_id);
                 tvSignalStrength = itemView.findViewById(R.id.tv_signal_strength);
                 btnAddTerminal = itemView.findViewById(R.id.btn_add_terminal);
+                btnDetail = itemView.findViewById(R.id.btn_detail);
             }
         }
     }
