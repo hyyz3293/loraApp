@@ -53,6 +53,18 @@
                 android:layout_height="32dp" />
 
             <TextView
+                android:id="@+id/login_gateway"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="登录网关"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
+
+            <TextView
                 android:id="@+id/back"
                 android:background="@drawable/bg_back_4"
                 android:textSize="16dp"
@@ -181,287 +193,65 @@
 
         </RelativeLayout>
 
+        <!-- 新增：网关登录账号密码配置 -->
+        <RelativeLayout
+            android:layout_marginLeft="28dp"
+            android:layout_marginRight="28dp"
+            android:layout_marginBottom="15dp"
+            android:paddingLeft="45dp"
+            android:paddingRight="30dp"
+            android:background="@drawable/bg_setting_10"
+            android:layout_height="120dp"
+            android:layout_width="match_parent">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true">
+
+                <TextView
+                    android:text="网关账号"
+                    android:textColor="@color/black"
+                    android:textSize="16dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <EditText
+                    android:id="@+id/et_gateway_username"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_white_3"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:textColor="@color/black"
+                    android:textSize="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp" />
+
+                <TextView
+                    android:layout_marginTop="12dp"
+                    android:text="网关密码"
+                    android:textColor="@color/black"
+                    android:textSize="16dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <EditText
+                    android:id="@+id/et_gateway_password"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_white_3"
+                    android:paddingLeft="10dp"
+                    android:paddingRight="10dp"
+                    android:textColor="@color/black"
+                    android:textSize="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:inputType="textPassword" />
+
+            </LinearLayout>
+
+        </RelativeLayout>
+
     </LinearLayout>
 
 </LinearLayout>
-
-<!--<?xml version="1.0" encoding="utf-8"?>-->
-<!--<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"-->
-<!--    android:layout_width="match_parent"-->
-<!--    android:layout_height="match_parent"-->
-<!--    android:background="@color/white">-->
-
-<!--    <LinearLayout-->
-<!--        -->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:orientation="vertical">-->
-
-<!--        &lt;!&ndash; 标题栏 &ndash;&gt;-->
-<!--        <RelativeLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="56dp"-->
-<!--            android:elevation="4dp">-->
-
-<!--            <ImageView-->
-<!--                android:id="@+id/btn_back"-->
-<!--                android:layout_width="48dp"-->
-<!--                android:layout_height="48dp"-->
-<!--                android:layout_centerVertical="true"-->
-<!--                android:layout_marginStart="8dp"-->
-<!--                android:background="?attr/selectableItemBackgroundBorderless"-->
-<!--                android:clickable="true"-->
-<!--                android:focusable="true"-->
-<!--                android:padding="12dp"-->
-<!--                />-->
-
-<!--            <TextView-->
-<!--                android:id="@+id/title_text"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_centerInParent="true"-->
-<!--                android:text="IP配置"-->
-<!--                android:textColor="@color/white"-->
-<!--                android:textSize="18sp"-->
-<!--                android:textStyle="bold" />-->
-
-<!--        </RelativeLayout>-->
-
-<!--        &lt;!&ndash; 当前网络信息 &ndash;&gt;-->
-<!--        <LinearLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:orientation="vertical"-->
-<!--            android:padding="16dp"-->
-<!--            android:background="@drawable/bg_white_12"-->
-<!--            android:layout_margin="16dp">-->
-
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="当前网络信息"-->
-<!--                android:textSize="16sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:textStyle="bold"-->
-<!--                android:layout_marginBottom="12dp" />-->
-
-<!--            <TextView-->
-<!--                android:id="@+id/tv_current_ip"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="当前IP: 获取中..."-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="4dp" />-->
-
-<!--            <TextView-->
-<!--                android:id="@+id/tv_current_gateway"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="当前网关: 获取中..."-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="4dp" />-->
-
-<!--            <TextView-->
-<!--                android:id="@+id/tv_current_dns"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="DNS: 获取中..."-->
-<!--                android:textSize="14sp"-->
-<!--                />-->
-
-<!--            <Button-->
-<!--                android:id="@+id/btn_refresh"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="36dp"-->
-<!--                android:layout_gravity="end"-->
-<!--                android:layout_marginTop="8dp"-->
-<!--                android:background="@drawable/bg_button_secondary"-->
-<!--                android:text="刷新"-->
-<!--                android:textSize="14sp"-->
-<!--                android:paddingHorizontal="16dp" />-->
-
-<!--        </LinearLayout>-->
-
-<!--        &lt;!&ndash; IP配置类型 &ndash;&gt;-->
-<!--        <LinearLayout-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:orientation="vertical"-->
-<!--            android:padding="16dp"-->
-<!--            android:background="@drawable/bg_white_12"-->
-<!--            android:layout_marginHorizontal="16dp"-->
-<!--            android:layout_marginBottom="16dp">-->
-
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="IP配置类型"-->
-<!--                android:textSize="16sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:textStyle="bold"-->
-<!--                android:layout_marginBottom="12dp" />-->
-
-<!--            <RadioGroup-->
-<!--                android:id="@+id/radio_group_ip_type"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:orientation="vertical">-->
-
-<!--                <RadioButton-->
-<!--                    android:id="@+id/radio_dhcp"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="自动获取IP (DHCP)"-->
-<!--                    android:textSize="14sp"-->
-<!--                    android:checked="true"-->
-<!--                    android:layout_marginBottom="8dp" />-->
-
-<!--                <RadioButton-->
-<!--                    android:id="@+id/radio_static"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="使用静态IP"-->
-<!--                    android:textSize="14sp" />-->
-
-<!--            </RadioGroup>-->
-
-<!--        </LinearLayout>-->
-
-<!--        &lt;!&ndash; 静态IP配置 &ndash;&gt;-->
-<!--        <LinearLayout-->
-<!--            android:id="@+id/layout_static_config"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:orientation="vertical"-->
-<!--            android:padding="16dp"-->
-<!--            android:background="@drawable/bg_white_12"-->
-<!--            android:layout_marginHorizontal="16dp"-->
-<!--            android:layout_marginBottom="16dp"-->
-<!--            android:visibility="gone">-->
-
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="静态IP配置"-->
-<!--                android:textSize="16sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:textStyle="bold"-->
-<!--                android:layout_marginBottom="16dp" />-->
-
-<!--            &lt;!&ndash; IP地址 &ndash;&gt;-->
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="IP地址 *"-->
-<!--                android:textSize="14sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:layout_marginBottom="4dp" />-->
-
-<!--            <EditText-->
-<!--                android:id="@+id/et_ip_address"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="48dp"-->
-<!--                android:background="@drawable/bg_edit_text"-->
-<!--                android:hint="例: 192.168.1.100"-->
-<!--                android:inputType="textNoSuggestions"-->
-<!--                android:paddingHorizontal="12dp"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="12dp" />-->
-
-<!--            &lt;!&ndash; 子网掩码 &ndash;&gt;-->
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="子网掩码 *"-->
-<!--                android:textSize="14sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:layout_marginBottom="4dp" />-->
-
-<!--            <EditText-->
-<!--                android:id="@+id/et_subnet_mask"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="48dp"-->
-<!--                android:background="@drawable/bg_edit_text"-->
-<!--                android:hint="例: 255.255.255.0"-->
-<!--                android:inputType="textNoSuggestions"-->
-<!--                android:paddingHorizontal="12dp"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="12dp" />-->
-
-<!--            &lt;!&ndash; 网关 &ndash;&gt;-->
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="网关 *"-->
-<!--                android:textSize="14sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:layout_marginBottom="4dp" />-->
-
-<!--            <EditText-->
-<!--                android:id="@+id/et_gateway"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="48dp"-->
-<!--                android:background="@drawable/bg_edit_text"-->
-<!--                android:hint="例: 192.168.1.1"-->
-<!--                android:inputType="textNoSuggestions"-->
-<!--                android:paddingHorizontal="12dp"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="12dp" />-->
-
-<!--            &lt;!&ndash; DNS1 &ndash;&gt;-->
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="首选DNS"-->
-<!--                android:textSize="14sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:layout_marginBottom="4dp" />-->
-
-<!--            <EditText-->
-<!--                android:id="@+id/et_dns1"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="48dp"-->
-<!--                android:background="@drawable/bg_edit_text"-->
-<!--                android:hint="例: 8.8.8.8"-->
-<!--                android:inputType="textNoSuggestions"-->
-<!--                android:paddingHorizontal="12dp"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="12dp" />-->
-
-<!--            &lt;!&ndash; DNS2 &ndash;&gt;-->
-<!--            <TextView-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:text="备用DNS"-->
-<!--                android:textSize="14sp"-->
-<!--                android:textColor="@color/black"-->
-<!--                android:layout_marginBottom="4dp" />-->
-
-<!--            <EditText-->
-<!--                android:id="@+id/et_dns2"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="48dp"-->
-<!--                android:background="@drawable/bg_edit_text"-->
-<!--                android:hint="例: 8.8.4.4"-->
-<!--                android:inputType="textNoSuggestions"-->
-<!--                android:paddingHorizontal="12dp"-->
-<!--                android:textSize="14sp"-->
-<!--                android:layout_marginBottom="16dp" />-->
-
-<!--        </LinearLayout>-->
-
-<!--        &lt;!&ndash; 保存按钮 &ndash;&gt;-->
-<!--        <Button-->
-<!--            android:id="@+id/btn_save"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="48dp"-->
-<!--            android:layout_marginHorizontal="16dp"-->
-<!--            android:layout_marginBottom="32dp"-->
-<!--            android:background="@drawable/bg_button_primary"-->
-<!--            android:text="保存配置"-->
-<!--            android:textColor="@color/white"-->
-<!--            android:textSize="16sp" />-->
-
-<!--    </LinearLayout>-->
-
-<!--</ScrollView>-->

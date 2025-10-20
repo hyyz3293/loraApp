@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="100dp"
+    android:layout_width="80dp"
     android:orientation="vertical"
     android:gravity="center"
-    android:layout_marginRight="20dp"
+    android:layout_marginRight="10dp"
     android:layout_height="match_parent">
 
     <TextView
@@ -12,17 +12,17 @@
         android:layout_height="wrap_content"
         android:text="菜单项"
         android:textColor="@color/white"
-        android:textSize="18dp"
+        android:textSize="15dp"
         android:gravity="center"
         android:background="?android:attr/selectableItemBackground"
         />
 
     <ImageView
         android:id="@+id/img_tab_title"
-        android:layout_width="14dp"
+        android:layout_width="10dp"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"
         android:background="@drawable/bg_menu_10"
-        android:layout_height="5dp" />
+        android:layout_height="3dp" />
     
 </LinearLayout>

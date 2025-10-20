@@ -10,6 +10,8 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.webkit.CookieManager;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -77,6 +79,19 @@ public class WebViewActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                try {
+                    String cookies = CookieManager.getInstance().getCookie(url);
+                    if (cookies != null && !cookies.isEmpty()) {
+                        com.blankj.utilcode.util.SPUtils.getInstance().put("gateway_cookie", cookies);
+                        Toast.makeText(WebViewActivity.this, "已保存网关Cookie", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception ignored) {
+                }
             }
         });
     }

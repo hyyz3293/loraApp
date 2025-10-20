@@ -106,7 +106,7 @@ public class TerminalCheckFragment extends Fragment {
     private void initListeners() {
         // 开始清点按钮点击事件
         addTerminal.setOnClickListener(v -> {
-            if (!hasPermission("terminal_check")) {
+            if (!hasPermission("clean_start_count")) {
                 Toast.makeText(getContext(), "您没有终端清点的权限", Toast.LENGTH_SHORT).show();
                 return;
             }

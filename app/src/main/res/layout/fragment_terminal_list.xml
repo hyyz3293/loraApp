@@ -6,11 +6,12 @@
 
     <LinearLayout
         android:background="@drawable/bg_white_12"
-        android:paddingBottom="23dp"
-        android:paddingLeft="34dp"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:paddingLeft="24dp"
         android:layout_marginRight="20dp"
         android:layout_marginLeft="20dp"
-        android:paddingRight="34dp"
+        android:paddingRight="24dp"
         android:layout_width="match_parent"
         android:layout_weight="1"
         android:orientation="vertical"
@@ -18,10 +19,11 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="80dp"
+            android:layout_height="53dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="12dp" >
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp" >
 
             <TextView
                 android:textSize="16dp"
@@ -33,7 +35,7 @@
 
             <LinearLayout
                 android:background="@drawable/spinner_background"
-                android:layout_width="102dp"
+                android:layout_width="132dp"
                 android:layout_height="48dp" >
 
                 <Spinner
@@ -59,7 +61,7 @@
 
             <LinearLayout
                 android:background="@drawable/spinner_background"
-                android:layout_width="102dp"
+                android:layout_width="132dp"
                 android:layout_height="48dp" >
 
                 <Spinner
@@ -76,7 +78,7 @@
 
             <LinearLayout
                 android:layout_marginLeft="15dp"
-                android:layout_width="79dp"
+                android:layout_width="199dp"
                 android:background="@drawable/spinner_background"
                 android:orientation="horizontal"
                 android:layout_height="48dp">
@@ -97,7 +99,7 @@
             </LinearLayout>
 
             <LinearLayout
-                android:layout_marginLeft="40dp"
+                android:layout_marginLeft="20dp"
                 android:orientation="horizontal"
                 android:gravity="center"
                 android:layout_width="wrap_content"
@@ -127,26 +129,7 @@
 
             </LinearLayout>
 
-            <RelativeLayout
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent" >
 
-                <TextView
-                    android:id="@+id/add_terminal"
-                    android:paddingLeft="17dp"
-                    android:paddingRight="17dp"
-                    android:gravity="center"
-                    android:background="@drawable/bg_btn_4"
-                    android:layout_alignParentRight="true"
-                    android:layout_centerVertical="true"
-                    android:text="添加终端"
-                    android:textColor="#383B40"
-                    android:textSize="16dp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp" />
-
-            </RelativeLayout>
 
         </LinearLayout>
 
@@ -158,7 +141,9 @@
     </LinearLayout>
 
 
-
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="20dp"/>
 
     <RelativeLayout
         android:background="#F1F5F9"
@@ -166,8 +151,30 @@
         android:gravity="center"
         android:layout_height="60dp" >
 
+        <RelativeLayout
+            android:visibility="visible"
+            android:layout_width="100dp"
+            android:layout_height="50dp">
+
+            <TextView
+                android:id="@+id/add_terminal"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:gravity="center"
+                android:background="@drawable/bg_btn_4"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:text="添加终端"
+                android:textColor="#383B40"
+                android:textSize="16dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
+
+        </RelativeLayout>
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_terminal_status"
+            android:visibility="gone"
             android:layout_centerInParent="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />

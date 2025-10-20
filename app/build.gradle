@@ -52,7 +52,7 @@ android {
         release {
             signingConfig signingConfigs.debug
             //代码混淆需要添加的
-            minifyEnabled false//资源压缩设置
+
             //useProguard true//代码压缩设置
             shrinkResources false//是否启用缩减资源
             //读取代码压缩配置文件
@@ -80,5 +80,14 @@ dependencies {
     implementation 'com.blankj:utilcodex:1.31.1'
     implementation "io.github.cymchad:BaseRecyclerViewAdapterHelper4:4.1.4"
 
+    // 网络与解析库（第三方交互）
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+    implementation 'org.jsoup:jsoup:1.17.2'
 
+    // MQTT
+    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+    // Add AndroidX LocalBroadcastManager to satisfy rewritten reference by Jetifier
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
 }

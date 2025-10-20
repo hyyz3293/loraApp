@@ -63,6 +63,55 @@
         android:layout_marginBottom="20dp"
         android:visibility="gone" />
 
+    <!-- Packets 标题 + 分组开关 -->
+    <LinearLayout
+        android:id="@+id/ll_packets_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_packets_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="抓取到的网关数据："
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/black" />
+
+        <CheckBox
+            android:id="@+id/cb_group_by_dev_eui"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="按DevEUI分组"
+            android:checked="true" />
+    </LinearLayout>
+
+    <!-- Packets 列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_packets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="240dp"
+        android:layout_marginBottom="12dp"
+        android:visibility="gone" />
+
+    <!-- 无Packets提示 -->
+    <TextView
+        android:id="@+id/tv_no_packets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="未抓取到网关数据"
+        android:textSize="14sp"
+        android:textColor="#999999"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone" />
+
     <!-- 无设备提示 -->
     <TextView
         android:id="@+id/tv_no_devices"

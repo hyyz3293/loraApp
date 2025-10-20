@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:background="@drawable/bg_item_selectable">
+
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2025-01-01 12:00:00"
+        android:textSize="12sp"
+        android:textColor="#666666" />
+
+    <TextView
+        android:id="@+id/tv_dev_eui"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DevEUI: 0102030405060708"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorAccent"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tv_dev_addr"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DevAddr: 26011FCD"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_signal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="RSSI: -55 SNR: 10.5 DR: SF7 BW125 Freq: 470.3"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_frame"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="FCnt: 12 FPort: 2"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/tv_payload"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Payload: 01020AFF..."
+        android:textSize="12sp"
+        android:textColor="#333333"
+        android:layout_marginTop="6dp" />
+
+</LinearLayout>

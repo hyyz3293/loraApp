@@ -58,7 +58,7 @@ public class DeviceSettingFragment extends Fragment {
         initViews(view);
         
         // 检查设备设置权限
-        if (hasPermission("device_setting")) {
+        if (hasPermission("setting_device")) {
             initSettingData();
         } else {
             Toast.makeText(requireContext(), "您没有设备设置的权限", Toast.LENGTH_SHORT).show();
@@ -106,7 +106,7 @@ public class DeviceSettingFragment extends Fragment {
         terminalSettingAdapter.setOnItemClickListener((adapter, view, position) -> {
             SettingItem settingItem = settingList.get(position);
             if (settingItem.getViewType() == 0 || settingItem.getIndex() < 3) {
-                if (hasPermission("device_setting")) {
+                if (hasPermission("setting_device")) {
                     onSettingClick(position, settingItem);
                 } else {
                     Toast.makeText(requireContext(), "您没有修改设备设置的权限", Toast.LENGTH_SHORT).show();

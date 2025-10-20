@@ -32,6 +32,9 @@ import com.blankj.utilcode.util.SPUtils;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.lora.cn.network.MqttPacketsClient;
+import com.lora.cn.network.GatewayPacketsClient;
+
 public class TerminalListFragment extends Fragment {
     
     private static final String TAG = "TerminalListFragment";
@@ -46,34 +49,72 @@ public class TerminalListFragment extends Fragment {
     // 数据库管理器
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
+    
+    // 全局MQTT客户端（用于输出连接与订阅日志）
+    private MqttPacketsClient mqttClient;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_terminal_list, container, false);
-        
         // 初始化数据库管理器
         databaseManager = DatabaseManager.getInstance(requireContext());
-        
         // 初始化用户角色ID
         long userId = SPUtils.getInstance().getLong("current_user_id", -1);
         if (userId != -1) {
             User user = databaseManager.getUserById(userId);
             if (user != null) {
-                currentUserRoleId = (int)user.getRoleId();
+                currentUserRoleId = (int) user.getRoleId();
             }
         }
-        
         initViews(view);
-        
-        // 检查查看终端列表权限
-        if (hasPermission("terminal_list")) {
-            initTerminalStatus();
-        } else {
-            Toast.makeText(requireContext(), "您没有查看终端列表的权限", Toast.LENGTH_SHORT).show();
-        }
-        
+        initTerminalStatus();
+        // 启动全局MQTT连接以输出连接/订阅日志
+        startGlobalMqttLogging();
         return view;
+    }
+
+    private void startGlobalMqttLogging() {
+        try {
+            if (mqttClient == null) mqttClient = new MqttPacketsClient();
+            final String brokerUrl = "tcp://192.168.23.183:1883";
+            final String clientId = "android-" + System.currentTimeMillis();
+            final String topicFilter = "/milesight/uplink";
+            mqttClient.connectAndSubscribe(requireContext(), brokerUrl, clientId, topicFilter,
+                    null, null, false,
+                    new GatewayPacketsClient.PacketsListener() {
+                        @Override
+                        public void onStatus(String msg) {
+                            Log.d(TAG, "MQTT状态: " + msg);
+                        }
+                        @Override
+                        public void onPackets(java.util.List<GatewayPacketsClient.PacketRecord> records) {
+                            Log.d(TAG, "收到上行数据条数: " + (records == null ? 0 : records.size()));
+                        }
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "MQTT错误: " + error);
+                        }
+                        @Override
+                        public void onComplete() {
+                            Log.d(TAG, "MQTT完成/断开");
+                        }
+                    });
+        } catch (Exception e) {
+            Log.e(TAG, "启动MQTT日志输出失败", e);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        try {
+            if (mqttClient != null) {
+                mqttClient.disconnect();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "断开MQTT时异常: " + e.getMessage());
+        }
     }
 
     private void initViews(View view) {
