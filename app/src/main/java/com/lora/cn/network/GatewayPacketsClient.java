@@ -77,6 +77,7 @@ public class GatewayPacketsClient {
 
     public interface PacketsListener {
         void onStatus(String msg);
+        //void onMsg(String msg);
         void onPackets(List<PacketRecord> records);
         void onError(String error);
         void onComplete();

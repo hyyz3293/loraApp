@@ -6,6 +6,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.FrameLayout;
 import android.content.Intent;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,7 +25,12 @@ import com.lora.cn.ui.fragment.setting.user.UserInfoFragment;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.lora.cn.network.MqttPacketsClient;
+import com.lora.cn.network.GatewayPacketsClient;
+
 public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "MainActivity";
 
     private RecyclerView rvMenuTabs;
     private ViewPager2 viewPager;
@@ -38,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
     
     private int currentTabIndex = 0;
     private boolean isUserInfoVisible = false;
+
+    // 全局 MQTT 客户端（MainActivity 启动并维持）
+    private MqttPacketsClient mqttClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +62,9 @@ public class MainActivity extends AppCompatActivity {
         // 默认显示终端列表
         menuTabs.get(0).setSelected(true);
         menuTabAdapter.notifyDataSetChanged();
+
+        // 在 MainActivity 启动 MQTT 连接并打印上下行日志
+        startGlobalMqttLogging();
     }
 
     private void initViews() {
@@ -190,5 +202,108 @@ public class MainActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
+    }
+
+    // ---------------- MQTT 全局连接与日志 -----------------
+    private void startGlobalMqttLogging() {
+        try {
+            if (mqttClient == null) mqttClient = new MqttPacketsClient();
+            final String brokerUrl = "tcp://broker.emqx.io:1883";
+            final String clientId = "android-" + System.currentTimeMillis();
+            final String topicFilter = "/milesight/uplink/#";
+            mqttClient.connectAndSubscribe(getApplicationContext(), brokerUrl, clientId, topicFilter,
+                    null, null, false,
+                    new GatewayPacketsClient.PacketsListener() {
+                        @Override
+                        public void onStatus(String msg) {
+                            Log.d(TAG, "MQTT状态 onStatus: " + msg);
+                        }
+                        @Override
+                        public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {
+                            if (records == null || records.isEmpty()) {
+                                Log.e(TAG, "收到上行数据条数: 0");
+                                return;
+                            }
+                            Log.e(TAG, "收到上行数据条数: " + records.size());
+                            for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
+                                String devEui = r.deviceId != null ? r.deviceId : "-";
+                                String devAddr = r.devAddr != null ? r.devAddr : "-";
+                                String hex = r.payloadHex != null ? r.payloadHex : "-";
+                                String dr = r.dr != null ? r.dr : "-";
+                                String time = r.time != null ? r.time : "-";
+                                String freq = r.freq != null ? String.valueOf(r.freq) : "-";
+                                String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
+                                String snr = r.snr != null ? String.valueOf(r.snr) : "-";
+                                String fport = r.fport != null ? String.valueOf(r.fport) : "-";
+                                String fcnt = r.fcnt != null ? String.valueOf(r.fcnt) : "-";
+                                Log.i(TAG,
+                                        "UPLINK devEUI=" + devEui +
+                                        " devAddr=" + devAddr +
+                                        " fport=" + fport +
+                                        " fcnt=" + fcnt +
+                                        " rssi=" + rssi +
+                                        " snr=" + snr +
+                                        " freq=" + freq +
+                                        " dr=" + dr +
+                                        " time=" + time +
+                                        " hex=" + hex);
+                            }
+                        }
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "MQTT错误: " + error);
+                        }
+                        @Override
+                        public void onComplete() {
+                            Log.d(TAG, "MQTT完成/断开");
+                        }
+                    });
+        } catch (Exception e) {
+            Log.e(TAG, "启动MQTT日志输出失败", e);
+        }
+    }
+
+    /**
+     * 提供下行发送（方式1：通用主题，devEUI在消息体中）
+     */
+    public void sendDownlinkSimple(String devEui, String payloadHex, int fport, boolean confirmed) {
+        try {
+            if (mqttClient == null) {
+                mqttClient = new MqttPacketsClient();
+                Log.w(TAG, "MQTT客户端未初始化，已创建实例但未连接");
+            }
+            mqttClient.publishDownlinkSimple("/milesight/downlink", devEui, payloadHex, fport, confirmed);
+            Log.i(TAG, "DOWNLINK(simple) devEUI=" + devEui + " fport=" + fport + " hex=" + payloadHex + " confirmed=" + confirmed);
+        } catch (Exception e) {
+            Log.e(TAG, "下行发送失败(simple)：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 提供下行发送（方式2：按设备主题，devEUI在主题路径中）
+     */
+    public void sendDownlinkByDevEuiTopic(String devEui, String payloadHex, int fport, boolean confirmed) {
+        try {
+            if (mqttClient == null) {
+                mqttClient = new MqttPacketsClient();
+                Log.w(TAG, "MQTT客户端未初始化，已创建实例但未连接");
+            }
+            mqttClient.publishDownlinkByDevEuiTopic("/milesight/downlink", devEui, payloadHex, fport, confirmed);
+            Log.i(TAG, "DOWNLINK(by-topic) devEUI=" + devEui + " fport=" + fport + " hex=" + payloadHex + " confirmed=" + confirmed);
+        } catch (Exception e) {
+            Log.e(TAG, "下行发送失败(by-topic)：" + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try {
+            if (mqttClient != null) {
+                mqttClient.disconnect();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "断开MQTT时异常: " + e.getMessage());
+        }
     }
 }

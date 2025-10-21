@@ -3,6 +3,8 @@ package com.lora.cn.network;
 import android.content.Context;
 import android.util.Log;
 
+import com.blankj.utilcode.util.LogUtils;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -89,9 +91,12 @@ public class MqttPacketsClient {
 
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
+                    String payload = new String(message.getPayload(), java.nio.charset.StandardCharsets.UTF_8);
+                    android.util.Log.e(TAG, "messageArrived topic=" + topic + ", payload=" + payload);
+                    android.util.Log.e(TAG, "messageArrived message=" + topic + ", message=" + new Gson().toJson(message));
+
                     if (listener != null) listener.onStatus("收到消息：" + topic);
-                    List<GatewayPacketsClient.PacketRecord> records = parseToRecords(topic, payload);
+                    java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records = parseToRecords(topic, payload);
                     if (!records.isEmpty() && listener != null) listener.onPackets(records);
                 }
 
@@ -103,31 +108,47 @@ public class MqttPacketsClient {
 
             if (listener != null) listener.onStatus("MQTT连接：" + brokerUrl);
             client.connect(opts, null, new IMqttActionListener() {
-                @Override
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    if (listener != null) listener.onStatus("MQTT连接成功，订阅：" + topicFilter);
-                    try {
-                        client.subscribe(topicFilter, 0, null, new IMqttActionListener() {
-                            @Override
-                            public void onSuccess(IMqttToken asyncActionToken) {
-                                if (listener != null) listener.onStatus("订阅成功：" + topicFilter);
-                            }
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        if (listener != null) listener.onStatus("MQTT连接成功，订阅：" + topicFilter);
+                        try {
+                            // 订阅原始过滤器
+                            client.subscribe(topicFilter, 0, null, new IMqttActionListener() {
+                                @Override
+                                public void onSuccess(IMqttToken asyncActionToken) {
+                                    if (listener != null) listener.onStatus("订阅成功：" + topicFilter);
+                                }
 
-                            @Override
-                            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                                if (listener != null) listener.onError("订阅失败：" + (exception == null ? "" : exception.getMessage()));
+                                @Override
+                                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                                    if (listener != null) listener.onError("订阅失败：" + (exception == null ? "" : exception.getMessage()));
+                                }
+                            });
+                            // 若为 "/#" 结尾，额外订阅基础主题，确保精确主题也能匹配
+                            if (topicFilter != null && topicFilter.endsWith("/#")) {
+                                String base = topicFilter.substring(0, topicFilter.length() - 2);
+                                client.subscribe(base, 0, null, new IMqttActionListener() {
+                                    @Override
+                                    public void onSuccess(IMqttToken asyncActionToken) {
+                                        if (listener != null) listener.onStatus("额外订阅成功：" + base);
+                                    }
+
+                                    @Override
+                                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                                        if (listener != null) listener.onError("额外订阅失败：" + (exception == null ? "" : exception.getMessage()));
+                                    }
+                                });
                             }
-                        });
-                    } catch (MqttException e) {
-                        if (listener != null) listener.onError("订阅异常：" + e.getMessage());
+                        } catch (MqttException e) {
+                            if (listener != null) listener.onError("订阅异常：" + e.getMessage());
+                        }
                     }
-                }
 
-                @Override
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    if (listener != null) listener.onError("MQTT连接失败：" + (exception == null ? "" : exception.getMessage()));
-                }
-            });
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        if (listener != null) listener.onError("MQTT连接失败：" + (exception == null ? "" : exception.getMessage()));
+                    }
+                });
         } catch (Exception e) {
             if (listener != null) listener.onError("MQTT初始化异常：" + e.getMessage());
         }

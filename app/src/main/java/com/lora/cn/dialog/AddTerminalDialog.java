@@ -150,9 +150,9 @@ public class AddTerminalDialog extends Dialog {
 
         // 改为MQTT采集：连接并订阅 Milesight uplink
         if (mqttClient == null) mqttClient = new MqttPacketsClient();
-        final String brokerUrl = "tcp://192.168.23.183:1883"; // 可迁移到设置
+        String brokerUrl = "tcp://broker.emqx.io:1883";
         final String clientId = "android-" + System.currentTimeMillis();
-        final String topicFilter = "/milesight/uplink";
+        final String topicFilter = "/milesight/uplink/#";
 
         mqttClient.connectAndSubscribe(context, brokerUrl, clientId, topicFilter,
                 null, null, false,
@@ -169,6 +169,8 @@ public class AddTerminalDialog extends Dialog {
                             }
                         });
                     }
+
+
 
                     @Override
                     public void onPackets(List<GatewayPacketsClient.PacketRecord> records) {

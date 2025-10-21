@@ -69,27 +69,62 @@ public class TerminalListFragment extends Fragment {
         }
         initViews(view);
         initTerminalStatus();
-        // 启动全局MQTT连接以输出连接/订阅日志
-        startGlobalMqttLogging();
+        // 避免与 MainActivity 重复连接（MainActivity 已启动全局 MQTT）
+        if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+            Log.d(TAG, "MQTT 由 MainActivity 管理，Fragment 不再重复启动");
+        } else {
+            // 启动全局MQTT连接以输出连接/订阅日志
+            startGlobalMqttLogging();
+        }
         return view;
     }
 
     private void startGlobalMqttLogging() {
         try {
             if (mqttClient == null) mqttClient = new MqttPacketsClient();
-            final String brokerUrl = "tcp://192.168.23.183:1883";
+            final String brokerUrl = "tcp://broker.emqx.io:1883";
             final String clientId = "android-" + System.currentTimeMillis();
-            final String topicFilter = "/milesight/uplink";
+            final String topicFilter = "/milesight/uplink/#";
             mqttClient.connectAndSubscribe(requireContext(), brokerUrl, clientId, topicFilter,
                     null, null, false,
                     new GatewayPacketsClient.PacketsListener() {
                         @Override
                         public void onStatus(String msg) {
-                            Log.d(TAG, "MQTT状态: " + msg);
+                            Log.d(TAG, "MQTT状态TerminalList: " + msg);
                         }
+
+
+
                         @Override
-                        public void onPackets(java.util.List<GatewayPacketsClient.PacketRecord> records) {
-                            Log.d(TAG, "收到上行数据条数: " + (records == null ? 0 : records.size()));
+                        public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {
+                            if (records == null || records.isEmpty()) {
+                                android.util.Log.d(TAG, "收到上行数据条数: 0");
+                                return;
+                            }
+                            android.util.Log.d(TAG, "收到上行数据条数: " + records.size());
+                            for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
+                                String devEui = r.deviceId != null ? r.deviceId : "-";
+                                String devAddr = r.devAddr != null ? r.devAddr : "-";
+                                String hex = r.payloadHex != null ? r.payloadHex : "-";
+                                String dr = r.dr != null ? r.dr : "-";
+                                String time = r.time != null ? r.time : "-";
+                                String freq = r.freq != null ? String.valueOf(r.freq) : "-";
+                                String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
+                                String snr = r.snr != null ? String.valueOf(r.snr) : "-";
+                                String fport = r.fport != null ? String.valueOf(r.fport) : "-";
+                                String fcnt = r.fcnt != null ? String.valueOf(r.fcnt) : "-";
+                                android.util.Log.i(TAG,
+                                        "UPLINK devEUI=" + devEui +
+                                        " devAddr=" + devAddr +
+                                        " fport=" + fport +
+                                        " fcnt=" + fcnt +
+                                        " rssi=" + rssi +
+                                        " snr=" + snr +
+                                        " freq=" + freq +
+                                        " dr=" + dr +
+                                        " time=" + time +
+                                        " hex=" + hex);
+                            }
                         }
                         @Override
                         public void onError(String error) {

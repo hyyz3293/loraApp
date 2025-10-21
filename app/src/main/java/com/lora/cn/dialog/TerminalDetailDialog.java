@@ -47,6 +47,7 @@ public class TerminalDetailDialog extends Dialog {
     private View btnClose;
     private View btnCopy;
     private View btnRefresh;
+    private View btnDownlink;
     private TextView tvRefreshStatus;
 
     public TerminalDetailDialog(@NonNull Context context, LoRaProtocolParser.TerminalInfo info) {
@@ -76,6 +77,7 @@ public class TerminalDetailDialog extends Dialog {
         btnClose = view.findViewById(R.id.btn_close);
         btnCopy = view.findViewById(R.id.btn_copy);
         btnRefresh = view.findViewById(R.id.btn_refresh);
+        btnDownlink = view.findViewById(R.id.btn_downlink);
         tvRefreshStatus = view.findViewById(R.id.tv_refresh_status);
 
         tvTitle.setText("终端详情");
@@ -88,6 +90,7 @@ public class TerminalDetailDialog extends Dialog {
         });
         btnCopy.setOnClickListener(v -> copyHexToClipboard());
         btnRefresh.setOnClickListener(v -> startMqttListen());
+        btnDownlink.setOnClickListener(v -> sendDownlink8001Default());
 
         setOnDismissListener(d -> {
             if (mqttClient != null) mqttClient.disconnect();
@@ -135,9 +138,9 @@ public class TerminalDetailDialog extends Dialog {
         tvRefreshStatus.setText("通过MQTT监听设备上行数据...");
         try {
             if (mqttClient == null) mqttClient = new MqttPacketsClient();
-            final String brokerUrl = "tcp://192.168.23.183:1883";
+            final String brokerUrl = "tcp://broker.emqx.io:1883";
             final String clientId = "android-" + System.currentTimeMillis();
-            final String topicFilter = "/milesight/uplink";
+            final String topicFilter = "/milesight/uplink/#";
             mqttClient.connectAndSubscribe(context, brokerUrl, clientId, topicFilter,
                     null, null, false,
                     new GatewayPacketsClient.PacketsListener() {
@@ -145,9 +148,12 @@ public class TerminalDetailDialog extends Dialog {
                         public void onStatus(String msg) {
                             handler.post(() -> {
                                 tvRefreshStatus.setText(msg);
-                                Log.d("TerminalDetailDialog", "MQTT状态: " + msg);
+                                Log.d("TerminalDetailDialog", "MQTT状态 TerminalDetail: " + msg);
                             });
                         }
+
+
+
                         @Override
                         public void onPackets(java.util.List<GatewayPacketsClient.PacketRecord> records) {
                             if (records == null || records.isEmpty()) return;
@@ -191,5 +197,52 @@ public class TerminalDetailDialog extends Dialog {
     // 原 refresh 走网关扫描逻辑已移除
     private void startShortScan() {
         startMqttListen();
+    }
+
+    // 下发帮助方法：构建8001帧并通过Milesight下行主题发布
+    public void sendDownlink8001Default() {
+        try {
+            String devEui = info.deviceId != null ? info.deviceId.trim().replace(" ", "") : "";
+            if (devEui.isEmpty() || devEui.length() != 16) {
+                tvRefreshStatus.setText("无效的设备ID（需16位HEX devEUI）");
+                return;
+            }
+            byte seq = 0x01;
+            long nowUtc = System.currentTimeMillis();
+            int ackResult = 1;
+            int queryOp = 0;
+            int departmentId = 0;
+            int cartId = 0;
+            int registerResult = 1;
+            int clearMask = 0;
+            int reportIntervalMin = 5;
+            byte[] frame = LoRaProtocolParser.buildDownlink8001(devEui, seq, nowUtc, ackResult, queryOp, departmentId, cartId, registerResult, clearMask, reportIntervalMin);
+            String hex = bytesToHexCompact(frame);
+
+            if (mqttClient == null) {
+                mqttClient = new MqttPacketsClient();
+            }
+            try {
+                // 发布到通用主题，devEUI放在消息体中
+                mqttClient.publishDownlinkSimple("/milesight/downlink", devEui, hex, 85, true);
+                tvRefreshStatus.setText("已下发8001到设备：" + devEui);
+            } catch (Exception e) {
+                tvRefreshStatus.setText("下发失败，请先点击刷新建立MQTT连接");
+            }
+        } catch (Exception e) {
+            tvRefreshStatus.setText("下发构建失败：" + e.getMessage());
+        }
+    }
+
+    private String bytesToHexCompact(byte[] bytes) {
+        if (bytes == null) return "";
+        final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 }
