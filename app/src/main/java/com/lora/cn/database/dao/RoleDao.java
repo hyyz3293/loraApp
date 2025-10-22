@@ -72,6 +72,26 @@ public class RoleDao {
      */
     public int deleteRole(int roleId) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
+        
+        // 检查是否有用户使用该角色
+        Cursor cursor = db.query(DatabaseHelper.TABLE_USERS, 
+                new String[]{DatabaseHelper.COLUMN_USER_ID}, 
+                DatabaseHelper.COLUMN_USER_ROLE_ID + "=?", 
+                new String[]{String.valueOf(roleId)}, 
+                null, null, null);
+        
+        if (cursor.getCount() > 0) {
+            cursor.close();
+            throw new RuntimeException("无法删除角色：该角色正在被用户使用");
+        }
+        cursor.close();
+        
+        // 先删除角色权限关联
+        db.delete(DatabaseHelper.TABLE_ROLE_PERMISSIONS, 
+                DatabaseHelper.COLUMN_ROLE_PERMISSION_ROLE_ID + "=?", 
+                new String[]{String.valueOf(roleId)});
+        
+        // 再删除角色
         return db.delete(DatabaseHelper.TABLE_ROLES, 
                 DatabaseHelper.COLUMN_ROLE_ID + "=?", 
                 new String[]{String.valueOf(roleId)});

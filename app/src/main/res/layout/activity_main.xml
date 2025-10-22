@@ -100,6 +100,14 @@
         android:layout_weight="1"
         android:visibility="gone" />
 
+    <!-- 设备信息Fragment容器 -->
+    <FrameLayout
+        android:id="@+id/fragment_device_list_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone" />
+
     <!-- ViewPager2容器 -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/view_pager"

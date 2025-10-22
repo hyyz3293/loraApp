@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <!-- 横向标题栏 -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="93dp">
+
+        <TextView
+            android:textSize="30dp"
+            android:textColor="@color/black"
+            android:text="附近终端"
+            android:layout_centerVertical="true"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="34dp"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/btn_search_terminal"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="搜索终端"
+                android:textStyle="bold"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
+
+            <TextView
+                android:id="@+id/btn_back"
+                android:background="@drawable/bg_back_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="#383B40"
+                android:text="返回"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
+
+    <!-- 搜索栏 -->
+    <LinearLayout
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_marginBottom="20dp"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:background="@drawable/spinner_background"
+            android:orientation="horizontal"
+            android:layout_height="40dp">
+
+            <EditText
+                android:id="@+id/et_search"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:background="@null"
+                android:hint="输入终端ID搜索"
+                android:padding="8dp"
+                android:textSize="14sp"
+                android:textColorHint="#838383"
+                android:textColor="@color/black"
+                android:drawableRight="@mipmap/ic_search"
+                android:drawablePadding="10dp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btn_search"
+            android:layout_marginLeft="15dp"
+            android:background="@drawable/bg_btn2_4"
+            android:textSize="16dp"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:text="搜索"
+            android:textStyle="bold"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp" />
+
+    </LinearLayout>
+
+    <!-- 终端列表 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_terminals"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- 空状态提示 -->
+    <TextView
+        android:id="@+id/tv_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="暂无终端数据"
+        android:textColor="#999999"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
+</LinearLayout>

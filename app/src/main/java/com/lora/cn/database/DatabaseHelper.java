@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 8;
+    private static final int DATABASE_VERSION = 9;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -110,6 +110,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_SIGNAL_STRENGTH = "signal_strength";
     public static final String COLUMN_TERMINAL_DEPARTMENT = "department";
     public static final String COLUMN_TERMINAL_LOCATION = "location";
+    public static final String COLUMN_TERMINAL_DEPARTMENT_ID = "department_id"; // 科室分类ID
+    public static final String COLUMN_TERMINAL_ROOM_ID = "room_id"; // 病房号分类ID
+    public static final String COLUMN_TERMINAL_NURSING_GROUP_ID = "nursing_group_id"; // 护理组分类ID
+    public static final String COLUMN_TERMINAL_OTHER_ID = "other_id"; // 其他分类ID
+    public static final String COLUMN_TERMINAL_EXTENSION = "extension"; // 扩展字段
     public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
     public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
     
@@ -237,8 +242,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_TERMINAL_SIGNAL_STRENGTH + " INTEGER DEFAULT 0, " +
         COLUMN_TERMINAL_DEPARTMENT + " TEXT, " +
         COLUMN_TERMINAL_LOCATION + " TEXT, " +
+        COLUMN_TERMINAL_DEPARTMENT_ID + " INTEGER, " +
+        COLUMN_TERMINAL_ROOM_ID + " INTEGER, " +
+        COLUMN_TERMINAL_NURSING_GROUP_ID + " INTEGER, " +
+        COLUMN_TERMINAL_OTHER_ID + " INTEGER, " +
+        COLUMN_TERMINAL_EXTENSION + " TEXT, " +
         COLUMN_TERMINAL_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
-        COLUMN_TERMINAL_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
+        COLUMN_TERMINAL_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        "FOREIGN KEY (" + COLUMN_TERMINAL_DEPARTMENT_ID + ") REFERENCES " + 
+        TABLE_CATEGORIES + "(" + COLUMN_CATEGORY_ID + ") ON DELETE SET NULL, " +
+        "FOREIGN KEY (" + COLUMN_TERMINAL_ROOM_ID + ") REFERENCES " + 
+        TABLE_CATEGORIES + "(" + COLUMN_CATEGORY_ID + ") ON DELETE SET NULL, " +
+        "FOREIGN KEY (" + COLUMN_TERMINAL_NURSING_GROUP_ID + ") REFERENCES " + 
+        TABLE_CATEGORIES + "(" + COLUMN_CATEGORY_ID + ") ON DELETE SET NULL, " +
+        "FOREIGN KEY (" + COLUMN_TERMINAL_OTHER_ID + ") REFERENCES " + 
+        TABLE_CATEGORIES + "(" + COLUMN_CATEGORY_ID + ") ON DELETE SET NULL" +
         ")";
     
     // 创建索引的SQL语句
@@ -352,6 +370,42 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             insertDefaultAdminUser(db);
         }
         
+        if (oldVersion < 9) {
+            // 版本8升级到版本9：更新终端表结构，添加分类ID字段和扩展字段
+            // 备份现有终端数据
+            db.execSQL("CREATE TEMPORARY TABLE terminals_backup AS SELECT * FROM " + TABLE_TERMINALS);
+            
+            // 删除原终端表
+            db.execSQL("DROP TABLE " + TABLE_TERMINALS);
+            
+            // 创建新的终端表
+            db.execSQL(CREATE_TABLE_TERMINALS);
+            
+            // 恢复数据（只恢复兼容的字段）
+            db.execSQL("INSERT INTO " + TABLE_TERMINALS + " (" +
+                      COLUMN_TERMINAL_DEVICE_ID + ", " +
+                      COLUMN_TERMINAL_NAME + ", " +
+                      COLUMN_TERMINAL_STATUS + ", " +
+                      COLUMN_TERMINAL_SIGNAL_STRENGTH + ", " +
+                      COLUMN_TERMINAL_DEPARTMENT + ", " +
+                      COLUMN_TERMINAL_LOCATION + ", " +
+                      COLUMN_TERMINAL_CREATE_TIME + ", " +
+                      COLUMN_TERMINAL_UPDATE_TIME + ") " +
+                      "SELECT " +
+                      COLUMN_TERMINAL_DEVICE_ID + ", " +
+                      COLUMN_TERMINAL_NAME + ", " +
+                      COLUMN_TERMINAL_STATUS + ", " +
+                      COLUMN_TERMINAL_SIGNAL_STRENGTH + ", " +
+                      COLUMN_TERMINAL_DEPARTMENT + ", " +
+                      COLUMN_TERMINAL_LOCATION + ", " +
+                      COLUMN_TERMINAL_CREATE_TIME + ", " +
+                      COLUMN_TERMINAL_UPDATE_TIME + " " +
+                      "FROM terminals_backup");
+            
+            // 删除临时表
+            db.execSQL("DROP TABLE terminals_backup");
+        }
+        
         // 如果需要完全重建数据库，可以取消注释以下代码
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_DEPARTMENTS);
@@ -371,37 +425,54 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      * 插入初始数据
      */
     private void insertInitialData(SQLiteDatabase db) {
-        // 插入示例分组数据
+        // 插入分组数据（分类管理的默认值）
         db.execSQL("INSERT INTO " + TABLE_GROUPS + " (" + COLUMN_GROUP_NAME + ", " + 
-                  COLUMN_GROUP_DESCRIPTION + ") VALUES ('设备管理', '管理各类设备相关功能')");
-        
-        db.execSQL("INSERT INTO " + TABLE_GROUPS + " (" + COLUMN_GROUP_NAME + ", " + 
-                  COLUMN_GROUP_DESCRIPTION + ") VALUES ('用户管理', '管理用户账户和权限')");
+                  COLUMN_GROUP_DESCRIPTION + ") VALUES ('科室', '医院科室分类管理')");
         
         db.execSQL("INSERT INTO " + TABLE_GROUPS + " (" + COLUMN_GROUP_NAME + ", " + 
-                  COLUMN_GROUP_DESCRIPTION + ") VALUES ('系统设置', '系统配置和参数设置')");
+                  COLUMN_GROUP_DESCRIPTION + ") VALUES ('病房号', '病房号码分类管理')");
         
-        // 插入示例分类数据
-        // 设备管理分类
-        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
-                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('终端设备', '终端设备管理', 1)");
+        db.execSQL("INSERT INTO " + TABLE_GROUPS + " (" + COLUMN_GROUP_NAME + ", " + 
+                  COLUMN_GROUP_DESCRIPTION + ") VALUES ('护理组', '护理组别分类管理')");
         
-        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
-                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('网络设备', '网络设备配置', 1)");
+        db.execSQL("INSERT INTO " + TABLE_GROUPS + " (" + COLUMN_GROUP_NAME + ", " + 
+                  COLUMN_GROUP_DESCRIPTION + ") VALUES ('其他', '其他分类管理')");
         
-        // 用户管理分类
+        // 插入分类数据（各个分组下的具体项目）
+        // 科室分类 (group_id = 1)
         db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
-                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('用户账户', '用户账户管理', 2)");
-        
-        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
-                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('权限管理', '用户权限设置', 2)");
-        
-        // 系统设置分类
-        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
-                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('基础配置', '系统基础参数配置', 3)");
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('神经科', '神经内科', 1)");
         
         db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
-                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('高级设置', '系统高级功能设置', 3)");
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('骨科', '骨科', 1)");
+        
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('内科', '内科', 1)");
+        
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('外科', '外科', 1)");
+        
+        // 病房号分类 (group_id = 2)
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('001', '病房001', 2)");
+        
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('002', '病房002', 2)");
+        
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('003', '病房003', 2)");
+        
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('004', '病房004', 2)");
+        
+        // 护理组分类 (group_id = 3)
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('急救组', '急救护理组', 3)");
+        
+        db.execSQL("INSERT INTO " + TABLE_CATEGORIES + " (" + COLUMN_CATEGORY_NAME + ", " + 
+                  COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('日常组', '日常护理组', 3)");
+        
+        // 其他分类 (group_id = 4) - 暂时为空，用户可以自行添加
         
         // 注意：权限数据已经通过insertTreePermissions插入，这里不需要重复插入
         
