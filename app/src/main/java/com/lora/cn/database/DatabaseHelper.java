@@ -1000,6 +1000,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
         return result;
     }
+    
+    // 重载的日志操作方法，接受LogInfo对象
+    public long addLog(com.lora.cn.ui.model.LogInfo logInfo) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_LOG_TERMINAL_ID, logInfo.getTerminalId());
+        values.put(COLUMN_LOG_TERMINAL_NAME, logInfo.getTerminalName());
+        values.put(COLUMN_LOG_DEVICE_ID, logInfo.getDeviceId());
+        values.put(COLUMN_LOG_STATUS, logInfo.getStatus());
+        values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator());
+        values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime());
+        values.put(COLUMN_LOG_ACTION, logInfo.getAction());
+        
+        long result = db.insert(TABLE_LOGS, null, values);
+        db.close();
+        return result;
+    }
 
     public java.util.List<com.lora.cn.ui.model.LogInfo> getAllLogs() {
         java.util.List<com.lora.cn.ui.model.LogInfo> logs = new java.util.ArrayList<>();

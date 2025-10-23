@@ -22,7 +22,7 @@ import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.dao.TerminalDao;
 import com.lora.cn.database.entity.Category;
-import com.lora.cn.database.entity.Terminal;
+import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.event.TerminalRefreshEvent;
 import org.greenrobot.eventbus.EventBus;
 

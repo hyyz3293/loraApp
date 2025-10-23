@@ -4,7 +4,8 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import com.lora.cn.database.DatabaseHelper;
-import com.lora.cn.model.Terminal;
+import com.lora.cn.ui.model.Terminal;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,8 +69,8 @@ public class TerminalDao {
             logInfo.setStatus(result > 0 ? "成功" : "失败");
             logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
             logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-            logInfo.setOperationTime(System.currentTimeMillis());
-            logInfo.setCreateTime(System.currentTimeMillis());
+            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+            logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
             
             dbHelper.addLog(logInfo);
         } catch (Exception e) {

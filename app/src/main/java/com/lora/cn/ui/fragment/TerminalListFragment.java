@@ -246,7 +246,7 @@ public class TerminalListFragment extends Fragment {
             }
             
             // 创建Terminal对象
-            com.lora.cn.model.Terminal terminal = new com.lora.cn.model.Terminal();
+            com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
             terminal.setTerminalId(terminalInfo.deviceId);
             terminal.setTerminalName(terminalInfo.deviceName);
             terminal.setStatus("在线");
@@ -266,8 +266,8 @@ public class TerminalListFragment extends Fragment {
                 logInfo.setStatus("成功");
                 logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
                 logInfo.setAction("添加终端");
-                logInfo.setOperationTime(System.currentTimeMillis());
-                logInfo.setCreateTime(System.currentTimeMillis());
+                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
                 
@@ -283,8 +283,8 @@ public class TerminalListFragment extends Fragment {
                 logInfo.setStatus("失败");
                 logInfo.setOperator("系统管理员");
                 logInfo.setAction("添加终端");
-                logInfo.setOperationTime(System.currentTimeMillis());
-                logInfo.setCreateTime(System.currentTimeMillis());
+                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
                 
@@ -304,8 +304,8 @@ public class TerminalListFragment extends Fragment {
                 logInfo.setStatus("异常");
                 logInfo.setOperator("系统管理员");
                 logInfo.setAction("添加终端");
-                logInfo.setOperationTime(System.currentTimeMillis());
-                logInfo.setCreateTime(System.currentTimeMillis());
+                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
             } catch (Exception logException) {
@@ -360,8 +360,8 @@ public class TerminalListFragment extends Fragment {
                             logInfo.setStatus(result > 0 ? "成功" : "失败");
                             logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
                             logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-                            logInfo.setOperationTime(System.currentTimeMillis());
-                            logInfo.setCreateTime(System.currentTimeMillis());
+                            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                             
                             dbHelper.addLog(logInfo);
                             
@@ -380,8 +380,8 @@ public class TerminalListFragment extends Fragment {
                                 logInfo.setStatus("异常");
                                 logInfo.setOperator("系统管理员");
                                 logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-                                logInfo.setOperationTime(System.currentTimeMillis());
-                                logInfo.setCreateTime(System.currentTimeMillis());
+                                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                                 
                                 dbHelper.addLog(logInfo);
                             } catch (Exception logException) {

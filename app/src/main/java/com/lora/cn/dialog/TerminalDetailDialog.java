@@ -20,7 +20,7 @@ import com.lora.cn.network.MqttPacketsClient;
 import com.lora.cn.network.GatewayPacketsClient;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.model.LogInfo;
-import com.lora.cn.adapter.LogInfoAdapter;
+import com.lora.cn.ui.adapter.LogInfoAdapter;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

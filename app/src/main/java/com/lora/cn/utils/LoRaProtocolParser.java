@@ -23,10 +23,10 @@ public class LoRaProtocolParser {
     public static final byte CMD_SET_TERMINAL_CONFIG = 0x04; // 设置终端配置
     
     // 响应类型
-    public static final byte RESP_TERMINAL_FOUND = 0x81;   // 发现终端
-    public static final byte RESP_TERMINAL_ADDED = 0x82;   // 终端已添加
-    public static final byte RESP_TERMINAL_INFO = 0x83;    // 终端信息
-    public static final byte RESP_CONFIG_SUCCESS = 0x84;   // 配置成功
+    public static final byte RESP_TERMINAL_FOUND = (byte) 0x81;   // 发现终端
+    public static final byte RESP_TERMINAL_ADDED = (byte) 0x82;   // 终端已添加
+    public static final byte RESP_TERMINAL_INFO = (byte) 0x83;    // 终端信息
+    public static final byte RESP_CONFIG_SUCCESS = (byte) 0x84;   // 配置成功
     
     /**
      * LoRa数据帧结构
