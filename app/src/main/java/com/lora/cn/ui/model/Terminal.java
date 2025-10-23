@@ -28,6 +28,11 @@ public class Terminal {
     private Integer cartNumber;      // 台车编号
     private Integer deviceCount;     // 放置的设备数量
     private Integer rackNumber;      // 设备所属台车台架编号
+    private String functionCode;     // 功能码
+    private Integer sequenceNumber;  // 序列号
+    private Integer dataLength;      // 数据长度
+    private byte[] dataContent;      // 数据内容
+    private Byte checksum;           // 校验码
 
     public Terminal() {
     }
@@ -246,5 +251,46 @@ public class Terminal {
 
     public void setRackNumber(Integer rackNumber) {
         this.rackNumber = rackNumber;
+    }
+
+    // 新增字段的getter和setter方法
+    public String getFunctionCode() {
+        return functionCode;
+    }
+
+    public void setFunctionCode(String functionCode) {
+        this.functionCode = functionCode;
+    }
+
+    public Integer getSequenceNumber() {
+        return sequenceNumber;
+    }
+
+    public void setSequenceNumber(Integer sequenceNumber) {
+        this.sequenceNumber = sequenceNumber;
+    }
+
+    public Integer getDataLength() {
+        return dataLength;
+    }
+
+    public void setDataLength(Integer dataLength) {
+        this.dataLength = dataLength;
+    }
+
+    public byte[] getDataContent() {
+        return dataContent;
+    }
+
+    public void setDataContent(byte[] dataContent) {
+        this.dataContent = dataContent;
+    }
+
+    public Byte getChecksum() {
+        return checksum;
+    }
+
+    public void setChecksum(Byte checksum) {
+        this.checksum = checksum;
     }
 }

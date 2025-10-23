@@ -48,6 +48,53 @@ public class TerminalDao {
         
         values.put(DatabaseHelper.COLUMN_TERMINAL_EXTENSION, terminal.getExtension());
         
+        // 上行数据相关字段
+        if (terminal.getDataTime() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DATA_TIME, String.valueOf(terminal.getDataTime().getTime()));
+        }
+        if (terminal.getDeviceEvent() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_EVENT, terminal.getDeviceEvent());
+        }
+        if (terminal.getDeviceStatus() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_STATUS, terminal.getDeviceStatus());
+        }
+        if (terminal.getBatteryVoltage() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE, terminal.getBatteryVoltage());
+        }
+        if (terminal.getBatteryLevel() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL, terminal.getBatteryLevel());
+        }
+        if (terminal.getRssi() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_RSSI, terminal.getRssi());
+        }
+        if (terminal.getDepartmentNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT_NUMBER, terminal.getDepartmentNumber());
+        }
+        if (terminal.getCartNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_CART_NUMBER, terminal.getCartNumber());
+        }
+        if (terminal.getDeviceCount() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_COUNT, terminal.getDeviceCount());
+        }
+        if (terminal.getRackNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_RACK_NUMBER, terminal.getRackNumber());
+        }
+        if (terminal.getFunctionCode() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_FUNCTION_CODE, terminal.getFunctionCode());
+        }
+        if (terminal.getSequenceNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_SEQUENCE_NUMBER, terminal.getSequenceNumber());
+        }
+        if (terminal.getDataLength() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DATA_LENGTH, terminal.getDataLength());
+        }
+        if (terminal.getDataContent() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DATA_CONTENT, terminal.getDataContent());
+        }
+        if (terminal.getChecksum() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_CHECKSUM, terminal.getChecksum());
+        }
+        
         // 时间字段
         if (terminal.getCreateTime() != null) {
             values.put(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME, String.valueOf(terminal.getCreateTime().getTime()));
@@ -100,6 +147,53 @@ public class TerminalDao {
         }
         
         values.put(DatabaseHelper.COLUMN_TERMINAL_EXTENSION, terminal.getExtension());
+        
+        // 上行数据相关字段
+        if (terminal.getDataTime() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DATA_TIME, String.valueOf(terminal.getDataTime().getTime()));
+        }
+        if (terminal.getDeviceEvent() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_EVENT, terminal.getDeviceEvent());
+        }
+        if (terminal.getDeviceStatus() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_STATUS, terminal.getDeviceStatus());
+        }
+        if (terminal.getBatteryVoltage() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE, terminal.getBatteryVoltage());
+        }
+        if (terminal.getBatteryLevel() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL, terminal.getBatteryLevel());
+        }
+        if (terminal.getRssi() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_RSSI, terminal.getRssi());
+        }
+        if (terminal.getDepartmentNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT_NUMBER, terminal.getDepartmentNumber());
+        }
+        if (terminal.getCartNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_CART_NUMBER, terminal.getCartNumber());
+        }
+        if (terminal.getDeviceCount() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_COUNT, terminal.getDeviceCount());
+        }
+        if (terminal.getRackNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_RACK_NUMBER, terminal.getRackNumber());
+        }
+        if (terminal.getFunctionCode() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_FUNCTION_CODE, terminal.getFunctionCode());
+        }
+        if (terminal.getSequenceNumber() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_SEQUENCE_NUMBER, terminal.getSequenceNumber());
+        }
+        if (terminal.getDataLength() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DATA_LENGTH, terminal.getDataLength());
+        }
+        if (terminal.getDataContent() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DATA_CONTENT, terminal.getDataContent());
+        }
+        if (terminal.getChecksum() != null) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_CHECKSUM, terminal.getChecksum());
+        }
         
         // 更新时间
         if (terminal.getUpdateTime() != null) {
@@ -325,6 +419,89 @@ public class TerminalDao {
         }
         
         terminal.setExtension(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_EXTENSION)));
+        
+        // 上行数据相关字段（可能为null）
+        int dataTimeIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DATA_TIME);
+        if (dataTimeIndex != -1 && !cursor.isNull(dataTimeIndex)) {
+            String dataTimeStr = cursor.getString(dataTimeIndex);
+            if (dataTimeStr != null && !dataTimeStr.isEmpty()) {
+                try {
+                    terminal.setDataTime(new Date(Long.parseLong(dataTimeStr)));
+                } catch (NumberFormatException e) {
+                    // 忽略解析错误
+                }
+            }
+        }
+        
+        int deviceEventIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_EVENT);
+        if (deviceEventIndex != -1 && !cursor.isNull(deviceEventIndex)) {
+            terminal.setDeviceEvent(cursor.getLong(deviceEventIndex));
+        }
+        
+        int deviceStatusIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_STATUS);
+        if (deviceStatusIndex != -1 && !cursor.isNull(deviceStatusIndex)) {
+            terminal.setDeviceStatus(cursor.getLong(deviceStatusIndex));
+        }
+        
+        int batteryVoltageIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
+        if (batteryVoltageIndex != -1 && !cursor.isNull(batteryVoltageIndex)) {
+            terminal.setBatteryVoltage(cursor.getInt(batteryVoltageIndex));
+        }
+        
+        int batteryLevelIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
+        if (batteryLevelIndex != -1 && !cursor.isNull(batteryLevelIndex)) {
+            terminal.setBatteryLevel(cursor.getInt(batteryLevelIndex));
+        }
+        
+        int rssiIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
+        if (rssiIndex != -1 && !cursor.isNull(rssiIndex)) {
+            terminal.setRssi(cursor.getInt(rssiIndex));
+        }
+        
+        int departmentNumberIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT_NUMBER);
+        if (departmentNumberIndex != -1 && !cursor.isNull(departmentNumberIndex)) {
+            terminal.setDepartmentNumber(cursor.getInt(departmentNumberIndex));
+        }
+        
+        int cartNumberIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CART_NUMBER);
+        if (cartNumberIndex != -1 && !cursor.isNull(cartNumberIndex)) {
+            terminal.setCartNumber(cursor.getInt(cartNumberIndex));
+        }
+        
+        int deviceCountIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_COUNT);
+        if (deviceCountIndex != -1 && !cursor.isNull(deviceCountIndex)) {
+            terminal.setDeviceCount(cursor.getInt(deviceCountIndex));
+        }
+        
+        int rackNumberIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RACK_NUMBER);
+        if (rackNumberIndex != -1 && !cursor.isNull(rackNumberIndex)) {
+            terminal.setRackNumber(cursor.getInt(rackNumberIndex));
+        }
+        
+        int functionCodeIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_FUNCTION_CODE);
+        if (functionCodeIndex != -1 && !cursor.isNull(functionCodeIndex)) {
+            terminal.setFunctionCode(cursor.getString(functionCodeIndex));
+        }
+        
+        int sequenceNumberIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_SEQUENCE_NUMBER);
+        if (sequenceNumberIndex != -1 && !cursor.isNull(sequenceNumberIndex)) {
+            terminal.setSequenceNumber(cursor.getInt(sequenceNumberIndex));
+        }
+        
+        int dataLengthIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DATA_LENGTH);
+        if (dataLengthIndex != -1 && !cursor.isNull(dataLengthIndex)) {
+            terminal.setDataLength(cursor.getInt(dataLengthIndex));
+        }
+        
+        int dataContentIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DATA_CONTENT);
+        if (dataContentIndex != -1 && !cursor.isNull(dataContentIndex)) {
+            terminal.setDataContent(cursor.getString(dataContentIndex));
+        }
+        
+        int checksumIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CHECKSUM);
+        if (checksumIndex != -1 && !cursor.isNull(checksumIndex)) {
+            terminal.setChecksum(cursor.getInt(checksumIndex));
+        }
         
         // 时间字段
         String createTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME));

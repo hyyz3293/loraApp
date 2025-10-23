@@ -4,8 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="16dp"
-    android:background="@drawable/bg_white_12"
-    android:layout_marginBottom="8dp">
+    android:background="@drawable/bg_white_12">
 
     <TextView
         android:id="@+id/tv_terminal_info"

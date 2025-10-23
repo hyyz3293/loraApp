@@ -1,5 +1,7 @@
 package com.lora.cn.database.entity;
 
+import com.lora.cn.utils.LoRaFrameParser;
+
 import java.util.Date;
 
 /**
@@ -20,7 +22,9 @@ public class Terminal {
     private String extension;        // 扩展字段
     private Date createTime;
     private Date updateTime;
-    
+
+    public LoRaFrameParser.ParsedFrame parsedFrame;
+
     // 上行数据相关字段
     private Date dataTime;           // 数据产生时间 (7字节BCD码)
     private Long deviceEvent;        // 设备事件 (4字节)
@@ -32,6 +36,11 @@ public class Terminal {
     private Integer cartNumber;      // 台车编号 (1字节)
     private Integer deviceCount;     // 放置的设备数量 (1字节)
     private Integer rackNumber;      // 设备所属台车台架编号 (1字节)
+    private String functionCode;     // 功能码
+    private Integer sequenceNumber;  // 序列号
+    private Integer dataLength;      // 数据长度
+    private String dataContent;      // 数据内容 (JSON格式存储)
+    private Integer checksum;        // 校验和
 
     public Terminal() {
     }
@@ -237,6 +246,46 @@ public class Terminal {
 
     public void setRackNumber(Integer rackNumber) {
         this.rackNumber = rackNumber;
+    }
+
+    public String getFunctionCode() {
+        return functionCode;
+    }
+
+    public void setFunctionCode(String functionCode) {
+        this.functionCode = functionCode;
+    }
+
+    public Integer getSequenceNumber() {
+        return sequenceNumber;
+    }
+
+    public void setSequenceNumber(Integer sequenceNumber) {
+        this.sequenceNumber = sequenceNumber;
+    }
+
+    public Integer getDataLength() {
+        return dataLength;
+    }
+
+    public void setDataLength(Integer dataLength) {
+        this.dataLength = dataLength;
+    }
+
+    public String getDataContent() {
+        return dataContent;
+    }
+
+    public void setDataContent(String dataContent) {
+        this.dataContent = dataContent;
+    }
+
+    public Integer getChecksum() {
+        return checksum;
+    }
+
+    public void setChecksum(Integer checksum) {
+        this.checksum = checksum;
     }
 
     @Override

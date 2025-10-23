@@ -7,6 +7,8 @@ import android.widget.TextView;
 import android.widget.FrameLayout;
 import android.content.Intent;
 import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -17,7 +19,9 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.blankj.utilcode.util.SPUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
+import com.google.gson.Gson;
 import com.lora.cn.R;
+import com.lora.cn.database.entity.Terminal;
 import com.lora.cn.ui.adapter.MainPagerAdapter;
 import com.lora.cn.ui.adapter.MenuTabAdapter;
 import com.lora.cn.ui.model.MenuTab;
@@ -61,6 +65,11 @@ public class MainActivity extends AppCompatActivity {
     // 全局 MQTT 客户端（MainActivity 启动并维持）
     private MqttPacketsClient mqttClient;
     private DatabaseHelper databaseHelper;
+    
+    // 测试定时器相关
+    private Handler testHandler;
+    private Runnable testRunnable;
+    private static final long TEST_INTERVAL = 30 * 1000; // 1分钟
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
         startGlobalMqttLogging();
+        
+        // 启动测试定时器
+        startTestTimer();
     }
 
     private void initViews() {
@@ -211,9 +223,9 @@ public class MainActivity extends AppCompatActivity {
                 .commit();
     }
     
-    public void showAddDeviceFragment(String deviceId) {
+    public void showAddDeviceFragment(Terminal terminal) {
         // 创建AddDeviceFragment并传入设备ID
-        AddDeviceFragment addDeviceFragment = AddDeviceFragment.newInstance(deviceId);
+        AddDeviceFragment addDeviceFragment = AddDeviceFragment.newInstance(terminal);
         
         // 使用Fragment事务显示AddDeviceFragment
         getSupportFragmentManager().beginTransaction()
@@ -321,6 +333,7 @@ public class MainActivity extends AppCompatActivity {
                                     // 解析LoRa帧数据并存储详细日志
                                     try {
                                         LoRaFrameParser.ParsedFrame parsedFrame = LoRaFrameParser.parseFrame(hex);
+                                        Log.d(TAG, "详细上行数据存储到数据库，parsedFrame: " + new Gson().toJson(parsedFrame));
                                         if (parsedFrame != null) {
                                             DetailedUplinkLog detailedLog = new DetailedUplinkLog();
                                             detailedLog.setTime(time);
@@ -427,12 +440,64 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        
+        // 停止测试定时器
+        stopTestTimer();
+        
         try {
             if (mqttClient != null) {
                 mqttClient.disconnect();
             }
         } catch (Exception e) {
             Log.w(TAG, "断开MQTT时异常: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 启动测试定时器，每分钟发送一次EventBus上行数据
+     */
+    private void startTestTimer() {
+        testHandler = new Handler(Looper.getMainLooper());
+        testRunnable = new Runnable() {
+            @Override
+            public void run() {
+                // 发送测试上行数据
+                sendTestUplinkData();
+                // 重新调度下一次执行
+                testHandler.postDelayed(this, TEST_INTERVAL);
+            }
+        };
+        // 启动定时器
+        testHandler.postDelayed(testRunnable, TEST_INTERVAL);
+        Log.i(TAG, "测试定时器已启动，每分钟发送一次EventBus上行数据");
+    }
+    
+    /**
+     * 停止测试定时器
+     */
+    private void stopTestTimer() {
+        if (testHandler != null && testRunnable != null) {
+            testHandler.removeCallbacks(testRunnable);
+            Log.i(TAG, "测试定时器已停止");
+        }
+    }
+    
+    /**
+     * 发送测试上行数据
+     */
+    private void sendTestUplinkData() {
+        try {
+            // 创建测试上行数据
+            String testTime = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.getDefault()).format(new Date());
+            String testHex = "A528E2000100012509000106001820250926101155000000040000007E000063610000000000FF5A";
+            
+            // 创建UplinkDataEvent并通过EventBus广播
+            UplinkDataEvent event = new UplinkDataEvent(testTime, testHex);
+            EventBus.getDefault().post(event);
+            
+            Log.i(TAG, "通过EventBus广播测试上行数据: time=" + testTime + ", hex=" + testHex);
+        } catch (Exception e) {
+            Log.e(TAG, "发送测试上行数据失败: " + e.getMessage());
         }
     }
 }

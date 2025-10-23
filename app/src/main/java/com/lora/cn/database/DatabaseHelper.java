@@ -14,8 +14,9 @@ import java.util.Locale;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
     
+    private static final String TAG = "DatabaseHelper";
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 11;
+    private static final int DATABASE_VERSION = 13;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -131,6 +132,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_CART_NUMBER = "cart_number"; // 台车编号
     public static final String COLUMN_TERMINAL_DEVICE_COUNT = "device_count"; // 放置的设备数量
     public static final String COLUMN_TERMINAL_RACK_NUMBER = "rack_number"; // 设备所属台车台架编号
+    public static final String COLUMN_TERMINAL_FUNCTION_CODE = "function_code"; // 功能码
+    public static final String COLUMN_TERMINAL_SEQUENCE_NUMBER = "sequence_number"; // 序列号
+    public static final String COLUMN_TERMINAL_DATA_LENGTH = "data_length"; // 数据长度
+    public static final String COLUMN_TERMINAL_DATA_CONTENT = "data_content"; // 数据内容
+    public static final String COLUMN_TERMINAL_CHECKSUM = "checksum"; // 校验和
 
     // 上行数据日志表
     public static final String TABLE_UPLINK_LOGS = "uplink_logs";
@@ -304,6 +310,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_TERMINAL_CART_NUMBER + " INTEGER, " +
         COLUMN_TERMINAL_DEVICE_COUNT + " INTEGER, " +
         COLUMN_TERMINAL_RACK_NUMBER + " INTEGER, " +
+        COLUMN_TERMINAL_FUNCTION_CODE + " TEXT, " +
+        COLUMN_TERMINAL_SEQUENCE_NUMBER + " INTEGER, " +
+        COLUMN_TERMINAL_DATA_LENGTH + " INTEGER, " +
+        COLUMN_TERMINAL_DATA_CONTENT + " BLOB, " +
+        COLUMN_TERMINAL_CHECKSUM + " INTEGER, " +
         "FOREIGN KEY (" + COLUMN_TERMINAL_DEPARTMENT_ID + ") REFERENCES " + 
         TABLE_CATEGORIES + "(" + COLUMN_CATEGORY_ID + ") ON DELETE SET NULL, " +
         "FOREIGN KEY (" + COLUMN_TERMINAL_ROOM_ID + ") REFERENCES " + 
@@ -518,7 +529,54 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_CART_NUMBER + " INTEGER");
             db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEVICE_COUNT + " INTEGER");
             db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_RACK_NUMBER + " INTEGER");
+            
+            // 创建详细上行数据日志表
+            db.execSQL(CREATE_TABLE_DETAILED_UPLINK_LOGS);
         }
+        
+        if (oldVersion < 12) {
+            // 版本11升级到版本12：创建详细上行数据日志表（如果不存在）
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + TABLE_DETAILED_UPLINK_LOGS + " (" +
+                      COLUMN_DETAILED_LOG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                      COLUMN_DETAILED_LOG_CART_NUMBER + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_DATA_LENGTH + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_SEQUENCE_NUMBER + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_DEVICE_STATUS + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_BATTERY_LEVEL + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_BATTERY_VOLTAGE + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_DEVICE_COUNT + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_DEVICE_EVENT + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_CREATE_TIME + " DATETIME, " +
+                      COLUMN_DETAILED_LOG_DATA_TIME + " DATETIME, " +
+                      COLUMN_DETAILED_LOG_PARSE_SUCCESS + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_PARSE_ERROR + " TEXT, " +
+                      COLUMN_DETAILED_LOG_HEX + " TEXT, " +
+                      COLUMN_DETAILED_LOG_RSSI + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_TIME + " DATETIME, " +
+                      COLUMN_DETAILED_LOG_DEVICE_ID + " TEXT, " +
+                      COLUMN_DETAILED_LOG_RACK_NUMBER + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_DEPARTMENT_NUMBER + " INTEGER, " +
+                      COLUMN_DETAILED_LOG_FUNCTION_CODE + " TEXT" +
+                      ")");
+        }
+        
+        // 版本13：为Terminal表添加新字段
+        if (oldVersion < 13) {
+            Log.d(TAG, "Upgrading database to version 13: Adding new fields to terminals table");
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_FUNCTION_CODE + " TEXT");
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_SEQUENCE_NUMBER + " INTEGER");
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DATA_LENGTH + " INTEGER");
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DATA_CONTENT + " BLOB");
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_CHECKSUM + " INTEGER");
+                Log.d(TAG, "Successfully added new fields to terminals table");
+            } catch (Exception e) {
+                Log.e(TAG, "Error adding new fields to terminals table", e);
+            }
+        }
+        
+        // 确保分组和分类数据存在（适用于所有升级情况）
+        ensureInitialDataExists(db);
         
         // 如果需要完全重建数据库，可以取消注释以下代码
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
@@ -536,9 +594,27 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     
     /**
-     * 插入初始数据
+     * 确保初始数据存在（用于数据库升级时）
      */
-    private void insertInitialData(SQLiteDatabase db) {
+    private void ensureInitialDataExists(SQLiteDatabase db) {
+        // 检查分组数据是否存在
+        android.database.Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_GROUPS, null);
+        int groupCount = 0;
+        if (cursor.moveToFirst()) {
+            groupCount = cursor.getInt(0);
+        }
+        cursor.close();
+        
+        // 如果分组数据不存在，插入初始数据
+        if (groupCount == 0) {
+            insertInitialGroupsAndCategories(db);
+        }
+    }
+    
+    /**
+     * 插入初始分组和分类数据
+     */
+    private void insertInitialGroupsAndCategories(SQLiteDatabase db) {
         // 插入分组数据（分类管理的默认值）
         db.execSQL("INSERT INTO " + TABLE_GROUPS + " (" + COLUMN_GROUP_NAME + ", " + 
                   COLUMN_GROUP_DESCRIPTION + ") VALUES ('科室', '医院科室分类管理')");
@@ -587,6 +663,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                   COLUMN_CATEGORY_DESCRIPTION + ", " + COLUMN_CATEGORY_GROUP_ID + ") VALUES ('日常组', '日常护理组', 3)");
         
         // 其他分类 (group_id = 4) - 暂时为空，用户可以自行添加
+    }
+    
+    /**
+     * 插入初始数据（首次创建数据库时调用）
+     */
+    private void insertInitialData(SQLiteDatabase db) {
+        // 插入分组和分类数据
+        insertInitialGroupsAndCategories(db);
         
         // 注意：权限数据已经通过insertTreePermissions插入，这里不需要重复插入
         

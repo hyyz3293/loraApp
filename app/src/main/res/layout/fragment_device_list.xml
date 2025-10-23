@@ -122,22 +122,32 @@
     <!-- 终端列表 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_terminals"
-        android:layout_marginLeft="30dp"
-        android:layout_marginRight="30dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
     <!-- 空状态提示 -->
-    <TextView
-        android:id="@+id/tv_empty"
+    <LinearLayout
+        android:id="@+id/ll_empty"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
         android:gravity="center"
-        android:text="暂无终端数据"
-        android:textColor="#999999"
-        android:textSize="16sp"
-        android:visibility="gone" />
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:layout_weight="1" >
+
+        <TextView
+            android:id="@+id/tv_empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="点击搜索终端"
+            android:textColor="#999999"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
 
 </LinearLayout>

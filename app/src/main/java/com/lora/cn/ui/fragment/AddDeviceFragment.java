@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.database.DatabaseManager;
@@ -46,6 +47,7 @@ public class AddDeviceFragment extends Fragment {
     
     private DatabaseManager dbManager;
     private TerminalDao terminalDao;
+    private Terminal terminal;
     private String terminalId;
     
     // 分类数据
@@ -60,10 +62,10 @@ public class AddDeviceFragment extends Fragment {
     private Integer selectedNursingGroupId = null;
     private Integer selectedOtherId = null;
     
-    public static AddDeviceFragment newInstance(String terminalId) {
+    public static AddDeviceFragment newInstance(Terminal terminalId) {
         AddDeviceFragment fragment = new AddDeviceFragment();
         Bundle args = new Bundle();
-        args.putString("terminal_id", terminalId);
+        args.putString("terminal", new Gson().toJson(terminalId));
         fragment.setArguments(args);
         return fragment;
     }
@@ -72,7 +74,9 @@ public class AddDeviceFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            terminalId = getArguments().getString("terminal_id");
+            String  terminalGson = getArguments().getString("terminal");
+            terminal = new Gson().fromJson(terminalGson, Terminal.class);
+            terminalId = terminal.getDeviceId();
         }
     }
     
@@ -109,12 +113,13 @@ public class AddDeviceFragment extends Fragment {
         dbManager = DatabaseManager.getInstance(requireContext());
         terminalDao = new TerminalDao(DatabaseHelper.getInstance(requireContext()));
         
-        // 设置终端ID
+        // 设置终端ID（如果有传入）
         if (terminalId != null) {
             tvTerminalId.setText(terminalId);
             // 如果terminalId实际上是设备ID，则预填充到设备ID输入框
-            etDeviceId.setText(terminalId);
+            //etDeviceId.setText(terminalId);
         }
+        // 不设置默认值，让用户手动输入
     }
     
     private void setupListeners() {

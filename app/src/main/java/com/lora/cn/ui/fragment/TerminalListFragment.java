@@ -483,6 +483,13 @@ public class TerminalListFragment extends Fragment {
                 terminal.setDeviceCount(frameData.deviceCount);
                 terminal.setRackNumber(frameData.rackNumber);
                 
+                // 更新新增的字段
+                terminal.setFunctionCode(frameData.functionCode);
+                terminal.setSequenceNumber(frameData.sequenceNumber);
+                terminal.setDataLength(frameData.dataLength);
+                terminal.setDataContent(frameData.dataContent);
+                terminal.setChecksum(frameData.checksum);
+                
                 // 更新数据库
                 boolean success = dbHelper.updateTerminal(terminal);
                 if (success) {

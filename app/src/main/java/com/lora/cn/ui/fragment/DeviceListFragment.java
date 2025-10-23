@@ -2,10 +2,12 @@ package com.lora.cn.ui.fragment;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +18,8 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.chad.library.adapter4.BaseQuickAdapter;
+import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.events.UplinkDataEvent;
@@ -46,7 +50,7 @@ public class DeviceListFragment extends Fragment {
     private TextView btnSearch;
     private RecyclerView rvTerminals;
     private TextView tvEmpty;
-
+    private LinearLayout llEmpty;
     private DeviceListAdapter deviceListAdapter;
     private DatabaseManager databaseManager;
     private TerminalDao terminalDao;
@@ -76,6 +80,7 @@ public class DeviceListFragment extends Fragment {
         btnSearch = view.findViewById(R.id.btn_search);
         rvTerminals = view.findViewById(R.id.rv_terminals);
         tvEmpty = view.findViewById(R.id.tv_empty);
+        llEmpty = view.findViewById(R.id.ll_empty);
     }
 
     private void initData() {
@@ -86,24 +91,34 @@ public class DeviceListFragment extends Fragment {
     private void setupRecyclerView() {
         rvTerminals.setLayoutManager(new LinearLayoutManager(getContext()));
         deviceListAdapter = new DeviceListAdapter();
-        deviceListAdapter.setOnItemClickListener(new DeviceListAdapter.OnItemClickListener() {
+//        deviceListAdapter.setOnItemClickListener(new DeviceListAdapter.OnItemClickListener() {
+//            @Override
+//            public void onAddTerminalClick(Terminal terminal) {
+//                // 点击添加终端，传入设备ID
+//                if (getActivity() instanceof MainActivity) {
+//                    MainActivity mainActivity = (MainActivity) getActivity();
+//                    mainActivity.showAddDeviceFragment(terminal.getDeviceId());
+//                }
+//            }
+//        });。
+        deviceListAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener<Terminal>() {
             @Override
-            public void onAddTerminalClick(Terminal terminal) {
-                // 点击添加终端，传入设备ID
+            public void onClick(@NonNull BaseQuickAdapter<Terminal, ?> baseQuickAdapter, @NonNull View view, int i) {
                 if (getActivity() instanceof MainActivity) {
+                    Terminal terminal = allTerminals.get(i);
                     MainActivity mainActivity = (MainActivity) getActivity();
-                    mainActivity.showAddDeviceFragment(terminal.getDeviceId());
+                    mainActivity.showAddDeviceFragment(terminal);
                 }
             }
         });
+        deviceListAdapter.submitList(allTerminals);
         rvTerminals.setAdapter(deviceListAdapter);
     }
 
     private void setupClickListeners() {
         // 搜索终端按钮
         btnSearchTerminal.setOnClickListener(v -> {
-            // 这里可以实现搜索终端的功能，暂时显示提示
-            Toast.makeText(getContext(), "搜索终端功能", Toast.LENGTH_SHORT).show();
+            startSearchingTerminals();
         });
 
         // 返回按钮
@@ -123,10 +138,27 @@ public class DeviceListFragment extends Fragment {
         });
     }
 
+    /**
+     * 开始搜索终端功能
+     */
+    private void startSearchingTerminals() {
+        // 显示loading动画和提示
+        btnSearchTerminal.setEnabled(false);
+        btnSearchTerminal.setText("搜索中...");
+        
+        Toast.makeText(getContext(), "正在搜索附近终端，请等待上行数据...", Toast.LENGTH_LONG).show();
+        
+        // 3秒后恢复按钮状态
+        btnSearchTerminal.postDelayed(() -> {
+            btnSearchTerminal.setEnabled(true);
+            btnSearchTerminal.setText("搜索终端");
+        }, 3000);
+    }
+
     private void loadTerminals() {
         try {
             // 获取所有终端数据
-            allTerminals = terminalDao.getAllTerminals();
+            allTerminals = new ArrayList<>();
             updateUI();
         } catch (Exception e) {
             e.printStackTrace();
@@ -135,35 +167,37 @@ public class DeviceListFragment extends Fragment {
     }
 
     private void searchTerminals(String searchText) {
-        if (TextUtils.isEmpty(searchText)) {
-            // 如果搜索文本为空，显示所有终端
-            deviceListAdapter.setTerminals(allTerminals);
-        } else {
-            // 根据设备ID或设备名称搜索
-            List<Terminal> filteredTerminals = new ArrayList<>();
-            for (Terminal terminal : allTerminals) {
-                if (terminal.getDeviceId().toLowerCase().contains(searchText.toLowerCase()) ||
-                    terminal.getDeviceName().toLowerCase().contains(searchText.toLowerCase())) {
-                    filteredTerminals.add(terminal);
-                }
-            }
-            deviceListAdapter.setTerminals(filteredTerminals);
-        }
-        updateEmptyView();
+//        if (TextUtils.isEmpty(searchText)) {
+//            // 如果搜索文本为空，显示所有终端
+//            deviceListAdapter.setTerminals(allTerminals);
+//        } else {
+//            // 根据设备ID或设备名称搜索
+//            List<Terminal> filteredTerminals = new ArrayList<>();
+//            for (Terminal terminal : allTerminals) {
+//                if (terminal.getDeviceId().toLowerCase().contains(searchText.toLowerCase()) ||
+//                    terminal.getDeviceName().toLowerCase().contains(searchText.toLowerCase())) {
+//                    filteredTerminals.add(terminal);
+//                }
+//            }
+//            deviceListAdapter.setTerminals(filteredTerminals);
+//        }
+//        updateEmptyView();
     }
 
     private void updateUI() {
-        deviceListAdapter.setTerminals(allTerminals);
+        //deviceListAdapter.setTerminals(allTerminals);
         updateEmptyView();
     }
 
     private void updateEmptyView() {
-        if (deviceListAdapter.getItemCount() == 0) {
+        if (allTerminals.isEmpty()) {
             rvTerminals.setVisibility(View.GONE);
             tvEmpty.setVisibility(View.VISIBLE);
+            llEmpty.setVisibility(View.VISIBLE);
         } else {
             rvTerminals.setVisibility(View.VISIBLE);
             tvEmpty.setVisibility(View.GONE);
+            llEmpty.setVisibility(View.GONE);
         }
     }
 
@@ -194,6 +228,9 @@ public class DeviceListFragment extends Fragment {
         try {
             // 解析hex数据
             LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
+
+            android.util.Log.d("DeviceListFragment", "发现新设备: " + new Gson().toJson(frameData));
+
             if (frameData != null && frameData.deviceId != null) {
                 String deviceId = frameData.deviceId;
                 
@@ -207,15 +244,24 @@ public class DeviceListFragment extends Fragment {
                         // 创建一个临时的Terminal对象用于显示
                         Terminal discoveredTerminal = new Terminal();
                         discoveredTerminal.setDeviceId(deviceId);
-                        discoveredTerminal.setDeviceName("发现的设备 " + deviceId.substring(deviceId.length() - 4)); // 显示后4位
+                        discoveredTerminal.setDeviceName("终端ID：" + deviceId); // 显示后4位
                         discoveredTerminal.setStatus("未添加");
-                        
+                        discoveredTerminal.parsedFrame = frameData;
                         // 添加到列表并更新UI
-                        allTerminals.add(0, discoveredTerminal); // 添加到列表顶部
-                        deviceListAdapter.notifyItemInserted(0);
-                        
+                        allTerminals.add(discoveredTerminal); // 添加到列表顶部
+
+                        updateUI();
+
+                        deviceListAdapter.submitList(allTerminals);
+                        deviceListAdapter.notifyDataSetChanged();
+                        // 显示发现新设备的提示
+                        //Toast.makeText(getContext(), "发现新设备: " + deviceId.substring(deviceId.length() - 4), Toast.LENGTH_SHORT).show();
+
                         android.util.Log.d("DeviceListFragment", "发现新设备: " + deviceId);
                     }
+                } else {
+                    // 设备已存在于终端表中
+                    android.util.Log.d("DeviceListFragment", "设备 " + deviceId + " 已存在于终端表中");
                 }
             }
         } catch (Exception e) {
