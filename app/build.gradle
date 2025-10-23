@@ -90,4 +90,7 @@ dependencies {
     // Add AndroidX LocalBroadcastManager to satisfy rewritten reference by Jetifier
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
     implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+    
+    // EventBus
+    implementation 'org.greenrobot:eventbus:3.3.1'
 }

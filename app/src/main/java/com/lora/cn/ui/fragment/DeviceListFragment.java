@@ -22,6 +22,7 @@ import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.dao.TerminalDao;
 import com.lora.cn.database.entity.Terminal;
 import com.lora.cn.ui.adapter.DeviceListAdapter;
+import com.lora.cn.ui.activity.MainActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,10 +99,11 @@ public class DeviceListFragment extends Fragment {
 
         // 返回按钮
         btnBack.setOnClickListener(v -> {
-            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
+            // 返回上个界面，隐藏设备列表
+            if (getActivity() instanceof MainActivity) {
+                ((MainActivity) getActivity()).hideDeviceList();
+            } else if (getParentFragmentManager().getBackStackEntryCount() > 0) {
                 getParentFragmentManager().popBackStack();
-            } else {
-                requireActivity().finish();
             }
         });
 

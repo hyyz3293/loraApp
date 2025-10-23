@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 9;
+    private static final int DATABASE_VERSION = 10;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -117,6 +117,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_EXTENSION = "extension"; // 扩展字段
     public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
     public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
+
+    // 上行数据日志表
+    public static final String TABLE_UPLINK_LOGS = "uplink_logs";
+    public static final String COLUMN_UPLINK_LOG_ID = "log_id";
+    public static final String COLUMN_UPLINK_LOG_TIME = "time";
+    public static final String COLUMN_UPLINK_LOG_HEX = "hex";
+    public static final String COLUMN_UPLINK_LOG_CREATE_TIME = "create_time";
     
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 
@@ -258,6 +265,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         "FOREIGN KEY (" + COLUMN_TERMINAL_OTHER_ID + ") REFERENCES " + 
         TABLE_CATEGORIES + "(" + COLUMN_CATEGORY_ID + ") ON DELETE SET NULL" +
         ")";
+
+    // 创建上行数据日志表的SQL语句
+    private static final String CREATE_TABLE_UPLINK_LOGS = 
+        "CREATE TABLE " + TABLE_UPLINK_LOGS + " (" +
+        COLUMN_UPLINK_LOG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_UPLINK_LOG_TIME + " TEXT NOT NULL, " +
+        COLUMN_UPLINK_LOG_HEX + " TEXT NOT NULL, " +
+        COLUMN_UPLINK_LOG_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
+        ")";
     
     // 创建索引的SQL语句
     private static final String CREATE_INDEX_CATEGORIES_GROUP_ID = 
@@ -308,6 +324,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 创建终端表
         db.execSQL(CREATE_TABLE_TERMINALS);
+        
+        // 创建上行数据日志表
+        db.execSQL(CREATE_TABLE_UPLINK_LOGS);
         
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
@@ -404,6 +423,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             
             // 删除临时表
             db.execSQL("DROP TABLE terminals_backup");
+        }
+        
+        if (oldVersion < 10) {
+            // 版本9升级到版本10：创建上行数据日志表
+            db.execSQL(CREATE_TABLE_UPLINK_LOGS);
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -910,5 +934,120 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return terminals;
+    }
+    
+    // 上行数据日志相关方法
+    
+    /**
+     * 添加上行数据日志
+     * @param time 时间
+     * @param hex hex数据
+     * @return 插入的行ID，失败返回-1
+     */
+    public long addUplinkLog(String time, String hex) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_UPLINK_LOG_TIME, time);
+        values.put(COLUMN_UPLINK_LOG_HEX, hex);
+        
+        long result = db.insert(TABLE_UPLINK_LOGS, null, values);
+        db.close();
+        return result;
+    }
+    
+    /**
+     * 获取所有上行数据日志
+     * @return 上行数据日志列表
+     */
+    public java.util.List<UplinkLog> getAllUplinkLogs() {
+        java.util.List<UplinkLog> logs = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        android.database.Cursor cursor = db.query(TABLE_UPLINK_LOGS, null, null, null, null, null, 
+                COLUMN_UPLINK_LOG_CREATE_TIME + " DESC");
+        
+        if (cursor.moveToFirst()) {
+            do {
+                UplinkLog log = new UplinkLog();
+                log.setLogId(cursor.getInt(cursor.getColumnIndex(COLUMN_UPLINK_LOG_ID)));
+                log.setTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_TIME)));
+                log.setHex(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_HEX)));
+                log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_CREATE_TIME)));
+                logs.add(log);
+            } while (cursor.moveToNext());
+        }
+        
+        cursor.close();
+        db.close();
+        return logs;
+    }
+    
+    /**
+     * 根据时间范围获取上行数据日志
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 上行数据日志列表
+     */
+    public java.util.List<UplinkLog> getUplinkLogsByTimeRange(String startTime, String endTime) {
+        java.util.List<UplinkLog> logs = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        String selection = COLUMN_UPLINK_LOG_CREATE_TIME + " BETWEEN ? AND ?";
+        String[] selectionArgs = {startTime, endTime};
+        
+        android.database.Cursor cursor = db.query(TABLE_UPLINK_LOGS, null, selection, selectionArgs, 
+                null, null, COLUMN_UPLINK_LOG_CREATE_TIME + " DESC");
+        
+        if (cursor.moveToFirst()) {
+            do {
+                UplinkLog log = new UplinkLog();
+                log.setLogId(cursor.getInt(cursor.getColumnIndex(COLUMN_UPLINK_LOG_ID)));
+                log.setTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_TIME)));
+                log.setHex(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_HEX)));
+                log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_CREATE_TIME)));
+                logs.add(log);
+            } while (cursor.moveToNext());
+        }
+        
+        cursor.close();
+        db.close();
+        return logs;
+    }
+    
+    /**
+     * 删除指定时间之前的上行数据日志
+     * @param beforeTime 指定时间
+     * @return 删除的行数
+     */
+    public int deleteUplinkLogsBefore(String beforeTime) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String whereClause = COLUMN_UPLINK_LOG_CREATE_TIME + " < ?";
+        String[] whereArgs = {beforeTime};
+        
+        int deletedRows = db.delete(TABLE_UPLINK_LOGS, whereClause, whereArgs);
+        db.close();
+        return deletedRows;
+    }
+    
+    /**
+     * 上行数据日志实体类
+     */
+    public static class UplinkLog {
+        private int logId;
+        private String time;
+        private String hex;
+        private String createTime;
+        
+        public int getLogId() { return logId; }
+        public void setLogId(int logId) { this.logId = logId; }
+        
+        public String getTime() { return time; }
+        public void setTime(String time) { this.time = time; }
+        
+        public String getHex() { return hex; }
+        public void setHex(String hex) { this.hex = hex; }
+        
+        public String getCreateTime() { return createTime; }
+        public void setCreateTime(String createTime) { this.createTime = createTime; }
     }
 }

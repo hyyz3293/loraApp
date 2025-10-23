@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,12 +22,19 @@ import com.lora.cn.ui.adapter.MainPagerAdapter;
 import com.lora.cn.ui.adapter.MenuTabAdapter;
 import com.lora.cn.ui.model.MenuTab;
 import com.lora.cn.ui.fragment.setting.user.UserInfoFragment;
+import com.lora.cn.ui.fragment.DeviceListFragment;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.lora.cn.network.MqttPacketsClient;
 import com.lora.cn.network.GatewayPacketsClient;
+import com.lora.cn.database.DatabaseHelper;
+import com.lora.cn.events.UplinkDataEvent;
+import org.greenrobot.eventbus.EventBus;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,18 +48,24 @@ public class MainActivity extends AppCompatActivity {
     private ImageView btnLogout;
     private TextView tvUserName;
     private FrameLayout fragmentUserInfoContainer;
+    private FrameLayout fragmentDeviceListContainer;
     private UserInfoFragment userInfoFragment;
     
     private int currentTabIndex = 0;
     private boolean isUserInfoVisible = false;
+    private boolean isDeviceListVisible = false;
 
     // 全局 MQTT 客户端（MainActivity 启动并维持）
     private MqttPacketsClient mqttClient;
+    private DatabaseHelper databaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // 初始化数据库助手
+        databaseHelper = DatabaseHelper.getInstance(this);
         
         initViews();
         initMenuTabs();
@@ -73,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
         btnLogout = findViewById(R.id.logout);
         tvUserName = findViewById(R.id.tv_user_name);
         fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
+        fragmentDeviceListContainer = findViewById(R.id.fragment_device_list_container);
     }
     
     private void initMenuTabs() {
@@ -153,6 +168,43 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void showDeviceList() {
+        if (isDeviceListVisible) {
+            return;
+        }
+
+        // 隐藏其他界面
+        if (isUserInfoVisible) {
+            hideUserInfo();
+        }
+
+        DeviceListFragment deviceListFragment = new DeviceListFragment();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_device_list_container, deviceListFragment)
+                .commit();
+
+        fragmentDeviceListContainer.setVisibility(View.VISIBLE);
+        rvMenuTabs.setVisibility(View.INVISIBLE);
+        viewPager.setVisibility(View.GONE);
+        isDeviceListVisible = true;
+    }
+
+    public void hideDeviceList() {
+        if (!isDeviceListVisible) {
+            return;
+        }
+
+        fragmentDeviceListContainer.setVisibility(View.GONE);
+        viewPager.setVisibility(View.VISIBLE);
+        rvMenuTabs.setVisibility(View.VISIBLE);
+        isDeviceListVisible = false;
+
+        // 清除Fragment
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_device_list_container, new Fragment())
+                .commit();
+    }
+
     private void showUserInfo() {
         if (userInfoFragment == null) {
             userInfoFragment = new UserInfoFragment();
@@ -189,7 +241,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (isUserInfoVisible) {
+        if (isDeviceListVisible) {
+            hideDeviceList();
+        } else if (isUserInfoVisible) {
             hideUserInfo();
         } else {
             super.onBackPressed();
@@ -225,17 +279,34 @@ public class MainActivity extends AppCompatActivity {
                                 return;
                             }
                             Log.e(TAG, "收到上行数据条数: " + records.size());
+                            
+                            // 获取当前时间
+                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                            String currentTime = sdf.format(new Date());
+                            
                             for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
                                 String devEui = r.deviceId != null ? r.deviceId : "-";
                                 String devAddr = r.devAddr != null ? r.devAddr : "-";
                                 String hex = r.payloadHex != null ? r.payloadHex : "-";
                                 String dr = r.dr != null ? r.dr : "-";
-                                String time = r.time != null ? r.time : "-";
+                                String time = r.time != null ? r.time : currentTime;
                                 String freq = r.freq != null ? String.valueOf(r.freq) : "-";
                                 String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
                                 String snr = r.snr != null ? String.valueOf(r.snr) : "-";
                                 String fport = r.fport != null ? String.valueOf(r.fport) : "-";
                                 String fcnt = r.fcnt != null ? String.valueOf(r.fcnt) : "-";
+                                
+                                // 存储到数据库
+                                if (!"-".equals(hex)) {
+                                    long result = databaseHelper.addUplinkLog(time, hex);
+                                    Log.d(TAG, "上行数据存储到数据库，结果: " + result);
+                                    
+                                    // 通过EventBus广播
+                                    UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                                    EventBus.getDefault().post(event);
+                                    Log.d(TAG, "通过EventBus广播上行数据: time=" + time + ", hex=" + hex);
+                                }
+                                
                                 Log.i(TAG,
                                         "UPLINK devEUI=" + devEui +
                                         " devAddr=" + devAddr +

@@ -28,6 +28,7 @@ import com.lora.cn.utils.LoRaProtocolParser;
 import com.lora.cn.dialog.AddTerminalDialog;
 import com.lora.cn.dialog.TerminalDetailDialog;
 import com.lora.cn.ui.activity.DeviceListActivity;
+import com.lora.cn.ui.activity.MainActivity;
 import com.blankj.utilcode.util.SPUtils;
 
 import java.util.ArrayList;
@@ -157,22 +158,25 @@ public class TerminalListFragment extends Fragment {
         rvTerminalStatus = view.findViewById(R.id.rv_terminal_status);
         terminalRecycle = view.findViewById(R.id.terminal_recycle);
         addTerminalBtn = view.findViewById(R.id.add_terminal);
-        TextView nearbyDevicesBtn = view.findViewById(R.id.nearby_devices);
+        //TextView nearbyDevicesBtn = view.findViewById(R.id.nearby_devices);
         
         // 设置添加终端按钮点击事件
         addTerminalBtn.setOnClickListener(v -> {
             if (hasPermission("terminal_add")) {
-                onAddTerminalClick();
+                // 跳转到MainActivity的设备列表页面
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).showDeviceList();
+                }
             } else {
                 Toast.makeText(requireContext(), "您没有添加终端的权限", Toast.LENGTH_SHORT).show();
             }
         });
         
-        // 设置附近终端按钮点击事件
-        nearbyDevicesBtn.setOnClickListener(v -> {
-            // 跳转到设备列表Activity
-            DeviceListActivity.start(requireContext());
-        });
+//        // 设置附近终端按钮点击事件
+//        nearbyDevicesBtn.setOnClickListener(v -> {
+//            // 跳转到设备列表Activity
+//            DeviceListActivity.start(requireContext());
+//        });
     }
 
     private void initTerminalStatus() {
