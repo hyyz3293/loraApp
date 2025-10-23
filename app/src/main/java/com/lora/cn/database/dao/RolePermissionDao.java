@@ -215,11 +215,11 @@ public class RolePermissionDao {
      */
     private RolePermission cursorToRolePermission(Cursor cursor) {
         RolePermission rolePermission = new RolePermission();
-        rolePermission.setId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_ID)));
-        rolePermission.setRoleId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_ROLE_ID)));
-        rolePermission.setPermissionId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_PERMISSION_ID)));
-        // 从数据库读取时间戳并转换为Date
-        String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_RP_CREATE_TIME));
+        rolePermission.setId(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_RP_ID)));
+        rolePermission.setRoleId(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_RP_ROLE_ID)));
+        rolePermission.setPermissionId(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_RP_PERMISSION_ID)));
+        
+        String createTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_RP_CREATE_TIME));
         if (createTimeStr != null) {
             try {
                 // 假设数据库存储的是时间戳字符串

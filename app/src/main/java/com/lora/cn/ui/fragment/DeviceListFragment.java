@@ -18,14 +18,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
+import com.lora.cn.events.UplinkDataEvent;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.dao.TerminalDao;
 import com.lora.cn.database.entity.Terminal;
 import com.lora.cn.ui.adapter.DeviceListAdapter;
 import com.lora.cn.ui.activity.MainActivity;
+import com.lora.cn.utils.LoRaFrameParser;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 设备列表Fragment - 显示附近终端
@@ -43,6 +51,7 @@ public class DeviceListFragment extends Fragment {
     private DatabaseManager databaseManager;
     private TerminalDao terminalDao;
     private List<Terminal> allTerminals = new ArrayList<>();
+    private Set<String> discoveredDeviceIds = new HashSet<>(); // 用于存储已发现的设备ID，避免重复显示
 
     public static DeviceListFragment newInstance() {
         return new DeviceListFragment();
@@ -75,19 +84,19 @@ public class DeviceListFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        deviceListAdapter = new DeviceListAdapter();
         rvTerminals.setLayoutManager(new LinearLayoutManager(getContext()));
-        rvTerminals.setAdapter(deviceListAdapter);
-
-        // 设置添加终端点击事件
-        deviceListAdapter.setOnItemClickListener(terminal -> {
-            // 跳转到添加设备Fragment
-            AddDeviceFragment addDeviceFragment = AddDeviceFragment.newInstance(terminal.getDeviceId());
-            FragmentTransaction transaction = getParentFragmentManager().beginTransaction();
-            transaction.replace(R.id.fragment_container, addDeviceFragment);
-            transaction.addToBackStack(null);
-            transaction.commit();
+        deviceListAdapter = new DeviceListAdapter();
+        deviceListAdapter.setOnItemClickListener(new DeviceListAdapter.OnItemClickListener() {
+            @Override
+            public void onAddTerminalClick(Terminal terminal) {
+                // 点击添加终端，传入设备ID
+                if (getActivity() instanceof MainActivity) {
+                    MainActivity mainActivity = (MainActivity) getActivity();
+                    mainActivity.showAddDeviceFragment(terminal.getDeviceId());
+                }
+            }
         });
+        rvTerminals.setAdapter(deviceListAdapter);
     }
 
     private void setupClickListeners() {
@@ -161,7 +170,56 @@ public class DeviceListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // 重新加载数据，以防有新的终端添加
         loadTerminals();
+        // 注册EventBus
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // 注销EventBus
+        if (EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().unregister(this);
+        }
+    }
+
+    /**
+     * 接收上行数据事件
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onUplinkDataReceived(UplinkDataEvent event) {
+        try {
+            // 解析hex数据
+            LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
+            if (frameData != null && frameData.deviceId != null) {
+                String deviceId = frameData.deviceId;
+                
+                // 检查设备ID是否已经在终端表中存在
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                if (!dbHelper.isTerminalExists(deviceId)) {
+                    // 检查是否已经在发现列表中显示
+                    if (!discoveredDeviceIds.contains(deviceId)) {
+                        discoveredDeviceIds.add(deviceId);
+                        
+                        // 创建一个临时的Terminal对象用于显示
+                        Terminal discoveredTerminal = new Terminal();
+                        discoveredTerminal.setDeviceId(deviceId);
+                        discoveredTerminal.setDeviceName("发现的设备 " + deviceId.substring(deviceId.length() - 4)); // 显示后4位
+                        discoveredTerminal.setStatus("未添加");
+                        
+                        // 添加到列表并更新UI
+                        allTerminals.add(0, discoveredTerminal); // 添加到列表顶部
+                        deviceListAdapter.notifyItemInserted(0);
+                        
+                        android.util.Log.d("DeviceListFragment", "发现新设备: " + deviceId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.e("DeviceListFragment", "处理上行数据失败", e);
+        }
     }
 }

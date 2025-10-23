@@ -65,9 +65,15 @@ public class DeviceListAdapter extends RecyclerView.Adapter<DeviceListAdapter.Vi
         }
 
         public void bind(Terminal terminal) {
-            // 显示终端ID信息
-            String terminalInfo = "终端ID:" + terminal.getTerminalId();
-            tvTerminalInfo.setText(terminalInfo);
+            // 显示设备ID信息
+            String deviceInfo = "设备ID: " + (terminal.getDeviceId() != null ? terminal.getDeviceId() : "未知");
+            if (terminal.getDeviceName() != null) {
+                deviceInfo += "\n设备名称: " + terminal.getDeviceName();
+            }
+            if (terminal.getStatus() != null) {
+                deviceInfo += "\n状态: " + terminal.getStatus();
+            }
+            tvTerminalInfo.setText(deviceInfo);
 
             // 设置添加终端按钮点击事件
             btnAddTerminal.setOnClickListener(v -> {

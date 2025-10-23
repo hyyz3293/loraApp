@@ -295,39 +295,39 @@ public class TerminalDao {
      */
     private Terminal cursorToTerminal(Cursor cursor) {
         Terminal terminal = new Terminal();
-        terminal.setTerminalId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_ID)));
-        terminal.setDeviceId(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_ID)));
-        terminal.setDeviceName(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_NAME)));
-        terminal.setStatus(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_STATUS)));
-        terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH)));
-        terminal.setDepartment(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT)));
-        terminal.setLocation(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_LOCATION)));
+        terminal.setTerminalId(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_ID)));
+        terminal.setDeviceId(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_DEVICE_ID)));
+        terminal.setDeviceName(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_NAME)));
+        terminal.setStatus(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_STATUS)));
+        terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+        terminal.setDepartment(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT)));
+        terminal.setLocation(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_LOCATION)));
         
         // 分类ID字段（可能为null）
         int departmentIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT_ID);
-        if (!cursor.isNull(departmentIdIndex)) {
+        if (departmentIdIndex != -1 && !cursor.isNull(departmentIdIndex)) {
             terminal.setDepartmentId(cursor.getInt(departmentIdIndex));
         }
         
         int roomIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_ROOM_ID);
-        if (!cursor.isNull(roomIdIndex)) {
+        if (roomIdIndex != -1 && !cursor.isNull(roomIdIndex)) {
             terminal.setRoomId(cursor.getInt(roomIdIndex));
         }
         
         int nursingGroupIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_NURSING_GROUP_ID);
-        if (!cursor.isNull(nursingGroupIdIndex)) {
+        if (nursingGroupIdIndex != -1 && !cursor.isNull(nursingGroupIdIndex)) {
             terminal.setNursingGroupId(cursor.getInt(nursingGroupIdIndex));
         }
         
         int otherIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_OTHER_ID);
-        if (!cursor.isNull(otherIdIndex)) {
+        if (otherIdIndex != -1 && !cursor.isNull(otherIdIndex)) {
             terminal.setOtherId(cursor.getInt(otherIdIndex));
         }
         
-        terminal.setExtension(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_EXTENSION)));
+        terminal.setExtension(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_EXTENSION)));
         
         // 时间字段
-        String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME));
+        String createTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME));
         if (createTimeStr != null && !createTimeStr.isEmpty()) {
             try {
                 terminal.setCreateTime(new Date(Long.parseLong(createTimeStr)));
@@ -338,7 +338,7 @@ public class TerminalDao {
             terminal.setCreateTime(new Date());
         }
         
-        String updateTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME));
+        String updateTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME));
         if (updateTimeStr != null && !updateTimeStr.isEmpty()) {
             try {
                 terminal.setUpdateTime(new Date(Long.parseLong(updateTimeStr)));

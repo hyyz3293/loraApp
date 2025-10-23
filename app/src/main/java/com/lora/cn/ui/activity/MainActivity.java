@@ -23,6 +23,7 @@ import com.lora.cn.ui.adapter.MenuTabAdapter;
 import com.lora.cn.ui.model.MenuTab;
 import com.lora.cn.ui.fragment.setting.user.UserInfoFragment;
 import com.lora.cn.ui.fragment.DeviceListFragment;
+import com.lora.cn.ui.fragment.AddDeviceFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,8 @@ import com.lora.cn.network.MqttPacketsClient;
 import com.lora.cn.network.GatewayPacketsClient;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.events.UplinkDataEvent;
+import com.lora.cn.utils.LoRaFrameParser;
+import com.lora.cn.database.entity.DetailedUplinkLog;
 import org.greenrobot.eventbus.EventBus;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -109,6 +112,9 @@ public class MainActivity extends AppCompatActivity {
     private void initViewPager() {
         pagerAdapter = new MainPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
+        
+        // 禁用ViewPager2的左右滑动
+        viewPager.setUserInputEnabled(false);
         
         // 设置ViewPager2的页面切换监听
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
@@ -202,6 +208,17 @@ public class MainActivity extends AppCompatActivity {
         // 清除Fragment
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_device_list_container, new Fragment())
+                .commit();
+    }
+    
+    public void showAddDeviceFragment(String deviceId) {
+        // 创建AddDeviceFragment并传入设备ID
+        AddDeviceFragment addDeviceFragment = AddDeviceFragment.newInstance(deviceId);
+        
+        // 使用Fragment事务显示AddDeviceFragment
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_device_list_container, addDeviceFragment)
+                .addToBackStack(null)
                 .commit();
     }
 
@@ -300,6 +317,47 @@ public class MainActivity extends AppCompatActivity {
                                 if (!"-".equals(hex)) {
                                     long result = databaseHelper.addUplinkLog(time, hex);
                                     Log.d(TAG, "上行数据存储到数据库，结果: " + result);
+                                    
+                                    // 解析LoRa帧数据并存储详细日志
+                                    try {
+                                        LoRaFrameParser.ParsedFrame parsedFrame = LoRaFrameParser.parseFrame(hex);
+                                        if (parsedFrame != null) {
+                                            DetailedUplinkLog detailedLog = new DetailedUplinkLog();
+                                            detailedLog.setTime(time);
+                                            detailedLog.setHex(hex);
+                                            detailedLog.fillFromParsedFrame(parsedFrame);
+                                            detailedLog.setParseSuccess(true);
+                                            
+                                            long detailedResult = databaseHelper.addDetailedUplinkLog(detailedLog);
+                                            Log.d(TAG, "详细上行数据存储到数据库，结果: " + detailedResult);
+                                        } else {
+                                            // 解析失败，仍然存储基本信息
+                                            DetailedUplinkLog detailedLog = new DetailedUplinkLog();
+                                            detailedLog.setTime(time);
+                                            detailedLog.setHex(hex);
+                                            detailedLog.setParseSuccess(false);
+                                            detailedLog.setParseError("帧解析失败");
+                                            
+                                            long detailedResult = databaseHelper.addDetailedUplinkLog(detailedLog);
+                                            Log.d(TAG, "解析失败的详细上行数据存储到数据库，结果: " + detailedResult);
+                                        }
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "解析LoRa帧数据时出错: " + e.getMessage(), e);
+                                        
+                                        // 解析异常，仍然存储基本信息
+                                        DetailedUplinkLog detailedLog = new DetailedUplinkLog();
+                                        detailedLog.setTime(time);
+                                        detailedLog.setHex(hex);
+                                        detailedLog.setParseSuccess(false);
+                                        detailedLog.setParseError("解析异常: " + e.getMessage());
+                                        
+                                        try {
+                                            long detailedResult = databaseHelper.addDetailedUplinkLog(detailedLog);
+                                            Log.d(TAG, "解析异常的详细上行数据存储到数据库，结果: " + detailedResult);
+                                        } catch (Exception dbException) {
+                                            Log.e(TAG, "存储解析异常的详细日志时出错: " + dbException.getMessage(), dbException);
+                                        }
+                                    }
                                     
                                     // 通过EventBus广播
                                     UplinkDataEvent event = new UplinkDataEvent(time, hex);

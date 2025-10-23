@@ -210,13 +210,13 @@ public class RoleDao {
      */
     private Role cursorToRole(Cursor cursor) {
         Role role = new Role();
-        role.setRoleId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_ID)));
-        role.setRoleName(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_NAME)));
-        role.setDescription(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_DESCRIPTION)));
-        role.setSortOrder(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_SORT_ORDER)));
-        role.setStatus(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_STATUS)));
-        // 将时间戳字符串转换为Date对象
-        String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_CREATE_TIME));
+        role.setRoleId(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ROLE_ID)));
+        role.setRoleName(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ROLE_NAME)));
+        role.setDescription(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ROLE_DESCRIPTION)));
+        role.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ROLE_SORT_ORDER)));
+        role.setStatus(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ROLE_STATUS)));
+        
+        String createTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ROLE_CREATE_TIME));
         if (createTimeStr != null && !createTimeStr.isEmpty()) {
             try {
                 role.setCreateTime(new Date(Long.parseLong(createTimeStr)));
@@ -227,7 +227,7 @@ public class RoleDao {
             role.setCreateTime(new Date());
         }
         
-        String updateTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME));
+        String updateTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_ROLE_UPDATE_TIME));
         if (updateTimeStr != null && !updateTimeStr.isEmpty()) {
             try {
                 role.setUpdateTime(new Date(Long.parseLong(updateTimeStr)));

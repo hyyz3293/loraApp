@@ -16,6 +16,18 @@ public class Terminal {
     private int signalStrength;
     private long createTime;
     private long updateTime;
+    
+    // 上行数据相关字段
+    private java.util.Date dataTime;           // 数据产生时间
+    private Long deviceEvent;        // 设备事件
+    private Long deviceStatus;       // 设备状态
+    private Integer batteryVoltage;  // 电池电压
+    private Integer batteryLevel;    // 电量
+    private Integer rssi;            // RSSI
+    private Integer departmentNumber; // 科室或护士站编号
+    private Integer cartNumber;      // 台车编号
+    private Integer deviceCount;     // 放置的设备数量
+    private Integer rackNumber;      // 设备所属台车台架编号
 
     public Terminal() {
     }
@@ -153,5 +165,86 @@ public class Terminal {
 
     public void setUpdateTime(long updateTime) {
         this.updateTime = updateTime;
+    }
+    
+    // 上行数据相关字段的getter和setter方法
+    public java.util.Date getDataTime() {
+        return dataTime;
+    }
+
+    public void setDataTime(java.util.Date dataTime) {
+        this.dataTime = dataTime;
+    }
+
+    public Long getDeviceEvent() {
+        return deviceEvent;
+    }
+
+    public void setDeviceEvent(Long deviceEvent) {
+        this.deviceEvent = deviceEvent;
+    }
+
+    public Long getDeviceStatus() {
+        return deviceStatus;
+    }
+
+    public void setDeviceStatus(Long deviceStatus) {
+        this.deviceStatus = deviceStatus;
+    }
+
+    public Integer getBatteryVoltage() {
+        return batteryVoltage;
+    }
+
+    public void setBatteryVoltage(Integer batteryVoltage) {
+        this.batteryVoltage = batteryVoltage;
+    }
+
+    public Integer getBatteryLevel() {
+        return batteryLevel;
+    }
+
+    public void setBatteryLevel(Integer batteryLevel) {
+        this.batteryLevel = batteryLevel;
+    }
+
+    public Integer getRssi() {
+        return rssi;
+    }
+
+    public void setRssi(Integer rssi) {
+        this.rssi = rssi;
+    }
+
+    public Integer getDepartmentNumber() {
+        return departmentNumber;
+    }
+
+    public void setDepartmentNumber(Integer departmentNumber) {
+        this.departmentNumber = departmentNumber;
+    }
+
+    public Integer getCartNumber() {
+        return cartNumber;
+    }
+
+    public void setCartNumber(Integer cartNumber) {
+        this.cartNumber = cartNumber;
+    }
+
+    public Integer getDeviceCount() {
+        return deviceCount;
+    }
+
+    public void setDeviceCount(Integer deviceCount) {
+        this.deviceCount = deviceCount;
+    }
+
+    public Integer getRackNumber() {
+        return rackNumber;
+    }
+
+    public void setRackNumber(Integer rackNumber) {
+        this.rackNumber = rackNumber;
     }
 }

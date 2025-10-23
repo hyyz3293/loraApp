@@ -22,6 +22,8 @@ import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.dao.TerminalDao;
 import com.lora.cn.database.entity.Category;
 import com.lora.cn.database.entity.Terminal;
+import com.lora.cn.event.TerminalRefreshEvent;
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -110,6 +112,8 @@ public class AddDeviceFragment extends Fragment {
         // 设置终端ID
         if (terminalId != null) {
             tvTerminalId.setText(terminalId);
+            // 如果terminalId实际上是设备ID，则预填充到设备ID输入框
+            etDeviceId.setText(terminalId);
         }
     }
     
@@ -325,6 +329,10 @@ public class AddDeviceFragment extends Fragment {
             long result = terminalDao.insertTerminal(terminal);
             if (result > 0) {
                 Toast.makeText(getContext(), "添加终端成功", Toast.LENGTH_SHORT).show();
+                
+                // 发送EventBus事件通知TerminalListFragment刷新
+                EventBus.getDefault().post(new TerminalRefreshEvent("新增终端: " + deviceName));
+                
                 // 返回上一页
                 if (getParentFragmentManager().getBackStackEntryCount() > 0) {
                     getParentFragmentManager().popBackStack();

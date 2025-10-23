@@ -5,6 +5,8 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 /**
  * 数据库帮助类
@@ -13,7 +15,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 10;
+    private static final int DATABASE_VERSION = 11;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -117,6 +119,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_EXTENSION = "extension"; // 扩展字段
     public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
     public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
+    
+    // 上行数据相关字段
+    public static final String COLUMN_TERMINAL_DATA_TIME = "data_time"; // 数据产生时间
+    public static final String COLUMN_TERMINAL_DEVICE_EVENT = "device_event"; // 设备事件
+    public static final String COLUMN_TERMINAL_DEVICE_STATUS = "device_status"; // 设备状态
+    public static final String COLUMN_TERMINAL_BATTERY_VOLTAGE = "battery_voltage"; // 电池电压
+    public static final String COLUMN_TERMINAL_BATTERY_LEVEL = "battery_level"; // 电量
+    public static final String COLUMN_TERMINAL_RSSI = "rssi"; // RSSI
+    public static final String COLUMN_TERMINAL_DEPARTMENT_NUMBER = "department_number"; // 科室或护士站编号
+    public static final String COLUMN_TERMINAL_CART_NUMBER = "cart_number"; // 台车编号
+    public static final String COLUMN_TERMINAL_DEVICE_COUNT = "device_count"; // 放置的设备数量
+    public static final String COLUMN_TERMINAL_RACK_NUMBER = "rack_number"; // 设备所属台车台架编号
 
     // 上行数据日志表
     public static final String TABLE_UPLINK_LOGS = "uplink_logs";
@@ -124,6 +138,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_UPLINK_LOG_TIME = "time";
     public static final String COLUMN_UPLINK_LOG_HEX = "hex";
     public static final String COLUMN_UPLINK_LOG_CREATE_TIME = "create_time";
+    
+    // 详细上行数据日志表
+    public static final String TABLE_DETAILED_UPLINK_LOGS = "detailed_uplink_logs";
+    public static final String COLUMN_DETAILED_LOG_ID = "detailed_log_id";
+    public static final String COLUMN_DETAILED_LOG_TIME = "time";
+    public static final String COLUMN_DETAILED_LOG_HEX = "hex";
+    public static final String COLUMN_DETAILED_LOG_CREATE_TIME = "create_time";
+    public static final String COLUMN_DETAILED_LOG_DEVICE_ID = "device_id";
+    public static final String COLUMN_DETAILED_LOG_FUNCTION_CODE = "function_code";
+    public static final String COLUMN_DETAILED_LOG_SEQUENCE_NUMBER = "sequence_number";
+    public static final String COLUMN_DETAILED_LOG_DATA_LENGTH = "data_length";
+    public static final String COLUMN_DETAILED_LOG_DATA_TIME = "data_time";
+    public static final String COLUMN_DETAILED_LOG_DEVICE_EVENT = "device_event";
+    public static final String COLUMN_DETAILED_LOG_DEVICE_STATUS = "device_status";
+    public static final String COLUMN_DETAILED_LOG_BATTERY_VOLTAGE = "battery_voltage";
+    public static final String COLUMN_DETAILED_LOG_BATTERY_LEVEL = "battery_level";
+    public static final String COLUMN_DETAILED_LOG_RSSI = "rssi";
+    public static final String COLUMN_DETAILED_LOG_DEPARTMENT_NUMBER = "department_number";
+    public static final String COLUMN_DETAILED_LOG_CART_NUMBER = "cart_number";
+    public static final String COLUMN_DETAILED_LOG_DEVICE_COUNT = "device_count";
+    public static final String COLUMN_DETAILED_LOG_RACK_NUMBER = "rack_number";
+    public static final String COLUMN_DETAILED_LOG_PARSE_SUCCESS = "parse_success";
+    public static final String COLUMN_DETAILED_LOG_PARSE_ERROR = "parse_error";
     
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 
@@ -256,6 +293,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_TERMINAL_EXTENSION + " TEXT, " +
         COLUMN_TERMINAL_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
         COLUMN_TERMINAL_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        // 上行数据相关字段
+        COLUMN_TERMINAL_DATA_TIME + " DATETIME, " +
+        COLUMN_TERMINAL_DEVICE_EVENT + " INTEGER, " +
+        COLUMN_TERMINAL_DEVICE_STATUS + " INTEGER, " +
+        COLUMN_TERMINAL_BATTERY_VOLTAGE + " INTEGER, " +
+        COLUMN_TERMINAL_BATTERY_LEVEL + " INTEGER, " +
+        COLUMN_TERMINAL_RSSI + " INTEGER, " +
+        COLUMN_TERMINAL_DEPARTMENT_NUMBER + " INTEGER, " +
+        COLUMN_TERMINAL_CART_NUMBER + " INTEGER, " +
+        COLUMN_TERMINAL_DEVICE_COUNT + " INTEGER, " +
+        COLUMN_TERMINAL_RACK_NUMBER + " INTEGER, " +
         "FOREIGN KEY (" + COLUMN_TERMINAL_DEPARTMENT_ID + ") REFERENCES " + 
         TABLE_CATEGORIES + "(" + COLUMN_CATEGORY_ID + ") ON DELETE SET NULL, " +
         "FOREIGN KEY (" + COLUMN_TERMINAL_ROOM_ID + ") REFERENCES " + 
@@ -273,6 +321,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_UPLINK_LOG_TIME + " TEXT NOT NULL, " +
         COLUMN_UPLINK_LOG_HEX + " TEXT NOT NULL, " +
         COLUMN_UPLINK_LOG_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
+        ")";
+    
+    // 创建详细上行数据日志表的SQL语句
+    private static final String CREATE_TABLE_DETAILED_UPLINK_LOGS = 
+        "CREATE TABLE " + TABLE_DETAILED_UPLINK_LOGS + " (" +
+        COLUMN_DETAILED_LOG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_DETAILED_LOG_TIME + " TEXT NOT NULL, " +
+        COLUMN_DETAILED_LOG_HEX + " TEXT NOT NULL, " +
+        COLUMN_DETAILED_LOG_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        COLUMN_DETAILED_LOG_DEVICE_ID + " TEXT, " +
+        COLUMN_DETAILED_LOG_FUNCTION_CODE + " TEXT, " +
+        COLUMN_DETAILED_LOG_SEQUENCE_NUMBER + " INTEGER, " +
+        COLUMN_DETAILED_LOG_DATA_LENGTH + " INTEGER, " +
+        COLUMN_DETAILED_LOG_DATA_TIME + " DATETIME, " +
+        COLUMN_DETAILED_LOG_DEVICE_EVENT + " INTEGER, " +
+        COLUMN_DETAILED_LOG_DEVICE_STATUS + " INTEGER, " +
+        COLUMN_DETAILED_LOG_BATTERY_VOLTAGE + " INTEGER, " +
+        COLUMN_DETAILED_LOG_BATTERY_LEVEL + " INTEGER, " +
+        COLUMN_DETAILED_LOG_RSSI + " INTEGER, " +
+        COLUMN_DETAILED_LOG_DEPARTMENT_NUMBER + " INTEGER, " +
+        COLUMN_DETAILED_LOG_CART_NUMBER + " INTEGER, " +
+        COLUMN_DETAILED_LOG_DEVICE_COUNT + " INTEGER, " +
+        COLUMN_DETAILED_LOG_RACK_NUMBER + " INTEGER, " +
+        COLUMN_DETAILED_LOG_PARSE_SUCCESS + " INTEGER DEFAULT 0, " +
+        COLUMN_DETAILED_LOG_PARSE_ERROR + " TEXT" +
         ")";
     
     // 创建索引的SQL语句
@@ -327,6 +400,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 创建上行数据日志表
         db.execSQL(CREATE_TABLE_UPLINK_LOGS);
+        
+        // 创建详细上行数据日志表
+        db.execSQL(CREATE_TABLE_DETAILED_UPLINK_LOGS);
         
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
@@ -428,6 +504,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 10) {
             // 版本9升级到版本10：创建上行数据日志表
             db.execSQL(CREATE_TABLE_UPLINK_LOGS);
+        }
+        
+        if (oldVersion < 11) {
+            // 版本10升级到版本11：为终端表添加上行数据相关字段
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DATA_TIME + " DATETIME");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEVICE_EVENT + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEVICE_STATUS + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_BATTERY_VOLTAGE + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_BATTERY_LEVEL + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_RSSI + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEPARTMENT_NUMBER + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_CART_NUMBER + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEVICE_COUNT + " INTEGER");
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_RACK_NUMBER + " INTEGER");
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -909,6 +999,136 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     
     /**
+     * 更新终端信息
+     */
+    public boolean updateTerminal(com.lora.cn.ui.model.Terminal terminal) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        
+        values.put(COLUMN_TERMINAL_DEVICE_ID, terminal.getTerminalId());
+        values.put(COLUMN_TERMINAL_NAME, terminal.getTerminalName());
+        values.put(COLUMN_TERMINAL_STATUS, terminal.getStatus());
+        values.put(COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
+        values.put(COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
+        values.put(COLUMN_TERMINAL_LOCATION, terminal.getLocation());
+        
+        // 上行数据相关字段
+        if (terminal.getDataTime() != null) {
+            values.put(COLUMN_TERMINAL_DATA_TIME, terminal.getDataTime().getTime());
+        }
+        if (terminal.getDeviceEvent() != null) {
+            values.put(COLUMN_TERMINAL_DEVICE_EVENT, terminal.getDeviceEvent());
+        }
+        if (terminal.getDeviceStatus() != null) {
+            values.put(COLUMN_TERMINAL_DEVICE_STATUS, terminal.getDeviceStatus());
+        }
+        if (terminal.getBatteryVoltage() != null) {
+            values.put(COLUMN_TERMINAL_BATTERY_VOLTAGE, terminal.getBatteryVoltage());
+        }
+        if (terminal.getBatteryLevel() != null) {
+            values.put(COLUMN_TERMINAL_BATTERY_LEVEL, terminal.getBatteryLevel());
+        }
+        if (terminal.getRssi() != null) {
+            values.put(COLUMN_TERMINAL_RSSI, terminal.getRssi());
+        }
+        if (terminal.getDepartmentNumber() != null) {
+            values.put(COLUMN_TERMINAL_DEPARTMENT_NUMBER, terminal.getDepartmentNumber());
+        }
+        if (terminal.getCartNumber() != null) {
+            values.put(COLUMN_TERMINAL_CART_NUMBER, terminal.getCartNumber());
+        }
+        if (terminal.getDeviceCount() != null) {
+            values.put(COLUMN_TERMINAL_DEVICE_COUNT, terminal.getDeviceCount());
+        }
+        if (terminal.getRackNumber() != null) {
+            values.put(COLUMN_TERMINAL_RACK_NUMBER, terminal.getRackNumber());
+        }
+        
+        values.put(COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
+        
+        int rowsAffected = db.update(TABLE_TERMINALS, values, 
+                COLUMN_TERMINAL_DEVICE_ID + "=?", 
+                new String[]{terminal.getTerminalId()});
+        
+        return rowsAffected > 0;
+    }
+    
+    /**
+     * 根据设备ID获取终端信息
+     */
+    public com.lora.cn.ui.model.Terminal getTerminalByDeviceId(String deviceId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        String query = "SELECT * FROM " + TABLE_TERMINALS + " WHERE " + COLUMN_TERMINAL_DEVICE_ID + " = ?";
+        android.database.Cursor cursor = db.rawQuery(query, new String[]{deviceId});
+        
+        com.lora.cn.ui.model.Terminal terminal = null;
+        if (cursor.moveToFirst()) {
+            terminal = new com.lora.cn.ui.model.Terminal();
+            terminal.setId(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_ID)));
+            terminal.setTerminalId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_DEVICE_ID)));
+            terminal.setTerminalName(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_NAME)));
+            terminal.setStatus(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_STATUS)));
+            terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+            terminal.setDepartment(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_DEPARTMENT)));
+            terminal.setLocation(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_LOCATION)));
+            
+            // 上行数据相关字段
+            int dataTimeIndex = cursor.getColumnIndex(COLUMN_TERMINAL_DATA_TIME);
+            if (!cursor.isNull(dataTimeIndex)) {
+                terminal.setDataTime(new java.util.Date(cursor.getLong(dataTimeIndex)));
+            }
+            
+            int deviceEventIndex = cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_EVENT);
+            if (!cursor.isNull(deviceEventIndex)) {
+                terminal.setDeviceEvent(cursor.getLong(deviceEventIndex));
+            }
+            
+            int deviceStatusIndex = cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_STATUS);
+            if (!cursor.isNull(deviceStatusIndex)) {
+                terminal.setDeviceStatus(cursor.getLong(deviceStatusIndex));
+            }
+            
+            int batteryVoltageIndex = cursor.getColumnIndex(COLUMN_TERMINAL_BATTERY_VOLTAGE);
+            if (!cursor.isNull(batteryVoltageIndex)) {
+                terminal.setBatteryVoltage(cursor.getInt(batteryVoltageIndex));
+            }
+            
+            int batteryLevelIndex = cursor.getColumnIndex(COLUMN_TERMINAL_BATTERY_LEVEL);
+            if (!cursor.isNull(batteryLevelIndex)) {
+                terminal.setBatteryLevel(cursor.getInt(batteryLevelIndex));
+            }
+            
+            int rssiIndex = cursor.getColumnIndex(COLUMN_TERMINAL_RSSI);
+            if (!cursor.isNull(rssiIndex)) {
+                terminal.setRssi(cursor.getInt(rssiIndex));
+            }
+            
+            int departmentNumberIndex = cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT_NUMBER);
+            if (!cursor.isNull(departmentNumberIndex)) {
+                terminal.setDepartmentNumber(cursor.getInt(departmentNumberIndex));
+            }
+            
+            int cartNumberIndex = cursor.getColumnIndex(COLUMN_TERMINAL_CART_NUMBER);
+            if (!cursor.isNull(cartNumberIndex)) {
+                terminal.setCartNumber(cursor.getInt(cartNumberIndex));
+            }
+            
+            int deviceCountIndex = cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_COUNT);
+            if (!cursor.isNull(deviceCountIndex)) {
+                terminal.setDeviceCount(cursor.getInt(deviceCountIndex));
+            }
+            
+            int rackNumberIndex = cursor.getColumnIndex(COLUMN_TERMINAL_RACK_NUMBER);
+            if (!cursor.isNull(rackNumberIndex)) {
+                terminal.setRackNumber(cursor.getInt(rackNumberIndex));
+            }
+        }
+        cursor.close();
+        return terminal;
+    }
+    
+    /**
      * 获取所有终端列表
      */
     public java.util.List<com.lora.cn.ui.model.Terminal> getAllTerminals() {
@@ -921,13 +1141,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
-                terminal.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_ID)));
-                terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_ID)));
-                terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_NAME)));
-                terminal.setStatus(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS)));
-                terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
-                terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
-                terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
+                terminal.setId(cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_ID)));
+                terminal.setTerminalId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_DEVICE_ID)));
+                terminal.setTerminalName(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_NAME)));
+                terminal.setStatus(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_STATUS)));
+                terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+                terminal.setDepartment(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_DEPARTMENT)));
+                terminal.setLocation(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TERMINAL_LOCATION)));
                 
                 terminals.add(terminal);
             } while (cursor.moveToNext());
@@ -969,10 +1189,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 UplinkLog log = new UplinkLog();
-                log.setLogId(cursor.getInt(cursor.getColumnIndex(COLUMN_UPLINK_LOG_ID)));
-                log.setTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_TIME)));
-                log.setHex(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_HEX)));
-                log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_CREATE_TIME)));
+                log.setLogId(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_ID)));
+                log.setTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_TIME)));
+                log.setHex(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_HEX)));
+                log.setCreateTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_CREATE_TIME)));
                 logs.add(log);
             } while (cursor.moveToNext());
         }
@@ -1001,10 +1221,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 UplinkLog log = new UplinkLog();
-                log.setLogId(cursor.getInt(cursor.getColumnIndex(COLUMN_UPLINK_LOG_ID)));
-                log.setTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_TIME)));
-                log.setHex(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_HEX)));
-                log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_UPLINK_LOG_CREATE_TIME)));
+                log.setLogId(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_ID)));
+                log.setTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_TIME)));
+                log.setHex(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_HEX)));
+                log.setCreateTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_UPLINK_LOG_CREATE_TIME)));
                 logs.add(log);
             } while (cursor.moveToNext());
         }
@@ -1049,5 +1269,201 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         public String getCreateTime() { return createTime; }
         public void setCreateTime(String createTime) { this.createTime = createTime; }
+    }
+    
+    /**
+     * 添加详细上行数据日志
+     * @param log 详细日志对象
+     * @return 插入的行ID
+     */
+    public long addDetailedUplinkLog(com.lora.cn.database.entity.DetailedUplinkLog log) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        
+        values.put(COLUMN_DETAILED_LOG_TIME, log.getTime());
+        values.put(COLUMN_DETAILED_LOG_HEX, log.getHex());
+        
+        // 处理createTime - 将Date转换为String
+        if (log.getCreateTime() != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            values.put(COLUMN_DETAILED_LOG_CREATE_TIME, sdf.format(log.getCreateTime()));
+        } else {
+            values.put(COLUMN_DETAILED_LOG_CREATE_TIME, "");
+        }
+        
+        values.put(COLUMN_DETAILED_LOG_DEVICE_ID, log.getDeviceId());
+        values.put(COLUMN_DETAILED_LOG_FUNCTION_CODE, log.getFunctionCode());
+        values.put(COLUMN_DETAILED_LOG_SEQUENCE_NUMBER, log.getSequenceNumber());
+        values.put(COLUMN_DETAILED_LOG_DATA_LENGTH, log.getDataLength());
+        
+        // 处理dataTime - 将Date转换为String
+        if (log.getDataTime() != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            values.put(COLUMN_DETAILED_LOG_DATA_TIME, sdf.format(log.getDataTime()));
+        } else {
+            values.put(COLUMN_DETAILED_LOG_DATA_TIME, "");
+        }
+        values.put(COLUMN_DETAILED_LOG_DEVICE_EVENT, log.getDeviceEvent());
+        values.put(COLUMN_DETAILED_LOG_DEVICE_STATUS, log.getDeviceStatus());
+        values.put(COLUMN_DETAILED_LOG_BATTERY_VOLTAGE, log.getBatteryVoltage());
+        values.put(COLUMN_DETAILED_LOG_BATTERY_LEVEL, log.getBatteryLevel());
+        values.put(COLUMN_DETAILED_LOG_RSSI, log.getRssi());
+        values.put(COLUMN_DETAILED_LOG_DEPARTMENT_NUMBER, log.getDepartmentNumber());
+        values.put(COLUMN_DETAILED_LOG_CART_NUMBER, log.getCartNumber());
+        values.put(COLUMN_DETAILED_LOG_DEVICE_COUNT, log.getDeviceCount());
+        values.put(COLUMN_DETAILED_LOG_RACK_NUMBER, log.getRackNumber());
+        values.put(COLUMN_DETAILED_LOG_PARSE_SUCCESS, log.isParseSuccess() ? 1 : 0);
+        values.put(COLUMN_DETAILED_LOG_PARSE_ERROR, log.getParseError());
+        
+        long id = db.insert(TABLE_DETAILED_UPLINK_LOGS, null, values);
+        db.close();
+        return id;
+    }
+    
+    /**
+     * 获取所有详细上行数据日志
+     * @return 详细日志列表
+     */
+    public java.util.List<com.lora.cn.database.entity.DetailedUplinkLog> getAllDetailedUplinkLogs() {
+        java.util.List<com.lora.cn.database.entity.DetailedUplinkLog> logs = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        android.database.Cursor cursor = db.query(TABLE_DETAILED_UPLINK_LOGS, null, null, null, null, null, 
+                COLUMN_DETAILED_LOG_CREATE_TIME + " DESC");
+        
+        if (cursor.moveToFirst()) {
+            do {
+                com.lora.cn.database.entity.DetailedUplinkLog log = new com.lora.cn.database.entity.DetailedUplinkLog();
+                log.setLogId(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_ID)));
+                log.setTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_TIME)));
+                log.setHex(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_HEX)));
+                // 处理日期字段
+                String createTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_CREATE_TIME));
+                if (createTimeStr != null) {
+                    try {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        log.setCreateTime(sdf.parse(createTimeStr));
+                    } catch (java.text.ParseException e) {
+                        log.setCreateTime(new java.util.Date());
+                    }
+                }
+                
+                String dataTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DATA_TIME));
+                if (dataTimeStr != null) {
+                    try {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        log.setDataTime(sdf.parse(dataTimeStr));
+                    } catch (java.text.ParseException e) {
+                        log.setDataTime(new java.util.Date());
+                    }
+                }
+                
+                log.setDeviceId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_ID)));
+                log.setFunctionCode(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_FUNCTION_CODE)));
+                log.setSequenceNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_SEQUENCE_NUMBER)));
+                log.setDataLength(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DATA_LENGTH)));
+                log.setDeviceEvent(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_EVENT)));
+                log.setDeviceStatus(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_STATUS)));
+                log.setBatteryVoltage(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_BATTERY_VOLTAGE)));
+                log.setBatteryLevel(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_BATTERY_LEVEL)));
+                log.setRssi(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_RSSI)));
+                log.setDepartmentNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEPARTMENT_NUMBER)));
+                log.setCartNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_CART_NUMBER)));
+                log.setDeviceCount(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_COUNT)));
+                log.setRackNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_RACK_NUMBER)));
+                log.setParseSuccess(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_PARSE_SUCCESS)) == 1);
+                log.setParseError(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_PARSE_ERROR)));
+                logs.add(log);
+            } while (cursor.moveToNext());
+        }
+        
+        cursor.close();
+        db.close();
+        return logs;
+    }
+    
+    /**
+     * 根据时间范围获取详细上行数据日志
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 详细日志列表
+     */
+    public java.util.List<com.lora.cn.database.entity.DetailedUplinkLog> getDetailedUplinkLogsByTimeRange(String startTime, String endTime) {
+        java.util.List<com.lora.cn.database.entity.DetailedUplinkLog> logs = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        String selection = COLUMN_DETAILED_LOG_CREATE_TIME + " BETWEEN ? AND ?";
+        String[] selectionArgs = {startTime, endTime};
+        
+        android.database.Cursor cursor = db.query(TABLE_DETAILED_UPLINK_LOGS, null, selection, selectionArgs, 
+                null, null, COLUMN_DETAILED_LOG_CREATE_TIME + " DESC");
+        
+        if (cursor.moveToFirst()) {
+            do {
+                com.lora.cn.database.entity.DetailedUplinkLog log = new com.lora.cn.database.entity.DetailedUplinkLog();
+                log.setLogId(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_ID)));
+                log.setTime(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_TIME)));
+                log.setHex(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_HEX)));
+                // 设置createTime
+                String createTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_CREATE_TIME));
+                if (createTimeStr != null) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                        log.setCreateTime(sdf.parse(createTimeStr));
+                    } catch (java.text.ParseException e) {
+                        log.setCreateTime(new java.util.Date());
+                    }
+                } else {
+                    log.setCreateTime(new java.util.Date());
+                }
+                log.setDeviceId(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_ID)));
+                log.setFunctionCode(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_FUNCTION_CODE)));
+                log.setSequenceNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_SEQUENCE_NUMBER)));
+                log.setDataLength(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DATA_LENGTH)));
+                // 设置dataTime
+                String dataTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DATA_TIME));
+                if (dataTimeStr != null) {
+                    try {
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                        log.setDataTime(sdf.parse(dataTimeStr));
+                    } catch (java.text.ParseException e) {
+                        log.setDataTime(new java.util.Date());
+                    }
+                } else {
+                    log.setDataTime(new java.util.Date());
+                }
+                log.setDeviceEvent(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_EVENT)));
+                log.setDeviceStatus(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_STATUS)));
+                log.setBatteryVoltage(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_BATTERY_VOLTAGE)));
+                log.setBatteryLevel(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_BATTERY_LEVEL)));
+                log.setRssi(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_RSSI)));
+                log.setDepartmentNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEPARTMENT_NUMBER)));
+                log.setCartNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_CART_NUMBER)));
+                log.setDeviceCount(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_DEVICE_COUNT)));
+                log.setRackNumber(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_RACK_NUMBER)));
+                log.setParseSuccess(cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_PARSE_SUCCESS)) == 1);
+                log.setParseError(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DETAILED_LOG_PARSE_ERROR)));
+                logs.add(log);
+            } while (cursor.moveToNext());
+        }
+        
+        cursor.close();
+        db.close();
+        return logs;
+    }
+    
+    /**
+     * 删除指定时间之前的详细上行数据日志
+     * @param beforeTime 指定时间
+     * @return 删除的行数
+     */
+    public int deleteDetailedUplinkLogsBefore(String beforeTime) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String whereClause = COLUMN_DETAILED_LOG_CREATE_TIME + " < ?";
+        String[] whereArgs = {beforeTime};
+        
+        int deletedRows = db.delete(TABLE_DETAILED_UPLINK_LOGS, whereClause, whereArgs);
+        db.close();
+        return deletedRows;
     }
 }
