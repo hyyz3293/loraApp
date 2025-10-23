@@ -6,8 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.LinearLayout;
-import android.widget.ImageView;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -28,22 +26,10 @@ import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.ui.constants.TerminalStatusConstants;
 import com.lora.cn.utils.LoRaProtocolParser;
 import com.lora.cn.dialog.AddTerminalDialog;
-import com.lora.cn.dialog.TerminalDetailDialog;
-import com.lora.cn.ui.activity.DeviceListActivity;
-import com.lora.cn.ui.activity.MainActivity;
 import com.blankj.utilcode.util.SPUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import com.lora.cn.network.MqttPacketsClient;
-import com.lora.cn.network.GatewayPacketsClient;
-import com.lora.cn.event.TerminalRefreshEvent;
-import com.lora.cn.events.UplinkDataEvent;
-import com.lora.cn.utils.LoRaFrameParser;
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 public class TerminalListFragment extends Fragment {
     
@@ -56,135 +42,37 @@ public class TerminalListFragment extends Fragment {
     private TextView addTerminalBtn;
     private int currentStatusIndex = 0;
     
-    // 异常提示窗口相关
-    private LinearLayout llErrorNotification;
-    private TextView tvErrorMessage;
-    private ImageView ivCloseError;
-    
     // 数据库管理器
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
-    
-    // 全局MQTT客户端（用于输出连接与订阅日志）
-    private MqttPacketsClient mqttClient;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_terminal_list, container, false);
+        
         // 初始化数据库管理器
         databaseManager = DatabaseManager.getInstance(requireContext());
+        
         // 初始化用户角色ID
         long userId = SPUtils.getInstance().getLong("current_user_id", -1);
         if (userId != -1) {
             User user = databaseManager.getUserById(userId);
             if (user != null) {
-                currentUserRoleId = (int) user.getRoleId();
+                currentUserRoleId = (int)user.getRoleId();
             }
         }
+        
         initViews(view);
-        initTerminalStatus();
-        // 避免与 MainActivity 重复连接（MainActivity 已启动全局 MQTT）
-        if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
-            Log.d(TAG, "MQTT 由 MainActivity 管理，Fragment 不再重复启动");
+        
+        // 检查查看终端列表权限
+        if (hasPermission("terminal_view")) {
+            initTerminalStatus();
         } else {
-            // 启动全局MQTT连接以输出连接/订阅日志
-            startGlobalMqttLogging();
+            Toast.makeText(requireContext(), "您没有查看终端列表的权限", Toast.LENGTH_SHORT).show();
         }
+        
         return view;
-    }
-
-    private void startGlobalMqttLogging() {
-        try {
-            if (mqttClient == null) mqttClient = new MqttPacketsClient();
-            final String brokerUrl = "tcp://broker.emqx.io:1883";
-            final String clientId = "android-" + System.currentTimeMillis();
-            final String topicFilter = "/milesight/uplink/#";
-            mqttClient.connectAndSubscribe(requireContext(), brokerUrl, clientId, topicFilter,
-                    null, null, false,
-                    new GatewayPacketsClient.PacketsListener() {
-                        @Override
-                        public void onStatus(String msg) {
-                            Log.d(TAG, "MQTT状态TerminalList: " + msg);
-                        }
-
-
-
-                        @Override
-                        public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {
-                            if (records == null || records.isEmpty()) {
-                                android.util.Log.d(TAG, "收到上行数据条数: 0");
-                                return;
-                            }
-                            android.util.Log.d(TAG, "收到上行数据条数: " + records.size());
-                            for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
-                                String devEui = r.deviceId != null ? r.deviceId : "-";
-                                String devAddr = r.devAddr != null ? r.devAddr : "-";
-                                String hex = r.payloadHex != null ? r.payloadHex : "-";
-                                String dr = r.dr != null ? r.dr : "-";
-                                String time = r.time != null ? r.time : "-";
-                                String freq = r.freq != null ? String.valueOf(r.freq) : "-";
-                                String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
-                                String snr = r.snr != null ? String.valueOf(r.snr) : "-";
-                                String fport = r.fport != null ? String.valueOf(r.fport) : "-";
-                                String fcnt = r.fcnt != null ? String.valueOf(r.fcnt) : "-";
-                                android.util.Log.i(TAG,
-                                        "UPLINK devEUI=" + devEui +
-                                        " devAddr=" + devAddr +
-                                        " fport=" + fport +
-                                        " fcnt=" + fcnt +
-                                        " rssi=" + rssi +
-                                        " snr=" + snr +
-                                        " freq=" + freq +
-                                        " dr=" + dr +
-                                        " time=" + time +
-                                        " hex=" + hex);
-                            }
-                        }
-                        @Override
-                        public void onError(String error) {
-                            Log.e(TAG, "MQTT错误: " + error);
-                        }
-                        @Override
-                        public void onComplete() {
-                            Log.d(TAG, "MQTT完成/断开");
-                        }
-                    });
-        } catch (Exception e) {
-            Log.e(TAG, "启动MQTT日志输出失败", e);
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        // 注册EventBus
-        if (!EventBus.getDefault().isRegistered(this)) {
-            EventBus.getDefault().register(this);
-        }
-        // 加载终端列表
-        loadTerminals();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        // 注销EventBus
-        if (EventBus.getDefault().isRegistered(this)) {
-            EventBus.getDefault().unregister(this);
-        }
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        try {
-            if (mqttClient != null) {
-                mqttClient.disconnect();
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "断开MQTT时异常: " + e.getMessage());
-        }
     }
 
     private void initViews(View view) {
@@ -192,41 +80,20 @@ public class TerminalListFragment extends Fragment {
         terminalRecycle = view.findViewById(R.id.terminal_recycle);
         addTerminalBtn = view.findViewById(R.id.add_terminal);
         
-        // 初始化异常提示窗口控件
-        llErrorNotification = view.findViewById(R.id.ll_error_notification);
-        tvErrorMessage = view.findViewById(R.id.tv_error_message);
-        ivCloseError = view.findViewById(R.id.iv_close_error);
-        
-        //TextView nearbyDevicesBtn = view.findViewById(R.id.nearby_devices);
-        
         // 设置添加终端按钮点击事件
         addTerminalBtn.setOnClickListener(v -> {
             if (hasPermission("terminal_add")) {
-                // 跳转到MainActivity的设备列表页面
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).showDeviceList();
-                }
+                onAddTerminalClick();
             } else {
                 Toast.makeText(requireContext(), "您没有添加终端的权限", Toast.LENGTH_SHORT).show();
             }
         });
-        
-        // 设置异常提示窗口关闭按钮点击事件
-        ivCloseError.setOnClickListener(v -> {
-            hideErrorNotification();
-        });
-        
-//        // 设置附近终端按钮点击事件
-//        nearbyDevicesBtn.setOnClickListener(v -> {
-//            // 跳转到设备列表Activity
-//            DeviceListActivity.start(requireContext());
-//        });
     }
 
     private void initTerminalStatus() {
-        // 使用常量类获取终端状态数据
-        List<TerminalStatus> statusList = TerminalStatusConstants.getDefaultStatusList();
-
+        // 从数据库获取真实的终端统计数据
+        updateTerminalStatusFromDatabase();
+        
         // 设置状态RecyclerView
         LinearLayoutManager statusLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         rvTerminalStatus.setLayoutManager(statusLayoutManager);
@@ -234,81 +101,118 @@ public class TerminalListFragment extends Fragment {
         terminalStatusAdapter = new TerminalStatusAdapter();
         rvTerminalStatus.setAdapter(terminalStatusAdapter);
         
-        terminalStatusAdapter.submitList(statusList);
-        
         // 初始化终端列表
         initTerminalList();
     }
     
-    private void initTerminalList() {
-        // 创建示例终端数据
-        List<Terminal> terminalList = new ArrayList<>();
-
-
-        // 设置终端列表RecyclerView
-        GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 4);
-        terminalRecycle.setLayoutManager(terminalLayoutManager);
-        
-        adapter = new TerminalAdapter();
-        terminalRecycle.setAdapter(adapter);
-        
-        adapter.submitList(terminalList);
-        
-        // 设置终端点击事件监听器
-        adapter.setOnItemClickListener((adapter, view, position) -> {
-            if (hasPermission("terminal_detail")) {
-                Terminal terminal = terminalList.get(position);
-                onTerminalClick(position, terminal);
-            } else {
-                Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
+    /**
+     * 从数据库更新终端状态统计
+     */
+    private void updateTerminalStatusFromDatabase() {
+        try {
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            List<com.lora.cn.ui.model.Terminal> allTerminals = dbHelper.getAllTerminals();
+            
+            // 统计各种状态的终端数量
+            int favoriteCount = 0;
+            int onlineCount = 0;
+            int normalTakenCount = 0;
+            int abnormalLostCount = 0;
+            int lowBatteryCount = 0;
+            int offlineCount = 0;
+            
+            for (com.lora.cn.ui.model.Terminal terminal : allTerminals) {
+                // 统计收藏数量
+                if (terminal.isFavorite()) {
+                    favoriteCount++;
+                }
+                
+                // 统计状态数量
+                String status = terminal.getStatus();
+                if ("在线".equals(status)) {
+                    onlineCount++;
+                } else if ("离线".equals(status)) {
+                    offlineCount++;
+                } else if ("异常".equals(status)) {
+                    abnormalLostCount++;
+                }
+                
+                // 统计电量状态
+                int batteryLevel = terminal.getBatteryLevel();
+                if (batteryLevel <= 20) {
+                    lowBatteryCount++;
+                } else if (batteryLevel > 60) {
+                    normalTakenCount++;
+                }
             }
-        });
+            
+            // 创建状态列表
+            List<TerminalStatus> statusList = new ArrayList<>();
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_IMPORTANT, R.mipmap.ic_coll, favoriteCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ONLINE, R.mipmap.ic_xh_3, onlineCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_NORMAL_TAKEN, R.mipmap.ic_blue_right, normalTakenCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ABNORMAL_LOST, R.mipmap.ic_ds, abnormalLostCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_LOW_BATTERY, R.mipmap.ic_red_sd, lowBatteryCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_OFFLINE, R.mipmap.ic_xh_no, offlineCount));
+            
+            // 更新适配器数据
+            if (terminalStatusAdapter != null) {
+                terminalStatusAdapter.submitList(statusList);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "更新终端状态统计失败", e);
+            // 出错时使用默认数据
+            List<TerminalStatus> statusList = TerminalStatusConstants.getDefaultStatusList();
+            if (terminalStatusAdapter != null) {
+                terminalStatusAdapter.submitList(statusList);
+            }
+        }
+    }
+    
+    private void initTerminalList() {
+        // 首先尝试从数据库加载终端数据
+        loadTerminals();
     }
 
     private void onTerminalClick(int position, Terminal terminal) {
-        // 将UI层的 Terminal 映射为协议层的 TerminalInfo，用于详情弹窗
-        LoRaProtocolParser.TerminalInfo info = new LoRaProtocolParser.TerminalInfo();
-        info.deviceId = terminal.getTerminalId();
-        // 优先使用数据库中的 terminalName，其次回退示例数据的 name
-        info.deviceName = terminal.getTerminalName() != null && !terminal.getTerminalName().isEmpty()
-                ? terminal.getTerminalName() : terminal.getName();
-        info.department = terminal.getDepartment();
-        info.location = terminal.getLocation();
-        info.signalStrength = terminal.getSignalStrength();
-        info.status = mapStatusToInt(terminal.getStatus(), terminal.getStatusText());
-        info.batteryLevel = parseBatteryPercent(terminal.getBatteryText());
-        info.timestamp = System.currentTimeMillis();
-        info.payloadHex = ""; // 列表数据无原始HEX，详情支持刷新获取
-
-        TerminalDetailDialog dialog = new TerminalDetailDialog(requireContext(), info);
-        dialog.show();
-    }
-
-    private int parseBatteryPercent(String batteryText) {
-        if (batteryText == null) return 0;
         try {
-            String t = batteryText.trim();
-            if (t.endsWith("%")) {
-                t = t.substring(0, t.length() - 1);
+            // 从数据库获取完整的终端信息
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            com.lora.cn.ui.model.Terminal dbTerminal = null;
+            
+            // 通过终端ID查找数据库中的终端信息
+            List<com.lora.cn.ui.model.Terminal> allTerminals = dbHelper.getAllTerminals();
+            for (com.lora.cn.ui.model.Terminal t : allTerminals) {
+                if (t.getTerminalId().equals(terminal.getTerminalId())) {
+                    dbTerminal = t;
+                    break;
+                }
             }
-            return Math.max(0, Math.min(100, Integer.parseInt(t)));
+            
+            if (dbTerminal != null) {
+                // 创建TerminalInfo对象用于显示详情
+                LoRaProtocolParser.TerminalInfo terminalInfo = new LoRaProtocolParser.TerminalInfo();
+                terminalInfo.deviceId = dbTerminal.getTerminalId();
+                terminalInfo.deviceName = dbTerminal.getTerminalName();
+                terminalInfo.department = dbTerminal.getDepartment();
+                terminalInfo.location = dbTerminal.getLocation();
+                terminalInfo.signalStrength = dbTerminal.getSignalStrength();
+                terminalInfo.batteryLevel = dbTerminal.getBatteryLevel();
+                terminalInfo.status = "在线".equals(dbTerminal.getStatus()) ? 1 : 0;
+                terminalInfo.timestamp = System.currentTimeMillis();
+                terminalInfo.payloadHex = ""; // 可以从日志中获取最新的payload
+                
+                // 显示终端详情对话框
+                com.lora.cn.dialog.TerminalDetailDialog dialog = 
+                    new com.lora.cn.dialog.TerminalDetailDialog(getContext(), terminalInfo);
+                dialog.show();
+            } else {
+                Toast.makeText(getContext(), "未找到终端详细信息", Toast.LENGTH_SHORT).show();
+            }
         } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    private int mapStatusToInt(String status, String statusText) {
-        String s = status != null ? status : statusText;
-        if (s == null) return 1;
-        switch (s) {
-            case "在线":
-                return 1;
-            case "离线":
-                return 0;
-            case "异常":
-                return 2;
-            default:
-                return 1;
+            Log.e(TAG, "显示终端详情失败", e);
+            Toast.makeText(getContext(), "显示终端详情失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -342,7 +246,7 @@ public class TerminalListFragment extends Fragment {
             }
             
             // 创建Terminal对象
-            Terminal terminal = new Terminal();
+            com.lora.cn.model.Terminal terminal = new com.lora.cn.model.Terminal();
             terminal.setTerminalId(terminalInfo.deviceId);
             terminal.setTerminalName(terminalInfo.deviceName);
             terminal.setStatus("在线");
@@ -354,15 +258,60 @@ public class TerminalListFragment extends Fragment {
             long result = dbHelper.addTerminal(terminal);
             
             if (result > 0) {
+                // 记录添加终端的日志
+                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                logInfo.setTerminalId(terminalInfo.deviceId);
+                logInfo.setTerminalName(terminalInfo.deviceName);
+                logInfo.setDeviceId(terminalInfo.deviceId);
+                logInfo.setStatus("成功");
+                logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
+                logInfo.setAction("添加终端");
+                logInfo.setOperationTime(System.currentTimeMillis());
+                logInfo.setCreateTime(System.currentTimeMillis());
+                
+                dbHelper.addLog(logInfo);
+                
                 Toast.makeText(getContext(), "终端添加成功", Toast.LENGTH_SHORT).show();
                 // 重新加载终端列表
                 loadTerminals();
             } else {
+                // 记录添加失败的日志
+                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                logInfo.setTerminalId(terminalInfo.deviceId);
+                logInfo.setTerminalName(terminalInfo.deviceName);
+                logInfo.setDeviceId(terminalInfo.deviceId);
+                logInfo.setStatus("失败");
+                logInfo.setOperator("系统管理员");
+                logInfo.setAction("添加终端");
+                logInfo.setOperationTime(System.currentTimeMillis());
+                logInfo.setCreateTime(System.currentTimeMillis());
+                
+                dbHelper.addLog(logInfo);
+                
                 Toast.makeText(getContext(), "终端添加失败", Toast.LENGTH_SHORT).show();
             }
             
         } catch (Exception e) {
             Log.e(TAG, "添加终端到数据库失败", e);
+            
+            // 记录异常日志
+            try {
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                logInfo.setTerminalId(terminalInfo.deviceId);
+                logInfo.setTerminalName(terminalInfo.deviceName);
+                logInfo.setDeviceId(terminalInfo.deviceId);
+                logInfo.setStatus("异常");
+                logInfo.setOperator("系统管理员");
+                logInfo.setAction("添加终端");
+                logInfo.setOperationTime(System.currentTimeMillis());
+                logInfo.setCreateTime(System.currentTimeMillis());
+                
+                dbHelper.addLog(logInfo);
+            } catch (Exception logException) {
+                Log.e(TAG, "记录日志失败", logException);
+            }
+            
             Toast.makeText(getContext(), "添加终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
@@ -380,142 +329,6 @@ public class TerminalListFragment extends Fragment {
     public static TerminalListFragment newInstance() {
         return new TerminalListFragment();
     }
-    
-    /**
-     * 显示异常提示窗口
-     */
-    private void showErrorNotification(String message) {
-        if (llErrorNotification != null && tvErrorMessage != null) {
-            tvErrorMessage.setText(message);
-            llErrorNotification.setVisibility(View.VISIBLE);
-        }
-    }
-    
-    /**
-     * 隐藏异常提示窗口
-     */
-    private void hideErrorNotification() {
-        if (llErrorNotification != null) {
-            llErrorNotification.setVisibility(View.GONE);
-        }
-    }
-    
-    /**
-     * 检查异常情况并显示提示
-     */
-    private void checkForErrors() {
-        // 检查是否有异常丢失的code情况
-        // 这里可以根据实际业务逻辑来判断异常情况
-        // 例如：检查终端连接状态、数据传输异常等
-        
-        // 示例：检查是否有离线终端或数据异常
-        List<Terminal> terminals = adapter != null ? adapter.getItems() : new ArrayList<>();
-        int offlineCount = 0;
-        int errorCount = 0;
-        
-        for (Terminal terminal : terminals) {
-            if ("离线".equals(terminal.getStatus()) || "0".equals(terminal.getStatus())) { // 检查离线状态
-                offlineCount++;
-            } else if ("异常".equals(terminal.getStatus()) || "2".equals(terminal.getStatus())) { // 检查异常状态
-                errorCount++;
-            }
-        }
-        
-        if (errorCount > 0) {
-            showErrorNotification("检测到 " + errorCount + " 个终端异常丢失code");
-        } else if (offlineCount > 3) { // 如果离线终端超过3个也显示提示
-            showErrorNotification("检测到 " + offlineCount + " 个终端离线，请检查连接");
-        } else {
-            hideErrorNotification();
-        }
-    }
-
-    /**
-     * EventBus接收上行数据事件
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onUplinkDataReceived(UplinkDataEvent event) {
-        try {
-            // 解析hex数据
-            LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
-            if (frameData != null && frameData.deviceId != null) {
-                String deviceId = frameData.deviceId;
-                
-                // 检查设备ID是否已经在终端表中存在
-                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-                if (dbHelper.isTerminalExists(deviceId)) {
-                    // 如果终端已存在，更新终端表中的上行数据相关字段
-                    updateTerminalUplinkData(deviceId, frameData);
-                    
-                    // 刷新终端列表显示
-                    loadTerminals();
-                    
-                    // 检查是否有异常情况需要提示
-                    checkForErrors();
-                    
-                    Log.d(TAG, "更新终端 " + deviceId + " 的上行数据");
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "处理上行数据失败", e);
-        }
-    }
-
-    /**
-     * 更新终端表中的上行数据相关字段
-     */
-    private void updateTerminalUplinkData(String deviceId, LoRaFrameParser.ParsedFrame frameData) {
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            
-            // 获取现有终端信息
-            Terminal terminal = dbHelper.getTerminalByDeviceId(deviceId);
-            if (terminal != null) {
-                // 更新上行数据相关字段
-                terminal.setDataTime(frameData.dataTime != null ? frameData.dataTime : new java.util.Date());
-                terminal.setDeviceEvent((long) frameData.deviceEvent);
-                terminal.setDeviceStatus((long) frameData.deviceStatus);
-                terminal.setBatteryVoltage(frameData.batteryVoltage);
-                terminal.setBatteryLevel(frameData.batteryLevel);
-                terminal.setRssi(frameData.rssi);
-                terminal.setDepartmentNumber(frameData.departmentNumber);
-                terminal.setCartNumber(frameData.cartNumber);
-                terminal.setDeviceCount(frameData.deviceCount);
-                terminal.setRackNumber(frameData.rackNumber);
-                
-                // 更新新增的字段
-                terminal.setFunctionCode(frameData.functionCode);
-                terminal.setSequenceNumber(frameData.sequenceNumber);
-                terminal.setDataLength(frameData.dataLength);
-                terminal.setDataContent(frameData.dataContent);
-                terminal.setChecksum(frameData.checksum);
-                
-                // 更新数据库
-                boolean success = dbHelper.updateTerminal(terminal);
-                if (success) {
-                    Log.d(TAG, "成功更新终端 " + deviceId + " 的上行数据");
-                } else {
-                    Log.e(TAG, "更新终端 " + deviceId + " 的上行数据失败");
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "更新终端上行数据时发生异常", e);
-        }
-    }
-
-    /**
-     * EventBus接收终端刷新事件
-     */
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onTerminalRefreshEvent(TerminalRefreshEvent event) {
-        Log.d(TAG, "收到终端刷新事件: " + event.getMessage());
-        // 刷新终端列表
-        loadTerminals();
-        // 显示提示信息
-        if (getContext() != null) {
-            Toast.makeText(getContext(), "终端列表已刷新", Toast.LENGTH_SHORT).show();
-        }
-    }
 
     /**
      * 加载终端列表数据
@@ -525,22 +338,151 @@ public class TerminalListFragment extends Fragment {
             DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
             List<Terminal> terminals = dbHelper.getAllTerminals();
             
+            // 设置终端列表RecyclerView（如果还没有设置）
+            if (adapter == null) {
+                GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 4);
+                terminalRecycle.setLayoutManager(terminalLayoutManager);
+                
+                adapter = new TerminalAdapter();
+                adapter.setOnFavoriteClickListener(new TerminalAdapter.OnFavoriteClickListener() {
+                    @Override
+                    public void onFavoriteClick(Terminal terminal, boolean isFavorite) {
+                        try {
+                            // 更新数据库中的收藏状态
+                            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                            int result = dbHelper.updateTerminalFavoriteStatus(terminal.getTerminalId(), isFavorite);
+                            
+                            // 记录收藏状态变更日志
+                            com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                            logInfo.setTerminalId(terminal.getTerminalId());
+                            logInfo.setTerminalName(terminal.getTerminalName());
+                            logInfo.setDeviceId(terminal.getTerminalId());
+                            logInfo.setStatus(result > 0 ? "成功" : "失败");
+                            logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
+                            logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
+                            logInfo.setOperationTime(System.currentTimeMillis());
+                            logInfo.setCreateTime(System.currentTimeMillis());
+                            
+                            dbHelper.addLog(logInfo);
+                            
+                            // 更新终端状态统计
+                            updateTerminalStatusFromDatabase();
+                        } catch (Exception e) {
+                            Log.e(TAG, "更新收藏状态失败", e);
+                            
+                            // 记录异常日志
+                            try {
+                                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                                logInfo.setTerminalId(terminal.getTerminalId());
+                                logInfo.setTerminalName(terminal.getTerminalName());
+                                logInfo.setDeviceId(terminal.getTerminalId());
+                                logInfo.setStatus("异常");
+                                logInfo.setOperator("系统管理员");
+                                logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
+                                logInfo.setOperationTime(System.currentTimeMillis());
+                                logInfo.setCreateTime(System.currentTimeMillis());
+                                
+                                dbHelper.addLog(logInfo);
+                            } catch (Exception logException) {
+                                Log.e(TAG, "记录日志失败", logException);
+                            }
+                        }
+                    }
+                });
+                terminalRecycle.setAdapter(adapter);
+                
+                // 设置终端点击事件监听器
+                adapter.setOnItemClickListener((adapter, view, position) -> {
+                    if (hasPermission("terminal_view")) {
+                        Terminal terminal = (Terminal) adapter.getItem(position);
+                        onTerminalClick(position, terminal);
+                    } else {
+                        Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+            
             if (terminals != null && !terminals.isEmpty()) {
-                // 更新适配器数据
-                if (adapter != null) {
-                    adapter.updateTerminals(terminals);
-                    
-                    // 加载终端后检查异常情况
-                    checkForErrors();
-                }
+                // 转换数据库终端数据为UI显示格式
+                List<Terminal> displayTerminals = convertToDisplayTerminals(terminals);
+                adapter.submitList(displayTerminals);
             } else {
-                // 如果数据库中没有数据，显示示例数据
-                initTerminalList();
+                // 如果数据库中没有数据，显示空列表
+                adapter.submitList(new ArrayList<>());
             }
         } catch (Exception e) {
             Log.e(TAG, "加载终端列表失败", e);
-            // 出错时显示示例数据
-            initTerminalList();
+            // 出错时显示空列表
+            if (adapter != null) {
+                adapter.submitList(new ArrayList<>());
+            }
+        }
+    }
+    
+    /**
+     * 将数据库终端数据转换为UI显示格式
+     */
+    private List<Terminal> convertToDisplayTerminals(List<Terminal> dbTerminals) {
+        List<Terminal> displayTerminals = new ArrayList<>();
+        
+        for (Terminal dbTerminal : dbTerminals) {
+            Terminal displayTerminal = new Terminal();
+            
+            // 设置基本信息
+            displayTerminal.setId(dbTerminal.getId());
+            displayTerminal.setTerminalId(dbTerminal.getTerminalId());
+            displayTerminal.setTerminalName(dbTerminal.getTerminalName());
+            displayTerminal.setName(dbTerminal.getTerminalName()); // 显示名称使用终端名称
+            displayTerminal.setDepartment(dbTerminal.getDepartment());
+            displayTerminal.setLocation(dbTerminal.getLocation());
+            displayTerminal.setStatus(dbTerminal.getStatus());
+            displayTerminal.setSignalStrength(dbTerminal.getSignalStrength());
+            displayTerminal.setFavorite(dbTerminal.isFavorite());
+            
+            // 根据状态设置图标
+            int statusIcon = getStatusIcon(dbTerminal.getStatus());
+            displayTerminal.setStatusIconResId(statusIcon);
+            displayTerminal.setStatusText(dbTerminal.getStatus());
+            
+            // 设置电量信息
+            displayTerminal.setBatteryLevel(dbTerminal.getBatteryLevel());
+            displayTerminal.setBatteryText(dbTerminal.getBatteryLevel() + "%");
+            
+            // 根据电量设置电池图标
+            if (dbTerminal.getBatteryLevel() > 60) {
+                displayTerminal.setBatteryIconResId(R.mipmap.ic_green_sd); // 绿色电池
+            } else if (dbTerminal.getBatteryLevel() > 30) {
+                displayTerminal.setBatteryIconResId(R.mipmap.ic_yellow_sd); // 黄色电池
+            } else {
+                displayTerminal.setBatteryIconResId(R.mipmap.ic_red_sd); // 红色电池
+            }
+            
+            // 设置重要性（收藏状态）
+            displayTerminal.setImportant(dbTerminal.isFavorite());
+            
+            displayTerminals.add(displayTerminal);
+        }
+        
+        return displayTerminals;
+    }
+    
+    /**
+     * 根据状态获取对应的图标资源ID
+     */
+    private int getStatusIcon(String status) {
+        if (status == null) {
+            return R.mipmap.ic_xh_no;
+        }
+        
+        switch (status) {
+            case "在线":
+                return R.mipmap.ic_xh_3;
+            case "异常":
+                return R.mipmap.ic_ds;
+            case "离线":
+            default:
+                return R.mipmap.ic_xh_no;
         }
     }
 }

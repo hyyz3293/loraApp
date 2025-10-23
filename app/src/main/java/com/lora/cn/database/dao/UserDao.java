@@ -241,30 +241,30 @@ public class UserDao {
      */
     private User cursorToUser(Cursor cursor) {
         User user = new User();
-        user.setUserId(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_ID)));
-        user.setUserName(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_NAME)));
-        user.setUserAccount(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_ACCOUNT)));
-        user.setUserPassword(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_PASSWORD)));
-        user.setRoleId(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_ROLE_ID)));
-        user.setStatus(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_STATUS)));
+        user.setUserId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_ID)));
+        user.setUserName(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_NAME)));
+        user.setUserAccount(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_ACCOUNT)));
+        user.setUserPassword(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_PASSWORD)));
+        user.setRoleId(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_ROLE_ID)));
+        user.setStatus(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_STATUS)));
         
-        // 可选字段
+        // 处理可能为null的字段
         int positionIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_POSITION_ID);
-        if (positionIdIndex != -1 && !cursor.isNull(positionIdIndex)) {
+        if (!cursor.isNull(positionIdIndex)) {
             user.setPositionId(cursor.getInt(positionIdIndex));
         }
         
         int departmentIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_DEPARTMENT_ID);
-        if (departmentIdIndex != -1 && !cursor.isNull(departmentIdIndex)) {
+        if (!cursor.isNull(departmentIdIndex)) {
             user.setDepartmentId(cursor.getInt(departmentIdIndex));
         }
         
-        user.setUserCode(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_CODE)));
-        user.setGender(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_GENDER)));
-        user.setPhone(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_PHONE)));
+        user.setUserCode(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_CODE)));
+        user.setGender(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_GENDER)));
+        user.setPhone(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_PHONE)));
         
-        // 时间字段
-        String createTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_CREATE_TIME));
+        // 将时间戳字符串转换为Date对象
+        String createTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_CREATE_TIME));
         if (createTimeStr != null && !createTimeStr.isEmpty()) {
             try {
                 user.setCreateTime(new Date(Long.parseLong(createTimeStr)));
@@ -275,7 +275,7 @@ public class UserDao {
             user.setCreateTime(new Date());
         }
         
-        String updateTimeStr = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_USER_UPDATE_TIME));
+        String updateTimeStr = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_USER_UPDATE_TIME));
         if (updateTimeStr != null && !updateTimeStr.isEmpty()) {
             try {
                 user.setUpdateTime(new Date(Long.parseLong(updateTimeStr)));

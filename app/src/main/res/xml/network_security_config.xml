@@ -1,29 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- 允许特定域名的明文HTTP流量 -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">gcs.t.jikexiu.com</domain>
     </domain-config>
-    
-    <!-- 允许局域网IP范围的明文HTTP流量，用于网关通信 -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">192.168.1.1</domain>
-        <domain includeSubdomains="false">192.168.0.1</domain>
-        <domain includeSubdomains="false">10.0.0.1</domain>
-        <domain includeSubdomains="false">172.16.0.1</domain>
-    </domain-config>
-    
-    <!-- 允许所有局域网IP段的明文HTTP流量 -->
-    <base-config cleartextTrafficPermitted="false">
-        <trust-anchors>
-            <certificates src="system"/>
-        </trust-anchors>
-    </base-config>
-    
-    <!-- 为开发和测试环境允许所有明文流量 -->
-    <debug-overrides>
-        <trust-anchors>
-            <certificates src="system"/>
-        </trust-anchors>
-    </debug-overrides>
 </network-security-config>

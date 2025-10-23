@@ -172,54 +172,14 @@
         android:gravity="center"
         android:layout_height="60dp" >
 
+
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_terminal_status"
             android:visibility="visible"
             android:layout_centerInParent="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
-
-        <!-- 异常提示窗口 -->
-        <LinearLayout
-            android:id="@+id/ll_error_notification"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginRight="16dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/bg_error_notification"
-            android:orientation="horizontal"
-            android:padding="8dp"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginRight="6dp"
-                android:src="@drawable/ic_warning" />
-
-            <TextView
-                android:id="@+id/tv_error_message"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:text="异常丢失code"
-                android:textColor="#FF6B6B"
-                android:textSize="12sp" />
-
-            <ImageView
-                android:id="@+id/iv_close_error"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginLeft="8dp"
-                android:src="@drawable/ic_close_small"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true" />
-
-        </LinearLayout>
 
     </RelativeLayout>
 

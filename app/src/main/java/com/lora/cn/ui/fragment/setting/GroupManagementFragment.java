@@ -85,7 +85,7 @@ public class GroupManagementFragment extends Fragment  {
         if (userId != -1) {
             User user = dbManager.getUserById(userId);
             if (user != null) {
-                currentUserRoleId = (int)user.getRoleId();
+                currentUserRoleId = user.getRoleId();
             }
         }
     }

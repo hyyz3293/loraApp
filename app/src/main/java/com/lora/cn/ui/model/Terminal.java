@@ -17,22 +17,14 @@ public class Terminal {
     private long createTime;
     private long updateTime;
     
-    // 上行数据相关字段
-    private java.util.Date dataTime;           // 数据产生时间
-    private Long deviceEvent;        // 设备事件
-    private Long deviceStatus;       // 设备状态
-    private Integer batteryVoltage;  // 电池电压
-    private Integer batteryLevel;    // 电量
-    private Integer rssi;            // RSSI
-    private Integer departmentNumber; // 科室或护士站编号
-    private Integer cartNumber;      // 台车编号
-    private Integer deviceCount;     // 放置的设备数量
-    private Integer rackNumber;      // 设备所属台车台架编号
-    private String functionCode;     // 功能码
-    private Integer sequenceNumber;  // 序列号
-    private Integer dataLength;      // 数据长度
-    private byte[] dataContent;      // 数据内容
-    private Byte checksum;           // 校验码
+    // 新增字段
+    private long departmentId;
+    private long roomId;
+    private long nursingGroupId;
+    private long otherId;
+    private String extension;
+    private boolean isFavorite;
+    private int batteryLevel; // 电量百分比
 
     public Terminal() {
     }
@@ -49,6 +41,31 @@ public class Terminal {
         this.batteryIconResId = batteryIconResId;
         this.batteryText = batteryText;
         this.isImportant = isImportant;
+    }
+
+    // Getters and Setters
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getTerminalId() {
+        return terminalId;
+    }
+
+    public void setTerminalId(String terminalId) {
+        this.terminalId = terminalId;
+    }
+
+    public String getTerminalName() {
+        return terminalName;
+    }
+
+    public void setTerminalName(String terminalName) {
+        this.terminalName = terminalName;
     }
 
     public String getName() {
@@ -91,6 +108,14 @@ public class Terminal {
         this.statusText = statusText;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public int getBatteryIconResId() {
         return batteryIconResId;
     }
@@ -113,39 +138,6 @@ public class Terminal {
 
     public void setImportant(boolean important) {
         isImportant = important;
-    }
-
-    // 新增字段的getter和setter方法
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getTerminalId() {
-        return terminalId;
-    }
-
-    public void setTerminalId(String terminalId) {
-        this.terminalId = terminalId;
-    }
-
-    public String getTerminalName() {
-        return terminalName;
-    }
-
-    public void setTerminalName(String terminalName) {
-        this.terminalName = terminalName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public int getSignalStrength() {
@@ -171,126 +163,60 @@ public class Terminal {
     public void setUpdateTime(long updateTime) {
         this.updateTime = updateTime;
     }
-    
-    // 上行数据相关字段的getter和setter方法
-    public java.util.Date getDataTime() {
-        return dataTime;
+
+    public long getDepartmentId() {
+        return departmentId;
     }
 
-    public void setDataTime(java.util.Date dataTime) {
-        this.dataTime = dataTime;
+    public void setDepartmentId(long departmentId) {
+        this.departmentId = departmentId;
     }
 
-    public Long getDeviceEvent() {
-        return deviceEvent;
+    public long getRoomId() {
+        return roomId;
     }
 
-    public void setDeviceEvent(Long deviceEvent) {
-        this.deviceEvent = deviceEvent;
+    public void setRoomId(long roomId) {
+        this.roomId = roomId;
     }
 
-    public Long getDeviceStatus() {
-        return deviceStatus;
+    public long getNursingGroupId() {
+        return nursingGroupId;
     }
 
-    public void setDeviceStatus(Long deviceStatus) {
-        this.deviceStatus = deviceStatus;
+    public void setNursingGroupId(long nursingGroupId) {
+        this.nursingGroupId = nursingGroupId;
     }
 
-    public Integer getBatteryVoltage() {
-        return batteryVoltage;
+    public long getOtherId() {
+        return otherId;
     }
 
-    public void setBatteryVoltage(Integer batteryVoltage) {
-        this.batteryVoltage = batteryVoltage;
+    public void setOtherId(long otherId) {
+        this.otherId = otherId;
     }
 
-    public Integer getBatteryLevel() {
+    public String getExtension() {
+        return extension;
+    }
+
+    public void setExtension(String extension) {
+        this.extension = extension;
+    }
+
+    public boolean isFavorite() {
+        return isFavorite;
+    }
+
+    public void setFavorite(boolean favorite) {
+        isFavorite = favorite;
+    }
+
+    public int getBatteryLevel() {
         return batteryLevel;
     }
 
-    public void setBatteryLevel(Integer batteryLevel) {
+    public void setBatteryLevel(int batteryLevel) {
         this.batteryLevel = batteryLevel;
-    }
-
-    public Integer getRssi() {
-        return rssi;
-    }
-
-    public void setRssi(Integer rssi) {
-        this.rssi = rssi;
-    }
-
-    public Integer getDepartmentNumber() {
-        return departmentNumber;
-    }
-
-    public void setDepartmentNumber(Integer departmentNumber) {
-        this.departmentNumber = departmentNumber;
-    }
-
-    public Integer getCartNumber() {
-        return cartNumber;
-    }
-
-    public void setCartNumber(Integer cartNumber) {
-        this.cartNumber = cartNumber;
-    }
-
-    public Integer getDeviceCount() {
-        return deviceCount;
-    }
-
-    public void setDeviceCount(Integer deviceCount) {
-        this.deviceCount = deviceCount;
-    }
-
-    public Integer getRackNumber() {
-        return rackNumber;
-    }
-
-    public void setRackNumber(Integer rackNumber) {
-        this.rackNumber = rackNumber;
-    }
-
-    // 新增字段的getter和setter方法
-    public String getFunctionCode() {
-        return functionCode;
-    }
-
-    public void setFunctionCode(String functionCode) {
-        this.functionCode = functionCode;
-    }
-
-    public Integer getSequenceNumber() {
-        return sequenceNumber;
-    }
-
-    public void setSequenceNumber(Integer sequenceNumber) {
-        this.sequenceNumber = sequenceNumber;
-    }
-
-    public Integer getDataLength() {
-        return dataLength;
-    }
-
-    public void setDataLength(Integer dataLength) {
-        this.dataLength = dataLength;
-    }
-
-    public byte[] getDataContent() {
-        return dataContent;
-    }
-
-    public void setDataContent(byte[] dataContent) {
-        this.dataContent = dataContent;
-    }
-
-    public Byte getChecksum() {
-        return checksum;
-    }
-
-    public void setChecksum(Byte checksum) {
-        this.checksum = checksum;
     }
 }

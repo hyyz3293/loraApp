@@ -333,6 +333,20 @@ public class AddDeviceFragment extends Fragment {
         try {
             long result = terminalDao.insertTerminal(terminal);
             if (result > 0) {
+                // 记录添加终端的日志
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                logInfo.setTerminalId(deviceId);
+                logInfo.setTerminalName(deviceName);
+                logInfo.setDeviceId(deviceId);
+                logInfo.setStatus("成功");
+                logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
+                logInfo.setAction("添加设备");
+                logInfo.setOperationTime(System.currentTimeMillis());
+                logInfo.setCreateTime(System.currentTimeMillis());
+                
+                dbHelper.addLog(logInfo);
+                
                 Toast.makeText(getContext(), "添加终端成功", Toast.LENGTH_SHORT).show();
                 
                 // 发送EventBus事件通知TerminalListFragment刷新
@@ -343,10 +357,43 @@ public class AddDeviceFragment extends Fragment {
                     getParentFragmentManager().popBackStack();
                 }
             } else {
+                // 记录添加失败的日志
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                logInfo.setTerminalId(deviceId);
+                logInfo.setTerminalName(deviceName);
+                logInfo.setDeviceId(deviceId);
+                logInfo.setStatus("失败");
+                logInfo.setOperator("系统管理员");
+                logInfo.setAction("添加设备");
+                logInfo.setOperationTime(System.currentTimeMillis());
+                logInfo.setCreateTime(System.currentTimeMillis());
+                
+                dbHelper.addLog(logInfo);
+                
                 Toast.makeText(getContext(), "添加终端失败", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             e.printStackTrace();
+            
+            // 记录异常日志
+            try {
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                logInfo.setTerminalId(deviceId);
+                logInfo.setTerminalName(deviceName);
+                logInfo.setDeviceId(deviceId);
+                logInfo.setStatus("异常");
+                logInfo.setOperator("系统管理员");
+                logInfo.setAction("添加设备");
+                logInfo.setOperationTime(System.currentTimeMillis());
+                logInfo.setCreateTime(System.currentTimeMillis());
+                
+                dbHelper.addLog(logInfo);
+            } catch (Exception logException) {
+                logException.printStackTrace();
+            }
+            
             Toast.makeText(getContext(), "添加终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }

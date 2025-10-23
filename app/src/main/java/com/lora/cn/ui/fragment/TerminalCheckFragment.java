@@ -241,6 +241,24 @@ public class TerminalCheckFragment extends Fragment {
         addTerminal.setText("清点中...");
         addTerminal.setEnabled(false);
         
+        // 记录开始清点的日志
+        try {
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+            logInfo.setTerminalId("ALL");
+            logInfo.setTerminalName("所有终端");
+            logInfo.setDeviceId("SYSTEM");
+            logInfo.setStatus("开始");
+            logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
+            logInfo.setAction("终端清点");
+            logInfo.setOperationTime(System.currentTimeMillis());
+            logInfo.setCreateTime(System.currentTimeMillis());
+            
+            dbHelper.addLog(logInfo);
+        } catch (Exception e) {
+            Log.e("TerminalCheckFragment", "记录清点开始日志失败", e);
+        }
+        
         // 模拟清点过程（实际项目中这里应该调用相应的API）
         new android.os.Handler().postDelayed(() -> {
             // 清点完成
@@ -256,6 +274,24 @@ public class TerminalCheckFragment extends Fragment {
             
             // 刷新数据（这里可以调用API获取最新数据）
             refreshData();
+            
+            // 记录清点完成的日志
+            try {
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                logInfo.setTerminalId("ALL");
+                logInfo.setTerminalName("所有终端");
+                logInfo.setDeviceId("SYSTEM");
+                logInfo.setStatus("完成");
+                logInfo.setOperator("系统管理员");
+                logInfo.setAction("终端清点");
+                logInfo.setOperationTime(System.currentTimeMillis());
+                logInfo.setCreateTime(System.currentTimeMillis());
+                
+                dbHelper.addLog(logInfo);
+            } catch (Exception e) {
+                Log.e("TerminalCheckFragment", "记录清点完成日志失败", e);
+            }
             
             Toast.makeText(getContext(), "清点完成", Toast.LENGTH_SHORT).show();
         }, 2000); // 模拟2秒的清点时间

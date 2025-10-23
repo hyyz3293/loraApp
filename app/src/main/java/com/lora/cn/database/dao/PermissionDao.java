@@ -255,54 +255,54 @@ public class PermissionDao {
         Permission permission = new Permission();
         
         int idIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_ID);
-        if (idIndex != -1) {
+        if (idIndex >= 0) {
             permission.setPermissionId(cursor.getInt(idIndex));
         }
         
         int codeIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CODE);
-        if (codeIndex != -1) {
+        if (codeIndex >= 0) {
             permission.setPermissionCode(cursor.getString(codeIndex));
         }
         
         int nameIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_NAME);
-        if (nameIndex != -1) {
+        if (nameIndex >= 0) {
             permission.setPermissionName(cursor.getString(nameIndex));
         }
         
         int categoryIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CATEGORY);
-        if (categoryIndex != -1) {
+        if (categoryIndex >= 0) {
             permission.setCategory(cursor.getString(categoryIndex));
         }
         
         int descIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_DESCRIPTION);
-        if (descIndex != -1) {
+        if (descIndex >= 0) {
             permission.setDescription(cursor.getString(descIndex));
         }
         
         int statusIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_STATUS);
-        if (statusIndex != -1) {
+        if (statusIndex >= 0) {
             permission.setStatus(cursor.getInt(statusIndex));
         }
         
         // 添加树形结构字段
         int parentIdIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_PARENT_ID);
-        if (parentIdIndex != -1 && !cursor.isNull(parentIdIndex)) {
+        if (parentIdIndex >= 0 && !cursor.isNull(parentIdIndex)) {
             permission.setParentId((long) cursor.getInt(parentIdIndex));
         }
         
         int levelIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_LEVEL);
-        if (levelIndex != -1) {
+        if (levelIndex >= 0) {
             permission.setLevel(cursor.getInt(levelIndex));
         }
         
         int sortOrderIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_SORT_ORDER);
-        if (sortOrderIndex != -1) {
+        if (sortOrderIndex >= 0) {
             permission.setSortOrder(cursor.getInt(sortOrderIndex));
         }
         
         // 将时间戳字符串转换为Date对象
         int createTimeIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_CREATE_TIME);
-        if (createTimeIndex != -1) {
+        if (createTimeIndex >= 0) {
             String createTimeStr = cursor.getString(createTimeIndex);
             if (createTimeStr != null && !createTimeStr.isEmpty()) {
                 try {
@@ -318,7 +318,7 @@ public class PermissionDao {
         }
         
         int updateTimeIndex = cursor.getColumnIndex(DatabaseHelper.COLUMN_PERMISSION_UPDATE_TIME);
-        if (updateTimeIndex != -1) {
+        if (updateTimeIndex >= 0) {
             String updateTimeStr = cursor.getString(updateTimeIndex);
             if (updateTimeStr != null && !updateTimeStr.isEmpty()) {
                 try {
