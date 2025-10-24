@@ -1,0 +1,1 @@
+This folder stores SVG icons moved from res/mipmap-xxhdpi to avoid Android resource-merger errors. Keep SVGs here if you need them for design or runtime parsing via assets APIs.

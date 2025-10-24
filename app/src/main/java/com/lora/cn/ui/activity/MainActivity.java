@@ -385,7 +385,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        
+
+        super.onDestroy();
         try {
             if (mqttClient != null) {
                 mqttClient.disconnect();
@@ -394,4 +395,58 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "发送测试上行数据失败: " + e.getMessage());
         }
     }
+
+
+// 显示添加设备界面（UI模型）
+public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
+    // 隐藏用户信息界面
+    if (isUserInfoVisible) {
+        hideUserInfo();
+    }
+    // 构建并显示 AddDeviceFragment
+    AddDeviceFragment fragment = AddDeviceFragment.newInstance(uiTerminal);
+    getSupportFragmentManager().beginTransaction()
+            .replace(R.id.fragment_device_list_container, fragment)
+            .addToBackStack("add_device")
+            .commit();
+
+    fragmentDeviceListContainer.setVisibility(View.VISIBLE);
+    rvMenuTabs.setVisibility(View.INVISIBLE);
+    viewPager.setVisibility(View.GONE);
+    isDeviceListVisible = true;
+}
+
+// 兼容调用：从数据库实体转换到UI模型并显示
+public void showAddDeviceFragment(com.lora.cn.database.entity.Terminal entityTerminal) {
+    com.lora.cn.ui.model.Terminal uiTerminal = new com.lora.cn.ui.model.Terminal();
+    // 以设备ID作为终端ID显示
+    if (entityTerminal.getDeviceId() != null) {
+        uiTerminal.setTerminalId(entityTerminal.getDeviceId());
+    } else {
+        uiTerminal.setTerminalId(String.valueOf(entityTerminal.getTerminalId()));
+    }
+    uiTerminal.setTerminalName(entityTerminal.getDeviceName());
+    uiTerminal.setStatus(entityTerminal.getStatus());
+    uiTerminal.setSignalStrength(entityTerminal.getSignalStrength());
+    uiTerminal.setDepartment(entityTerminal.getDepartment());
+    uiTerminal.setLocation(entityTerminal.getLocation());
+    if (entityTerminal.getDepartmentId() != null) {
+        uiTerminal.setDepartmentId(entityTerminal.getDepartmentId());
+    }
+    if (entityTerminal.getRoomId() != null) {
+        uiTerminal.setRoomId(entityTerminal.getRoomId());
+    }
+    if (entityTerminal.getNursingGroupId() != null) {
+        uiTerminal.setNursingGroupId(entityTerminal.getNursingGroupId());
+    }
+    if (entityTerminal.getOtherId() != null) {
+        uiTerminal.setOtherId(entityTerminal.getOtherId());
+    }
+    uiTerminal.setExtension(entityTerminal.getExtension());
+    if (entityTerminal.getBatteryLevel() != null) {
+        uiTerminal.setBatteryLevel(entityTerminal.getBatteryLevel());
+    }
+    // 显示添加设备界面
+    showAddDeviceFragment(uiTerminal);
+}
 }
