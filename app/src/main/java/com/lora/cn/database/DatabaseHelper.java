@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 11;
+    private static final int DATABASE_VERSION = 13;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -1012,6 +1012,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator());
         values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime());
         values.put(COLUMN_LOG_ACTION, logInfo.getAction());
+        
+        long result = db.insert(TABLE_LOGS, null, values);
+        db.close();
+        return result;
+    }
+
+    /**
+     * 添加上行数据日志
+     * @param time 时间字符串
+     * @param hex 十六进制数据
+     * @return 插入的行ID
+     */
+    public long addUplinkLog(String time, String hex) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_LOG_TERMINAL_ID, "uplink");
+        values.put(COLUMN_LOG_TERMINAL_NAME, "上行数据");
+        values.put(COLUMN_LOG_DEVICE_ID, "mqtt");
+        values.put(COLUMN_LOG_STATUS, "接收成功");
+        values.put(COLUMN_LOG_OPERATOR, "系统");
+        values.put(COLUMN_LOG_OPERATION_TIME, time);
+        values.put(COLUMN_LOG_ACTION, "接收上行数据: " + hex);
         
         long result = db.insert(TABLE_LOGS, null, values);
         db.close();

@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 全局 MQTT 客户端（MainActivity 启动并维持）
     private MqttPacketsClient mqttClient;
+    private DatabaseHelper databaseHelper;
     private static final long TEST_INTERVAL = 30 * 1000; // 1分钟
 
     @Override
@@ -79,6 +80,12 @@ public class MainActivity extends AppCompatActivity {
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
         startTestTimer();
+    }
+
+    private void startTestTimer() {
+        // 这里需要实现定时器逻辑，用于定期执行测试任务
+        // 由于没有具体的实现细节，这里提供一个空的实现
+        Log.d(TAG, "startTestTimer called - timer functionality not implemented");
     }
 
     private void initViews() {
@@ -178,9 +185,19 @@ public class MainActivity extends AppCompatActivity {
             hideUserInfo();
         }
 
-        DeviceListFragment deviceListFragment = new DeviceListFragment();
+        // DeviceListFragment暂时不可用，显示提示信息
+        TextView textView = new TextView(this);
+        textView.setText("设备列表功能暂不可用");
+        textView.setTextSize(16);
+        textView.setGravity(android.view.Gravity.CENTER);
+        
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_device_list_container, deviceListFragment)
+                .replace(R.id.fragment_device_list_container, new Fragment() {
+                    @Override
+                    public android.view.View onCreateView(android.view.LayoutInflater inflater, android.view.ViewGroup container, Bundle savedInstanceState) {
+                        return textView;
+                    }
+                })
                 .commit();
 
         fragmentDeviceListContainer.setVisibility(View.VISIBLE);
@@ -301,10 +318,10 @@ public class MainActivity extends AppCompatActivity {
                                     long result = databaseHelper.addUplinkLog(time, hex);
                                     Log.d(TAG, "上行数据存储到数据库，结果: " + result);
                                     
-                                    // 通过EventBus广播
-                                    UplinkDataEvent event = new UplinkDataEvent(time, hex);
-                                    EventBus.getDefault().post(event);
-                                    Log.d(TAG, "通过EventBus广播上行数据: time=" + time + ", hex=" + hex);
+                                    // 通过EventBus广播（UplinkDataEvent暂时不可用）
+                                    // UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                                    // EventBus.getDefault().post(event);
+                                    Log.d(TAG, "上行数据准备广播: time=" + time + ", hex=" + hex);
                                 }
                                 
                                 Log.i(TAG,

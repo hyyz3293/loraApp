@@ -34,9 +34,9 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void initViews(View view) {
-        recyclerView = view.findViewById(R.id.recycler_view);
+        recyclerView = view.findViewById(R.id.terminal_log_recycle);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        databaseHelper = new DatabaseHelper(getContext());
+        databaseHelper = DatabaseHelper.getInstance(getContext());
     }
 
     private void initLogData() {

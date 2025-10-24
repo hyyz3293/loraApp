@@ -91,10 +91,10 @@ public class TerminalDetailDialog extends Dialog {
         setContentView(view);
 
         TextView tvTitle = view.findViewById(R.id.tv_title);
-        tvDeviceName = view.findViewById(R.id.tv_device_name);
+        tvDeviceName = view.findViewById(R.id.et_device_name);
         tvDeviceId = view.findViewById(R.id.tv_device_id);
-        tvDepartment = view.findViewById(R.id.tv_department);
-        tvLocation = view.findViewById(R.id.tv_location);
+        tvDepartment = view.findViewById(R.id.et_department);
+        tvLocation = view.findViewById(R.id.et_location);
         tvSignal = view.findViewById(R.id.tv_signal);
         tvBattery = view.findViewById(R.id.tv_battery);
         tvStatus = view.findViewById(R.id.tv_status);
@@ -232,11 +232,11 @@ public class TerminalDetailDialog extends Dialog {
             // 根据字段类型更新数据库
             boolean success = false;
             if (editText == etDeviceName) {
-                success = databaseHelper.updateTerminalName(terminalInfo.deviceId, newValue);
+                success = databaseHelper.updateTerminalName(info.deviceId, newValue);
             } else if (editText == etDepartment) {
-                success = databaseHelper.updateTerminalDepartment(terminalInfo.deviceId, newValue);
+                success = databaseHelper.updateTerminalDepartment(info.deviceId, newValue);
             } else if (editText == etLocation) {
-                success = databaseHelper.updateTerminalLocation(terminalInfo.deviceId, newValue);
+                success = databaseHelper.updateTerminalLocation(info.deviceId, newValue);
             }
             
             if (success) {
@@ -244,16 +244,16 @@ public class TerminalDetailDialog extends Dialog {
                 
                 // 记录日志
                 LogInfo logInfo = new LogInfo();
-                logInfo.setTerminalId(terminalInfo.deviceId);
-                logInfo.setTerminalName(terminalInfo.deviceName);
-                logInfo.setDeviceId(terminalInfo.deviceId);
+                logInfo.setTerminalId(info.deviceId);
+                logInfo.setTerminalName(info.deviceName);
+                logInfo.setDeviceId(info.deviceId);
                 logInfo.setStatus("成功");
                 logInfo.setOperator("用户");
-                logInfo.setOperationTime(System.currentTimeMillis());
-                logInfo.setCreateTime(System.currentTimeMillis());
-                logInfo.setDescription("更新" + fieldName + "为: " + newValue);
+                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setAction("更新" + fieldName + "为: " + newValue);
                 
-                databaseHelper.insertLogInfo(logInfo);
+                databaseHelper.addLog(logInfo);
                 
                 // 刷新日志显示
                 loadTerminalLogs();
@@ -262,32 +262,32 @@ public class TerminalDetailDialog extends Dialog {
                 
                 // 记录失败日志
                 LogInfo logInfo = new LogInfo();
-                logInfo.setTerminalId(terminalInfo.deviceId);
-                logInfo.setTerminalName(terminalInfo.deviceName);
-                logInfo.setDeviceId(terminalInfo.deviceId);
+                logInfo.setTerminalId(info.deviceId);
+                logInfo.setTerminalName(info.deviceName);
+                logInfo.setDeviceId(info.deviceId);
                 logInfo.setStatus("失败");
                 logInfo.setOperator("用户");
-                logInfo.setOperationTime(System.currentTimeMillis());
-                logInfo.setCreateTime(System.currentTimeMillis());
-                logInfo.setDescription("更新" + fieldName + "失败");
+                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setAction("更新" + fieldName + "失败");
                 
-                databaseHelper.insertLogInfo(logInfo);
+                databaseHelper.addLog(logInfo);
             }
         } catch (Exception e) {
             Toast.makeText(getContext(), fieldName + "更新异常: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             
             // 记录异常日志
             LogInfo logInfo = new LogInfo();
-            logInfo.setTerminalId(terminalInfo.deviceId);
-            logInfo.setTerminalName(terminalInfo.deviceName);
-            logInfo.setDeviceId(terminalInfo.deviceId);
+            logInfo.setTerminalId(info.deviceId);
+            logInfo.setTerminalName(info.deviceName);
+            logInfo.setDeviceId(info.deviceId);
             logInfo.setStatus("异常");
             logInfo.setOperator("用户");
-            logInfo.setOperationTime(System.currentTimeMillis());
-            logInfo.setCreateTime(System.currentTimeMillis());
-            logInfo.setDescription("更新" + fieldName + "异常: " + e.getMessage());
+            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+            logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+            logInfo.setAction("更新" + fieldName + "异常: " + e.getMessage());
             
-            databaseHelper.insertLogInfo(logInfo);
+            databaseHelper.addLog(logInfo);
         }
     }
 

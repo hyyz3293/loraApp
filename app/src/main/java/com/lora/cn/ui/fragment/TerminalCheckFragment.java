@@ -22,6 +22,8 @@ import com.lora.cn.ui.model.ChartItem;
 import com.lora.cn.ui.model.TerminalChartData;
 import com.lora.cn.ui.view.PieChartView;
 import com.blankj.utilcode.util.SPUtils;
+import com.lora.cn.database.DatabaseHelper;
+import android.util.Log;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -251,8 +253,8 @@ public class TerminalCheckFragment extends Fragment {
             logInfo.setStatus("开始");
             logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
             logInfo.setAction("终端清点");
-            logInfo.setOperationTime(System.currentTimeMillis());
-            logInfo.setCreateTime(System.currentTimeMillis());
+            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+            logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
             
             dbHelper.addLog(logInfo);
         } catch (Exception e) {
@@ -285,8 +287,8 @@ public class TerminalCheckFragment extends Fragment {
                 logInfo.setStatus("完成");
                 logInfo.setOperator("系统管理员");
                 logInfo.setAction("终端清点");
-                logInfo.setOperationTime(System.currentTimeMillis());
-                logInfo.setCreateTime(System.currentTimeMillis());
+                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
             } catch (Exception e) {

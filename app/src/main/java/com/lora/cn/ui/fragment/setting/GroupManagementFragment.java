@@ -48,7 +48,7 @@ public class GroupManagementFragment extends Fragment  {
     private GroupAdapter groupAdapter;
     private DatabaseManager dbManager;
     private List<Group> allGroups;
-    private int currentUserRoleId = -1;
+    private long currentUserRoleId = -1;
 
     @Nullable
     @Override
@@ -330,7 +330,7 @@ public class GroupManagementFragment extends Fragment  {
         if (currentUserRoleId == -1) {
             return false;
         }
-        return dbManager.hasPermission(currentUserRoleId, permissionCode);
+        return dbManager.hasPermission((int)currentUserRoleId, permissionCode);
     }
 
     public static GroupManagementFragment newInstance() {

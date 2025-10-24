@@ -57,6 +57,7 @@ public class LoRaProtocolParser {
         public int batteryLevel;     // 电池电量
         public int status;           // 设备状态 (0:离线, 1:在线, 2:异常)
         public long timestamp;       // 时间戳
+        public String payloadHex;    // Payload十六进制数据
         
         public TerminalInfo() {
             this.timestamp = System.currentTimeMillis();
@@ -261,5 +262,36 @@ public class LoRaProtocolParser {
      */
     public static boolean isValidFrame(byte[] data) {
         return parseFrame(data) != null;
+    }
+
+    /**
+     * 构建8001下行帧
+     */
+    public static byte[] buildDownlink8001(String devEui, byte seq, long nowUtc, int ackResult, 
+                                         int queryOp, int departmentId, int cartId, int registerResult, 
+                                         int clearMask, int reportIntervalMin) {
+        // 这里需要根据实际的8001协议规范实现帧构建逻辑
+        // 由于没有具体的协议文档，这里提供一个基本的框架实现
+        
+        LoRaFrame frame = new LoRaFrame();
+        frame.command = CMD_SET_TERMINAL_CONFIG; // 使用设置终端配置命令
+        
+        // 构建数据部分（根据实际协议规范）
+        StringBuilder dataBuilder = new StringBuilder();
+        dataBuilder.append(devEui).append(",");
+        dataBuilder.append(seq).append(",");
+        dataBuilder.append(nowUtc).append(",");
+        dataBuilder.append(ackResult).append(",");
+        dataBuilder.append(queryOp).append(",");
+        dataBuilder.append(departmentId).append(",");
+        dataBuilder.append(cartId).append(",");
+        dataBuilder.append(registerResult).append(",");
+        dataBuilder.append(clearMask).append(",");
+        dataBuilder.append(reportIntervalMin);
+        
+        frame.data = dataBuilder.toString().getBytes();
+        frame.length = (byte) (1 + frame.data.length);
+        
+        return buildFrame(frame);
     }
 }

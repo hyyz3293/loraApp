@@ -38,14 +38,10 @@ public class IpConfigFragment extends Fragment {
 
     private TextView backBtn;
     private TextView connectBtn;
-    private TextView autoFillBtn;
     private EditText ip1;
     private EditText ip2;
     private EditText ip3;
     private EditText ip4;
-    private TextView loginGatewayBtn;
-    private EditText etGatewayUsername;
-    private EditText etGatewayPassword;
 
     @Nullable
     @Override
@@ -62,14 +58,10 @@ public class IpConfigFragment extends Fragment {
     private void initViews(View view) {
         backBtn = view.findViewById(R.id.back);
         connectBtn = view.findViewById(R.id.connect);
-        autoFillBtn = view.findViewById(R.id.auto_fill);
         ip1 = view.findViewById(R.id.ip1);
         ip2 = view.findViewById(R.id.ip2);
         ip3 = view.findViewById(R.id.ip3);
         ip4 = view.findViewById(R.id.ip4);
-        loginGatewayBtn = view.findViewById(R.id.login_gateway);
-        etGatewayUsername = view.findViewById(R.id.et_gateway_username);
-        etGatewayPassword = view.findViewById(R.id.et_gateway_password);
     }
 
     private void initListener() {
@@ -100,47 +92,14 @@ public class IpConfigFragment extends Fragment {
                 String gatewayIp = s1 + "." + s2 + "." + s3 + "." + s4;
                 SPUtils.getInstance().put("gateway_ip", gatewayIp);
 
-                // 同时保存账号密码（如已填写）
-                String username = safeText(etGatewayUsername);
-                String password = safeText(etGatewayPassword);
-                if (!TextUtils.isEmpty(username)) {
-                    SPUtils.getInstance().put("gateway_username", username);
-                }
-                if (!TextUtils.isEmpty(password)) {
-                    SPUtils.getInstance().put("gateway_password", password);
-                }
+                // 账号密码功能暂不支持（当前布局没有账号密码输入框）
 
                 Toast.makeText(requireContext(), "网关IP已保存: " + gatewayIp, Toast.LENGTH_SHORT).show();
             }
         });
 
-        // 登录网关按钮：打开WebView进行登录并保存Cookie
-        loginGatewayBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String s1 = safeText(ip1);
-                String s2 = safeText(ip2);
-                String s3 = safeText(ip3);
-                String s4 = safeText(ip4);
-                if (!isValidOctet(s1) || !isValidOctet(s2) || !isValidOctet(s3) || !isValidOctet(s4)) {
-                    Toast.makeText(requireContext(), "请先填写有效的网关IP", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                String gatewayIp = s1 + "." + s2 + "." + s3 + "." + s4;
-                SPUtils.getInstance().put("gateway_ip", gatewayIp);
-
-                String url = "http://" + gatewayIp + "/#networkserver/packets";
-                com.lora.cn.ui.activity.WebViewActivity.start(requireContext(), url, "网关抓包页");
-            }
-        });
-
-        // 自动获取按钮：主动获取并填充网关IP
-        autoFillBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                autoFillGatewayIpIfAvailable();
-            }
-        });
+        // 自动获取按钮功能合并到连接按钮中
+        // 用户点击连接按钮时，如果IP地址为空，自动尝试获取网关IP
     }
 
     private void loadCurrentNetworkInfo() {
@@ -156,11 +115,7 @@ public class IpConfigFragment extends Fragment {
             }
         }
 
-        // 加载已保存的账号密码
-        String savedUsername = SPUtils.getInstance().getString("gateway_username", "");
-        String savedPassword = SPUtils.getInstance().getString("gateway_password", "");
-        if (!TextUtils.isEmpty(savedUsername)) etGatewayUsername.setText(savedUsername);
-        if (!TextUtils.isEmpty(savedPassword)) etGatewayPassword.setText(savedPassword);
+        // 加载已保存的账号密码（当前布局不支持账号密码输入）
 
         // 若未保存或当前输入为空，尝试自动获取WiFi网关并填充
         boolean inputsEmpty = TextUtils.isEmpty(safeText(ip1))

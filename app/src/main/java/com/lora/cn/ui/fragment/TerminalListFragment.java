@@ -450,12 +450,12 @@ public class TerminalListFragment extends Fragment {
             displayTerminal.setBatteryText(dbTerminal.getBatteryLevel() + "%");
             
             // 根据电量设置电池图标
-            if (dbTerminal.getBatteryLevel() > 60) {
-                displayTerminal.setBatteryIconResId(R.mipmap.ic_green_sd); // 绿色电池
+            if (dbTerminal.getBatteryLevel() > 80) {
+                displayTerminal.setBatteryIconResId(R.mipmap.ic_blue_right); // 使用蓝色对勾图标表示高电量
             } else if (dbTerminal.getBatteryLevel() > 30) {
-                displayTerminal.setBatteryIconResId(R.mipmap.ic_yellow_sd); // 黄色电池
+                displayTerminal.setBatteryIconResId(R.mipmap.ic_baterery_low); // 使用低电量图标表示中等电量
             } else {
-                displayTerminal.setBatteryIconResId(R.mipmap.ic_red_sd); // 红色电池
+                displayTerminal.setBatteryIconResId(R.mipmap.ic_red_sd); // 红色电池表示低电量
             }
             
             // 设置重要性（收藏状态）
