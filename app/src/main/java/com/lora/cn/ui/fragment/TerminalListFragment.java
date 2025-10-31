@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
+import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -88,6 +89,41 @@ public class TerminalListFragment extends Fragment {
                 Toast.makeText(requireContext(), "您没有添加终端的权限", Toast.LENGTH_SHORT).show();
             }
         });
+
+        // 搜索设备：点击搜索图标展示设备列表Fragment
+        EditText searchEditText = view.findViewById(R.id.et_search);
+        if (searchEditText != null) {
+            searchEditText.setOnTouchListener((v, event) -> {
+                if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                    android.graphics.drawable.Drawable right = searchEditText.getCompoundDrawables()[2];
+                    if (right != null && event.getX() >= (searchEditText.getWidth() - searchEditText.getPaddingRight() - right.getBounds().width())) {
+                        // 展示设备列表
+                        if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                            com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
+                            mainActivity.showDeviceList();
+                        }
+                        // 记录日志
+                        try {
+                            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                            com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                            logInfo.setTerminalId("SYSTEM");
+                            logInfo.setTerminalName("终端列表页");
+                            logInfo.setDeviceId("SYSTEM");
+                            logInfo.setStatus("成功");
+                            logInfo.setOperator("系统管理员");
+                            logInfo.setAction("打开搜索设备界面");
+                            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                            logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+                            dbHelper.addLog(logInfo);
+                        } catch (Exception e) {
+                            Log.e(TAG, "记录日志失败", e);
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
     }
 
     private void initTerminalStatus() {
@@ -226,10 +262,13 @@ public class TerminalListFragment extends Fragment {
             return;
         }
         
-        // 显示添加终端对话框
-        AddTerminalDialog dialog = new AddTerminalDialog(getContext());
-        dialog.setOnTerminalAddedListener(this::addNewTerminalToDatabase);
-        dialog.show();
+        // 展示附近设备列表（DeviceListFragment）
+        if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+            com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
+            mainActivity.showDeviceList();
+        } else {
+            Toast.makeText(getContext(), "无法打开设备列表", Toast.LENGTH_SHORT).show();
+        }
     }
     
     /**

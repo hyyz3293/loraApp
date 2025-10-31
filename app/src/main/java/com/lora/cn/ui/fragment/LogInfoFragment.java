@@ -40,8 +40,8 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void initLogData() {
-        // 初始化示例日志数据
-        databaseHelper.initSampleLogData();
+        // 先清理示例日志，避免展示假数据
+        databaseHelper.cleanSampleLogData();
         
         // 从数据库获取真实日志数据
         List<LogInfo> logList = databaseHelper.getAllLogs();

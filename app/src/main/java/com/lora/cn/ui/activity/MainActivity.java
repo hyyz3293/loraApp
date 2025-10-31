@@ -116,6 +116,8 @@ public class MainActivity extends AppCompatActivity {
     private void initViewPager() {
         pagerAdapter = new MainPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
+        // 禁止用户手势滑动
+        viewPager.setUserInputEnabled(false);
         
         // 设置ViewPager2的页面切换监听
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
@@ -185,19 +187,11 @@ public class MainActivity extends AppCompatActivity {
             hideUserInfo();
         }
 
-        // DeviceListFragment暂时不可用，显示提示信息
-        TextView textView = new TextView(this);
-        textView.setText("设备列表功能暂不可用");
-        textView.setTextSize(16);
-        textView.setGravity(android.view.Gravity.CENTER);
-        
+        // 显示设备列表Fragment
+        com.lora.cn.ui.fragment.DeviceListFragment fragment = com.lora.cn.ui.fragment.DeviceListFragment.newInstance();
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_device_list_container, new Fragment() {
-                    @Override
-                    public android.view.View onCreateView(android.view.LayoutInflater inflater, android.view.ViewGroup container, Bundle savedInstanceState) {
-                        return textView;
-                    }
-                })
+                .replace(R.id.fragment_device_list_container, fragment)
+                .addToBackStack("device_list")
                 .commit();
 
         fragmentDeviceListContainer.setVisibility(View.VISIBLE);

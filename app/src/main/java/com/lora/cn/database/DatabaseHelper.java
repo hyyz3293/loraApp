@@ -1116,6 +1116,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    // 清理示例日志数据：删除 device_id 为 DEV00X 的记录或示例人员
+    public int cleanSampleLogData() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        // 通过设备ID模式和示例操作者名称进行清理
+        String whereClause = COLUMN_LOG_DEVICE_ID + " LIKE 'DEV00%' OR " + COLUMN_LOG_OPERATOR + " IN (?,?,?,?,?,?,?,?)";
+        String[] whereArgs = new String[]{"张三","李四","王五","赵六","孙七","周八","吴九","郑十"};
+        int deleted = db.delete(TABLE_LOGS, whereClause, whereArgs);
+        db.close();
+        return deleted;
+    }
+
     /**
      * 更新终端收藏状态
      */
