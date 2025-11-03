@@ -148,14 +148,25 @@ public class AddTerminalDialog extends Dialog {
         pbSearching.setVisibility(View.VISIBLE);
         tvSearchStatus.setText("正在通过MQTT订阅上行数据...");
 
-        // 改为MQTT采集：连接并订阅 Milesight uplink
+        // 改为MQTT采集：使用自定义设置连接并订阅上行
         if (mqttClient == null) mqttClient = new MqttPacketsClient();
-        String brokerUrl = "tcp://broker.emqx.io:1883";
+        com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+        if (!sp.getBoolean("mqtt_local_broker_ready", false)) {
+            tvSearchStatus.setText("本地MQTT服务端未就绪，请稍后再试");
+            pbSearching.setVisibility(View.GONE);
+            return;
+        }
+        int localPort = sp.getInt("mqtt_local_broker_port", 1883);
+        String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
+        android.util.Log.i("AddTerminalDialog", "使用本地MQTT Broker: " + brokerUrl);
         final String clientId = "android-" + System.currentTimeMillis();
-        final String topicFilter = "/milesight/uplink/#";
+        String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
+        String username = sp.getString("mqtt_username", "");
+        String password = sp.getString("mqtt_password", "");
+        boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
 
         mqttClient.connectAndSubscribe(context, brokerUrl, clientId, topicFilter,
-                null, null, false,
+                username, password, trustAll,
                 new GatewayPacketsClient.PacketsListener() {
                     @Override
                     public void onStatus(String msg) {

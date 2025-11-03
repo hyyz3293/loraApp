@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private MqttPacketsClient mqttClient;
     private DatabaseHelper databaseHelper;
     private static final long TEST_INTERVAL = 30 * 1000; // 1分钟
+    private android.content.BroadcastReceiver brokerReadyReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,8 +79,39 @@ public class MainActivity extends AppCompatActivity {
         menuTabs.get(0).setSelected(true);
         menuTabAdapter.notifyDataSetChanged();
 
+        try {
+            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+            boolean localEnabled = sp.getBoolean("mqtt_local_broker_enabled", true);
+            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
+            if (true) {
+                android.content.Intent svc = new android.content.Intent(this, com.lora.cn.service.MqttBrokerService.class);
+                svc.putExtra("port", localPort > 0 ? localPort : 1883);
+                androidx.core.content.ContextCompat.startForegroundService(this, svc);
+            }
+            // 注册监听：本地Broker就绪后再连接
+            brokerReadyReceiver = new android.content.BroadcastReceiver() {
+                @Override
+                public void onReceive(android.content.Context context, android.content.Intent intent) {
+                    if ("com.lora.cn.MQTT_BROKER_READY".equals(intent.getAction())) {
+                        android.util.Log.i(TAG, "收到MQTT_BROKER_READY广播，开始连接本地MQTT");
+                        startGlobalMqttLogging();
+                    }
+                }
+            };
+            android.content.IntentFilter filter = new android.content.IntentFilter("com.lora.cn.MQTT_BROKER_READY");
+            registerReceiver(brokerReadyReceiver, filter);
+            // 若服务端已就绪（比如用户此前已启动），立即连接
+            if (sp.getBoolean("mqtt_local_broker_ready", false)) {
+                startGlobalMqttLogging();
+            }
+        } catch (Exception ignored) {
+            Log.e("tag", "error" + ignored);
+        }
+
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
         startTestTimer();
+        // 启动全局MQTT日志监听（优先连接本地Broker）
+        startGlobalMqttLogging();
     }
 
     private void startTestTimer() {
@@ -273,11 +305,17 @@ public class MainActivity extends AppCompatActivity {
     private void startGlobalMqttLogging() {
         try {
             if (mqttClient == null) mqttClient = new MqttPacketsClient();
-            final String brokerUrl = "tcp://broker.emqx.io:1883";
+            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
+            String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
+            android.util.Log.i(TAG, "使用本地MQTT Broker: " + brokerUrl);
             final String clientId = "android-" + System.currentTimeMillis();
-            final String topicFilter = "/milesight/uplink/#";
+            String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
+            String username = sp.getString("mqtt_username", "");
+            String password = sp.getString("mqtt_password", "");
+            boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
             mqttClient.connectAndSubscribe(getApplicationContext(), brokerUrl, clientId, topicFilter,
-                    null, null, false,
+                    username, password, trustAll,
                     new GatewayPacketsClient.PacketsListener() {
                         @Override
                         public void onStatus(String msg) {
@@ -384,6 +422,10 @@ public class MainActivity extends AppCompatActivity {
         try {
             if (mqttClient != null) {
                 mqttClient.disconnect();
+            }
+            if (brokerReadyReceiver != null) {
+                unregisterReceiver(brokerReadyReceiver);
+                brokerReadyReceiver = null;
             }
         } catch (Exception e) {
             Log.e(TAG, "发送测试上行数据失败: " + e.getMessage());

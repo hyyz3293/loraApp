@@ -81,6 +81,8 @@ public class SettingsFragment extends Fragment {
         if (hasPermission("setting_ip")) {
             // 直接增加网关IP配置的快捷入口
             settingList.add(new SettingItem(R.mipmap.ic_setting1, "网关IP配置"));
+            // 新增 MQTT 设置入口（同属网络配置权限）
+            settingList.add(new SettingItem(R.mipmap.ic_setting1, "MQTT设置"));
         }
         if (hasPermission("setting")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
@@ -131,6 +133,11 @@ public class SettingsFragment extends Fragment {
             case "网关IP配置":
                 if (hasPermission("setting_ip")) {
                     targetFragment = IpConfigFragment.newInstance();
+                }
+                break;
+            case "MQTT设置":
+                if (hasPermission("setting_ip")) {
+                    targetFragment = com.lora.cn.ui.fragment.setting.device.MqttConfigFragment.newInstance();
                 }
                 break;
             case "分组管理":

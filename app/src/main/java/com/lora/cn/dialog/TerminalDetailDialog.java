@@ -319,11 +319,25 @@ public class TerminalDetailDialog extends Dialog {
         tvRefreshStatus.setText("通过MQTT监听设备上行数据...");
         try {
             if (mqttClient == null) mqttClient = new MqttPacketsClient();
-            final String brokerUrl = "tcp://broker.emqx.io:1883";
+            // 读取自定义MQTT设置，未设定时回落到局域网网关或公共Broker
+            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+            if (!sp.getBoolean("mqtt_local_broker_ready", false)) {
+                handler.post(() -> {
+                    tvRefreshStatus.setText("本地MQTT服务端未就绪，请稍后再试");
+                });
+                refreshing = false;
+                return;
+            }
+            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
+            String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
+            android.util.Log.i("TerminalDetailDialog", "使用本地MQTT Broker: " + brokerUrl);
             final String clientId = "android-" + System.currentTimeMillis();
-            final String topicFilter = "/milesight/uplink";
+            String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink");
+            String username = sp.getString("mqtt_username", "");
+            String password = sp.getString("mqtt_password", "");
+            boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
             mqttClient.connectAndSubscribe(context, brokerUrl, clientId, topicFilter,
-                    null, null, false,
+                    username, password, trustAll,
                     new GatewayPacketsClient.PacketsListener() {
                         @Override
                         public void onStatus(String msg) {
