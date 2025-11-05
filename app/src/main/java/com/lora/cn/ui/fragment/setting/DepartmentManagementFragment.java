@@ -92,8 +92,8 @@ public class DepartmentManagementFragment extends Fragment {
             }
         });
         
-        // 新增按钮 - 检查权限
-        if (hasPermission("DEPARTMENT_ADD")) {
+        // 新增按钮 - 检查权限（统一使用设置模块权限）
+        if (hasPermission("setting")) {
             btnAdd.setOnClickListener(v -> showAddDepartmentDialog());
         } else {
             btnAdd.setVisibility(View.GONE);
@@ -114,7 +114,7 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department department = baseQuickAdapter.getItem(i);
-                if (department != null && hasPermission("DEPARTMENT_EDIT")) {
+                if (department != null && hasPermission("setting")) {
                     onEditClick(department);
                 } else {
                     Toast.makeText(requireContext(), "您没有编辑科室的权限", Toast.LENGTH_SHORT).show();
@@ -126,7 +126,7 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department department = baseQuickAdapter.getItem(i);
-                if (department != null && hasPermission("DEPARTMENT_DELETE")) {
+                if (department != null && hasPermission("setting")) {
                     onDeleteClick(department);
                 } else {
                     Toast.makeText(requireContext(), "您没有删除科室的权限", Toast.LENGTH_SHORT).show();
@@ -138,7 +138,7 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department department = baseQuickAdapter.getItem(i);
-                if (department != null && hasPermission("DEPARTMENT_STATUS")) {
+                if (department != null && hasPermission("setting")) {
                     SwitchCompat switchStatus = (SwitchCompat) view;
                     onStatusChanged(department, switchStatus.isChecked());
                 } else {

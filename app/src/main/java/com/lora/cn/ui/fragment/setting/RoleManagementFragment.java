@@ -2,9 +2,7 @@ package com.lora.cn.ui.fragment.setting;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
-import android.text.Editable;
 import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +18,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.blankj.utilcode.util.LogUtils;
-import com.chad.library.adapter4.BaseQuickAdapter;
 import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
@@ -155,174 +152,174 @@ public class RoleManagementFragment extends Fragment {
         }
     }
 
-    private void showAddRoleDialog() {
-        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_edit_role, null);
-        EditText etRoleName = dialogView.findViewById(R.id.et_role_name);
-        EditText etRoleDescription = dialogView.findViewById(R.id.et_role_description);
-        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
-        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
-        RecyclerView rvPermissions = dialogView.findViewById(R.id.rv_permissions);
-
-        // 设置默认排序号
-        etSortOrder.setText(String.valueOf(allRoles.size() + 1));
-        switchStatus.setChecked(true);
-
-        // 设置权限选择列表
-        TreePermissionCheckboxAdapter permissionAdapter = new TreePermissionCheckboxAdapter();
-        rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
-        rvPermissions.setAdapter(permissionAdapter);
-
-        // 加载所有权限（使用树形权限获取方法）
-        List<Permission> flatPermissions = databaseManager.getPermissionTree();
-        List<Permission> treePermissions = PermissionTreeConverter.convertToTree(flatPermissions);
-        permissionAdapter.setPermissions(treePermissions);
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("新增角色")
-                .setView(dialogView)
-                .setPositiveButton("确定", (dialog, which) -> {
-                    String roleName = etRoleName.getText().toString().trim();
-                    String description = etRoleDescription.getText().toString().trim();
-                    String sortOrderStr = etSortOrder.getText().toString().trim();
-
-                    if (TextUtils.isEmpty(roleName)) {
-                        Toast.makeText(requireContext(), "请输入角色名称", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    // 检查角色名称是否已存在
-                    if (databaseManager.isRoleNameExists(roleName)) {
-                        Toast.makeText(requireContext(), "角色名称已存在", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    int sortOrder = 1;
-                    try {
-                        if (!TextUtils.isEmpty(sortOrderStr)) {
-                            sortOrder = Integer.parseInt(sortOrderStr);
-                        }
-                    } catch (NumberFormatException e) {
-                        sortOrder = allRoles.size() + 1;
-                    }
-
-                    Role newRole = new Role();
-                    newRole.setRoleName(roleName);
-                    newRole.setDescription(description.isEmpty() ? null : description);
-                    newRole.setSortOrder(sortOrder);
-                    newRole.setStatus(switchStatus.isChecked() ? 1 : 0);
-                    newRole.setCreateTime(new Date());
-                    newRole.setUpdateTime(new Date());
-
-                    long roleId = databaseManager.insertRole(newRole);
-                    if (roleId > 0) {
-                        newRole.setRoleId(roleId);
-                        
-                        // 设置角色权限
-                        List<Long> selectedPermissionIds = permissionAdapter.getSelectedPermissionIds();
-                        if (!selectedPermissionIds.isEmpty()) {
-                            List<Integer> permissionIds = new ArrayList<>();
-                            for (Long id : selectedPermissionIds) {
-                                permissionIds.add(id.intValue());
-                            }
-                            databaseManager.setRolePermissions((int)roleId, permissionIds);
-                        }
-                        
-                        allRoles.add(newRole);
-                        roleAdapter.addRole(newRole);
-                        Toast.makeText(requireContext(), "角色添加成功", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(requireContext(), "角色添加失败", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
-
-    private void showEditRoleDialog(Role role) {
-        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_edit_role, null);
-        EditText etRoleName = dialogView.findViewById(R.id.et_role_name);
-        EditText etRoleDescription = dialogView.findViewById(R.id.et_role_description);
-        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
-        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
-        RecyclerView rvPermissions = dialogView.findViewById(R.id.rv_permissions);
-
-        // 填充现有数据
-        etRoleName.setText(role.getRoleName());
-        etRoleDescription.setText(role.getDescription() != null ? role.getDescription() : "");
-        etSortOrder.setText(String.valueOf(role.getSortOrder()));
-        switchStatus.setChecked(role.getStatus() == 1);
-
-        // 设置权限选择列表
-        TreePermissionCheckboxAdapter permissionAdapter = new TreePermissionCheckboxAdapter();
-        rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
-        rvPermissions.setAdapter(permissionAdapter);
-
-        // 加载所有权限（使用树形权限获取方法）
-        List<Permission> flatPermissions = databaseManager.getPermissionTree();
-        List<Permission> treePermissions = PermissionTreeConverter.convertToTree(flatPermissions);
-        permissionAdapter.setPermissions(treePermissions);
-
-        // 加载角色当前权限
-        List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
-        List<Long> longPermissionIds = new ArrayList<>();
-        for (Integer id : currentPermissionIds) {
-            longPermissionIds.add(id.longValue());
-        }
-        permissionAdapter.setSelectedPermissions(longPermissionIds);
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("编辑角色")
-                .setView(dialogView)
-                .setPositiveButton("确定", (dialog, which) -> {
-                    String roleName = etRoleName.getText().toString().trim();
-                    String description = etRoleDescription.getText().toString().trim();
-                    String sortOrderStr = etSortOrder.getText().toString().trim();
-
-                    if (TextUtils.isEmpty(roleName)) {
-                        Toast.makeText(requireContext(), "请输入角色名称", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    // 检查角色名称是否已存在（排除当前角色）
-                    if (!roleName.equals(role.getRoleName()) && databaseManager.isRoleNameExists(roleName)) {
-                        Toast.makeText(requireContext(), "角色名称已存在", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    int sortOrder = role.getSortOrder();
-                    try {
-                        if (!TextUtils.isEmpty(sortOrderStr)) {
-                            sortOrder = Integer.parseInt(sortOrderStr);
-                        }
-                    } catch (NumberFormatException e) {
-                        // 保持原有排序
-                    }
-
-                    role.setRoleName(roleName);
-                    role.setDescription(description.isEmpty() ? null : description);
-                    role.setSortOrder(sortOrder);
-                    role.setStatus(switchStatus.isChecked() ? 1 : 0);
-                    role.setUpdateTime(new Date());
-
-                    boolean success = databaseManager.updateRole(role);
-                    if (success) {
-                        // 更新角色权限
-                        List<Long> selectedPermissionIds = permissionAdapter.getSelectedPermissionIds();
-                        List<Integer> permissionIds = new ArrayList<>();
-                        for (Long id : selectedPermissionIds) {
-                            permissionIds.add(id.intValue());
-                        }
-                        databaseManager.setRolePermissions((int)role.getRoleId(), permissionIds);
-                        
-                        roleAdapter.updateRole(role);
-                        Toast.makeText(requireContext(), "角色更新成功", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(requireContext(), "角色更新失败", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
+//    private void showAddRoleDialog() {
+//        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_edit_role, null);
+//        EditText etRoleName = dialogView.findViewById(R.id.et_role_name);
+//        EditText etRoleDescription = dialogView.findViewById(R.id.et_role_description);
+//        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
+//        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
+//        RecyclerView rvPermissions = dialogView.findViewById(R.id.rv_permissions);
+//
+//        // 设置默认排序号
+//        etSortOrder.setText(String.valueOf(allRoles.size() + 1));
+//        switchStatus.setChecked(true);
+//
+//        // 设置权限选择列表
+//        TreePermissionCheckboxAdapter permissionAdapter = new TreePermissionCheckboxAdapter();
+//        rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
+//        rvPermissions.setAdapter(permissionAdapter);
+//
+//        // 加载所有权限（使用树形权限获取方法）
+//        List<Permission> flatPermissions = databaseManager.getPermissionTree();
+//        List<Permission> treePermissions = PermissionTreeConverter.convertToTree(flatPermissions);
+//        permissionAdapter.setPermissions(treePermissions);
+//
+//        new AlertDialog.Builder(requireContext())
+//                .setTitle("新增角色")
+//                .setView(dialogView)
+//                .setPositiveButton("确定", (dialog, which) -> {
+//                    String roleName = etRoleName.getText().toString().trim();
+//                    String description = etRoleDescription.getText().toString().trim();
+//                    String sortOrderStr = etSortOrder.getText().toString().trim();
+//
+//                    if (TextUtils.isEmpty(roleName)) {
+//                        Toast.makeText(requireContext(), "请输入角色名称", Toast.LENGTH_SHORT).show();
+//                        return;
+//                    }
+//
+//                    // 检查角色名称是否已存在
+//                    if (databaseManager.isRoleNameExists(roleName)) {
+//                        Toast.makeText(requireContext(), "角色名称已存在", Toast.LENGTH_SHORT).show();
+//                        return;
+//                    }
+//
+//                    int sortOrder = 1;
+//                    try {
+//                        if (!TextUtils.isEmpty(sortOrderStr)) {
+//                            sortOrder = Integer.parseInt(sortOrderStr);
+//                        }
+//                    } catch (NumberFormatException e) {
+//                        sortOrder = allRoles.size() + 1;
+//                    }
+//
+//                    Role newRole = new Role();
+//                    newRole.setRoleName(roleName);
+//                    newRole.setDescription(description.isEmpty() ? null : description);
+//                    newRole.setSortOrder(sortOrder);
+//                    newRole.setStatus(switchStatus.isChecked() ? 1 : 0);
+//                    newRole.setCreateTime(new Date());
+//                    newRole.setUpdateTime(new Date());
+//
+//                    long roleId = databaseManager.insertRole(newRole);
+//                    if (roleId > 0) {
+//                        newRole.setRoleId(roleId);
+//
+//                        // 设置角色权限
+//                        List<Long> selectedPermissionIds = permissionAdapter.getSelectedPermissionIds();
+//                        if (!selectedPermissionIds.isEmpty()) {
+//                            List<Integer> permissionIds = new ArrayList<>();
+//                            for (Long id : selectedPermissionIds) {
+//                                permissionIds.add(id.intValue());
+//                            }
+//                            databaseManager.setRolePermissions((int)roleId, permissionIds);
+//                        }
+//
+//                        allRoles.add(newRole);
+//                        roleAdapter.addRole(newRole);
+//                        Toast.makeText(requireContext(), "角色添加成功", Toast.LENGTH_SHORT).show();
+//                    } else {
+//                        Toast.makeText(requireContext(), "角色添加失败", Toast.LENGTH_SHORT).show();
+//                    }
+//                })
+//                .setNegativeButton("取消", null)
+//                .show();
+//    }
+//
+//    private void showEditRoleDialog(Role role) {
+//        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_edit_role, null);
+//        EditText etRoleName = dialogView.findViewById(R.id.et_role_name);
+//        EditText etRoleDescription = dialogView.findViewById(R.id.et_role_description);
+//        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
+//        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
+//        RecyclerView rvPermissions = dialogView.findViewById(R.id.rv_permissions);
+//
+//        // 填充现有数据
+//        etRoleName.setText(role.getRoleName());
+//        etRoleDescription.setText(role.getDescription() != null ? role.getDescription() : "");
+//        etSortOrder.setText(String.valueOf(role.getSortOrder()));
+//        switchStatus.setChecked(role.getStatus() == 1);
+//
+//        // 设置权限选择列表
+//        TreePermissionCheckboxAdapter permissionAdapter = new TreePermissionCheckboxAdapter();
+//        rvPermissions.setLayoutManager(new LinearLayoutManager(requireContext()));
+//        rvPermissions.setAdapter(permissionAdapter);
+//
+//        // 加载所有权限（使用树形权限获取方法）
+//        List<Permission> flatPermissions = databaseManager.getPermissionTree();
+//        List<Permission> treePermissions = PermissionTreeConverter.convertToTree(flatPermissions);
+//        permissionAdapter.setPermissions(treePermissions);
+//
+//        // 加载角色当前权限
+//        List<Integer> currentPermissionIds = databaseManager.getPermissionIdsByRoleId((int)role.getRoleId());
+//        List<Long> longPermissionIds = new ArrayList<>();
+//        for (Integer id : currentPermissionIds) {
+//            longPermissionIds.add(id.longValue());
+//        }
+//        permissionAdapter.setSelectedPermissions(longPermissionIds);
+//
+//        new AlertDialog.Builder(requireContext())
+//                .setTitle("编辑角色")
+//                .setView(dialogView)
+//                .setPositiveButton("确定", (dialog, which) -> {
+//                    String roleName = etRoleName.getText().toString().trim();
+//                    String description = etRoleDescription.getText().toString().trim();
+//                    String sortOrderStr = etSortOrder.getText().toString().trim();
+//
+//                    if (TextUtils.isEmpty(roleName)) {
+//                        Toast.makeText(requireContext(), "请输入角色名称", Toast.LENGTH_SHORT).show();
+//                        return;
+//                    }
+//
+//                    // 检查角色名称是否已存在（排除当前角色）
+//                    if (!roleName.equals(role.getRoleName()) && databaseManager.isRoleNameExists(roleName)) {
+//                        Toast.makeText(requireContext(), "角色名称已存在", Toast.LENGTH_SHORT).show();
+//                        return;
+//                    }
+//
+//                    int sortOrder = role.getSortOrder();
+//                    try {
+//                        if (!TextUtils.isEmpty(sortOrderStr)) {
+//                            sortOrder = Integer.parseInt(sortOrderStr);
+//                        }
+//                    } catch (NumberFormatException e) {
+//                        // 保持原有排序
+//                    }
+//
+//                    role.setRoleName(roleName);
+//                    role.setDescription(description.isEmpty() ? null : description);
+//                    role.setSortOrder(sortOrder);
+//                    role.setStatus(switchStatus.isChecked() ? 1 : 0);
+//                    role.setUpdateTime(new Date());
+//
+//                    boolean success = databaseManager.updateRole(role);
+//                    if (success) {
+//                        // 更新角色权限
+//                        List<Long> selectedPermissionIds = permissionAdapter.getSelectedPermissionIds();
+//                        List<Integer> permissionIds = new ArrayList<>();
+//                        for (Long id : selectedPermissionIds) {
+//                            permissionIds.add(id.intValue());
+//                        }
+//                        databaseManager.setRolePermissions((int)role.getRoleId(), permissionIds);
+//
+//                        roleAdapter.updateRole(role);
+//                        Toast.makeText(requireContext(), "角色更新成功", Toast.LENGTH_SHORT).show();
+//                    } else {
+//                        Toast.makeText(requireContext(), "角色更新失败", Toast.LENGTH_SHORT).show();
+//                    }
+//                })
+//                .setNegativeButton("取消", null)
+//                .show();
+//    }
 
     // 使用新的DialogUtils方法新增角色
     private void showAddRoleDialogNew() {

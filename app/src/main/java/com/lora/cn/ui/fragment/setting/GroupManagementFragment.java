@@ -106,7 +106,8 @@ public class GroupManagementFragment extends Fragment  {
         
         // 新增按钮
         btnAdd.setOnClickListener(v -> {
-            if (hasPermission("group_add")) {
+            // 统一使用“setting”模块权限，避免使用未配置的group_*权限码
+            if (hasPermission("setting")) {
                 showAddGroupDialog();
             } else {
                 Toast.makeText(requireContext(), "您没有新增分组的权限", Toast.LENGTH_SHORT).show();
@@ -140,13 +141,21 @@ public class GroupManagementFragment extends Fragment  {
         groupAdapter.addOnItemChildClickListener(R.id.tv_group_edit, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
-                onEditClick(allGroups.get(i));
+                if (hasPermission("setting")) {
+                    onEditClick(allGroups.get(i));
+                } else {
+                    Toast.makeText(requireContext(), "您没有编辑分组的权限", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         groupAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
-                onDeleteClick(allGroups.get(i));
+                if (hasPermission("setting")) {
+                    onDeleteClick(allGroups.get(i));
+                } else {
+                    Toast.makeText(requireContext(), "您没有删除分组的权限", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
