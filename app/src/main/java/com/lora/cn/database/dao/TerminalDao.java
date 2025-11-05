@@ -34,10 +34,19 @@ public class TerminalDao {
         values.put(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
         values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
         values.put(DatabaseHelper.COLUMN_TERMINAL_LOCATION, terminal.getLocation());
-        values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT_ID, terminal.getDepartmentId());
-        values.put(DatabaseHelper.COLUMN_TERMINAL_ROOM_ID, terminal.getRoomId());
-        values.put(DatabaseHelper.COLUMN_TERMINAL_NURSING_GROUP_ID, terminal.getNursingGroupId());
-        values.put(DatabaseHelper.COLUMN_TERMINAL_OTHER_ID, terminal.getOtherId());
+        // 仅当分类ID为有效正数时写入，避免外键约束失败
+        if (terminal.getDepartmentId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT_ID, terminal.getDepartmentId());
+        }
+        if (terminal.getRoomId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_ROOM_ID, terminal.getRoomId());
+        }
+        if (terminal.getNursingGroupId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_NURSING_GROUP_ID, terminal.getNursingGroupId());
+        }
+        if (terminal.getOtherId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_OTHER_ID, terminal.getOtherId());
+        }
         values.put(DatabaseHelper.COLUMN_TERMINAL_EXTENSION, terminal.getExtension());
         values.put(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE, terminal.isFavorite() ? 1 : 0);
         values.put(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME, System.currentTimeMillis());

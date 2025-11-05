@@ -18,6 +18,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.blankj.utilcode.util.SPUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
+import com.lora.cn.events.UplinkDataEvent;
 import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.ui.adapter.MainPagerAdapter;
 import com.lora.cn.ui.adapter.MenuTabAdapter;
@@ -347,12 +348,29 @@ public class MainActivity extends AppCompatActivity {
                                 
                                 // 存储到数据库
                                 if (!"-".equals(hex)) {
+                                    // 存储到上行数据日志表
                                     long result = databaseHelper.addUplinkLog(time, hex);
-                                    Log.d(TAG, "上行数据存储到数据库，结果: " + result);
+                                    Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
+                                    
+                                    // 同时存储到日志信息表
+                                    try {
+                                        long logResult = databaseHelper.addLog(
+                                            devEui,                    // terminalId
+                                            "上行数据设备",              // terminalName  
+                                            devEui,                    // deviceId
+                                            "数据接收",                 // status
+                                            "系统",                    // operator
+                                            time,                      // operationTime
+                                            "接收上行数据: " + hex       // action
+                                        );
+                                        Log.d(TAG, "上行数据存储到日志信息表，结果: " + logResult);
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "存储上行数据到日志信息表失败: " + e.getMessage());
+                                    }
                                     
                                     // 通过EventBus广播（UplinkDataEvent暂时不可用）
-                                    // UplinkDataEvent event = new UplinkDataEvent(time, hex);
-                                    // EventBus.getDefault().post(event);
+                                    UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                                    EventBus.getDefault().post(event);
                                     Log.d(TAG, "上行数据准备广播: time=" + time + ", hex=" + hex);
                                 }
                                 

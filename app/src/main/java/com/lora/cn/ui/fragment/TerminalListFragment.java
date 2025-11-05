@@ -8,6 +8,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.util.Log;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,6 +29,10 @@ import com.lora.cn.ui.constants.TerminalStatusConstants;
 import com.lora.cn.utils.LoRaProtocolParser;
 import com.lora.cn.dialog.AddTerminalDialog;
 import com.blankj.utilcode.util.SPUtils;
+import com.lora.cn.event.TerminalRefreshEvent;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,8 +71,8 @@ public class TerminalListFragment extends Fragment {
         
         initViews(view);
         
-        // 检查查看终端列表权限
-        if (hasPermission("terminal_view")) {
+        // 检查查看终端列表权限（修正为正确的权限码：terminal_list）
+        if (hasPermission("terminal_list")) {
             initTerminalStatus();
         } else {
             Toast.makeText(requireContext(), "您没有查看终端列表的权限", Toast.LENGTH_SHORT).show();
@@ -209,6 +214,50 @@ public class TerminalListFragment extends Fragment {
     private void initTerminalList() {
         // 首先尝试从数据库加载终端数据
         loadTerminals();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // 注册事件总线，监听新增终端事件
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        try {
+            // 返回页面时刷新终端列表和状态统计，确保展示最新添加的设备
+            loadTerminals();
+            updateTerminalStatusFromDatabase();
+        } catch (Exception e) {
+            Log.e(TAG, "onResume 刷新终端列表失败", e);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        // 取消注册事件总线
+        if (EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().unregister(this);
+        }
+        super.onStop();
+    }
+
+    // 订阅终端刷新事件，收到后立即刷新列表与状态
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTerminalRefreshEvent(TerminalRefreshEvent event) {
+        try {
+            loadTerminals();
+            updateTerminalStatusFromDatabase();
+            if (getContext() != null) {
+                Toast.makeText(getContext(), event != null ? event.getMessage() : "终端列表已刷新", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "处理TerminalRefreshEvent失败", e);
+        }
     }
 
     private void onTerminalClick(int position, Terminal terminal) {
@@ -433,7 +482,8 @@ public class TerminalListFragment extends Fragment {
                 
                 // 设置终端点击事件监听器
                 adapter.setOnItemClickListener((adapter, view, position) -> {
-                    if (hasPermission("terminal_view")) {
+                    // 查看终端详情权限（修正为正确的权限码：terminal_detail）
+                    if (hasPermission("terminal_detail")) {
                         Terminal terminal = (Terminal) adapter.getItem(position);
                         onTerminalClick(position, terminal);
                     } else {
