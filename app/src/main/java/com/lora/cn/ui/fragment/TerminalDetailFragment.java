@@ -52,6 +52,7 @@ public class TerminalDetailFragment extends Fragment {
     private ImageView btnBack;
     private ImageView btnEdit;
     private ImageView btnDelete;
+    private ImageView ivFavorite;
     private TextView tvDeviceId;
     private TextView tvDepartment;
     private TextView tvLocation;
@@ -78,6 +79,7 @@ public class TerminalDetailFragment extends Fragment {
         btnBack = v.findViewById(R.id.btn_back);
         btnEdit = v.findViewById(R.id.btn_edit);
         btnDelete = v.findViewById(R.id.btn_delete);
+        ivFavorite = v.findViewById(R.id.iv_favorite);
         tvDeviceId = v.findViewById(R.id.tv_device_id);
         tvDepartment = v.findViewById(R.id.tv_department);
         tvLocation = v.findViewById(R.id.tv_location);
@@ -106,6 +108,20 @@ public class TerminalDetailFragment extends Fragment {
         tvLocation.setText(loc);
         tvStatus.setText(st);
         tvBattery.setText(battery + "%");
+
+        // 设置收藏图标状态（根据数据库记录）
+        try {
+            boolean isFavorite = false;
+            java.util.List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
+            for (com.lora.cn.ui.model.Terminal t : terminals) {
+                if (deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                    isFavorite = t.isFavorite();
+                    break;
+                }
+            }
+            ivFavorite.setImageResource(isFavorite ? R.mipmap.ic_coll : R.mipmap.ic_cw);
+            ivFavorite.setTag(isFavorite);
+        } catch (Exception ignored) {}
     }
 
     private void setupListeners() {
@@ -200,6 +216,26 @@ public class TerminalDetailFragment extends Fragment {
                 @Override
                 public void onCancel() {}
             });
+        });
+
+        // 收藏点击切换
+        ivFavorite.setOnClickListener(v -> {
+            String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+            Object tag = ivFavorite.getTag();
+            boolean current = tag instanceof Boolean ? (Boolean) tag : false;
+            boolean target = !current;
+            try {
+                int result = dbHelper.updateTerminalFavoriteStatus(deviceId, target);
+                if (result > 0) {
+                    ivFavorite.setImageResource(target ? R.mipmap.ic_coll : R.mipmap.ic_cw);
+                    ivFavorite.setTag(target);
+                    Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(), "更新收藏状态失败", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(requireContext(), "收藏操作异常: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         });
     }
 

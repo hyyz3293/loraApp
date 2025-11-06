@@ -43,6 +43,7 @@ public class CategoryManagementFragment extends Fragment{
     private ImageView btnBack;
     private ImageView btnAdd;
     private Spinner spinnerGroups;
+    private Spinner spinnerCategories;
     private EditText etSearch;
     private Button btnSearch;
     private RecyclerView rvCategories;
@@ -105,6 +106,7 @@ public class CategoryManagementFragment extends Fragment{
         
         // 分组选择器
         spinnerGroups = view.findViewById(R.id.spinner_groups);
+        spinnerCategories = view.findViewById(R.id.spinner_categories);
         
         // 搜索
         etSearch = view.findViewById(R.id.et_search);
@@ -119,6 +121,8 @@ public class CategoryManagementFragment extends Fragment{
         // 初始化数据库管理器
         dbManager = DatabaseManager.getInstance(requireContext());
         allCategories = new ArrayList<>();
+        // 分组列表
+        // 真实数据由数据库加载
         //allGroups = new ArrayList<>();
     }
 
@@ -143,21 +147,60 @@ public class CategoryManagementFragment extends Fragment{
         // 搜索按钮
         btnSearch.setOnClickListener(v -> performSearch());
         
-//        // 分组选择监听
-//        spinnerGroups.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-//            @Override
-//            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-//                Group selectedGroup = allGroups.get(position);
-//                selectedGroupId = selectedGroup.getGroupId();
-//                filterCategoriesByGroup();
-//            }
-//
-//            @Override
-//            public void onNothingSelected(AdapterView<?> parent) {
-//                selectedGroupId = -1;
-//                filterCategoriesByGroup();
-//            }
-//        });
+        // 分组选择监听（真实数据）
+        spinnerGroups.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Object tag = parent.getTag();
+                if (tag instanceof java.util.List) {
+                    java.util.List<Group> groups = (java.util.List<Group>) tag;
+                    if (position >= 0 && position < groups.size()) {
+                        Group selectedGroup = groups.get(position);
+                        selectedGroupId = selectedGroup.getGroupId();
+                        // 加载分类列表和分类下拉
+                        loadCategories();
+                        loadCategoriesIntoSpinner();
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                selectedGroupId = -1;
+                loadCategories();
+            }
+        });
+
+        // 分类选择监听：按具体分类过滤展示
+        spinnerCategories.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Object tag = parent.getTag();
+                if (tag instanceof java.util.List) {
+                    java.util.List<Category> categories = (java.util.List<Category>) tag;
+                    if (position >= 0 && position < categories.size()) {
+                        Category selected = categories.get(position);
+                        java.util.List<Category> filtered = new java.util.ArrayList<>();
+                        if (selected.getCategoryId() == -1) {
+                            // 全部分类
+                            filtered.addAll(allCategories);
+                        } else {
+                            for (Category c : allCategories) {
+                                if (c.getCategoryId() == selected.getCategoryId()) {
+                                    filtered.add(c);
+                                }
+                            }
+                        }
+                        categoryAdapter.submitList(filtered);
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                categoryAdapter.submitList(allCategories);
+            }
+        });
         
         // 搜索框文本变化监听
         etSearch.addTextChangedListener(new TextWatcher() {
@@ -212,14 +255,21 @@ public class CategoryManagementFragment extends Fragment{
     }
 
     private void loadData() {
-
+        // 加载分组列表到Spinner
+        loadGroupsIntoSpinner();
+        // 加载分类列表
         loadCategories();
     }
 
 
     private void loadCategories() {
         try {
-            allCategories = dbManager.getCategoriesByGroupId(selectedGroupId);
+            // 当选择“全部分组”时，加载全部分类；否则按分组ID加载
+            if (selectedGroupId == -1) {
+                allCategories = dbManager.getAllCategories();
+            } else {
+                allCategories = dbManager.getCategoriesByGroupId(selectedGroupId);
+            }
             categoryAdapter.submitList(allCategories);
             categoryAdapter.notifyDataSetChanged();
         } catch (Exception e) {
@@ -271,6 +321,67 @@ public class CategoryManagementFragment extends Fragment{
             }
         }
         categoryAdapter.submitList(filteredCategories);
+    }
+
+    private void loadGroupsIntoSpinner() {
+        try {
+            java.util.List<Group> groups = dbManager.getAllGroups();
+            // 为Spinner构造显示名称列表
+            java.util.List<Group> displayGroups = new java.util.ArrayList<>();
+            // 添加“全部分组”占位项
+            Group all = new Group();
+            all.setGroupId(-1);
+            all.setGroupName("全部分组");
+            displayGroups.add(all);
+            if (groups != null) {
+                displayGroups.addAll(groups);
+            }
+            java.util.List<String> names = new java.util.ArrayList<>();
+            for (Group g : displayGroups) {
+                names.add(g.getGroupName());
+            }
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerGroups.setAdapter(adapter);
+            spinnerGroups.setTag(displayGroups);
+            spinnerGroups.setVisibility(View.VISIBLE);
+
+            // 如果从分组页面带入了selectedGroupId，设置选中项
+            if (selectedGroupId != -1) {
+                for (int i = 0; i < displayGroups.size(); i++) {
+                    if (displayGroups.get(i).getGroupId() == selectedGroupId) {
+                        spinnerGroups.setSelection(i);
+                        break;
+                    }
+                }
+            }
+            // 初始加载分类下拉
+            loadCategoriesIntoSpinner();
+        } catch (Exception e) {
+            spinnerGroups.setVisibility(View.GONE);
+        }
+    }
+
+    private void loadCategoriesIntoSpinner() {
+        try {
+            java.util.List<Category> categories = selectedGroupId == -1 ? dbManager.getAllCategories() : dbManager.getCategoriesByGroupId(selectedGroupId);
+            java.util.List<Category> displayCategories = new java.util.ArrayList<>();
+            Category all = new Category();
+            all.setCategoryId(-1);
+            all.setCategoryName("全部分类");
+            displayCategories.add(all);
+            if (categories != null) displayCategories.addAll(categories);
+
+            java.util.List<String> names = new java.util.ArrayList<>();
+            for (Category c : displayCategories) names.add(c.getCategoryName());
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerCategories.setAdapter(adapter);
+            spinnerCategories.setTag(displayCategories);
+            spinnerCategories.setVisibility(View.VISIBLE);
+        } catch (Exception e) {
+            spinnerCategories.setVisibility(View.GONE);
+        }
     }
 
 //    private void showAddCategoryDialog() {

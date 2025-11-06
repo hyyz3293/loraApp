@@ -10,6 +10,7 @@ import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 import android.text.TextUtils;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -48,6 +49,11 @@ public class TerminalListFragment extends Fragment {
     private TerminalAdapter adapter;
     private TextView addTerminalBtn;
     private int currentStatusIndex = 0;
+    // 过滤相关
+    private TextView tvGroupCategory;
+    private long selectedGroupId = -1; // -1: 全部分组
+    private long selectedCategoryId = -1; // -1: 全部分类
+    private List<Terminal> allDisplayTerminals = new ArrayList<>();
     
     // 数据库管理器
     private DatabaseManager databaseManager;
@@ -86,6 +92,7 @@ public class TerminalListFragment extends Fragment {
         rvTerminalStatus = view.findViewById(R.id.rv_terminal_status);
         terminalRecycle = view.findViewById(R.id.terminal_recycle);
         addTerminalBtn = view.findViewById(R.id.add_terminal);
+        tvGroupCategory = view.findViewById(R.id.tv_group_category);
         
         // 设置添加终端按钮点击事件
         addTerminalBtn.setOnClickListener(v -> {
@@ -132,6 +139,11 @@ public class TerminalListFragment extends Fragment {
                 return false;
             });
         }
+
+        // 初始化两级选择器入口（文本点击弹出选择）
+        if (tvGroupCategory != null) {
+            tvGroupCategory.setOnClickListener(v -> showGroupCategoryPicker());
+        }
     }
 
     private void initTerminalStatus() {
@@ -147,6 +159,78 @@ public class TerminalListFragment extends Fragment {
         
         // 初始化终端列表
         initTerminalList();
+    }
+
+    private void showGroupCategoryPicker() {
+        try {
+            android.app.Dialog dialog = new android.app.Dialog(requireContext());
+            dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+            android.view.View root = android.view.LayoutInflater.from(requireContext()).inflate(R.layout.dialog_group_category_picker, null);
+            dialog.setContentView(root);
+            android.widget.ListView lvGroups = root.findViewById(R.id.lv_groups);
+            android.widget.ListView lvCategories = root.findViewById(R.id.lv_categories);
+            android.widget.Button btnConfirm = root.findViewById(R.id.btn_confirm);
+            android.widget.Button btnCancel = root.findViewById(R.id.btn_cancel);
+
+            // 加载分组
+            List<com.lora.cn.database.entity.Group> groups = databaseManager.getAllGroups();
+            List<com.lora.cn.database.entity.Group> displayGroups = new ArrayList<>();
+            com.lora.cn.database.entity.Group allG = new com.lora.cn.database.entity.Group();
+            allG.setGroupId(-1);
+            allG.setGroupName("全部分组");
+            displayGroups.add(allG);
+            if (groups != null) displayGroups.addAll(groups);
+            List<String> groupNames = new ArrayList<>();
+            for (com.lora.cn.database.entity.Group g : displayGroups) groupNames.add(g.getGroupName());
+            android.widget.ArrayAdapter<String> gAdapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, groupNames);
+            lvGroups.setAdapter(gAdapter);
+
+            final long[] tempSelectedGroupId = {selectedGroupId};
+            final long[] tempSelectedCategoryId = {selectedCategoryId};
+
+            lvGroups.setOnItemClickListener((parent, view, position, id) -> {
+                tempSelectedGroupId[0] = displayGroups.get(position).getGroupId();
+                // 加载分类
+                List<com.lora.cn.database.entity.Category> categories = tempSelectedGroupId[0] == -1 ? databaseManager.getAllCategories() : databaseManager.getCategoriesByGroupId(tempSelectedGroupId[0]);
+                List<com.lora.cn.database.entity.Category> displayCategories = new ArrayList<>();
+                com.lora.cn.database.entity.Category allC = new com.lora.cn.database.entity.Category();
+                allC.setCategoryId(-1);
+                allC.setCategoryName("全部分类");
+                displayCategories.add(allC);
+                if (categories != null) displayCategories.addAll(categories);
+                List<String> categoryNames = new ArrayList<>();
+                for (com.lora.cn.database.entity.Category c : displayCategories) categoryNames.add(c.getCategoryName());
+                android.widget.ArrayAdapter<String> cAdapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, categoryNames);
+                lvCategories.setAdapter(cAdapter);
+                lvCategories.setOnItemClickListener((p, v, pos, i2) -> tempSelectedCategoryId[0] = displayCategories.get(pos).getCategoryId());
+            });
+
+            btnConfirm.setOnClickListener(v -> {
+                selectedGroupId = tempSelectedGroupId[0];
+                selectedCategoryId = tempSelectedCategoryId[0];
+                // 更新显示文本
+                try {
+                    String gName = "全部分组";
+                    String cName = "全部分类";
+                    if (selectedGroupId != -1) {
+                        List<com.lora.cn.database.entity.Group> gs = databaseManager.getAllGroups();
+                        for (com.lora.cn.database.entity.Group g : gs) if (g.getGroupId() == selectedGroupId) { gName = g.getGroupName(); break; }
+                    }
+                    if (selectedCategoryId != -1) {
+                        List<com.lora.cn.database.entity.Category> cs = selectedGroupId == -1 ? databaseManager.getAllCategories() : databaseManager.getCategoriesByGroupId(selectedGroupId);
+                        for (com.lora.cn.database.entity.Category c : cs) if (c.getCategoryId() == selectedCategoryId) { cName = c.getCategoryName(); break; }
+                    }
+                    tvGroupCategory.setText(gName + "/" + cName);
+                } catch (Exception ignored) {}
+
+                applyFilters();
+                dialog.dismiss();
+            });
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
+            dialog.show();
+        } catch (Exception e) {
+            Log.e(TAG, "显示分组分类选择器失败", e);
+        }
     }
     
     /**
@@ -515,8 +599,8 @@ public class TerminalListFragment extends Fragment {
             
             if (terminals != null && !terminals.isEmpty()) {
                 // 转换数据库终端数据为UI显示格式
-                List<Terminal> displayTerminals = convertToDisplayTerminals(terminals);
-                adapter.submitList(displayTerminals);
+                allDisplayTerminals = convertToDisplayTerminals(terminals);
+                adapter.submitList(new ArrayList<>(allDisplayTerminals));
             } else {
                 // 如果数据库中没有数据，显示空列表
                 adapter.submitList(new ArrayList<>());
@@ -590,6 +674,38 @@ public class TerminalListFragment extends Fragment {
         }
         
         return displayTerminals;
+    }
+
+    private void applyFilters() {
+        try {
+            if (adapter == null) return;
+            List<Terminal> base = new ArrayList<>(allDisplayTerminals);
+            // 只有当选择了具体分类时才过滤，否则显示全部
+            if (selectedCategoryId != -1 && selectedGroupId != -1) {
+                List<Terminal> filtered = new ArrayList<>();
+                for (Terminal t : base) {
+                    boolean match = false;
+                    if (selectedGroupId == 1) {
+                        match = (t.getDepartmentId() == selectedCategoryId);
+                    } else if (selectedGroupId == 2) {
+                        match = (t.getRoomId() == selectedCategoryId);
+                    } else if (selectedGroupId == 3) {
+                        match = (t.getNursingGroupId() == selectedCategoryId);
+                    } else if (selectedGroupId == 4) {
+                        match = (t.getOtherId() == selectedCategoryId);
+                    } else {
+                        // 暂不支持其他自定义分组过滤
+                        match = true;
+                    }
+                    if (match) filtered.add(t);
+                }
+                adapter.submitList(filtered);
+            } else {
+                adapter.submitList(new ArrayList<>(base));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "应用过滤失败", e);
+        }
     }
     
     /**

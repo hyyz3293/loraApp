@@ -1027,14 +1027,71 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public long addUplinkLog(String time, String hex) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_LOG_TERMINAL_ID, "uplink");
-        values.put(COLUMN_LOG_TERMINAL_NAME, "上行数据");
-        values.put(COLUMN_LOG_DEVICE_ID, "mqtt");
-        values.put(COLUMN_LOG_STATUS, "接收成功");
-        values.put(COLUMN_LOG_OPERATOR, "系统");
-        values.put(COLUMN_LOG_OPERATION_TIME, time);
-        values.put(COLUMN_LOG_ACTION, "接收上行数据: " + hex);
-        
+
+        // 解析帧
+        com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+        String deviceId = frame != null ? frame.deviceId : null;
+        String terminalName = "上行数据";
+        String status = "数据接收";
+        String operator = "系统";
+        String operationTime = time;
+        String action = "接收上行数据";
+
+        // 尝试根据帧中的时间替换操作时间
+        try {
+            if (frame != null && frame.dataTime != null) {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                operationTime = sdf.format(frame.dataTime);
+            }
+        } catch (Exception ignored) {}
+
+        // 根据设备ID查询终端表，获取终端名称等
+        try {
+            java.util.List<com.lora.cn.ui.model.Terminal> terminals = getAllTerminals();
+            if (deviceId != null && terminals != null) {
+                for (com.lora.cn.ui.model.Terminal t : terminals) {
+                    if (deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                        terminalName = t.getTerminalName();
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 根据设备事件bit映射状态
+        if (frame != null) {
+            long ev = frame.deviceEvent;
+            if ((ev & 0x40) != 0) status = "低电量告警";
+            else if ((ev & 0x20) != 0) status = "设备丢失";
+            else if ((ev & 0x01) != 0) status = "开锁";
+            else if ((ev & 0x02) != 0) status = "上锁";
+            else if ((ev & 0x08) != 0) status = "设备取走";
+            else if ((ev & 0x10) != 0) status = "设备放入";
+            else if ((ev & 0x04) != 0) status = "定期上报";
+            else if ((ev & 0x80) != 0) status = "护士站查询";
+        }
+
+        // 构造动作描述
+        if (frame != null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("功能码=").append(frame.functionCode)
+              .append(", 流水号=").append(frame.sequenceNumber)
+              .append(", 电量=").append(frame.batteryLevel).append("%")
+              .append(", RSSI=").append(frame.rssi)
+              .append(", 事件=").append(com.lora.cn.utils.LoRaFrameParser.getDeviceEventDescription(frame.deviceEvent));
+            action = sb.toString();
+        } else {
+            action = "接收上行数据: " + hex;
+        }
+
+        values.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "uplink");
+        values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
+        values.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "mqtt");
+        values.put(COLUMN_LOG_STATUS, status);
+        values.put(COLUMN_LOG_OPERATOR, operator);
+        values.put(COLUMN_LOG_OPERATION_TIME, operationTime);
+        values.put(COLUMN_LOG_ACTION, action);
+
         long result = db.insert(TABLE_LOGS, null, values);
         db.close();
         return result;
