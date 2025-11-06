@@ -1192,4 +1192,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         return result > 0;
     }
+
+    /**
+     * 删除终端（按设备ID）
+     */
+    public int deleteTerminalByDeviceId(String deviceId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int result = db.delete(TABLE_TERMINALS, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{deviceId});
+        return result;
+    }
 }

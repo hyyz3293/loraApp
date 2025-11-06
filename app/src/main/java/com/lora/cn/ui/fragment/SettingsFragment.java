@@ -78,12 +78,12 @@ public class SettingsFragment extends Fragment {
         if (hasPermission("setting_device")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
         }
-        if (hasPermission("setting_ip")) {
-            // 直接增加网关IP配置的快捷入口
-            settingList.add(new SettingItem(R.mipmap.ic_setting1, "网关IP配置"));
-            // 新增 MQTT 设置入口（同属网络配置权限）
-            settingList.add(new SettingItem(R.mipmap.ic_setting1, "MQTT设置"));
-        }
+//        if (hasPermission("setting_ip")) {
+//            // 直接增加网关IP配置的快捷入口
+//            settingList.add(new SettingItem(R.mipmap.ic_setting1, "网关IP配置"));
+//            // 新增 MQTT 设置入口（同属网络配置权限）
+//            settingList.add(new SettingItem(R.mipmap.ic_setting1, "MQTT设置"));
+//        }
         if (hasPermission("setting")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
         }
@@ -98,6 +98,9 @@ public class SettingsFragment extends Fragment {
         }
         if (hasPermission("setting")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
+        }
+        if (hasPermission("setting")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting2, "自动返回首页时间"));
         }
 
 
@@ -163,6 +166,24 @@ public class SettingsFragment extends Fragment {
             case "职位管理":
                 if (hasPermission("setting")) {
                     targetFragment = PositionManagementFragment.newInstance();
+                }
+                break;
+            case "自动返回首页时间":
+                if (hasPermission("setting")) {
+                    long sec = com.blankj.utilcode.util.SPUtils.getInstance().getLong("home_auto_return_timeout_sec", 60);
+                    com.lora.cn.utils.DialogUtils.showNumberEditDialog(getContext(), "自动返回首页时间(秒)", "请输入秒数", String.valueOf(sec), "秒", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
+                        @Override
+                        public void onConfirm(String newValue) {
+                            try {
+                                long v = Long.parseLong(newValue.trim());
+                                if (v <= 0) v = 60;
+                                com.blankj.utilcode.util.SPUtils.getInstance().put("home_auto_return_timeout_sec", v);
+                                android.widget.Toast.makeText(getContext(), "已设置为 " + v + " 秒", android.widget.Toast.LENGTH_SHORT).show();
+                            } catch (NumberFormatException e) {
+                                android.widget.Toast.makeText(getContext(), "请输入有效的秒数", android.widget.Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
                 }
                 break;
         }

@@ -46,6 +46,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         tvStatusTitle.setText(item.getStatusText());
 
         // 设置电池信息（显示电量）
+        // 显示电量图标（由列表转换逻辑根据电量选择不同资源）
         ivBatteryIcon.setImageResource(item.getBatteryIconResId());
         tvBatteryTitle.setText(item.getBatteryText());
         

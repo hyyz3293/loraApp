@@ -62,6 +62,33 @@ public class MainActivity extends AppCompatActivity {
     private static final long TEST_INTERVAL = 30 * 1000; // 1分钟
     private android.content.BroadcastReceiver brokerReadyReceiver;
 
+    // 自动返回首页计时
+    private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private long lastNonHomeStartMs = 0L;
+    private final Runnable autoReturnRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (!isOnHome()) {
+                    if (lastNonHomeStartMs == 0L) {
+                        lastNonHomeStartMs = System.currentTimeMillis();
+                    }
+                    long timeoutMs = getAutoReturnTimeoutMs();
+                    if (System.currentTimeMillis() - lastNonHomeStartMs >= timeoutMs) {
+                        Log.i(TAG, "超时未在首页，自动返回首页");
+                        navigateHome();
+                    }
+                } else {
+                    lastNonHomeStartMs = 0L;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "自动返回首页检查异常: " + e.getMessage());
+            } finally {
+                autoReturnHandler.postDelayed(this, 1000);
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,12 +140,27 @@ public class MainActivity extends AppCompatActivity {
         startTestTimer();
         // 启动全局MQTT日志监听（优先连接本地Broker）
         startGlobalMqttLogging();
-    }
+
+        // 启动自动返回首页的周期检查
+        autoReturnHandler.removeCallbacks(autoReturnRunnable);
+        autoReturnHandler.postDelayed(autoReturnRunnable, 1000);
+    } 
 
     private void startTestTimer() {
         // 这里需要实现定时器逻辑，用于定期执行测试任务
         // 由于没有具体的实现细节，这里提供一个空的实现
         Log.d(TAG, "startTestTimer called - timer functionality not implemented");
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        // 任意用户交互（点击/触摸）重置自动返回首页计时
+        if (ev != null && ev.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+            if (!isOnHome()) {
+                lastNonHomeStartMs = System.currentTimeMillis();
+            }
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     private void initViews() {
@@ -158,6 +200,12 @@ public class MainActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
                 updateTabSelection(position);
+                // 非首页开始计时
+                if (position != 0) {
+                    lastNonHomeStartMs = System.currentTimeMillis();
+                } else {
+                    lastNonHomeStartMs = 0L;
+                }
             }
         });
     }
@@ -231,6 +279,7 @@ public class MainActivity extends AppCompatActivity {
         rvMenuTabs.setVisibility(View.INVISIBLE);
         viewPager.setVisibility(View.GONE);
         isDeviceListVisible = true;
+        lastNonHomeStartMs = System.currentTimeMillis();
     }
 
     public void hideDeviceList() {
@@ -268,6 +317,7 @@ public class MainActivity extends AppCompatActivity {
         rvMenuTabs.setVisibility(View.INVISIBLE);
         viewPager.setVisibility(View.GONE);
         isUserInfoVisible = true;
+        lastNonHomeStartMs = System.currentTimeMillis();
     }
 
     private void hideUserInfo() {
@@ -280,6 +330,9 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .remove(userInfoFragment)
                     .commit();
+        }
+        if (isOnHome()) {
+            lastNonHomeStartMs = 0L;
         }
     }
 
@@ -445,8 +498,41 @@ public class MainActivity extends AppCompatActivity {
                 unregisterReceiver(brokerReadyReceiver);
                 brokerReadyReceiver = null;
             }
+            autoReturnHandler.removeCallbacks(autoReturnRunnable);
         } catch (Exception e) {
             Log.e(TAG, "发送测试上行数据失败: " + e.getMessage());
+        }
+    }
+
+    private boolean isOnHome() {
+        // 首页：无用户信息/设备列表覆盖，且当前Tab为首页（index=0）
+        return !isUserInfoVisible && !isDeviceListVisible && currentTabIndex == 0;
+    }
+
+    private long getAutoReturnTimeoutMs() {
+        long sec = com.blankj.utilcode.util.SPUtils.getInstance().getLong("home_auto_return_timeout_sec", 60);
+        if (sec <= 0) sec = 60;
+        return sec * 1000L;
+    }
+
+    private void navigateHome() {
+        try {
+            // 切回首页Tab
+            if (viewPager != null) viewPager.setCurrentItem(0, true);
+            // 关闭覆盖层
+            if (isUserInfoVisible) hideUserInfo();
+            if (isDeviceListVisible) hideDeviceList();
+            // 清空回退栈（确保返回首页）
+            getSupportFragmentManager().popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
+            // 显示首页视图
+            rvMenuTabs.setVisibility(View.VISIBLE);
+            viewPager.setVisibility(View.VISIBLE);
+            fragmentUserInfoContainer.setVisibility(View.GONE);
+            fragmentDeviceListContainer.setVisibility(View.GONE);
+        } catch (Exception e) {
+            Log.e(TAG, "navigateHome 异常: " + e.getMessage());
+        } finally {
+            lastNonHomeStartMs = 0L;
         }
     }
 

@@ -46,6 +46,7 @@ public class TerminalCheckFragment extends Fragment {
     // 数据字段
     private int remainingCount = 1;
     private boolean isChecking = false;
+    private boolean isAdmin = false;
     
     // 权限相关
     private DatabaseManager databaseManager;
@@ -65,6 +66,10 @@ public class TerminalCheckFragment extends Fragment {
             User user = databaseManager.getUserById(userId);
             if (user != null) {
                 currentUserRoleId = (int)user.getRoleId();
+                try {
+                    com.lora.cn.database.entity.Role role = databaseManager.getRoleById(currentUserRoleId);
+                    isAdmin = (role != null && "管理员".equals(role.getRoleName()));
+                } catch (Exception ignored) {}
             }
         }
         
@@ -113,7 +118,7 @@ public class TerminalCheckFragment extends Fragment {
                 return;
             }
             
-            if (remainingCount <= 0) {
+            if (!isAdmin && remainingCount <= 0) {
                 Toast.makeText(getContext(), "今日清点次数已用完", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -128,30 +133,84 @@ public class TerminalCheckFragment extends Fragment {
     }
     
     private void initPieChartData() {
-        // 初始化在线状态饼状图数据
-        List<PieChartView.PieData> onlineData = new ArrayList<>();
-        onlineData.add(new PieChartView.PieData("正常取走", "11", 65.0f, Color.parseColor("#5D75F7")));
-        onlineData.add(new PieChartView.PieData("在线", "20", 20.0f, Color.parseColor("#39E56D")));
-        onlineData.add(new PieChartView.PieData("异常丢失", "10", 10.0f, Color.parseColor("#D00000")));
-        onlineData.add(new PieChartView.PieData("离线", "5", 5.0f, Color.parseColor("#CECECE")));
+        // 使用数据库真实数据初始化饼图
+        try {
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
+            int online = 0, offline = 0, abnormal = 0;
+            int batteryNormal = 0, batteryLow = 0;
+            for (com.lora.cn.ui.model.Terminal t : terminals) {
+                String st = t.getStatus() != null ? t.getStatus() : "";
+                if ("在线".equals(st)) online++;
+                else if (st.contains("异常")) abnormal++;
+                else offline++;
+                int bl = t.getBatteryLevel();
+                if (bl <= 20) batteryLow++; else batteryNormal++;
+            }
+            int totalStatus = Math.max(1, online + offline + abnormal);
+            int totalBattery = Math.max(1, batteryNormal + batteryLow + offline);
+            List<PieChartView.PieData> onlineData = new ArrayList<>();
+            onlineData.add(new PieChartView.PieData("在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
+            onlineData.add(new PieChartView.PieData("异常", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
+            onlineData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalStatus, Color.parseColor("#CECECE")));
+            pieChartOnline.setData(onlineData);
 
-        pieChartOnline.setData(onlineData);
-        
-        // 初始化电量状态饼状图数据
-        List<PieChartView.PieData> batteryData = new ArrayList<>();
-        batteryData.add(new PieChartView.PieData("正常电量", "70", 70.0f, Color.parseColor("#39E56D")));
-        batteryData.add(new PieChartView.PieData("低电量", "25", 25.0f, Color.parseColor("#D00000")));
-        batteryData.add(new PieChartView.PieData("离线", "5", 5.0f, Color.parseColor("#CECECE")));
-        
-        pieChartBattery.setData(batteryData);
+            List<PieChartView.PieData> batteryData = new ArrayList<>();
+            batteryData.add(new PieChartView.PieData("正常电量", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, Color.parseColor("#39E56D")));
+            batteryData.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, Color.parseColor("#FF9500")));
+            batteryData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalBattery, Color.parseColor("#CECECE")));
+            pieChartBattery.setData(batteryData);
+        } catch (Exception e) {
+            Log.e("TerminalCheckFragment", "初始化饼图真实数据失败: " + e.getMessage());
+        }
     }
     
     /**
      * 初始化图表适配器数据
      */
     private void initChartAdapterData() {
-        List<TerminalChartData> chartDataList = generateMockChartData();
-        terminalChartAdapter.submitList(chartDataList);
+        try {
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
+            int online = 0, offline = 0, abnormal = 0;
+            int batteryNormal = 0, batteryLow = 0;
+            for (com.lora.cn.ui.model.Terminal t : terminals) {
+                String st = t.getStatus() != null ? t.getStatus() : "";
+                if ("在线".equals(st)) online++;
+                else if (st.contains("异常")) abnormal++;
+                else offline++;
+                int bl = t.getBatteryLevel();
+                if (bl <= 20) batteryLow++; else batteryNormal++;
+            }
+            List<TerminalChartData> list = new ArrayList<>();
+            TerminalChartData data = new TerminalChartData();
+            data.setOnlineTitle("终端状态统计");
+            data.setBatteryTitle("电量状态统计");
+            List<PieChartView.PieData> onlinePie = new ArrayList<>();
+            onlinePie.add(new PieChartView.PieData("在线", String.valueOf(online), 0f, Color.parseColor("#39E56D")));
+            onlinePie.add(new PieChartView.PieData("异常", String.valueOf(abnormal), 0f, Color.parseColor("#D00000")));
+            onlinePie.add(new PieChartView.PieData("离线", String.valueOf(offline), 0f, Color.parseColor("#CECECE")));
+            data.setOnlinePieData(onlinePie);
+            List<PieChartView.PieData> batteryPie = new ArrayList<>();
+            batteryPie.add(new PieChartView.PieData("正常电量", String.valueOf(batteryNormal), 0f, Color.parseColor("#39E56D")));
+            batteryPie.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), 0f, Color.parseColor("#FF9500")));
+            batteryPie.add(new PieChartView.PieData("离线", String.valueOf(offline), 0f, Color.parseColor("#CECECE")));
+            data.setBatteryPieData(batteryPie);
+            List<ChartItem> onlineItems = new ArrayList<>();
+            onlineItems.add(new ChartItem(Color.parseColor("#39E56D"), "在线", online + "台"));
+            onlineItems.add(new ChartItem(Color.parseColor("#D00000"), "异常", abnormal + "台"));
+            onlineItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", offline + "台"));
+            data.setOnlineChartItems(onlineItems);
+            List<ChartItem> batteryItems = new ArrayList<>();
+            batteryItems.add(new ChartItem(Color.parseColor("#39E56D"), "正常电量", batteryNormal + "台"));
+            batteryItems.add(new ChartItem(Color.parseColor("#FF9500"), "低电量", batteryLow + "台"));
+            batteryItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", offline + "台"));
+            data.setBatteryChartItems(batteryItems);
+            list.add(data);
+            terminalChartAdapter.submitList(list);
+        } catch (Exception e) {
+            Log.e("TerminalCheckFragment", "初始化图表适配器真实数据失败: " + e.getMessage());
+        }
     }
     
     /**
@@ -268,8 +327,10 @@ public class TerminalCheckFragment extends Fragment {
             addTerminal.setText("开始清点");
             addTerminal.setEnabled(true);
             
-            // 减少剩余次数
-            updateRemainingCount(remainingCount - 1);
+            // 减少剩余次数（管理员不减少）
+            if (!isAdmin) {
+                updateRemainingCount(remainingCount - 1);
+            }
             
             // 更新清点时间
             updateClearTime();
@@ -305,7 +366,11 @@ public class TerminalCheckFragment extends Fragment {
     private void updateRemainingCount(int count) {
         this.remainingCount = Math.max(0, count);
         if (terminalRemainingNumber != null) {
-            terminalRemainingNumber.setText(String.valueOf(this.remainingCount));
+            if (isAdmin) {
+                terminalRemainingNumber.setText("不限");
+            } else {
+                terminalRemainingNumber.setText(String.valueOf(this.remainingCount));
+            }
         }
     }
     

@@ -9,6 +9,7 @@ import android.widget.Toast;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -110,15 +111,17 @@ public class TerminalListFragment extends Fragment {
                         // 记录日志
                         try {
                             DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                            String now = sdf.format(new java.util.Date());
                             com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
                             logInfo.setTerminalId("SYSTEM");
-                            logInfo.setTerminalName("终端列表页");
+                            logInfo.setTerminalName("终端列表");
                             logInfo.setDeviceId("SYSTEM");
-                            logInfo.setStatus("成功");
+                            logInfo.setStatus("设备打开");
                             logInfo.setOperator("系统管理员");
-                            logInfo.setAction("打开搜索设备界面");
-                            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
-                            logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+                            logInfo.setAction("打开附近设备搜索界面");
+                            logInfo.setOperationTime(now);
+                            logInfo.setCreateTime(now);
                             dbHelper.addLog(logInfo);
                         } catch (Exception e) {
                             Log.e(TAG, "记录日志失败", e);
@@ -288,10 +291,26 @@ public class TerminalListFragment extends Fragment {
                 terminalInfo.timestamp = System.currentTimeMillis();
                 terminalInfo.payloadHex = ""; // 可以从日志中获取最新的payload
                 
-                // 显示终端详情对话框
-                com.lora.cn.dialog.TerminalDetailDialog dialog = 
-                    new com.lora.cn.dialog.TerminalDetailDialog(getContext(), terminalInfo);
-                dialog.show();
+                // 导航到终端详情Fragment（使用MainActivity的覆盖容器）
+                com.lora.cn.ui.fragment.TerminalDetailFragment fragment = com.lora.cn.ui.fragment.TerminalDetailFragment.newInstance(terminalInfo);
+                if (getActivity() != null) {
+                    android.app.Activity a = getActivity();
+                    android.view.View container = a.findViewById(R.id.fragment_device_list_container);
+                    if (container != null) {
+                        container.setVisibility(android.view.View.VISIBLE);
+                        android.view.View rvTabs = a.findViewById(R.id.rv_menu_tabs);
+                        if (rvTabs != null) rvTabs.setVisibility(android.view.View.INVISIBLE);
+                        android.view.View vp = a.findViewById(R.id.view_pager);
+                        if (vp != null) vp.setVisibility(android.view.View.GONE);
+                        ((androidx.appcompat.app.AppCompatActivity)a).getSupportFragmentManager()
+                                .beginTransaction()
+                                .replace(R.id.fragment_device_list_container, fragment)
+                                .addToBackStack("terminal_detail")
+                                .commit();
+                    } else {
+                        Toast.makeText(getContext(), "未找到详情容器", Toast.LENGTH_SHORT).show();
+                    }
+                }
             } else {
                 Toast.makeText(getContext(), "未找到终端详细信息", Toast.LENGTH_SHORT).show();
             }
@@ -320,89 +339,89 @@ public class TerminalListFragment extends Fragment {
         }
     }
     
-    /**
-     * 将新终端添加到数据库
-     */
-    private void addNewTerminalToDatabase(LoRaProtocolParser.TerminalInfo terminalInfo) {
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            
-            // 检查终端是否已存在
-            if (dbHelper.isTerminalExists(terminalInfo.deviceId)) {
-                Toast.makeText(getContext(), "终端设备已存在", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            
-            // 创建Terminal对象
-            com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
-            terminal.setTerminalId(terminalInfo.deviceId);
-            terminal.setTerminalName(terminalInfo.deviceName);
-            terminal.setStatus("在线");
-            terminal.setSignalStrength(terminalInfo.signalStrength);
-            terminal.setDepartment(terminalInfo.department);
-            terminal.setLocation(terminalInfo.location);
-            
-            // 添加到数据库
-            long result = dbHelper.addTerminal(terminal);
-            
-            if (result > 0) {
-                // 记录添加终端的日志
-                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                logInfo.setTerminalId(terminalInfo.deviceId);
-                logInfo.setTerminalName(terminalInfo.deviceName);
-                logInfo.setDeviceId(terminalInfo.deviceId);
-                logInfo.setStatus("成功");
-                logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
-                logInfo.setAction("添加终端");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
-                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-                
-                dbHelper.addLog(logInfo);
-                
-                Toast.makeText(getContext(), "终端添加成功", Toast.LENGTH_SHORT).show();
-                // 重新加载终端列表
-                loadTerminals();
-            } else {
-                // 记录添加失败的日志
-                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                logInfo.setTerminalId(terminalInfo.deviceId);
-                logInfo.setTerminalName(terminalInfo.deviceName);
-                logInfo.setDeviceId(terminalInfo.deviceId);
-                logInfo.setStatus("失败");
-                logInfo.setOperator("系统管理员");
-                logInfo.setAction("添加终端");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
-                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-                
-                dbHelper.addLog(logInfo);
-                
-                Toast.makeText(getContext(), "终端添加失败", Toast.LENGTH_SHORT).show();
-            }
-            
-        } catch (Exception e) {
-            Log.e(TAG, "添加终端到数据库失败", e);
-            
-            // 记录异常日志
-            try {
-                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                logInfo.setTerminalId(terminalInfo.deviceId);
-                logInfo.setTerminalName(terminalInfo.deviceName);
-                logInfo.setDeviceId(terminalInfo.deviceId);
-                logInfo.setStatus("异常");
-                logInfo.setOperator("系统管理员");
-                logInfo.setAction("添加终端");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
-                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-                
-                dbHelper.addLog(logInfo);
-            } catch (Exception logException) {
-                Log.e(TAG, "记录日志失败", logException);
-            }
-            
-            Toast.makeText(getContext(), "添加终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
+//    /**
+//     * 将新终端添加到数据库
+//     */
+//    private void addNewTerminalToDatabase(LoRaProtocolParser.TerminalInfo terminalInfo) {
+//        try {
+//            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+//
+//            // 检查终端是否已存在
+//            if (dbHelper.isTerminalExists(terminalInfo.deviceId)) {
+//                Toast.makeText(getContext(), "终端设备已存在", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//
+//            // 创建Terminal对象
+//            com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
+//            terminal.setTerminalId(terminalInfo.deviceId);
+//            terminal.setTerminalName(terminalInfo.deviceName);
+//            terminal.setStatus("在线");
+//            terminal.setSignalStrength(terminalInfo.signalStrength);
+//            terminal.setDepartment(terminalInfo.department);
+//            terminal.setLocation(terminalInfo.location);
+//
+//            // 添加到数据库
+//            long result = dbHelper.addTerminal(terminal);
+//
+//            if (result > 0) {
+//                // 记录添加终端的日志
+//                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+//                logInfo.setTerminalId(terminalInfo.deviceId);
+//                logInfo.setTerminalName(terminalInfo.deviceName);
+//                logInfo.setDeviceId(terminalInfo.deviceId);
+//                logInfo.setStatus("成功");
+//                logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
+//                logInfo.setAction("添加终端");
+//                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+//                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+//
+//                dbHelper.addLog(logInfo);
+//
+//                Toast.makeText(getContext(), "终端添加成功", Toast.LENGTH_SHORT).show();
+//                // 重新加载终端列表
+//                loadTerminals();
+//            } else {
+//                // 记录添加失败的日志
+//                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+//                logInfo.setTerminalId(terminalInfo.deviceId);
+//                logInfo.setTerminalName(terminalInfo.deviceName);
+//                logInfo.setDeviceId(terminalInfo.deviceId);
+//                logInfo.setStatus("失败");
+//                logInfo.setOperator("系统管理员");
+//                logInfo.setAction("添加终端");
+//                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+//                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+//
+//                dbHelper.addLog(logInfo);
+//
+//                Toast.makeText(getContext(), "终端添加失败", Toast.LENGTH_SHORT).show();
+//            }
+//
+//        } catch (Exception e) {
+//            Log.e(TAG, "添加终端到数据库失败", e);
+//
+//            // 记录异常日志
+//            try {
+//                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+//                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+//                logInfo.setTerminalId(terminalInfo.deviceId);
+//                logInfo.setTerminalName(terminalInfo.deviceName);
+//                logInfo.setDeviceId(terminalInfo.deviceId);
+//                logInfo.setStatus("异常");
+//                logInfo.setOperator("系统管理员");
+//                logInfo.setAction("添加终端");
+//                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+//                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+//
+//                dbHelper.addLog(logInfo);
+//            } catch (Exception logException) {
+//                Log.e(TAG, "记录日志失败", logException);
+//            }
+//
+//            Toast.makeText(getContext(), "添加终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+//        }
+//    }
     
     /**
      * 检查当前用户是否有指定权限
@@ -467,9 +486,11 @@ public class TerminalListFragment extends Fragment {
                                 logInfo.setDeviceId(terminal.getTerminalId());
                                 logInfo.setStatus("异常");
                                 logInfo.setOperator("系统管理员");
+                                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                                String now = sdf.format(new java.util.Date());
                                 logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-                                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
-                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+                                logInfo.setOperationTime(now);
+                                logInfo.setCreateTime(now);
                                 
                                 dbHelper.addLog(logInfo);
                             } catch (Exception logException) {
@@ -523,8 +544,23 @@ public class TerminalListFragment extends Fragment {
             displayTerminal.setTerminalId(dbTerminal.getTerminalId());
             displayTerminal.setTerminalName(dbTerminal.getTerminalName());
             displayTerminal.setName(dbTerminal.getTerminalName()); // 显示名称使用终端名称
-            displayTerminal.setDepartment(dbTerminal.getDepartment());
-            displayTerminal.setLocation(dbTerminal.getLocation());
+            // 科室与病房：优先使用字符串；为空则根据ID查询分类名称
+            String dept = dbTerminal.getDepartment();
+            if (TextUtils.isEmpty(dept) && dbTerminal.getDepartmentId() > 0) {
+                try {
+                    com.lora.cn.database.entity.Category c = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getDepartmentId());
+                    if (c != null) dept = c.getCategoryName();
+                } catch (Exception ignored) {}
+            }
+            String room = dbTerminal.getLocation();
+            if (TextUtils.isEmpty(room) && dbTerminal.getRoomId() > 0) {
+                try {
+                    com.lora.cn.database.entity.Category c2 = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getRoomId());
+                    if (c2 != null) room = c2.getCategoryName();
+                } catch (Exception ignored) {}
+            }
+            displayTerminal.setDepartment(dept);
+            displayTerminal.setLocation(room);
             displayTerminal.setStatus(dbTerminal.getStatus());
             displayTerminal.setSignalStrength(dbTerminal.getSignalStrength());
             displayTerminal.setFavorite(dbTerminal.isFavorite());
@@ -540,11 +576,11 @@ public class TerminalListFragment extends Fragment {
             
             // 根据电量设置电池图标
             if (dbTerminal.getBatteryLevel() > 80) {
-                displayTerminal.setBatteryIconResId(R.mipmap.ic_blue_right); // 使用蓝色对勾图标表示高电量
+                displayTerminal.setBatteryIconResId(R.drawable.ic_green_sd); // 高电量-绿色电池
             } else if (dbTerminal.getBatteryLevel() > 30) {
-                displayTerminal.setBatteryIconResId(R.mipmap.ic_baterery_low); // 使用低电量图标表示中等电量
+                displayTerminal.setBatteryIconResId(R.drawable.ic_yellow_sd); // 中电量-黄色电池
             } else {
-                displayTerminal.setBatteryIconResId(R.mipmap.ic_red_sd); // 红色电池表示低电量
+                displayTerminal.setBatteryIconResId(R.mipmap.ic_red_sd); // 低电量-红色电池（PNG保留在mipmap）
             }
             
             // 设置重要性（收藏状态）
