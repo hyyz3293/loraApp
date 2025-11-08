@@ -23,6 +23,7 @@ public class Terminal {
     private long nursingGroupId;
     private long otherId;
     private String extension;
+    private String deviceCode; // 新增设备CODE
     private boolean isFavorite;
     private int batteryLevel; // 电量百分比
 
@@ -202,6 +203,14 @@ public class Terminal {
 
     public void setExtension(String extension) {
         this.extension = extension;
+    }
+
+    public String getDeviceCode() {
+        return deviceCode;
+    }
+
+    public void setDeviceCode(String deviceCode) {
+        this.deviceCode = deviceCode;
     }
 
     public boolean isFavorite() {

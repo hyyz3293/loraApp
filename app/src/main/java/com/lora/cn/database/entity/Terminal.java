@@ -20,6 +20,7 @@ public class Terminal {
     private Integer nursingGroupId;  // 护理组分类ID
     private Integer otherId;         // 其他分类ID
     private String extension;        // 扩展字段
+    private String deviceCode;       // 设备CODE（新增字段）
     private Date createTime;
     private Date updateTime;
 
@@ -149,6 +150,14 @@ public class Terminal {
 
     public void setExtension(String extension) {
         this.extension = extension;
+    }
+
+    public String getDeviceCode() {
+        return deviceCode;
+    }
+
+    public void setDeviceCode(String deviceCode) {
+        this.deviceCode = deviceCode;
     }
 
     public Date getCreateTime() {

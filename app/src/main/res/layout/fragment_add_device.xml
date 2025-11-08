@@ -136,12 +136,24 @@
 
                 </LinearLayout>
 
-                <!-- 设备名称输入 -->
+            </LinearLayout>
+
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:background="#FFFFFF"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <!-- 设备Code输入 -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
                     android:orientation="vertical">
 
                     <TextView
@@ -275,6 +287,7 @@
 
             <!-- 扩展字段输入 -->
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"

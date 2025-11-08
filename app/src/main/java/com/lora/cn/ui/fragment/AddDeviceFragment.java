@@ -37,7 +37,7 @@ public class AddDeviceFragment extends Fragment {
     private TextView tvTerminalId;
     private EditText etDeviceId;
     private EditText etDeviceName;
-    private EditText etExtension;
+    private EditText etExtension; // 用作设备CODE输入框（字段映射为device_code）
     private Spinner spinnerDepartment;
     private Spinner spinnerRoom;
     private Spinner spinnerNursingGroup;
@@ -279,13 +279,13 @@ public class AddDeviceFragment extends Fragment {
     
     private void saveDevice() {
         // 获取输入数据
-        String deviceId = etDeviceId.getText().toString().trim();
+        String deviceCode = etDeviceId.getText().toString().trim();
         String deviceName = etDeviceName.getText().toString().trim();
-        String extension = etExtension.getText().toString().trim();
+        //String deviceCode = etExtension.getText().toString().trim();
         
         // 验证必填字段
-        if (TextUtils.isEmpty(deviceId)) {
-            Toast.makeText(getContext(), "请输入设备ID", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(deviceCode)) {
+            Toast.makeText(getContext(), "请输入设备Code", Toast.LENGTH_SHORT).show();
             etDeviceId.requestFocus();
             return;
         }
@@ -298,7 +298,7 @@ public class AddDeviceFragment extends Fragment {
         
         // 检查设备ID是否已存在
         try {
-            if (terminalDao.isDeviceIdExists(deviceId, 0)) {
+            if (terminalDao.isDeviceIdExists(terminalId, 0)) {
                 Toast.makeText(getContext(), "设备ID已存在", Toast.LENGTH_SHORT).show();
                 etDeviceId.requestFocus();
                 return;
@@ -311,7 +311,8 @@ public class AddDeviceFragment extends Fragment {
         
         // 创建终端对象
         Terminal terminal = new Terminal();
-        terminal.setTerminalId(deviceId);
+        terminal.setTerminalId(terminalId);
+        terminal.setDeviceCode(deviceCode);
         terminal.setTerminalName(deviceName);
         terminal.setStatus("在线"); // 默认状态
         terminal.setSignalStrength(0); // 默认信号强度
@@ -324,10 +325,10 @@ public class AddDeviceFragment extends Fragment {
         terminal.setNursingGroupId(selectedNursingGroupId != null ? selectedNursingGroupId : 0);
         terminal.setOtherId(selectedOtherId != null ? selectedOtherId : 0);
         
-        // 设置扩展字段
-        if (!TextUtils.isEmpty(extension)) {
-            terminal.setExtension(extension);
-        }
+//        // 设置扩展字段
+//        if (!TextUtils.isEmpty(deviceCode)) {
+//            terminal.setDeviceCode(deviceCode);
+//        }
         
         // 保存到数据库
         try {
@@ -336,9 +337,9 @@ public class AddDeviceFragment extends Fragment {
                 // 记录添加终端的日志
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
                 com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                logInfo.setTerminalId(deviceId);
+                logInfo.setTerminalId(terminalId);
                 logInfo.setTerminalName(deviceName);
-                logInfo.setDeviceId(deviceId);
+                logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("成功");
                 logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
                 logInfo.setAction("添加设备");
@@ -360,9 +361,9 @@ public class AddDeviceFragment extends Fragment {
                 // 记录添加失败的日志
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
                 com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                logInfo.setTerminalId(deviceId);
+                logInfo.setTerminalId(terminalId);
                 logInfo.setTerminalName(deviceName);
-                logInfo.setDeviceId(deviceId);
+                logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("失败");
                 logInfo.setOperator("系统管理员");
                 logInfo.setAction("添加设备");
@@ -380,9 +381,9 @@ public class AddDeviceFragment extends Fragment {
             try {
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
                 com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                logInfo.setTerminalId(deviceId);
+                logInfo.setTerminalId(terminalId);
                 logInfo.setTerminalName(deviceName);
-                logInfo.setDeviceId(deviceId);
+                logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("异常");
                 logInfo.setOperator("系统管理员");
                 logInfo.setAction("添加设备");

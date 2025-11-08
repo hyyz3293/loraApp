@@ -651,8 +651,8 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
 }
 
 // 兼容调用：从数据库实体转换到UI模型并显示
-public void showAddDeviceFragment(com.lora.cn.database.entity.Terminal entityTerminal) {
-    com.lora.cn.ui.model.Terminal uiTerminal = new com.lora.cn.ui.model.Terminal();
+    public void showAddDeviceFragment(com.lora.cn.database.entity.Terminal entityTerminal) {
+        com.lora.cn.ui.model.Terminal uiTerminal = new com.lora.cn.ui.model.Terminal();
     // 以设备ID作为终端ID显示
     if (entityTerminal.getDeviceId() != null) {
         uiTerminal.setTerminalId(entityTerminal.getDeviceId());
@@ -676,7 +676,16 @@ public void showAddDeviceFragment(com.lora.cn.database.entity.Terminal entityTer
     if (entityTerminal.getOtherId() != null) {
         uiTerminal.setOtherId(entityTerminal.getOtherId());
     }
-    uiTerminal.setExtension(entityTerminal.getExtension());
+    // 设备CODE：优先读取数据库实体的deviceCode，若无则回退extension
+    try {
+        java.lang.reflect.Method m = entityTerminal.getClass().getMethod("getDeviceCode");
+        Object code = m.invoke(entityTerminal);
+        if (code instanceof String) {
+            uiTerminal.setDeviceCode((String) code);
+        }
+    } catch (Exception ignored) {
+        uiTerminal.setDeviceCode(entityTerminal.getExtension());
+    }
     if (entityTerminal.getBatteryLevel() != null) {
         uiTerminal.setBatteryLevel(entityTerminal.getBatteryLevel());
     }

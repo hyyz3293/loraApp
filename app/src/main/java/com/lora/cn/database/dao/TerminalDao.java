@@ -30,6 +30,8 @@ public class TerminalDao {
         
         values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_ID, terminal.getTerminalId());
         values.put(DatabaseHelper.COLUMN_TERMINAL_NAME, terminal.getTerminalName());
+        // 设备CODE
+        values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_CODE, terminal.getDeviceCode());
         values.put(DatabaseHelper.COLUMN_TERMINAL_STATUS, terminal.getStatus());
         values.put(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
         values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
@@ -130,6 +132,10 @@ public class TerminalDao {
             terminal.setId(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_ID)));
             terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_ID)));
             terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_NAME)));
+            int codeIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_CODE);
+            if (codeIdx != -1) {
+                terminal.setDeviceCode(cursor.getString(codeIdx));
+            }
             terminal.setStatus(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_STATUS)));
             terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH)));
             terminal.setDepartment(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT)));
@@ -165,6 +171,10 @@ public class TerminalDao {
                 terminal.setId(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_ID)));
                 terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_ID)));
                 terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_NAME)));
+                int codeIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEVICE_CODE);
+                if (codeIdx != -1) {
+                    terminal.setDeviceCode(cursor.getString(codeIdx));
+                }
                 terminal.setStatus(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_STATUS)));
                 terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH)));
                 terminal.setDepartment(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT)));

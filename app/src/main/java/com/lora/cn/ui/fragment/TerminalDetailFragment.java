@@ -99,8 +99,6 @@ public class TerminalDetailFragment extends Fragment {
         logAdapter = new LogInfoAdapter();
         rvLogs.setAdapter(logAdapter);
 
-
-
         terminal_detail_type = v.findViewById(R.id.terminal_detail_type);
         signalView = v.findViewById(R.id.signalView);
         terminal_detail_wifi = v.findViewById(R.id.terminal_detail_wifi);
@@ -126,6 +124,51 @@ public class TerminalDetailFragment extends Fragment {
         tvStatus.setText(st);
         tvBattery.setText(battery + "%");
 
+        // 从数据库补齐详情文本：分组类型、设备CODE、状态(重复显示)、电量、终端ID、信号强度
+        try {
+            com.lora.cn.database.dao.TerminalDao dao = new com.lora.cn.database.dao.TerminalDao(dbHelper);
+            com.lora.cn.ui.model.Terminal t = dao.getTerminalByDeviceId(deviceId);
+            if (t != null) {
+                // 分组类型：根据哪个分类ID非零判定
+                String type = "-";
+                if (t.getDepartmentId() > 0) type = "科室";
+                else if (t.getRoomId() > 0) type = "病房";
+                else if (t.getNursingGroupId() > 0) type = "护理组";
+                else if (t.getOtherId() > 0) type = "其他";
+                if (terminal_detail_type != null) terminal_detail_type.setText(type);
+
+                // 设备CODE：读取新字段deviceCode
+                String code = t.getDeviceCode();
+                if (TextUtils.isEmpty(code)) code = "-";
+                if (terminal_detail_code != null) terminal_detail_code.setText(code);
+
+                // 状态（WiFi/在线状态）与电量
+                if (terminal_detail_wifi != null) terminal_detail_wifi.setText(t.getStatus() != null ? t.getStatus() : st);
+                if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
+
+                // 终端ID
+                if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
+
+                // 信号强度视图：将信号强度映射到0-4
+                int strength = t.getSignalStrength();
+                int level;
+                if (strength >= 75) level = 4;
+                else if (strength >= 50) level = 3;
+                else if (strength >= 25) level = 2;
+                else if (strength > 0) level = 1;
+                else level = 0;
+                if (signalView != null) signalView.setSignalStrength(level);
+            } else {
+                // 无记录时，尽量使用已有参数填充
+                if (terminal_detail_type != null) terminal_detail_type.setText("-");
+                if (terminal_detail_code != null) terminal_detail_code.setText("-");
+                if (terminal_detail_wifi != null) terminal_detail_wifi.setText(st);
+                if (terminal_detail_battery != null) terminal_detail_battery.setText(battery + "%");
+                if (terminal_detail_id != null) terminal_detail_id.setText(deviceId);
+                if (signalView != null) signalView.setSignalStrength(0);
+            }
+        } catch (Exception ignored) {}
+
         // 设置收藏图标状态（根据数据库记录）
         try {
             boolean isFavorite = false;
@@ -136,11 +179,8 @@ public class TerminalDetailFragment extends Fragment {
                     break;
                 }
             }
-            ivFavorite.setVisibility(View.GONE);
-            if (isFavorite) {
-                ivFavorite.setVisibility(View.VISIBLE);
-            }
-            //ivFavorite.setImageResource(isFavorite ? R.mipmap.ic_coll : R.mipmap.ic_cw);
+            // 详情页的收藏图标保留逻辑：仅在收藏时显示星标
+            ivFavorite.setVisibility(isFavorite ? View.VISIBLE : View.GONE);
             ivFavorite.setTag(isFavorite);
         } catch (Exception ignored) {}
     }

@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 13;
+    private static final int DATABASE_VERSION = 14;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -117,6 +117,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String TABLE_TERMINALS = "terminals";
     public static final String COLUMN_TERMINAL_ID = "terminal_id";
     public static final String COLUMN_TERMINAL_DEVICE_ID = "terminal_device_id";
+    public static final String COLUMN_TERMINAL_DEVICE_CODE = "device_code"; // 新增设备CODE字段
     public static final String COLUMN_TERMINAL_NAME = "terminal_name";
     public static final String COLUMN_TERMINAL_STATUS = "status";
     public static final String COLUMN_TERMINAL_SIGNAL_STRENGTH = "signal_strength";
@@ -251,6 +252,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         "CREATE TABLE " + TABLE_TERMINALS + " (" +
         COLUMN_TERMINAL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
         COLUMN_TERMINAL_DEVICE_ID + " TEXT NOT NULL UNIQUE, " +
+        COLUMN_TERMINAL_DEVICE_CODE + " TEXT, " +
         COLUMN_TERMINAL_NAME + " TEXT NOT NULL, " +
         COLUMN_TERMINAL_STATUS + " TEXT DEFAULT '在线', " +
         COLUMN_TERMINAL_SIGNAL_STRENGTH + " INTEGER DEFAULT 0, " +
@@ -451,6 +453,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             // 版本10升级到版本11：创建日志表
             db.execSQL(CREATE_TABLE_LOGS);
         }
+        // 版本13 -> 14：新增设备CODE字段
+        if (oldVersion < 14) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEVICE_CODE + " TEXT");
+            } catch (Exception ignored) {}
+        }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
@@ -567,6 +575,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                       COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + 
                       ") SELECT " + adminRoleId + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
         }
+
     }
     
     /**
@@ -920,6 +929,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         
         values.put(COLUMN_TERMINAL_DEVICE_ID, terminal.getTerminalId());
+        // 设备CODE（新字段）
+        values.put(COLUMN_TERMINAL_DEVICE_CODE, terminal.getDeviceCode());
         values.put(COLUMN_TERMINAL_NAME, terminal.getTerminalName());
         values.put(COLUMN_TERMINAL_STATUS, terminal.getStatus());
         values.put(COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
@@ -945,6 +956,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
                 terminal.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_ID)));
                 terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_ID)));
+                int codeIdx = cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_CODE);
+                if (codeIdx != -1) {
+                    terminal.setDeviceCode(cursor.getString(codeIdx));
+                }
                 terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_NAME)));
                 terminal.setStatus(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS)));
                 terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
