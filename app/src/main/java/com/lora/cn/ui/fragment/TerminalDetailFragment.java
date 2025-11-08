@@ -49,9 +49,9 @@ public class TerminalDetailFragment extends Fragment {
     private DatabaseHelper dbHelper;
 
     private TextView tvTitle;
-    private ImageView btnBack;
-    private ImageView btnEdit;
-    private ImageView btnDelete;
+    private TextView btnBack;
+    private TextView btnEdit;
+    private TextView btnDelete;
     private ImageView ivFavorite;
     private TextView tvDeviceId;
     private TextView tvDepartment;
@@ -119,7 +119,11 @@ public class TerminalDetailFragment extends Fragment {
                     break;
                 }
             }
-            ivFavorite.setImageResource(isFavorite ? R.mipmap.ic_coll : R.mipmap.ic_cw);
+            ivFavorite.setVisibility(View.GONE);
+            if (isFavorite) {
+                ivFavorite.setVisibility(View.VISIBLE);
+            }
+            //ivFavorite.setImageResource(isFavorite ? R.mipmap.ic_coll : R.mipmap.ic_cw);
             ivFavorite.setTag(isFavorite);
         } catch (Exception ignored) {}
     }
@@ -156,7 +160,7 @@ public class TerminalDetailFragment extends Fragment {
                         try {
                             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
                             String now = sdf.format(new java.util.Date());
-                            com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                            LogInfo logInfo = new LogInfo();
                             logInfo.setTerminalId(deviceId);
                             logInfo.setTerminalName(newValue);
                             logInfo.setDeviceId(deviceId);
@@ -227,8 +231,9 @@ public class TerminalDetailFragment extends Fragment {
             try {
                 int result = dbHelper.updateTerminalFavoriteStatus(deviceId, target);
                 if (result > 0) {
-                    ivFavorite.setImageResource(target ? R.mipmap.ic_coll : R.mipmap.ic_cw);
+                    //ivFavorite.setImageResource(target ? R.mipmap.ic_coll : R.mipmap.ic_cw);
                     ivFavorite.setTag(target);
+                    ivFavorite.setVisibility(View.GONE);
                     Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(requireContext(), "更新收藏状态失败", Toast.LENGTH_SHORT).show();

@@ -59,8 +59,32 @@ public class MainActivity extends AppCompatActivity {
     // 全局 MQTT 客户端（MainActivity 启动并维持）
     private MqttPacketsClient mqttClient;
     private DatabaseHelper databaseHelper;
-    private static final long TEST_INTERVAL = 30 * 1000; // 1分钟
+    private static final long TEST_INTERVAL = 30 * 1000; // 30秒
     private android.content.BroadcastReceiver brokerReadyReceiver;
+    private android.os.Handler testUplinkHandler;
+    private final Runnable testUplinkRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                String time = sdf.format(new Date());
+                String hex = generateTestUplinkHex();
+
+                long result = databaseHelper.addUplinkLog(time, hex);
+                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
+
+                UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                EventBus.getDefault().post(event);
+                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
+            } catch (Exception e) {
+                Log.e(TAG, "自动测试上行失败", e);
+            } finally {
+                if (testUplinkHandler != null) {
+                    testUplinkHandler.postDelayed(this, TEST_INTERVAL);
+                }
+            }
+        }
+    };
 
     // 自动返回首页计时
     private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -147,9 +171,16 @@ public class MainActivity extends AppCompatActivity {
     } 
 
     private void startTestTimer() {
-        // 这里需要实现定时器逻辑，用于定期执行测试任务
-        // 由于没有具体的实现细节，这里提供一个空的实现
-        Log.d(TAG, "startTestTimer called - timer functionality not implemented");
+        try {
+            if (testUplinkHandler == null) {
+                testUplinkHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            }
+            testUplinkHandler.removeCallbacks(testUplinkRunnable);
+            testUplinkHandler.post(testUplinkRunnable);
+            Log.d(TAG, "自动测试上行计时器已启动，间隔: " + TEST_INTERVAL + "ms");
+        } catch (Exception e) {
+            Log.e(TAG, "启动自动测试上行计时器失败", e);
+        }
     }
 
     @Override
@@ -499,6 +530,10 @@ public class MainActivity extends AppCompatActivity {
                 brokerReadyReceiver = null;
             }
             autoReturnHandler.removeCallbacks(autoReturnRunnable);
+            if (testUplinkHandler != null) {
+                testUplinkHandler.removeCallbacks(testUplinkRunnable);
+                testUplinkHandler = null;
+            }
         } catch (Exception e) {
             Log.e(TAG, "发送测试上行数据失败: " + e.getMessage());
         }
@@ -534,6 +569,65 @@ public class MainActivity extends AppCompatActivity {
         } finally {
             lastNonHomeStartMs = 0L;
         }
+    }
+
+    // 生成符合解析器的测试上行hex
+    private String generateTestUplinkHex() {
+        try {
+            String devEui = "2013220000000001";
+            byte[] buf = new byte[1 + 8 + 2 + 1 + 2 + 24 + 1 + 1];
+            int idx = 0;
+            buf[idx++] = (byte) 0xA5;
+            byte[] devBytes = hexToBytes(devEui);
+            System.arraycopy(devBytes, 0, buf, idx, 8);
+            idx += 8;
+            buf[idx++] = 0x00; buf[idx++] = 0x01;
+            buf[idx++] = 0x01;
+            buf[idx++] = 0x00; buf[idx++] = 0x18;
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            int YY = cal.get(java.util.Calendar.YEAR) % 100;
+            int YY2 = cal.get(java.util.Calendar.YEAR) / 100;
+            buf[idx++] = (byte) YY2;
+            buf[idx++] = (byte) YY;
+            buf[idx++] = (byte) (cal.get(java.util.Calendar.MONTH) + 1);
+            buf[idx++] = (byte) cal.get(java.util.Calendar.DAY_OF_MONTH);
+            buf[idx++] = (byte) cal.get(java.util.Calendar.HOUR_OF_DAY);
+            buf[idx++] = (byte) cal.get(java.util.Calendar.MINUTE);
+            buf[idx++] = (byte) cal.get(java.util.Calendar.SECOND);
+            buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x40;
+            buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x00;
+            buf[idx++] = 0x01; buf[idx++] = (byte) 0x68;
+            buf[idx++] = 55;
+            buf[idx++] = (byte) 90;
+            buf[idx++] = 3;
+            buf[idx++] = 2;
+            buf[idx++] = 5;
+            buf[idx++] = 1;
+            buf[idx++] = 0x00;
+            buf[idx++] = 0x00;
+            buf[idx++] = (byte) 0x5A;
+            return bytesToHex(buf);
+        } catch (Exception e) {
+            return "A5" + "2013220000000001" + "0001" + "01" + "0018" + "000000000000000000000000000000000000000000000000" + "00" + "5A";
+        }
+    }
+
+    private static byte[] hexToBytes(String hex) {
+        int len = hex.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i + 1), 16));
+        }
+        return data;
+    }
+
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
     }
 
 
