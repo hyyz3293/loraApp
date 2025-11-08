@@ -154,10 +154,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 
-                <com.yourpackage.SignalStrengthView
+                <com.lora.cn.ui.view.SignalStrengthView
                     android:id="@+id/signalView"
-                    android:layout_width="60dp"
-                    android:layout_height="30dp" />
+                    android:layout_width="20dp"
+                    android:layout_height="10dp" />
 
                 <TextView
                     android:id="@+id/terminal_detail_wifi"

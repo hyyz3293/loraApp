@@ -19,6 +19,7 @@ import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.adapter.LogInfoAdapter;
 import com.lora.cn.ui.model.LogInfo;
+import com.lora.cn.ui.view.SignalStrengthView;
 import com.lora.cn.utils.LoRaProtocolParser;
 import com.lora.cn.utils.DialogUtils;
 
@@ -62,6 +63,13 @@ public class TerminalDetailFragment extends Fragment {
     private TextView tvNoLogs;
     private LogInfoAdapter logAdapter;
 
+    private TextView terminal_detail_type;
+    private TextView terminal_detail_code;
+    private SignalStrengthView signalView;
+    private TextView terminal_detail_wifi;
+    private TextView terminal_detail_battery;
+    private TextView terminal_detail_id;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -90,6 +98,15 @@ public class TerminalDetailFragment extends Fragment {
         rvLogs.setLayoutManager(new LinearLayoutManager(requireContext()));
         logAdapter = new LogInfoAdapter();
         rvLogs.setAdapter(logAdapter);
+
+
+
+        terminal_detail_type = v.findViewById(R.id.terminal_detail_type);
+        signalView = v.findViewById(R.id.signalView);
+        terminal_detail_wifi = v.findViewById(R.id.terminal_detail_wifi);
+        terminal_detail_battery = v.findViewById(R.id.terminal_detail_battery);
+        terminal_detail_id = v.findViewById(R.id.terminal_detail_id);
+
     }
 
     private void bindData() {
