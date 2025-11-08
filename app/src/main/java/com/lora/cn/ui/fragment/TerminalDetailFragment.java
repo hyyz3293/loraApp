@@ -28,21 +28,11 @@ import java.util.List;
 public class TerminalDetailFragment extends Fragment {
 
     private static final String ARG_DEVICE_ID = "arg_device_id";
-    private static final String ARG_DEVICE_NAME = "arg_device_name";
-    private static final String ARG_DEPARTMENT = "arg_department";
-    private static final String ARG_LOCATION = "arg_location";
-    private static final String ARG_STATUS = "arg_status";
-    private static final String ARG_BATTERY = "arg_battery";
 
-    public static TerminalDetailFragment newInstance(LoRaProtocolParser.TerminalInfo info) {
+    public static TerminalDetailFragment newInstance(String terminalId) {
         TerminalDetailFragment f = new TerminalDetailFragment();
         Bundle b = new Bundle();
-        b.putString(ARG_DEVICE_ID, info.deviceId);
-        b.putString(ARG_DEVICE_NAME, info.deviceName);
-        b.putString(ARG_DEPARTMENT, info.department);
-        b.putString(ARG_LOCATION, info.location);
-        b.putString(ARG_STATUS, info.status == 1 ? "在线" : (info.status == 0 ? "离线" : "异常"));
-        b.putInt(ARG_BATTERY, info.batteryLevel);
+        b.putString(ARG_DEVICE_ID, terminalId);
         f.setArguments(b);
         return f;
     }
@@ -100,6 +90,7 @@ public class TerminalDetailFragment extends Fragment {
         rvLogs.setAdapter(logAdapter);
 
         terminal_detail_type = v.findViewById(R.id.terminal_detail_type);
+        terminal_detail_code = v.findViewById(R.id.terminal_detail_code);
         signalView = v.findViewById(R.id.signalView);
         terminal_detail_wifi = v.findViewById(R.id.terminal_detail_wifi);
         terminal_detail_battery = v.findViewById(R.id.terminal_detail_battery);
@@ -111,24 +102,19 @@ public class TerminalDetailFragment extends Fragment {
         Bundle b = getArguments();
         if (b == null) return;
         String deviceId = b.getString(ARG_DEVICE_ID, "-");
-        String deviceName = b.getString(ARG_DEVICE_NAME, "-");
-        String dept = b.getString(ARG_DEPARTMENT, "-");
-        String loc = b.getString(ARG_LOCATION, "-");
-        String st = b.getString(ARG_STATUS, "-");
-        int battery = b.getInt(ARG_BATTERY, 0);
-
-        tvTitle.setText(deviceName);
-        tvDeviceId.setText(deviceId);
-        tvDepartment.setText(dept);
-        tvLocation.setText(loc);
-        tvStatus.setText(st);
-        tvBattery.setText(battery + "%");
 
         // 从数据库补齐详情文本：分组类型、设备CODE、状态(重复显示)、电量、终端ID、信号强度
         try {
             com.lora.cn.database.dao.TerminalDao dao = new com.lora.cn.database.dao.TerminalDao(dbHelper);
             com.lora.cn.ui.model.Terminal t = dao.getTerminalByDeviceId(deviceId);
             if (t != null) {
+                // 顶部基础信息
+                tvTitle.setText(!TextUtils.isEmpty(t.getTerminalName()) ? t.getTerminalName() : "-");
+                tvDeviceId.setText(!TextUtils.isEmpty(t.getTerminalId()) ? t.getTerminalId() : deviceId);
+                tvDepartment.setText(!TextUtils.isEmpty(t.getDepartment()) ? t.getDepartment() : "-");
+                tvLocation.setText(!TextUtils.isEmpty(t.getLocation()) ? t.getLocation() : "-");
+                tvStatus.setText(!TextUtils.isEmpty(t.getStatus()) ? t.getStatus() : "-");
+                tvBattery.setText(t.getBatteryLevel() + "%");
                 // 分组类型：根据哪个分类ID非零判定
                 String type = "-";
                 if (t.getDepartmentId() > 0) type = "科室";
@@ -143,7 +129,7 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_code != null) terminal_detail_code.setText(code);
 
                 // 状态（WiFi/在线状态）与电量
-                if (terminal_detail_wifi != null) terminal_detail_wifi.setText(t.getStatus() != null ? t.getStatus() : st);
+                if (terminal_detail_wifi != null) terminal_detail_wifi.setText(!TextUtils.isEmpty(t.getStatus()) ? t.getStatus() : "-");
                 if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
 
                 // 终端ID
@@ -157,28 +143,29 @@ public class TerminalDetailFragment extends Fragment {
                 else if (strength >= 25) level = 2;
                 else if (strength > 0) level = 1;
                 else level = 0;
-                if (signalView != null) signalView.setSignalStrength(level);
+                if (signalView != null) signalView.setSignalStrength(4);
             } else {
-                // 无记录时，尽量使用已有参数填充
+                // 无记录时，回退为占位符
+                tvTitle.setText("-");
+                tvDeviceId.setText(deviceId);
+                tvDepartment.setText("-");
+                tvLocation.setText("-");
+                tvStatus.setText("-");
+                tvBattery.setText("-");
                 if (terminal_detail_type != null) terminal_detail_type.setText("-");
                 if (terminal_detail_code != null) terminal_detail_code.setText("-");
-                if (terminal_detail_wifi != null) terminal_detail_wifi.setText(st);
-                if (terminal_detail_battery != null) terminal_detail_battery.setText(battery + "%");
+                if (terminal_detail_wifi != null) terminal_detail_wifi.setText("-");
+                if (terminal_detail_battery != null) terminal_detail_battery.setText("-");
                 if (terminal_detail_id != null) terminal_detail_id.setText(deviceId);
-                if (signalView != null) signalView.setSignalStrength(0);
+                if (signalView != null) signalView.setSignalStrength(4);
             }
         } catch (Exception ignored) {}
 
         // 设置收藏图标状态（根据数据库记录）
         try {
-            boolean isFavorite = false;
-            java.util.List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
-            for (com.lora.cn.ui.model.Terminal t : terminals) {
-                if (deviceId.equalsIgnoreCase(t.getTerminalId())) {
-                    isFavorite = t.isFavorite();
-                    break;
-                }
-            }
+            com.lora.cn.database.dao.TerminalDao dao = new com.lora.cn.database.dao.TerminalDao(dbHelper);
+            com.lora.cn.ui.model.Terminal t = dao.getTerminalByDeviceId(deviceId);
+            boolean isFavorite = t != null && t.isFavorite();
             // 详情页的收藏图标保留逻辑：仅在收藏时显示星标
             ivFavorite.setVisibility(isFavorite ? View.VISIBLE : View.GONE);
             ivFavorite.setTag(isFavorite);
