@@ -12,6 +12,7 @@ import android.view.View;
 public class SignalStrengthView extends View {
 
     private int signalColor = Color.parseColor("#5B8CFF");
+    private int emptyColor = Color.parseColor("#D8D8D8");
     private int barCount = 4;
     private float barSpacing;
     private float barCornerRadius;
@@ -59,7 +60,7 @@ public class SignalStrengthView extends View {
         // 计算每个信号条的高度增量
         float heightIncrement = totalHeight / barCount;
 
-        // 绘制每个信号条
+        // 绘制每个信号条（无信号为灰色#D8D8D8，有信号为蓝色#5B8CFF）
         for (int i = 0; i < barCount; i++) {
             float left = i * (barWidth + barSpacing);
             float right = left + barWidth;
@@ -73,10 +74,9 @@ public class SignalStrengthView extends View {
             // 创建圆角矩形
             RectF rect = new RectF(left, top, right, totalHeight);
 
-            // 绘制信号条
-            if (i < signalStrength) {
-                canvas.drawRoundRect(rect, barCornerRadius, barCornerRadius, paint);
-            }
+            // 按强度选择颜色绘制
+            paint.setColor(i < signalStrength ? signalColor : emptyColor);
+            canvas.drawRoundRect(rect, barCornerRadius, barCornerRadius, paint);
         }
     }
 
@@ -126,6 +126,14 @@ public class SignalStrengthView extends View {
     public void setSignalColor(int color) {
         signalColor = color;
         paint.setColor(signalColor);
+        invalidate();
+    }
+
+    /**
+     * 设置无信号条颜色
+     */
+    public void setEmptyColor(int color) {
+        emptyColor = color;
         invalidate();
     }
 

@@ -115,13 +115,34 @@ public class TerminalDetailFragment extends Fragment {
                 tvLocation.setText(!TextUtils.isEmpty(t.getLocation()) ? t.getLocation() : "-");
                 tvStatus.setText(!TextUtils.isEmpty(t.getStatus()) ? t.getStatus() : "-");
                 tvBattery.setText(t.getBatteryLevel() + "%");
-                // 分组类型：根据哪个分类ID非零判定
-                String type = "-";
-                if (t.getDepartmentId() > 0) type = "科室";
-                else if (t.getRoomId() > 0) type = "病房";
-                else if (t.getNursingGroupId() > 0) type = "护理组";
-                else if (t.getOtherId() > 0) type = "其他";
-                if (terminal_detail_type != null) terminal_detail_type.setText(type);
+                // 分组展示：将选择的分组与分类名用“-”连接，不同分组用“，”隔开
+                StringBuilder groupText = new StringBuilder();
+                com.lora.cn.database.DatabaseManager dm = com.lora.cn.database.DatabaseManager.getInstance(requireContext());
+                if (t.getDepartmentId() > 0) {
+                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getDepartmentId());
+                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getDepartmentId());
+                    if (groupText.length() > 0) groupText.append(", ");
+                    groupText.append("科室-").append(name);
+                }
+                if (t.getRoomId() > 0) {
+                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getRoomId());
+                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getRoomId());
+                    if (groupText.length() > 0) groupText.append(", ");
+                    groupText.append("病房-").append(name);
+                }
+                if (t.getNursingGroupId() > 0) {
+                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getNursingGroupId());
+                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getNursingGroupId());
+                    if (groupText.length() > 0) groupText.append(", ");
+                    groupText.append("护理组-").append(name);
+                }
+                if (t.getOtherId() > 0) {
+                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getOtherId());
+                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getOtherId());
+                    if (groupText.length() > 0) groupText.append(", ");
+                    groupText.append("其他-").append(name);
+                }
+                if (terminal_detail_type != null) terminal_detail_type.setText(groupText.length() > 0 ? groupText.toString() : "-");
 
                 // 设备CODE：读取新字段deviceCode
                 String code = t.getDeviceCode();
