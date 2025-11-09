@@ -139,6 +139,7 @@ public class TerminalCheckFragment extends Fragment {
             List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
             int online = 0, offline = 0, abnormal = 0;
             int batteryNormal = 0, batteryLow = 0;
+            int manualTake = 0; // 正常取走
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 String st = t.getStatus() != null ? t.getStatus() : "";
                 if ("在线".equals(st)) online++;
@@ -146,12 +147,29 @@ public class TerminalCheckFragment extends Fragment {
                 else offline++;
                 int bl = t.getBatteryLevel();
                 if (bl <= 20) batteryLow++; else batteryNormal++;
+
+                // 解析最近一条上行，统计“正常取走”
+                List<com.lora.cn.ui.model.LogInfo> logs = dbHelper.getLogsByTerminalId(t.getTerminalId());
+                String hex = null;
+                for (com.lora.cn.ui.model.LogInfo li : logs) {
+                    String action = li.getAction();
+                    if (action != null && action.startsWith("接收上行数据:")) {
+                        int idx = action.indexOf(":");
+                        if (idx != -1 && idx + 1 < action.length()) { hex = action.substring(idx + 1).trim(); break; }
+                    }
+                }
+                if (hex != null) {
+                    com.lora.cn.utils.LoRaFrameParser.ParsedFrame pf = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+                    if (pf != null && pf.evManualTake == 1) manualTake++;
+                }
             }
-            int totalStatus = Math.max(1, online + offline + abnormal);
+            int totalStatus = Math.max(1, online + offline + abnormal + manualTake);
             int totalBattery = Math.max(1, batteryNormal + batteryLow + offline);
             List<PieChartView.PieData> onlineData = new ArrayList<>();
             if (online > 0)
                 onlineData.add(new PieChartView.PieData("在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
+            if (manualTake > 0)
+                onlineData.add(new PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalStatus, Color.parseColor("#5D75F7")));
             if (abnormal > 0)
                 onlineData.add(new PieChartView.PieData("异常", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
             if (offline > 0)
@@ -178,128 +196,94 @@ public class TerminalCheckFragment extends Fragment {
         try {
             DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
             List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
-            int online = 0, offline = 0, abnormal = 0;
-            int batteryNormal = 0, batteryLow = 0;
-            for (com.lora.cn.ui.model.Terminal t : terminals) {
-                String st = t.getStatus() != null ? t.getStatus() : "";
-                if ("在线".equals(st)) online++;
-                else if (st.contains("异常")) abnormal++;
-                else offline++;
-                int bl = t.getBatteryLevel();
-                if (bl <= 20) batteryLow++; else batteryNormal++;
+            List<com.lora.cn.ui.model.TerminalChartData> list = new java.util.ArrayList<>();
+
+            // 动态获取所有分组与分类
+            java.util.List<com.lora.cn.database.entity.Group> groups = DatabaseManager.getInstance(getContext()).getAllGroups();
+            if (groups == null) groups = new java.util.ArrayList<>();
+            for (com.lora.cn.database.entity.Group g : groups) {
+                int gid = (int) g.getGroupId();
+                String prefix = (g.getGroupName() != null ? g.getGroupName() : "分组") + "-";
+                java.util.List<com.lora.cn.database.entity.Category> cats = DatabaseManager.getInstance(getContext()).getCategoriesByGroupId(gid);
+                if (cats == null) continue;
+                for (com.lora.cn.database.entity.Category c : cats) {
+                    String label = prefix + c.getCategoryName();
+                    int manualTake = 0, illegalLoss = 0;
+                    int batteryNormal = 0, batteryLow = 0, batteryOffline = 0;
+                    int onlineCount = 0, offlineCount = 0;
+
+                    for (com.lora.cn.ui.model.Terminal t : terminals) {
+                        // 动态匹配：终端四类分类ID只要有一个与当前分类ID相等，即归属该分类
+                        boolean match = (t.getDepartmentId() == c.getCategoryId())
+                                || (t.getRoomId() == c.getCategoryId())
+                                || (t.getNursingGroupId() == c.getCategoryId())
+                                || (t.getOtherId() == c.getCategoryId());
+                        if (!match) continue;
+
+                        String st = t.getStatus() != null ? t.getStatus() : "";
+                        if ("在线".equals(st)) { onlineCount++; }
+                        else if ("离线".equals(st)) { offlineCount++; batteryOffline++; }
+                        else { /* 其它状态不计在线/离线 */ int bl = t.getBatteryLevel(); if (bl <= 20) batteryLow++; else batteryNormal++; }
+
+                        List<com.lora.cn.ui.model.LogInfo> logs = dbHelper.getLogsByTerminalId(t.getTerminalId());
+                        String hex = null;
+                        for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            String action = li.getAction();
+                            if (action != null && action.startsWith("接收上行数据:")) {
+                                int idx = action.indexOf(":");
+                                if (idx != -1 && idx + 1 < action.length()) { hex = action.substring(idx + 1).trim(); break; }
+                            }
+                        }
+                        if (hex != null) {
+                            com.lora.cn.utils.LoRaFrameParser.ParsedFrame pf = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+                            if (pf != null) {
+                                if (pf.evManualTake == 1) manualTake++;
+                                if (pf.evIllegalRemoval == 1) illegalLoss++;
+                            }
+                        }
+                    }
+
+                    com.lora.cn.ui.model.TerminalChartData data = new com.lora.cn.ui.model.TerminalChartData();
+                    data.setOnlineTitle(label);
+                    data.setBatteryTitle(label);
+
+                    int totalLeft = Math.max(1, onlineCount + offlineCount + manualTake + illegalLoss);
+                    java.util.List<com.lora.cn.ui.view.PieChartView.PieData> onlinePie = new java.util.ArrayList<>();
+                    if (onlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("在线", String.valueOf(onlineCount), (onlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#39E56D")));
+                    if (offlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("离线", String.valueOf(offlineCount), (offlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#CECECE")));
+                    if (manualTake > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalLeft, android.graphics.Color.parseColor("#5D75F7")));
+                    if (illegalLoss > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("异常丢失", String.valueOf(illegalLoss), (illegalLoss * 100f) / totalLeft, android.graphics.Color.parseColor("#D00000")));
+                    data.setOnlinePieData(onlinePie);
+
+                    int totalBattery = Math.max(1, batteryNormal + batteryLow + batteryOffline);
+                    java.util.List<com.lora.cn.ui.view.PieChartView.PieData> batteryPie = new java.util.ArrayList<>();
+                    if (batteryNormal > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("电量正常", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, android.graphics.Color.parseColor("#39E56D")));
+                    if (batteryLow > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, android.graphics.Color.parseColor("#FF9500")));
+                    if (batteryOffline > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("离线", String.valueOf(batteryOffline), (batteryOffline * 100f) / totalBattery, android.graphics.Color.parseColor("#CECECE")));
+                    data.setBatteryPieData(batteryPie);
+
+                    java.util.List<com.lora.cn.ui.model.ChartItem> onlineItems = new java.util.ArrayList<>();
+                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "在线", onlineCount + "台"));
+                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "离线", offlineCount + "台"));
+                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#5D75F7"), "正常取走", manualTake + "台"));
+                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#D00000"), "异常丢失", illegalLoss + "台"));
+                    data.setOnlineChartItems(onlineItems);
+
+                    java.util.List<com.lora.cn.ui.model.ChartItem> batteryItems = new java.util.ArrayList<>();
+                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "电量正常", batteryNormal + "台"));
+                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#FF9500"), "低电量", batteryLow + "台"));
+                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "离线", batteryOffline + "台"));
+                    data.setBatteryChartItems(batteryItems);
+
+                    list.add(data);
+                }
             }
-            List<TerminalChartData> list = new ArrayList<>();
-            TerminalChartData data = new TerminalChartData();
-            data.setOnlineTitle("终端状态统计");
-            data.setBatteryTitle("电量状态统计");
-            List<PieChartView.PieData> onlinePie = new ArrayList<>();
-            onlinePie.add(new PieChartView.PieData("在线", String.valueOf(online), 0f, Color.parseColor("#39E56D")));
-            onlinePie.add(new PieChartView.PieData("异常", String.valueOf(abnormal), 0f, Color.parseColor("#D00000")));
-            onlinePie.add(new PieChartView.PieData("离线", String.valueOf(offline), 0f, Color.parseColor("#CECECE")));
-            data.setOnlinePieData(onlinePie);
-            List<PieChartView.PieData> batteryPie = new ArrayList<>();
-            batteryPie.add(new PieChartView.PieData("正常电量", String.valueOf(batteryNormal), 0f, Color.parseColor("#39E56D")));
-            batteryPie.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), 0f, Color.parseColor("#FF9500")));
-            batteryPie.add(new PieChartView.PieData("离线", String.valueOf(offline), 0f, Color.parseColor("#CECECE")));
-            data.setBatteryPieData(batteryPie);
-            List<ChartItem> onlineItems = new ArrayList<>();
-            onlineItems.add(new ChartItem(Color.parseColor("#39E56D"), "在线", online + "台"));
-            onlineItems.add(new ChartItem(Color.parseColor("#D00000"), "异常", abnormal + "台"));
-            onlineItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", offline + "台"));
-            data.setOnlineChartItems(onlineItems);
-            List<ChartItem> batteryItems = new ArrayList<>();
-            batteryItems.add(new ChartItem(Color.parseColor("#39E56D"), "正常电量", batteryNormal + "台"));
-            batteryItems.add(new ChartItem(Color.parseColor("#FF9500"), "低电量", batteryLow + "台"));
-            batteryItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", offline + "台"));
-            data.setBatteryChartItems(batteryItems);
-            list.add(data);
             terminalChartAdapter.submitList(list);
         } catch (Exception e) {
             Log.e("TerminalCheckFragment", "初始化图表适配器真实数据失败: " + e.getMessage());
         }
     }
-    
-    /**
-     * 生成假数据
-     */
-    private List<TerminalChartData> generateMockChartData() {
-        List<TerminalChartData> dataList = new ArrayList<>();
-        
-        // 第一组数据 - 终端状态统计
-        TerminalChartData terminalStatusData = new TerminalChartData();
-        terminalStatusData.setOnlineTitle("终端状态统计");
-        terminalStatusData.setBatteryTitle("电量状态统计");
-        
-        // 在线状态饼图数据
-        List<PieChartView.PieData> onlinePieData = new ArrayList<>();
-        onlinePieData.add(new PieChartView.PieData("正常", "85", 68.0f, Color.parseColor("#39E56D")));
-        onlinePieData.add(new PieChartView.PieData("离线", "25", 20.0f, Color.parseColor("#CECECE")));
-        onlinePieData.add(new PieChartView.PieData("异常", "15", 12.0f, Color.parseColor("#D00000")));
-        terminalStatusData.setOnlinePieData(onlinePieData);
-        
-        // 电量状态饼图数据
-        List<PieChartView.PieData> batteryPieData = new ArrayList<>();
-        batteryPieData.add(new PieChartView.PieData("正常", "95", 76.0f, Color.parseColor("#39E56D")));
-        batteryPieData.add(new PieChartView.PieData("低电量", "20", 16.0f, Color.parseColor("#FF9500")));
-        batteryPieData.add(new PieChartView.PieData("离线", "10", 8.0f, Color.parseColor("#CECECE")));
-        terminalStatusData.setBatteryPieData(batteryPieData);
-        
-        // 在线状态图例数据
-        List<ChartItem> onlineChartItems = new ArrayList<>();
-        onlineChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "正常", "85台"));
-        onlineChartItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", "25台"));
-        onlineChartItems.add(new ChartItem(Color.parseColor("#D00000"), "异常", "15台"));
-        terminalStatusData.setOnlineChartItems(onlineChartItems);
-        
-        // 电量状态图例数据
-        List<ChartItem> batteryChartItems = new ArrayList<>();
-        batteryChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "正常", "95台"));
-        batteryChartItems.add(new ChartItem(Color.parseColor("#FF9500"), "低电量", "20台"));
-        batteryChartItems.add(new ChartItem(Color.parseColor("#CECECE"), "离线", "10台"));
-        terminalStatusData.setBatteryChartItems(batteryChartItems);
-        
-        dataList.add(terminalStatusData);
-        
-        // 第二组数据 - 区域分布统计
-        TerminalChartData regionData = new TerminalChartData();
-        regionData.setOnlineTitle("区域分布");
-        regionData.setBatteryTitle("使用频率");
-        
-        // 区域分布饼图数据
-        List<PieChartView.PieData> regionPieData = new ArrayList<>();
-        regionPieData.add(new PieChartView.PieData("A区", "45", 36.0f, Color.parseColor("#5D75F7")));
-        regionPieData.add(new PieChartView.PieData("B区", "35", 28.0f, Color.parseColor("#39E56D")));
-        regionPieData.add(new PieChartView.PieData("C区", "25", 20.0f, Color.parseColor("#FF9500")));
-        regionPieData.add(new PieChartView.PieData("D区", "20", 16.0f, Color.parseColor("#D00000")));
-        regionData.setOnlinePieData(regionPieData);
-        
-        // 使用频率饼图数据
-        List<PieChartView.PieData> usagePieData = new ArrayList<>();
-        usagePieData.add(new PieChartView.PieData("高频", "60", 48.0f, Color.parseColor("#D00000")));
-        usagePieData.add(new PieChartView.PieData("中频", "40", 32.0f, Color.parseColor("#FF9500")));
-        usagePieData.add(new PieChartView.PieData("低频", "25", 20.0f, Color.parseColor("#39E56D")));
-        regionData.setBatteryPieData(usagePieData);
-        
-        // 区域分布图例数据
-        List<ChartItem> regionChartItems = new ArrayList<>();
-        regionChartItems.add(new ChartItem(Color.parseColor("#5D75F7"), "A区", "45台"));
-        regionChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "B区", "35台"));
-        regionChartItems.add(new ChartItem(Color.parseColor("#FF9500"), "C区", "25台"));
-        regionChartItems.add(new ChartItem(Color.parseColor("#D00000"), "D区", "20台"));
-        regionData.setOnlineChartItems(regionChartItems);
-        
-        // 使用频率图例数据
-        List<ChartItem> usageChartItems = new ArrayList<>();
-        usageChartItems.add(new ChartItem(Color.parseColor("#D00000"), "高频", "60台"));
-        usageChartItems.add(new ChartItem(Color.parseColor("#FF9500"), "中频", "40台"));
-        usageChartItems.add(new ChartItem(Color.parseColor("#39E56D"), "低频", "25台"));
-        regionData.setBatteryChartItems(usageChartItems);
-        
-        dataList.add(regionData);
-        
-        return dataList;
-    }
-    
+
     /**
      * 开始终端清点
      */
