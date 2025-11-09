@@ -177,6 +177,7 @@
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_weight="1"
+                android:gravity="center_vertical"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content" >
 
@@ -189,9 +190,8 @@
 
                 <com.lora.cn.ui.view.BatteryView
                     android:id="@+id/batteryView"
-                    android:layout_width="40dp"
-                    android:layout_height="20dp"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_width="50dp"
+                    android:layout_height="30dp" />
 
                 <TextView
                     android:id="@+id/terminal_detail_battery"

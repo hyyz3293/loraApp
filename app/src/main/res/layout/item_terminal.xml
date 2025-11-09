@@ -24,16 +24,15 @@
             android:layout_height="48dp" >
 
             <ImageView
-                android:id="@+id/terminal_coll"
                 android:layout_centerInParent="true"
                 android:background="@mipmap/ic_cw"
                 android:layout_width="42dp"
                 android:layout_height="42dp" />
 
             <ImageView
+                android:id="@+id/terminal_coll"
                 android:layout_alignParentTop="true"
                 android:layout_alignParentRight="true"
-                android:background="@mipmap/ic_cool"
                 android:layout_width="18dp"
                 android:layout_height="18dp" />
 

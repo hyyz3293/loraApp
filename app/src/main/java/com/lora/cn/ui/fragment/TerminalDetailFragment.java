@@ -17,8 +17,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
+import com.lora.cn.ui.adapter.LogDetailInfoAdapter;
 import com.lora.cn.ui.adapter.LogInfoAdapter;
 import com.lora.cn.ui.model.LogInfo;
+import com.lora.cn.ui.view.BatteryView;
 import com.lora.cn.ui.view.SignalStrengthView;
 import com.lora.cn.utils.LoRaProtocolParser;
 import com.lora.cn.utils.DialogUtils;
@@ -51,11 +53,12 @@ public class TerminalDetailFragment extends Fragment {
     private TextView tvBattery;
     private RecyclerView rvLogs;
     private TextView tvNoLogs;
-    private LogInfoAdapter logAdapter;
+    private LogDetailInfoAdapter logAdapter;
 
     private TextView terminal_detail_type;
     private TextView terminal_detail_code;
     private SignalStrengthView signalView;
+    private BatteryView batteryView;
     private TextView terminal_detail_wifi;
     private TextView terminal_detail_battery;
     private TextView terminal_detail_id;
@@ -86,12 +89,13 @@ public class TerminalDetailFragment extends Fragment {
         rvLogs = v.findViewById(R.id.rv_logs);
         tvNoLogs = v.findViewById(R.id.tv_no_logs);
         rvLogs.setLayoutManager(new LinearLayoutManager(requireContext()));
-        logAdapter = new LogInfoAdapter();
+        logAdapter = new LogDetailInfoAdapter();
         rvLogs.setAdapter(logAdapter);
 
         terminal_detail_type = v.findViewById(R.id.terminal_detail_type);
         terminal_detail_code = v.findViewById(R.id.terminal_detail_code);
         signalView = v.findViewById(R.id.signalView);
+        batteryView = v.findViewById(R.id.batteryView);
         terminal_detail_wifi = v.findViewById(R.id.terminal_detail_wifi);
         terminal_detail_battery = v.findViewById(R.id.terminal_detail_battery);
         terminal_detail_id = v.findViewById(R.id.terminal_detail_id);
@@ -188,7 +192,8 @@ public class TerminalDetailFragment extends Fragment {
             com.lora.cn.ui.model.Terminal t = dao.getTerminalByDeviceId(deviceId);
             boolean isFavorite = t != null && t.isFavorite();
             // 详情页的收藏图标保留逻辑：仅在收藏时显示星标
-            ivFavorite.setVisibility(isFavorite ? View.VISIBLE : View.GONE);
+            ivFavorite.setImageResource(isFavorite ? R.mipmap.ic_star_yeollw : R.mipmap.ic_start);
+            //ivFavorite.setVisibility(isFavorite ? View.VISIBLE : View.GONE);
             ivFavorite.setTag(isFavorite);
         } catch (Exception ignored) {}
     }
@@ -296,9 +301,9 @@ public class TerminalDetailFragment extends Fragment {
             try {
                 int result = dbHelper.updateTerminalFavoriteStatus(deviceId, target);
                 if (result > 0) {
-                    //ivFavorite.setImageResource(target ? R.mipmap.ic_coll : R.mipmap.ic_cw);
+                    ivFavorite.setImageResource(target ? R.mipmap.ic_star_yeollw : R.mipmap.ic_start);
                     ivFavorite.setTag(target);
-                    ivFavorite.setVisibility(View.GONE);
+                    ///ivFavorite.setVisibility(View.GONE);
                     Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(requireContext(), "更新收藏状态失败", Toast.LENGTH_SHORT).show();

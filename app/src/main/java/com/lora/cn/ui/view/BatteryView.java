@@ -42,8 +42,8 @@ public class BatteryView extends View {
 
     private void init(Context context) {
         cornerRadius = dpToPx(context, 3);
-        terminalWidth = dpToPx(context, 4);
-        terminalHeight = dpToPx(context, 6);
+        terminalWidth = dpToPx(context, 2);
+        terminalHeight = dpToPx(context, 4);
         segmentSpacing = dpToPx(context, 2);
 
         // 外层电池油漆

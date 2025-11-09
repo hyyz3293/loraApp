@@ -1,6 +1,7 @@
 package com.lora.cn.ui.adapter;
 
 import android.content.Context;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -51,12 +52,15 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         tvBatteryTitle.setText(item.getBatteryText());
         
         // 设置收藏状态
+        terminalColl.setVisibility(View.GONE);
         if (item.isFavorite()) {
+            terminalColl.setVisibility(View.VISIBLE);
             terminalColl.setImageResource(R.mipmap.ic_coll); // 已收藏图标
-        } else {
-            terminalColl.setImageResource(R.mipmap.ic_cw); // 未收藏图标
         }
-        
+//        else {
+//            terminalColl.setImageResource(R.mipmap.ic_start); // 未收藏图标
+//        }
+//
         // 设置收藏点击事件
         terminalColl.setOnClickListener(v -> {
             if (onFavoriteClickListener != null) {
@@ -65,10 +69,12 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 item.setImportant(newFavoriteState);
                 
                 // 更新图标
+                terminalColl.setVisibility(View.GONE);
                 if (newFavoriteState) {
+                    terminalColl.setVisibility(View.VISIBLE);
                     terminalColl.setImageResource(R.mipmap.ic_coll);
                 } else {
-                    terminalColl.setImageResource(R.mipmap.ic_cw);
+                    terminalColl.setImageResource(R.mipmap.ic_start);
                 }
                 
                 onFavoriteClickListener.onFavoriteClick(item, newFavoriteState);
