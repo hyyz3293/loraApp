@@ -265,33 +265,97 @@ public class LoRaProtocolParser {
     }
 
     /**
-     * 构建8001下行帧
+     * 构建8001下行帧（A5/5A协议帧）
+     * 帧结构：A5 + DevEUI(8B) + 8001(2B) + seq(1B) + len(2B) + data(18B) + xor8(1B) + 5A
+     * data: TIME(7B BCD yyyy yy MM dd HH mm ss) + ack(1B) + query(1B) + dept(1B) + cart(1B) + register(1B) + clearMask(4B) + intervalMin(2B)
      */
-    public static byte[] buildDownlink8001(String devEui, byte seq, long nowUtc, int ackResult, 
-                                         int queryOp, int departmentId, int cartId, int registerResult, 
-                                         int clearMask, int reportIntervalMin) {
-        // 这里需要根据实际的8001协议规范实现帧构建逻辑
-        // 由于没有具体的协议文档，这里提供一个基本的框架实现
-        
-        LoRaFrame frame = new LoRaFrame();
-        frame.command = CMD_SET_TERMINAL_CONFIG; // 使用设置终端配置命令
-        
-        // 构建数据部分（根据实际协议规范）
-        StringBuilder dataBuilder = new StringBuilder();
-        dataBuilder.append(devEui).append(",");
-        dataBuilder.append(seq).append(",");
-        dataBuilder.append(nowUtc).append(",");
-        dataBuilder.append(ackResult).append(",");
-        dataBuilder.append(queryOp).append(",");
-        dataBuilder.append(departmentId).append(",");
-        dataBuilder.append(cartId).append(",");
-        dataBuilder.append(registerResult).append(",");
-        dataBuilder.append(clearMask).append(",");
-        dataBuilder.append(reportIntervalMin);
-        
-        frame.data = dataBuilder.toString().getBytes();
-        frame.length = (byte) (1 + frame.data.length);
-        
-        return buildFrame(frame);
+    public static byte[] buildDownlink8001(String devEuiHex, byte seq, long nowUtcMillis, int ackResult,
+                                           int queryOp, int departmentId, int cartId, int registerResult,
+                                           int clearMask, int reportIntervalMin) {
+        byte[] buf = new byte[1 + 8 + 2 + 1 + 2 + 18 + 1 + 1];
+        int idx = 0;
+        // 帧头
+        buf[idx++] = (byte) 0xA5;
+        // 设备ID(8B)
+        byte[] dev = hexStringToByteArray(devEuiHex);
+        if (dev.length != 8) throw new IllegalArgumentException("DevEUI必须为8字节HEX");
+        System.arraycopy(dev, 0, buf, idx, 8);
+        idx += 8;
+        // 功能码 0x8001
+        buf[idx++] = (byte) 0x80;
+        buf[idx++] = (byte) 0x01;
+        // 流水号
+        buf[idx++] = seq;
+        // 数据长度=0x0012 (18B)
+        buf[idx++] = 0x00;
+        buf[idx++] = 0x12;
+        // TIME 7B (使用UTC时间，按解析器的两位十进制字节编码)
+        java.util.Calendar cal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"));
+        cal.setTimeInMillis(nowUtcMillis);
+        int year = cal.get(java.util.Calendar.YEAR);
+        int yearHigh = year / 100;    // 例如 20
+        int yearLow = year % 100;     // 例如 25
+        buf[idx++] = (byte) yearHigh;
+        buf[idx++] = (byte) yearLow;
+        buf[idx++] = (byte) (cal.get(java.util.Calendar.MONTH) + 1);
+        buf[idx++] = (byte) cal.get(java.util.Calendar.DAY_OF_MONTH);
+        buf[idx++] = (byte) cal.get(java.util.Calendar.HOUR_OF_DAY);
+        buf[idx++] = (byte) cal.get(java.util.Calendar.MINUTE);
+        buf[idx++] = (byte) cal.get(java.util.Calendar.SECOND);
+        // 应答结果(1B)
+        buf[idx++] = (byte) (ackResult & 0xFF);
+        // 护士站查询操作指令(1B)
+        buf[idx++] = (byte) (queryOp & 0xFF);
+        // 科室编号(1B)
+        buf[idx++] = (byte) (departmentId & 0xFF);
+        // 台车编号(1B)
+        buf[idx++] = (byte) (cartId & 0xFF);
+        // 护士站应答设备主动加入/移走(1B)
+        buf[idx++] = (byte) (registerResult & 0xFF);
+        // 清除报警信息(4B) 掩码
+        buf[idx++] = (byte) ((clearMask >> 24) & 0xFF);
+        buf[idx++] = (byte) ((clearMask >> 16) & 0xFF);
+        buf[idx++] = (byte) ((clearMask >> 8) & 0xFF);
+        buf[idx++] = (byte) (clearMask & 0xFF);
+        // 定时上报间隔(2B, min)
+        buf[idx++] = (byte) ((reportIntervalMin >> 8) & 0xFF);
+        buf[idx++] = (byte) (reportIntervalMin & 0xFF);
+        // 校验: xor8（不含帧头与帧尾）
+        byte xor = 0x00;
+        for (int i = 1; i < 1 + 8 + 2 + 1 + 2 + 18; i++) {
+            xor ^= buf[i];
+        }
+        buf[idx++] = xor;
+        // 帧尾
+        buf[idx++] = (byte) 0x5A;
+        return buf;
+    }
+
+    /**
+     * 简化构建：仅传入设备ID，其他使用默认值
+     */
+    public static byte[] buildDownlink8001Simple(String devEuiHex) {
+        byte seq = (byte) (System.currentTimeMillis() & 0xFF);
+        long nowUtc = System.currentTimeMillis();
+        int ack = 0x01;            // 收到数据
+        int query = 0x00;          // 无操作
+        int dept = 0x00;           // 无定义
+        int cart = 0x00;           // 无定义
+        int register = 0x00;       // 无定义
+        int clear = 0x00000000;    // 不清除
+        int interval = 0x0168;     // 360分钟
+        return buildDownlink8001(devEuiHex, seq, nowUtc, ack, query, dept, cart, register, clear, interval);
+    }
+
+    /** HEX字符串转字节数组 */
+    private static byte[] hexStringToByteArray(String hex) {
+        hex = hex.replaceAll("\\s+", "");
+        int len = hex.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i + 1), 16));
+        }
+        return data;
     }
 }

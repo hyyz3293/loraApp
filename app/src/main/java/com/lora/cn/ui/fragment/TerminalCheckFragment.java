@@ -150,15 +150,21 @@ public class TerminalCheckFragment extends Fragment {
             int totalStatus = Math.max(1, online + offline + abnormal);
             int totalBattery = Math.max(1, batteryNormal + batteryLow + offline);
             List<PieChartView.PieData> onlineData = new ArrayList<>();
-            onlineData.add(new PieChartView.PieData("在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
-            onlineData.add(new PieChartView.PieData("异常", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
-            onlineData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalStatus, Color.parseColor("#CECECE")));
+            if (online > 0)
+                onlineData.add(new PieChartView.PieData("在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
+            if (abnormal > 0)
+                onlineData.add(new PieChartView.PieData("异常", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
+            if (offline > 0)
+                onlineData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalStatus, Color.parseColor("#CECECE")));
             pieChartOnline.setData(onlineData);
 
             List<PieChartView.PieData> batteryData = new ArrayList<>();
-            batteryData.add(new PieChartView.PieData("正常电量", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, Color.parseColor("#39E56D")));
-            batteryData.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, Color.parseColor("#FF9500")));
-            batteryData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalBattery, Color.parseColor("#CECECE")));
+            if (batteryNormal > 0)
+                batteryData.add(new PieChartView.PieData("正常电量", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, Color.parseColor("#39E56D")));
+            if (batteryLow > 0)
+                batteryData.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, Color.parseColor("#FF9500")));
+            if (offline > 0)
+                batteryData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalBattery, Color.parseColor("#CECECE")));
             pieChartBattery.setData(batteryData);
         } catch (Exception e) {
             Log.e("TerminalCheckFragment", "初始化饼图真实数据失败: " + e.getMessage());

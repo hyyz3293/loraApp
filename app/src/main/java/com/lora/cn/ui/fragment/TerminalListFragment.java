@@ -59,6 +59,18 @@ public class TerminalListFragment extends Fragment {
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
 
+    // 报警浮层与待处理入口
+    private View llAlertOverlay;
+    private TextView tvAlertText;
+    private TextView btnAlertMute;
+    private TextView btnAlertMinimize;
+    private TextView btnAlertHandle;
+    private View llAlertPending;
+    private TextView btnAlertPending;
+    private TextView tvAlertCount;
+    private int pendingAlertCount = 0;
+    private boolean alertMuted = false;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -144,6 +156,29 @@ public class TerminalListFragment extends Fragment {
         if (tvGroupCategory != null) {
             tvGroupCategory.setOnClickListener(v -> showGroupCategoryPicker());
         }
+        // 报警浮层按钮行为
+        if (btnAlertMute != null) {
+            btnAlertMute.setOnClickListener(v -> {
+                alertMuted = !alertMuted;
+                Toast.makeText(requireContext(), alertMuted ? "已静音" : "已取消静音", Toast.LENGTH_SHORT).show();
+            });
+        }
+        if (btnAlertMinimize != null) {
+            btnAlertMinimize.setOnClickListener(v -> {
+                pendingAlertCount++;
+                updatePendingBadge();
+                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+            });
+        }
+        if (btnAlertHandle != null) {
+            btnAlertHandle.setOnClickListener(v -> {
+                openAlertPendingList();
+                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+            });
+        }
+        if (btnAlertPending != null) {
+            btnAlertPending.setOnClickListener(v -> openAlertPendingList());
+        }
     }
 
     private void initTerminalStatus() {
@@ -151,8 +186,9 @@ public class TerminalListFragment extends Fragment {
         updateTerminalStatusFromDatabase();
 
         // 设置状态RecyclerView
-        LinearLayoutManager statusLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
-        rvTerminalStatus.setLayoutManager(statusLayoutManager);
+        //LinearLayoutManager statusLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 6);
+        rvTerminalStatus.setLayoutManager(gridLayoutManager);
 
         terminalStatusAdapter = new TerminalStatusAdapter();
         rvTerminalStatus.setAdapter(terminalStatusAdapter);
@@ -344,6 +380,58 @@ public class TerminalListFragment extends Fragment {
             }
         } catch (Exception e) {
             Log.e(TAG, "处理TerminalRefreshEvent失败", e);
+        }
+    }
+
+    // 接收上行事件，弹出右下角报警浮层
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onUplinkDataEvent(com.lora.cn.events.UplinkDataEvent event) {
+        if (event == null || alertMuted) return;
+        String hex = event.getHex();
+        com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+        if (frame == null) return;
+        boolean lost = (frame.evIllegalRemoval == 1);
+        boolean low = (frame.evLowBattery == 1);
+        boolean offline = false; // 离线依据业务状态维护，这里暂不处理
+        if (lost || low || offline) {
+            String msg = lost ? "设备丢失" : (low ? "低电量报警" : "设备离线");
+            showAlertOverlay(msg);
+            pendingAlertCount++;
+            updatePendingBadge();
+        }
+    }
+
+    private void showAlertOverlay(String text) {
+        if (tvAlertText != null) tvAlertText.setText(text);
+        if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.VISIBLE);
+        if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+    }
+
+    private void updatePendingBadge() {
+        if (tvAlertCount != null) tvAlertCount.setText(String.valueOf(pendingAlertCount));
+        if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+    }
+
+    private void openAlertPendingList() {
+        try {
+            androidx.fragment.app.Fragment fragment = new com.lora.cn.ui.fragment.AlertPendingListFragment();
+            if (getActivity() != null) {
+                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                android.view.View container = a.findViewById(R.id.fragment_device_list_container);
+                if (container != null) {
+                    container.setVisibility(View.VISIBLE);
+                    android.view.View rvTabs = a.findViewById(R.id.rv_menu_tabs);
+                    if (rvTabs != null) rvTabs.setVisibility(View.INVISIBLE);
+                    android.view.View vp = a.findViewById(R.id.view_pager);
+                    if (vp != null) vp.setVisibility(View.GONE);
+                }
+                a.getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_device_list_container, fragment)
+                        .addToBackStack("alert_pending")
+                        .commit();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "打开报警待处理列表失败", e);
         }
     }
 

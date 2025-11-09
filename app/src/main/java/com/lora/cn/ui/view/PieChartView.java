@@ -250,7 +250,12 @@ public class PieChartView extends View {
     }
     
     public void setData(List<PieData> data) {
-        this.pieDataList = data;
+        if (data == null) {
+            // 为空时，不传入数据以保持界面正常（仅显示背景圆）
+            this.pieDataList = new ArrayList<>();
+        } else {
+            this.pieDataList = data;
+        }
         invalidate();
     }
     

@@ -50,17 +50,11 @@ public class DownlinkMessageHelper {
                 return;
             }
             
-            // 生成流水号 (简单递增)
-            byte seq = (byte) (System.currentTimeMillis() & 0xFF);
-            
-            // 获取当前UTC时间
-            long currentTimeUtc = System.currentTimeMillis();
-            
-            // 构建下行8001帧
+            // 构建下行8001帧（内部处理时间与流水号）
             byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
                 deviceIdHex,
-                seq,
-                currentTimeUtc,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
                 ackResult,
                 queryOp,
                 departmentId,
@@ -94,6 +88,30 @@ public class DownlinkMessageHelper {
                       
         } catch (Exception e) {
             Log.e(TAG, "发送下行8001报文失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 简化入口：仅传入设备ID与是否确认，功能ID固定8001
+     */
+    public void sendDownlink(String deviceIdHex, String functionIdHex, boolean confirmed) {
+        if (functionIdHex == null || !functionIdHex.equalsIgnoreCase("8001")) {
+            Log.e(TAG, "暂不支持功能ID=" + functionIdHex + " 的下行构建");
+            return;
+        }
+        try {
+            byte[] frame = LoRaProtocolParser.buildDownlink8001Simple(deviceIdHex);
+            String payloadHex = LoRaProtocolParser.bytesToHex(frame);
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                confirmed
+            );
+            Log.i(TAG, "已下发8001到设备: devEUI=" + deviceIdHex + ", payload=" + payloadHex);
+        } catch (Exception e) {
+            Log.e(TAG, "下发8001失败: " + e.getMessage(), e);
         }
     }
     

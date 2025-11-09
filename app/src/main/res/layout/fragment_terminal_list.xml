@@ -145,9 +145,107 @@
                     android:layout_width="wrap_content"
                     android:layout_height="32dp" />
 
-            </RelativeLayout>
+</RelativeLayout>
 
+    <!-- 右下角报警浮层 -->
+    <RelativeLayout
+        android:id="@+id/ll_alert_overlay"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:padding="10dp"
+            android:background="@drawable/bg_white_12"
+            android:layout_alignParentRight="true"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="20dp"
+            android:layout_alignParentBottom="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/tv_alert_text"
+                android:text="设备丢失"
+                android:textColor="@color/black"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="12dp"/>
+
+            <TextView
+                android:id="@+id/btn_alert_mute"
+                android:text="静音"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"/>
+
+            <TextView
+                android:id="@+id/btn_alert_minimize"
+                android:text="最小化"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"/>
+
+            <TextView
+                android:id="@+id/btn_alert_handle"
+                android:text="立即处理"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
         </LinearLayout>
+    </RelativeLayout>
+
+    <!-- 待处理入口（浮标） -->
+    <RelativeLayout
+        android:id="@+id/ll_alert_pending"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <FrameLayout
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_white_12"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/btn_alert_pending"
+                android:text="待处理"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/tv_alert_count"
+                android:layout_gravity="end|top"
+                android:background="#D00000"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:layout_marginLeft="-8dp"
+                android:layout_marginTop="-8dp"
+                android:text="0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </FrameLayout>
+    </RelativeLayout>
+
+</LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/terminal_recycle"
@@ -166,8 +264,6 @@
         android:layout_width="match_parent"
         android:gravity="center"
         android:layout_height="60dp" >
-
-
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_terminal_status"

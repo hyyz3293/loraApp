@@ -17,6 +17,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.blankj.utilcode.util.SPUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
+import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.events.UplinkDataEvent;
 import com.lora.cn.ui.model.Terminal;
@@ -32,6 +33,8 @@ import java.util.List;
 import com.lora.cn.network.MqttPacketsClient;
 import com.lora.cn.network.GatewayPacketsClient;
 import com.lora.cn.database.DatabaseHelper;
+import com.lora.cn.utils.LoRaFrameParser;
+
 import org.greenrobot.eventbus.EventBus;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -168,6 +171,16 @@ public class MainActivity extends AppCompatActivity {
         // 启动自动返回首页的周期检查
         autoReturnHandler.removeCallbacks(autoReturnRunnable);
         autoReturnHandler.postDelayed(autoReturnRunnable, 1000);
+
+
+        LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("A528E2000100012509000102001820250926080908000000040000007E0169636A0000000000C55A");
+
+        Log.d(TAG, " ================ 1111: " + new Gson().toJson(frameData));
+
+
+        LoRaFrameParser.ParsedFrame frameData2 = LoRaFrameParser.parseFrame("a5d896e0ff000002400001080018202509260809350000001A5000005A0e20636a00000100002A5a");
+
+        Log.d(TAG, " ================ 2222: " + new Gson().toJson(frameData2));
     } 
 
     private void startTestTimer() {
@@ -456,6 +469,11 @@ public class MainActivity extends AppCompatActivity {
                                     UplinkDataEvent event = new UplinkDataEvent(time, hex);
                                     EventBus.getDefault().post(event);
                                     Log.d(TAG, "上行数据准备广播: time=" + time + ", hex=" + hex);
+
+                                    LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
+
+                                    Log.d(TAG, ": " + new Gson().toJson(frameData));
+
                                 }
                                 
                                 Log.i(TAG,

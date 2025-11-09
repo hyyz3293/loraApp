@@ -36,6 +36,27 @@ public class LoRaFrameParser {
         public int cartNumber;           // 台车编号 (1字节)
         public int deviceCount;          // 放置的设备数量 (1字节)
         public int rackNumber;           // 设备所属台车台架编号 (1字节)
+
+        // 设备事件 bit 展开
+        public int evPowerLockOpen;      // Bit0: 电源开关锁-开事件 (0/1)
+        public int evPowerLockClose;     // Bit1: 电源开关锁-关事件 (0/1)
+        public int evPeriodicReport;     // Bit2: 定期主动上报 (0/1)
+        public int evManualTake;         // Bit3: 设备主动取走信息上报 (0/1)
+        public int evManualPut;          // Bit4: 设备主动放入信息上报 (0/1)
+        public int evIllegalRemoval;     // Bit5: 设备非法移走报警信息上报 (0/1)
+        public int evLowBattery;         // Bit6: 电池电量低于20%信息上报 (0/1)
+        public int evNurseQuery;         // Bit7: 护士站查询操作指令事件 (0/1)
+
+        // 设备状态 bit 展开
+        public int stPowerLockOn;        // Bit0: 启用电源开关锁状态 1:开 0:关
+        public int stLayer1NotInPlace;   // Bit1: 第1层开关状态 1:不在位 0:在位
+        public int stLayer2NotInPlace;   // Bit2: 第2层开关状态 1:不在位 0:在位
+        public int stLayer3NotInPlace;   // Bit3: 第3层开关状态 1:不在位 0:在位
+        public int stLayer4NotInPlace;   // Bit4: 第4层开关状态 1:不在位 0:在位
+        public int stLayer5NotInPlace;   // Bit5: 第5层开关状态 1:不在位 0:在位
+        // 枚举集合（事件/状态）
+        public java.util.EnumSet<DeviceEventFlag> eventFlags = java.util.EnumSet.noneOf(DeviceEventFlag.class);
+        public java.util.EnumSet<DeviceStatusFlag> statusFlags = java.util.EnumSet.noneOf(DeviceStatusFlag.class);
         
         @Override
         public String toString() {
@@ -47,6 +68,8 @@ public class LoRaFrameParser {
                     ", batteryLevel=" + batteryLevel +
                     ", cartNumber=" + cartNumber +
                     ", departmentNumber=" + departmentNumber +
+                    ", eventFlags=" + eventFlags +
+                    ", statusFlags=" + statusFlags +
                     '}';
         }
     }
@@ -139,10 +162,40 @@ public class LoRaFrameParser {
             // 2. 设备事件 (4字节)
             frame.deviceEvent = bytesToLong(frame.dataContent, offset, 4);
             offset += 4;
+
+            // 展开事件位
+            frame.evPowerLockOpen  = ((frame.deviceEvent & 0x01L) != 0) ? 1 : 0;
+            frame.evPowerLockClose = ((frame.deviceEvent & 0x02L) != 0) ? 1 : 0;
+            frame.evPeriodicReport = ((frame.deviceEvent & 0x04L) != 0) ? 1 : 0;
+            frame.evManualTake     = ((frame.deviceEvent & 0x08L) != 0) ? 1 : 0;
+            frame.evManualPut      = ((frame.deviceEvent & 0x10L) != 0) ? 1 : 0;
+            frame.evIllegalRemoval = ((frame.deviceEvent & 0x20L) != 0) ? 1 : 0;
+            frame.evLowBattery     = ((frame.deviceEvent & 0x40L) != 0) ? 1 : 0;
+            frame.evNurseQuery     = ((frame.deviceEvent & 0x80L) != 0) ? 1 : 0;
+            // 填充事件枚举集合
+            frame.eventFlags = DeviceEventFlag.fromMask(frame.deviceEvent);
+            // 填充事件枚举集合
+            try {
+                frame.eventFlags = DeviceEventFlag.fromMask(frame.deviceEvent);
+            } catch (Throwable ignored) {}
             
             // 3. 设备状态 (4字节)
             frame.deviceStatus = bytesToLong(frame.dataContent, offset, 4);
             offset += 4;
+
+            // 展开状态位
+            frame.stPowerLockOn       = ((frame.deviceStatus & 0x01L) != 0) ? 1 : 0;
+            frame.stLayer1NotInPlace  = ((frame.deviceStatus & 0x02L) != 0) ? 1 : 0;
+            frame.stLayer2NotInPlace  = ((frame.deviceStatus & 0x04L) != 0) ? 1 : 0;
+            frame.stLayer3NotInPlace  = ((frame.deviceStatus & 0x08L) != 0) ? 1 : 0;
+            frame.stLayer4NotInPlace  = ((frame.deviceStatus & 0x10L) != 0) ? 1 : 0;
+            frame.stLayer5NotInPlace  = ((frame.deviceStatus & 0x20L) != 0) ? 1 : 0;
+            // 填充状态枚举集合
+            frame.statusFlags = DeviceStatusFlag.fromMask(frame.deviceStatus);
+            // 填充状态枚举集合
+            try {
+                frame.statusFlags = DeviceStatusFlag.fromMask(frame.deviceStatus);
+            } catch (Throwable ignored) {}
             
             // 4. 电池电压 (2字节)
             frame.batteryVoltage = ((frame.dataContent[offset] & 0xFF) << 8) | (frame.dataContent[offset + 1] & 0xFF);
@@ -175,6 +228,52 @@ public class LoRaFrameParser {
             
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    /** 设备事件枚举（bit掩码） */
+    public enum DeviceEventFlag {
+        POWER_LOCK_OPEN(0x01L, "电源开锁-开"),
+        POWER_LOCK_CLOSE(0x02L, "电源开锁-关"),
+        PERIODIC_REPORT(0x04L, "定期主动上报"),
+        MANUAL_TAKE(0x08L, "主动取走"),
+        MANUAL_PUT(0x10L, "主动放入"),
+        ILLEGAL_REMOVAL(0x20L, "非法移走报警"),
+        LOW_BATTERY(0x40L, "低电量<20%"),
+        NURSE_QUERY(0x80L, "护士站查询");
+
+        public final long mask;
+        private final String label;
+        DeviceEventFlag(long mask, String label) { this.mask = mask; this.label = label; }
+        public String label() { return label; }
+        public static java.util.EnumSet<DeviceEventFlag> fromMask(long bits) {
+            java.util.EnumSet<DeviceEventFlag> set = java.util.EnumSet.noneOf(DeviceEventFlag.class);
+            for (DeviceEventFlag f : values()) {
+                if ((bits & f.mask) != 0) set.add(f);
+            }
+            return set;
+        }
+    }
+
+    /** 设备状态枚举（bit掩码） */
+    public enum DeviceStatusFlag {
+        POWER_LOCK_ON(0x01L, "电源锁:开"),
+        LAYER1_NOT_IN_PLACE(0x02L, "层1:不在位"),
+        LAYER2_NOT_IN_PLACE(0x04L, "层2:不在位"),
+        LAYER3_NOT_IN_PLACE(0x08L, "层3:不在位"),
+        LAYER4_NOT_IN_PLACE(0x10L, "层4:不在位"),
+        LAYER5_NOT_IN_PLACE(0x20L, "层5:不在位");
+
+        public final long mask;
+        private final String label;
+        DeviceStatusFlag(long mask, String label) { this.mask = mask; this.label = label; }
+        public String label() { return label; }
+        public static java.util.EnumSet<DeviceStatusFlag> fromMask(long bits) {
+            java.util.EnumSet<DeviceStatusFlag> set = java.util.EnumSet.noneOf(DeviceStatusFlag.class);
+            for (DeviceStatusFlag f : values()) {
+                if ((bits & f.mask) != 0) set.add(f);
+            }
+            return set;
         }
     }
     
