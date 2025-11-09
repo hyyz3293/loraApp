@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@drawable/bg_white_12"
-    android:layout_marginLeft="20dp"
-    android:layout_marginRight="20dp"
-    android:layout_marginBottom="20dp"
-    android:paddingBottom="23dp"
-    android:paddingLeft="34dp"
-    android:paddingRight="34dp"
-    android:orientation="vertical">
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_white_12"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="20dp"
+        android:paddingBottom="23dp"
+        android:paddingLeft="34dp"
+        android:paddingRight="34dp"
+        android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -115,7 +120,7 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="wrap_content" >
 
         <!-- 两个饼状图的容器 -->
         <LinearLayout
@@ -194,9 +199,12 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/terminal_check_recycle"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
 
     </LinearLayout>
 
+    </LinearLayout>
 
-</LinearLayout>
+</androidx.core.widget.NestedScrollView>

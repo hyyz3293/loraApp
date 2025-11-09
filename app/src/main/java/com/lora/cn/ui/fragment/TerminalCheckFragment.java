@@ -96,6 +96,7 @@ public class TerminalCheckFragment extends Fragment {
         terminalChartAdapter = new TerminalChartAdapter();
         terminalCheckRecycle.setLayoutManager(new LinearLayoutManager(getContext()));
         terminalCheckRecycle.setAdapter(terminalChartAdapter);
+        try { terminalCheckRecycle.setNestedScrollingEnabled(false); } catch (Throwable ignored) {}
     }
     
     private void initData() {
