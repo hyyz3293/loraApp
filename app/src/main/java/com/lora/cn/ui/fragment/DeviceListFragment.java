@@ -33,6 +33,7 @@ import com.lora.cn.utils.LoRaFrameParser;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import com.lora.cn.ui.model.LogInfo;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -157,8 +158,49 @@ public class DeviceListFragment extends Fragment {
 
     private void loadTerminals() {
         try {
-            // 获取所有终端数据
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            // 从本地日志库中提取最近上行的设备，作为“附近终端”来源
+            List<LogInfo> logs = dbHelper.getAllLogs();
             allTerminals = new ArrayList<>();
+            // 为避免重复，重置本次会话的已发现设备集合
+            discoveredDeviceIds = new java.util.HashSet<>();
+
+            if (logs != null) {
+                for (LogInfo li : logs) {
+                    String action = li.getAction();
+                    if (action == null) continue;
+                    if (!action.startsWith("接收上行数据:")) continue;
+                    int idx = action.indexOf(":");
+                    if (idx == -1 || idx + 1 >= action.length()) continue;
+                    String hex = action.substring(idx + 1).trim();
+                    LoRaFrameParser.ParsedFrame pf = LoRaFrameParser.parseFrame(hex);
+                    if (pf == null || TextUtils.isEmpty(pf.deviceId)) continue;
+
+                    String deviceId = pf.deviceId;
+                    // 只展示“未添加过”的设备；添加过的跳过
+                    if (dbHelper.isTerminalExists(deviceId)) continue;
+                    // 同一设备只展示一次
+                    if (discoveredDeviceIds.contains(deviceId)) continue;
+                    discoveredDeviceIds.add(deviceId);
+
+                    com.lora.cn.database.entity.Terminal discoveredTerminal = new com.lora.cn.database.entity.Terminal();
+                    discoveredTerminal.setDeviceId(deviceId);
+                    discoveredTerminal.setDeviceName("终端ID：" + deviceId);
+                    // 只要不是“离线/异常”，显示为“在线”；离线无法由单条上行判断，这里仅按异常位判断
+                    boolean isAbnormal = (pf.evIllegalRemoval == 1);
+                    discoveredTerminal.setStatus(isAbnormal ? "异常" : "在线");
+                    // 同步展示关键指标（电量、电压、RSSI）
+                    discoveredTerminal.setBatteryLevel(pf.batteryLevel);
+                    discoveredTerminal.setBatteryVoltage(pf.batteryVoltage);
+                    discoveredTerminal.setRssi(pf.rssi);
+                    discoveredTerminal.parsedFrame = pf;
+
+                    allTerminals.add(discoveredTerminal);
+                }
+            }
+
+            deviceListAdapter.submitList(allTerminals);
+            deviceListAdapter.notifyDataSetChanged();
             updateUI();
         } catch (Exception e) {
             e.printStackTrace();
@@ -244,8 +286,14 @@ public class DeviceListFragment extends Fragment {
                         // 创建一个临时的Terminal对象用于显示
                         Terminal discoveredTerminal = new Terminal();
                         discoveredTerminal.setDeviceId(deviceId);
-                        discoveredTerminal.setDeviceName("终端ID：" + deviceId); // 显示后4位
-                        discoveredTerminal.setStatus("未添加");
+                        discoveredTerminal.setDeviceName("终端ID：" + deviceId);
+                        // 上行事件解析后，按“不是离线/异常即在线”的规则设置状态
+                        boolean isAbnormal = (frameData.evIllegalRemoval == 1);
+                        discoveredTerminal.setStatus(isAbnormal ? "异常" : "在线");
+                        // 同步展示关键指标（电量、电压、RSSI）
+                        discoveredTerminal.setBatteryLevel(frameData.batteryLevel);
+                        discoveredTerminal.setBatteryVoltage(frameData.batteryVoltage);
+                        discoveredTerminal.setRssi(frameData.rssi);
                         discoveredTerminal.parsedFrame = frameData;
                         // 添加到列表并更新UI
                         allTerminals.add(discoveredTerminal); // 添加到列表顶部

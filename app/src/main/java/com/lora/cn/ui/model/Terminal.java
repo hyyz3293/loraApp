@@ -26,6 +26,8 @@ public class Terminal {
     private String deviceCode; // 新增设备CODE
     private boolean isFavorite;
     private int batteryLevel; // 电量百分比
+    private int batteryVoltage; // 电池电压(单位0.01V)
+    private int rssi; // 原始RSSI (0~138 对应 -138~0dBm)
 
     public Terminal() {
     }
@@ -227,5 +229,21 @@ public class Terminal {
 
     public void setBatteryLevel(int batteryLevel) {
         this.batteryLevel = batteryLevel;
+    }
+
+    public int getBatteryVoltage() {
+        return batteryVoltage;
+    }
+
+    public void setBatteryVoltage(int batteryVoltage) {
+        this.batteryVoltage = batteryVoltage;
+    }
+
+    public int getRssi() {
+        return rssi;
+    }
+
+    public void setRssi(int rssi) {
+        this.rssi = rssi;
     }
 }

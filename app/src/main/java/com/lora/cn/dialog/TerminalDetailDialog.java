@@ -421,6 +421,19 @@ public class TerminalDetailDialog extends Dialog {
                 // 发布到通用主题，devEUI放在消息体中
                 mqttClient.publishDownlinkSimple("/milesight/downlink", devEui, hex, 85, true);
                 tvRefreshStatus.setText("已下发8001到设备：" + devEui);
+                // 记录下行日志（仅下行/上行允许写入）
+                try {
+                    com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                    logInfo.setTerminalId(info.deviceId);
+                    logInfo.setTerminalName(info.deviceName);
+                    logInfo.setDeviceId(info.deviceId);
+                    logInfo.setStatus("下行处理");
+                    logInfo.setOperator("系统");
+                    logInfo.setOperationTime(formatTime(System.currentTimeMillis()));
+                    logInfo.setCreateTime(formatTime(System.currentTimeMillis()));
+                    logInfo.setAction("发送下行数据: " + hex);
+                    databaseHelper.addLog(logInfo);
+                } catch (Exception ignored) {}
             } catch (Exception e) {
                 tvRefreshStatus.setText("下发失败，请先点击刷新建立MQTT连接");
             }

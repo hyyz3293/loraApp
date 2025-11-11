@@ -46,8 +46,13 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         // 设置完成时间字段 - 使用操作时间
         setTextOrPlaceholder(logCompleteTime, item.getOperationTime());
 
-        // 设置操作字段 - 使用动作
-        setTextOrPlaceholder(logOperation, item.getAction());
+        // 只有下行数据展示操作，其它情况不展示
+        String act = item.getAction();
+        if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
+            setTextOrPlaceholder(logOperation, act);
+        } else {
+            setTextOrPlaceholder(logOperation, "");
+        }
     }
 
     @NonNull

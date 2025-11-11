@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 14;
+    private static final int DATABASE_VERSION = 15;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -122,6 +122,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_STATUS = "status";
     public static final String COLUMN_TERMINAL_SIGNAL_STRENGTH = "signal_strength";
     public static final String COLUMN_TERMINAL_BATTERY_LEVEL = "battery_level"; // 电量字段
+    public static final String COLUMN_TERMINAL_BATTERY_VOLTAGE = "battery_voltage"; // 电池电压字段 (单位0.01V)
+    public static final String COLUMN_TERMINAL_RSSI = "rssi"; // 原始RSSI字段 (0~138 对应 -138~0dBm)
     public static final String COLUMN_TERMINAL_DEPARTMENT = "department";
     public static final String COLUMN_TERMINAL_LOCATION = "location";
     public static final String COLUMN_TERMINAL_DEPARTMENT_ID = "department_id"; // 科室分类ID
@@ -257,6 +259,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_TERMINAL_STATUS + " TEXT DEFAULT '在线', " +
         COLUMN_TERMINAL_SIGNAL_STRENGTH + " INTEGER DEFAULT 0, " +
         COLUMN_TERMINAL_BATTERY_LEVEL + " INTEGER DEFAULT 100, " +
+        COLUMN_TERMINAL_BATTERY_VOLTAGE + " INTEGER DEFAULT 0, " +
+        COLUMN_TERMINAL_RSSI + " INTEGER DEFAULT 0, " +
         COLUMN_TERMINAL_DEPARTMENT + " TEXT, " +
         COLUMN_TERMINAL_LOCATION + " TEXT, " +
         COLUMN_TERMINAL_DEPARTMENT_ID + " INTEGER, " +
@@ -459,6 +463,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEVICE_CODE + " TEXT");
             } catch (Exception ignored) {}
         }
+        // 版本14 -> 15：为终端添加电池电压与RSSI原始值列
+        if (oldVersion < 15) {
+            try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_BATTERY_VOLTAGE + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
+            try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_RSSI + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
+        }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
@@ -617,6 +626,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } else {
             Log.e("DatabaseHelper", "默认管理员用户创建失败");
         }
+
     }
     
     /**
@@ -934,6 +944,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_TERMINAL_NAME, terminal.getTerminalName());
         values.put(COLUMN_TERMINAL_STATUS, terminal.getStatus());
         values.put(COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
+        values.put(COLUMN_TERMINAL_BATTERY_LEVEL, terminal.getBatteryLevel());
+        values.put(COLUMN_TERMINAL_BATTERY_VOLTAGE, terminal.getBatteryVoltage());
+        values.put(COLUMN_TERMINAL_RSSI, terminal.getRssi());
         values.put(COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
         values.put(COLUMN_TERMINAL_LOCATION, terminal.getLocation());
         
@@ -975,6 +988,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 
                 terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
                 terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
+
+                // 读取电池电压与原始RSSI（若存在列）
+                int batteryVoltageIndex = cursor.getColumnIndex(COLUMN_TERMINAL_BATTERY_VOLTAGE);
+                if (batteryVoltageIndex != -1) {
+                    terminal.setBatteryVoltage(cursor.getInt(batteryVoltageIndex));
+                }
+                int rssiIndex = cursor.getColumnIndex(COLUMN_TERMINAL_RSSI);
+                if (rssiIndex != -1) {
+                    terminal.setRssi(cursor.getInt(rssiIndex));
+                }
                 
                 // 设置分类ID
                 terminal.setDepartmentId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT_ID)));
@@ -1001,6 +1024,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // 日志操作方法
     public long addLog(String terminalId, String terminalName, String deviceId, String status, String operator, String operationTime, String action) {
+        // 仅记录上行/下行日志，其它操作不入库
+        if (!isLoggableAction(action)) {
+            return -1;
+        }
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_LOG_TERMINAL_ID, terminalId);
@@ -1010,7 +1037,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_OPERATOR, operator);
         values.put(COLUMN_LOG_OPERATION_TIME, operationTime);
         values.put(COLUMN_LOG_ACTION, action);
-        
         long result = db.insert(TABLE_LOGS, null, values);
         db.close();
         return result;
@@ -1018,6 +1044,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     
     // 重载的日志操作方法，接受LogInfo对象
     public long addLog(com.lora.cn.ui.model.LogInfo logInfo) {
+        // 仅记录上行/下行日志，其它操作不入库
+        if (!isLoggableAction(logInfo.getAction())) {
+            return -1;
+        }
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COLUMN_LOG_TERMINAL_ID, logInfo.getTerminalId());
@@ -1027,10 +1057,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator());
         values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime());
         values.put(COLUMN_LOG_ACTION, logInfo.getAction());
-        
         long result = db.insert(TABLE_LOGS, null, values);
         db.close();
         return result;
+    }
+
+    // 动作字符串过滤：仅允许上行/下行
+    private boolean isLoggableAction(String action) {
+        if (action == null) return false;
+        String a = action.trim();
+        return a.startsWith("接收上行数据") || a.startsWith("发送下行数据") || a.contains("功能码=");
     }
 
     /**
@@ -1047,9 +1083,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
         String deviceId = frame != null ? frame.deviceId : null;
         String terminalName = "上行数据";
-        String status = "数据接收";
-        String operator = "系统";
-        String operationTime = time;
+        String status = "";
+        String operator = "";
+        String operationTime = "";
         String action = "接收上行数据";
 
         // 尝试根据帧中的时间替换操作时间
@@ -1073,17 +1109,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
         } catch (Exception ignored) {}
 
-        // 根据设备事件bit映射状态
+        // 根据设备事件/状态位映射日志状态（来源：上行设备事件/状态）
         if (frame != null) {
-            long ev = frame.deviceEvent;
-            if ((ev & 0x40) != 0) status = "低电量告警";
-            else if ((ev & 0x20) != 0) status = "设备丢失";
-            else if ((ev & 0x01) != 0) status = "开锁";
-            else if ((ev & 0x02) != 0) status = "上锁";
-            else if ((ev & 0x08) != 0) status = "设备取走";
-            else if ((ev & 0x10) != 0) status = "设备放入";
-            else if ((ev & 0x04) != 0) status = "定期上报";
-            else if ((ev & 0x80) != 0) status = "护士站查询";
+            // 事件优先级：低电量 > 丢失 > 开锁/上锁 > 打开/关闭 > 取走/放入 > 定期上报 > 护士站查询
+            if (frame.evLowBattery == 1) {
+                status = "低电量报警";
+            } else if (frame.evIllegalRemoval == 1) {
+                status = "设备丢失";
+            } else if (frame.evPowerLockOpen == 1) {
+                status = "开锁";
+            } else if (frame.evPowerLockClose == 1) {
+                status = "上锁";
+            } else if (frame.evManualTake == 1) {
+                status = "设备打开";
+            } else if (frame.evManualPut == 1) {
+                status = "设备关闭";
+            } else if (frame.evPeriodicReport == 1) {
+                status = "定期上报";
+            } else if (frame.evNurseQuery == 1) {
+                status = "护士站查询";
+            }
         }
 
         // 构造动作描述
@@ -1108,8 +1153,48 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_ACTION, action);
 
         long result = db.insert(TABLE_LOGS, null, values);
+
+        // 同步更新终端设备的电量、信号强度，并记扩展信息
+        try {
+            if (frame != null && deviceId != null) {
+                updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
+            }
+        } catch (Exception e) {
+            android.util.Log.e("DatabaseHelper", "更新终端电量/信号失败", e);
+        }
+
         db.close();
         return result;
+    }
+
+    /**
+     * 根据设备ID更新终端的电量与信号强度，并在扩展字段写入电压与RSSI
+     */
+    public boolean updateTerminalMetricsByDeviceId(String deviceId, int batteryLevel, int rssi, int batteryVoltage) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_TERMINAL_BATTERY_LEVEL, batteryLevel);
+            values.put(COLUMN_TERMINAL_SIGNAL_STRENGTH, mapRssiToBars(rssi));
+            values.put(COLUMN_TERMINAL_BATTERY_VOLTAGE, batteryVoltage);
+            values.put(COLUMN_TERMINAL_RSSI, rssi);
+            int rows = db.update(TABLE_TERMINALS, values, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{deviceId});
+            return rows > 0;
+        } finally {
+            db.close();
+        }
+    }
+
+    /**
+     * 将RSSI(0~138，代表-138~0dBm)映射为0~4根信号条
+     */
+    private int mapRssiToBars(int rssiRaw) {
+        int dbm = -Math.max(0, Math.min(138, rssiRaw));
+        if (dbm >= -70) return 4;       // 强
+        if (dbm >= -85) return 3;       // 较强
+        if (dbm >= -100) return 2;      // 一般
+        if (dbm >= -120) return 1;      // 较弱
+        return 0;                        // 很弱/无信号
     }
 
     public java.util.List<com.lora.cn.ui.model.LogInfo> getAllLogs() {

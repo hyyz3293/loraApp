@@ -19,13 +19,13 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="80dp"
+            android:layout_height="60dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:padding="12dp" >
 
             <TextView
-                android:textSize="16dp"
+                android:textSize="14dp"
                 android:textColor="@color/black"
                 android:text="日志类型："
                 android:textStyle="bold"
@@ -34,7 +34,7 @@
 
             <LinearLayout
                 android:background="@drawable/spinner_background"
-                android:layout_width="152dp"
+                android:layout_width="122dp"
                 android:layout_height="48dp" >
 
                 <Spinner
@@ -51,7 +51,7 @@
 
             <TextView
                 android:layout_marginLeft="15dp"
-                android:textSize="16dp"
+                android:textSize="14dp"
                 android:textColor="@color/black"
                 android:text="报警处理："
                 android:textStyle="bold"
@@ -60,7 +60,7 @@
 
             <LinearLayout
                 android:background="@drawable/spinner_background"
-                android:layout_width="152dp"
+                android:layout_width="122dp"
                 android:layout_height="48dp" >
 
                 <Spinner
@@ -77,7 +77,7 @@
 
             <TextView
                 android:layout_marginLeft="15dp"
-                android:textSize="16dp"
+                android:textSize="14dp"
                 android:textColor="@color/black"
                 android:text="日志时间："
                 android:textStyle="bold"
@@ -88,10 +88,10 @@
             <RelativeLayout
                 android:id="@+id/time_start_time"
                 android:background="@drawable/time_background"
-                android:layout_width="152dp"
+                android:layout_width="122dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
-                android:layout_height="40dp" >
+                android:layout_height="30dp" >
 
                 <TextView
                     android:id="@+id/time_start_time_tv"
@@ -121,10 +121,10 @@
             <RelativeLayout
                 android:id="@+id/time_end_time"
                 android:background="@drawable/time_background"
-                android:layout_width="152dp"
+                android:layout_width="122dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
-                android:layout_height="40dp" >
+                android:layout_height="30dp" >
 
                 <TextView
                     android:id="@+id/time_end_time_tv"
