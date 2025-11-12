@@ -36,6 +36,7 @@ import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.utils.LoRaFrameParser;
 
 import org.greenrobot.eventbus.EventBus;
+import com.lora.cn.event.TerminalRefreshEvent;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -173,14 +174,12 @@ public class MainActivity extends AppCompatActivity {
         autoReturnHandler.postDelayed(autoReturnRunnable, 1000);
 
 
-        LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("A528E2000100012509000102001820250926080908000000040000007E0169636A0000000000C55A");
+        LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("a528e2000100012509000119001820250926083856000000080000007e0171635e0000000000915a");
 
         Log.d(TAG, " ================ 1111: " + new Gson().toJson(frameData));
 
 
-        LoRaFrameParser.ParsedFrame frameData2 = LoRaFrameParser.parseFrame("a5d896e0ff000002400001080018202509260809350000001A5000005A0e20636a00000100002A5a");
 
-        Log.d(TAG, " ================ 2222: " + new Gson().toJson(frameData2));
     } 
 
     private void startTestTimer() {
@@ -472,7 +471,18 @@ public class MainActivity extends AppCompatActivity {
 
                                     LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
 
-                                    Log.d(TAG, ": " + new Gson().toJson(frameData));
+                                    Log.d(TAG, "==>>>: " + new Gson().toJson(frameData));
+
+                                    // 检测异常取走（非法移走）并更新终端状态及刷新列表
+                                    try {
+                                        if (frameData != null && frameData.deviceId != null && frameData.evIllegalRemoval == 1) {
+                                            int rows = databaseHelper.updateTerminalStatusByDeviceId(frameData.deviceId, "异常");
+                                            Log.d(TAG, "异常取走，更新终端状态结果: " + rows + ", deviceId=" + frameData.deviceId);
+                                            EventBus.getDefault().post(new TerminalRefreshEvent("异常取走: " + frameData.deviceId));
+                                        }
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "处理异常取走状态更新失败: " + e.getMessage());
+                                    }
 
                                 }
                                 

@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,8 +23,15 @@ import com.lora.cn.ui.adapter.LogInfoAdapter;
 import com.lora.cn.ui.model.LogInfo;
 import com.lora.cn.ui.view.BatteryView;
 import com.lora.cn.ui.view.SignalStrengthView;
-import com.lora.cn.utils.LoRaProtocolParser;
+import com.lora.cn.utils.LoRaFrameParser;
 import com.lora.cn.utils.DialogUtils;
+import com.lora.cn.events.UplinkDataEvent;
+import com.lora.cn.network.MqttPacketsClient;
+import com.lora.cn.utils.DownlinkMessageHelper;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.List;
 
@@ -62,6 +70,8 @@ public class TerminalDetailFragment extends Fragment {
     private TextView terminal_detail_wifi;
     private TextView terminal_detail_battery;
     private TextView terminal_detail_id;
+    private Button btnHandleNow;
+    private boolean waitingForUplink = false;
 
     @Nullable
     @Override
@@ -99,6 +109,7 @@ public class TerminalDetailFragment extends Fragment {
         terminal_detail_wifi = v.findViewById(R.id.terminal_detail_wifi);
         terminal_detail_battery = v.findViewById(R.id.terminal_detail_battery);
         terminal_detail_id = v.findViewById(R.id.terminal_detail_id);
+        btnHandleNow = v.findViewById(R.id.btn_handle_now);
 
     }
 
@@ -156,6 +167,14 @@ public class TerminalDetailFragment extends Fragment {
                 // 状态（WiFi/在线状态）与电量
                 if (terminal_detail_wifi != null) terminal_detail_wifi.setText(!TextUtils.isEmpty(t.getStatus()) ? t.getStatus() : "-");
                 if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
+                if (batteryView != null) batteryView.setBatteryLevel(t.getBatteryLevel());
+
+                // 异常/离线显示“立即处理”按钮
+                boolean showHandle = "异常".equals(t.getStatus()) || "离线".equals(t.getStatus());
+                if (btnHandleNow != null) {
+                    btnHandleNow.setVisibility(showHandle ? View.VISIBLE : View.GONE);
+                    btnHandleNow.setText(waitingForUplink ? "处理完成" : "立即处理");
+                }
 
                 // 终端ID
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
@@ -168,7 +187,7 @@ public class TerminalDetailFragment extends Fragment {
                 else if (strength >= 25) level = 2;
                 else if (strength > 0) level = 1;
                 else level = 0;
-                if (signalView != null) signalView.setSignalStrength(4);
+                if (signalView != null) signalView.setSignalStrength(level);
             } else {
                 // 无记录时，回退为占位符
                 tvTitle.setText("-");
@@ -182,7 +201,8 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_wifi != null) terminal_detail_wifi.setText("-");
                 if (terminal_detail_battery != null) terminal_detail_battery.setText("-");
                 if (terminal_detail_id != null) terminal_detail_id.setText(deviceId);
-                if (signalView != null) signalView.setSignalStrength(4);
+                if (signalView != null) signalView.setSignalStrength(0);
+                if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
             }
         } catch (Exception ignored) {}
 
@@ -305,6 +325,8 @@ public class TerminalDetailFragment extends Fragment {
                     ivFavorite.setTag(target);
                     ///ivFavorite.setVisibility(View.GONE);
                     Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
+                    // 通知列表刷新收藏状态
+                    org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("更新收藏: " + deviceId));
                 } else {
                     Toast.makeText(requireContext(), "更新收藏状态失败", Toast.LENGTH_SHORT).show();
                 }
@@ -312,6 +334,24 @@ public class TerminalDetailFragment extends Fragment {
                 Toast.makeText(requireContext(), "收藏操作异常: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+
+        // 立即处理按钮：下发查询并等待上行回复
+        if (btnHandleNow != null) {
+            btnHandleNow.setOnClickListener(v -> {
+                String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+                waitingForUplink = true;
+                btnHandleNow.setText("处理完成");
+                Toast.makeText(requireContext(), "已下发查询，等待设备上行回复", Toast.LENGTH_SHORT).show();
+                try {
+                    MqttPacketsClient mqttClient = new MqttPacketsClient();
+                    DownlinkMessageHelper helper = new DownlinkMessageHelper(mqttClient);
+                    helper.sendQueryStatusDownlink(deviceId);
+                } catch (Exception e) {
+                    // 下发失败不影响等待流程，仅提示
+                    Toast.makeText(requireContext(), "下发失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private void loadLogs() {
@@ -339,5 +379,38 @@ public class TerminalDetailFragment extends Fragment {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        if (EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().unregister(this);
+        }
+        super.onStop();
+    }
+
+    // 接收上行数据：与当前设备匹配且处于等待状态时，移除“处理完成”按钮
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onUplinkDataEvent(UplinkDataEvent event) {
+        if (event == null) return;
+        try {
+            LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(event.getHex());
+            if (frame == null || frame.deviceId == null) return;
+            String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+            if (waitingForUplink && deviceId.equalsIgnoreCase(frame.deviceId)) {
+                waitingForUplink = false;
+                if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
+                // 刷新数据以反映最新状态与电量
+                bindData();
+            }
+        } catch (Exception ignored) {}
     }
 }

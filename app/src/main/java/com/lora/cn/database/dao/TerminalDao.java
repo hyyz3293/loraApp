@@ -148,6 +148,13 @@ public class TerminalDao {
             terminal.setFavorite(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE)) == 1);
             terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME)));
             terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME)));
+            // 读取电量、电压、RSSI
+            int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
+            if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
+            int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
+            if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
+            int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
+            if (rssiIdx != -1) terminal.setRssi(cursor.getInt(rssiIdx));
         }
         
         cursor.close();
@@ -187,6 +194,13 @@ public class TerminalDao {
                 terminal.setFavorite(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE)) == 1);
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME)));
+                // 读取电量、电压、RSSI
+                int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
+                if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
+                int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
+                if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
+                int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
+                if (rssiIdx != -1) terminal.setRssi(cursor.getInt(rssiIdx));
                 
                 terminals.add(terminal);
             } while (cursor.moveToNext());

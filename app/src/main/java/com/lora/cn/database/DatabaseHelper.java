@@ -1157,10 +1157,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 同步更新终端设备的电量、信号强度，并记扩展信息
         try {
             if (frame != null && deviceId != null) {
+                // 更新终端电量/信号指标
                 updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
+                // 异常取走（非法移走）时更新终端状态为“异常”
+                if (frame.evIllegalRemoval == 1) {
+                    updateTerminalStatusByDeviceId(deviceId, "异常");
+                }
             }
         } catch (Exception e) {
-            android.util.Log.e("DatabaseHelper", "更新终端电量/信号失败", e);
+            android.util.Log.e("DatabaseHelper", "更新终端电量/信号/状态失败", e);
         }
 
         db.close();
@@ -1180,6 +1185,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             values.put(COLUMN_TERMINAL_RSSI, rssi);
             int rows = db.update(TABLE_TERMINALS, values, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{deviceId});
             return rows > 0;
+        } finally {
+            db.close();
+        }
+    }
+
+    /**
+     * 根据设备ID更新终端状态
+     */
+    public int updateTerminalStatusByDeviceId(String deviceId, String status) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_TERMINAL_STATUS, status);
+            values.put(COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
+            return db.update(TABLE_TERMINALS, values,
+                    COLUMN_TERMINAL_DEVICE_ID + "=?",
+                    new String[]{deviceId});
         } finally {
             db.close();
         }

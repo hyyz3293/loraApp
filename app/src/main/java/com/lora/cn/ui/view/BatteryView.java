@@ -19,6 +19,7 @@ public class BatteryView extends View {
     private float cornerRadius;
     private float terminalWidth; // 正极宽度
     private float terminalHeight; // 正极高度
+    private float terminalGap; // 正极与主体间距
     private float segmentSpacing; // 内部方格间距
 
     private Paint outerPaint;
@@ -41,10 +42,11 @@ public class BatteryView extends View {
     }
 
     private void init(Context context) {
-        cornerRadius = dpToPx(context, 3);
+        cornerRadius = dpToPx(context, 2);
         terminalWidth = dpToPx(context, 2);
-        terminalHeight = dpToPx(context, 4);
-        segmentSpacing = dpToPx(context, 2);
+        terminalHeight = dpToPx(context, 3);
+        terminalGap = dpToPx(context, 2);
+        segmentSpacing = dpToPx(context, 3.5f);
 
         // 外层电池油漆
         outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -69,7 +71,7 @@ public class BatteryView extends View {
         float height = getHeight();
 
         // 计算电池主体区域（不包括正极）
-        float bodyWidth = width - terminalWidth;
+        float bodyWidth = width - terminalWidth - terminalGap;
         float bodyHeight = height;
 
         // 绘制电池外层主体（圆角矩形）
@@ -77,7 +79,7 @@ public class BatteryView extends View {
         canvas.drawRoundRect(bodyRect, cornerRadius, cornerRadius, outerPaint);
 
         // 绘制电池正极（右侧小圆点）
-        float terminalLeft = bodyWidth;
+        float terminalLeft = bodyWidth + terminalGap;
         float terminalTop = (height - terminalHeight) / 2;
         float terminalRight = width;
         float terminalBottom = terminalTop + terminalHeight;
@@ -90,7 +92,7 @@ public class BatteryView extends View {
 
     private void drawBatterySegments(Canvas canvas, RectF bodyRect) {
         float segmentWidth = (bodyRect.width() - (segmentCount + 1) * segmentSpacing) / segmentCount;
-        float segmentHeight = bodyRect.height() - 2 * segmentSpacing;
+        float segmentHeight = bodyRect.height() - 4 * segmentSpacing; // 增加上下留白让方块更小
 
         for (int i = 0; i < segmentCount; i++) {
             // 计算当前方格应该显示的电量阈值

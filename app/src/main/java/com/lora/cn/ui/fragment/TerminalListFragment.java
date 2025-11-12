@@ -644,8 +644,9 @@ public class TerminalListFragment extends Fragment {
 
                             dbHelper.addLog(logInfo);
 
-                            // 更新终端状态统计
+                            // 更新终端状态统计与列表展示
                             updateTerminalStatusFromDatabase();
+                            loadTerminals();
                         } catch (Exception e) {
                             Log.e(TAG, "更新收藏状态失败", e);
 
