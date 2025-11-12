@@ -192,6 +192,30 @@ public class TerminalListFragment extends Fragment {
 
         terminalStatusAdapter = new TerminalStatusAdapter();
         rvTerminalStatus.setAdapter(terminalStatusAdapter);
+        terminalStatusAdapter.setOnItemClickListener((adapter1, view1, position1) -> {
+            TerminalStatus item = (TerminalStatus) terminalStatusAdapter.getItem(position1);
+            if (item == null) return;
+            List<Terminal> filtered = new ArrayList<>();
+            String title = item.getTitle();
+            for (Terminal t : allDisplayTerminals) {
+                boolean match = false;
+                if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_IMPORTANT.equals(title)) {
+                    match = t.isFavorite();
+                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE.equals(title)) {
+                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE;
+                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE.equals(title)) {
+                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN.equals(title)) {
+                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN;
+                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(title)) {
+                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
+                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_LOW_BATTERY.equals(title)) {
+                    match = t.getBatteryLevel() <= 20;
+                }
+                if (match) filtered.add(t);
+            }
+            if (adapter != null) adapter.submitList(filtered);
+        });
 
         // 初始化终端列表
         initTerminalList();

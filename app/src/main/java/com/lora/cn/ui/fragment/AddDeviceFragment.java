@@ -44,6 +44,8 @@ public class AddDeviceFragment extends Fragment {
     private Spinner spinnerOther;
     private TextView btnBack;
     private TextView btnSave;
+    private TextView btnCancel;
+    private TextView btnConfirmPair;
     
     private DatabaseManager dbManager;
     private TerminalDao terminalDao;
@@ -66,6 +68,15 @@ public class AddDeviceFragment extends Fragment {
         AddDeviceFragment fragment = new AddDeviceFragment();
         Bundle args = new Bundle();
         args.putString("terminal", new Gson().toJson(terminalId));
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    public static AddDeviceFragment newInstance(Terminal terminalId, String mode) {
+        AddDeviceFragment fragment = new AddDeviceFragment();
+        Bundle args = new Bundle();
+        args.putString("terminal", new Gson().toJson(terminalId));
+        args.putString("mode", mode);
         fragment.setArguments(args);
         return fragment;
     }
@@ -107,6 +118,8 @@ public class AddDeviceFragment extends Fragment {
         spinnerOther = view.findViewById(R.id.spinner_other);
         btnBack = view.findViewById(R.id.btn_back);
         btnSave = view.findViewById(R.id.btn_save);
+        btnCancel = view.findViewById(R.id.btn_cancel);
+        btnConfirmPair = view.findViewById(R.id.btn_confirm_pair);
     }
     
     private void initData() {
@@ -120,18 +133,38 @@ public class AddDeviceFragment extends Fragment {
             //etDeviceId.setText(terminalId);
         }
         // 不设置默认值，让用户手动输入
+        String mode = getArguments() != null ? getArguments().getString("mode", "pair") : "pair";
+        if (btnBack != null) {
+            btnBack.setText("pair".equals(mode) ? "设置终端" : "编辑");
+        }
+        if (btnConfirmPair != null) {
+            btnConfirmPair.setText("pair".equals(mode) ? "完成配对" : "保存");
+        }
+        if ("edit".equals(mode) && terminal != null) {
+            if (!TextUtils.isEmpty(terminal.getDeviceCode())) {
+                etDeviceId.setText(terminal.getDeviceCode());
+            }
+            if (!TextUtils.isEmpty(terminal.getTerminalName())) {
+                etDeviceName.setText(terminal.getTerminalName());
+            }
+        }
     }
     
     private void setupListeners() {
-        // 返回按钮
-        btnBack.setOnClickListener(v -> {
+        // 顶部右侧返回按钮
+        btnSave.setOnClickListener(v -> {
             if (getParentFragmentManager().getBackStackEntryCount() > 0) {
                 getParentFragmentManager().popBackStack();
             }
         });
-        
-        // 保存按钮
-        btnSave.setOnClickListener(v -> saveDevice());
+        // 底部取消按钮
+        btnCancel.setOnClickListener(v -> {
+            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
+                getParentFragmentManager().popBackStack();
+            }
+        });
+        // 底部完成配对按钮
+        btnConfirmPair.setOnClickListener(v -> saveDevice());
         
         // Spinner选择监听
         setupSpinnerListeners();

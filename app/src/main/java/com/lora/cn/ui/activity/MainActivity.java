@@ -165,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-        //startTestTimer();
+        startTestTimer();
         // 启动全局MQTT日志监听（优先连接本地Broker）
         startGlobalMqttLogging();
 

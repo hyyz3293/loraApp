@@ -236,55 +236,24 @@ public class TerminalDetailFragment extends Fragment {
             }
         });
         btnEdit.setOnClickListener(v -> {
-            final String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
-            DialogUtils.showTextEditDialog(requireContext(), "编辑名称", "设备名称", tvTitle.getText().toString(), "", new DialogUtils.OnConfirmListener() {
-                @Override
-                public void onConfirm(String newValue) {
-                    if (TextUtils.isEmpty(newValue)) {
-                        Toast.makeText(requireContext(), "名称不能为空", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    boolean ok = dbHelper.updateTerminalName(deviceId, newValue);
-                    if (ok) {
-                        tvTitle.setText(newValue);
-                        Toast.makeText(requireContext(), "更新成功", Toast.LENGTH_SHORT).show();
-                        // 记录日志（统一格式与外层日志使用同一LogInfoAdapter）
-                        try {
-                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                            String now = sdf.format(new java.util.Date());
-                            LogInfo logInfo = new LogInfo();
-                            logInfo.setTerminalId(deviceId);
-                            logInfo.setTerminalName(newValue);
-                            logInfo.setDeviceId(deviceId);
-                            // 状态按枚举之一占位：设备打开（后续可根据具体业务改为更精确状态）
-                            logInfo.setStatus("设备打开");
-                            logInfo.setOperator("系统管理员");
-                            logInfo.setOperationTime(now);
-                            logInfo.setCreateTime(now);
-                            logInfo.setAction("编辑名称为: " + newValue);
-                            dbHelper.addLog(logInfo);
-                            loadLogs();
-                        } catch (Exception ignored) {}
-                    } else {
-                        Toast.makeText(requireContext(), "更新失败", Toast.LENGTH_SHORT).show();
-                        try {
-                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                            String now = sdf.format(new java.util.Date());
-                            com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                            logInfo.setTerminalId(deviceId);
-                            logInfo.setTerminalName(tvTitle.getText().toString());
-                            logInfo.setDeviceId(deviceId);
-                            logInfo.setStatus("设备离线");
-                            logInfo.setOperator("系统管理员");
-                            logInfo.setOperationTime(now);
-                            logInfo.setCreateTime(now);
-                            logInfo.setAction("编辑名称失败");
-                            dbHelper.addLog(logInfo);
-                            loadLogs();
-                        } catch (Exception ignored) {}
-                    }
-                }
-            });
+            String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+            com.lora.cn.database.dao.TerminalDao dao = new com.lora.cn.database.dao.TerminalDao(dbHelper);
+            com.lora.cn.ui.model.Terminal t = dao.getTerminalByDeviceId(deviceId);
+            if (t == null) {
+                Toast.makeText(requireContext(), "未找到终端", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            AddDeviceFragment fragment = AddDeviceFragment.newInstance(t, "edit");
+            if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                ((com.lora.cn.ui.activity.MainActivity) getActivity()).showDeviceList();
+            }
+            androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+            if (a != null) {
+                a.getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_device_list_container, fragment)
+                        .addToBackStack("edit_device")
+                        .commit();
+            }
         });
         btnDelete.setOnClickListener(v -> {
             final String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";

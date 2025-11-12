@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 15;
+    private static final int DATABASE_VERSION = 16;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -132,6 +132,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_OTHER_ID = "other_id"; // 其他分类ID
     public static final String COLUMN_TERMINAL_EXTENSION = "extension"; // 扩展字段
     public static final String COLUMN_TERMINAL_IS_FAVORITE = "is_favorite"; // 收藏状态
+    public static final String COLUMN_TERMINAL_FAVORITE_USER_ID = "favorite_user_id"; // 收藏用户ID
     public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
     public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
     
@@ -269,6 +270,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_TERMINAL_OTHER_ID + " INTEGER, " +
         COLUMN_TERMINAL_EXTENSION + " TEXT, " +
         COLUMN_TERMINAL_IS_FAVORITE + " INTEGER DEFAULT 0, " +
+        COLUMN_TERMINAL_FAVORITE_USER_ID + " INTEGER DEFAULT 0, " +
         COLUMN_TERMINAL_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
         COLUMN_TERMINAL_UPDATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
         "FOREIGN KEY (" + COLUMN_TERMINAL_DEPARTMENT_ID + ") REFERENCES " + 
@@ -467,6 +469,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 15) {
             try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_BATTERY_VOLTAGE + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
             try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_RSSI + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 16) {
+            try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_FAVORITE_USER_ID + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -1013,7 +1018,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setExtension(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_EXTENSION)));
                 
                 // 设置收藏状态
-                terminal.setFavorite(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_IS_FAVORITE)) == 1);
+                int fav = cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_IS_FAVORITE));
+                int favUserId = 0;
+                int colIdxFavUser = cursor.getColumnIndex(COLUMN_TERMINAL_FAVORITE_USER_ID);
+                if (colIdxFavUser != -1) {
+                    favUserId = cursor.getInt(colIdxFavUser);
+                }
+                long currentUserId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                terminal.setFavorite(fav == 1 && favUserId == (int) currentUserId);
                 
                 // 设置时间戳
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
@@ -1327,6 +1339,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         
         values.put(COLUMN_TERMINAL_IS_FAVORITE, isFavorite ? 1 : 0);
+        long currentUserId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", 0);
+        values.put(COLUMN_TERMINAL_FAVORITE_USER_ID, isFavorite ? (int) currentUserId : 0);
         values.put(COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
         
         return db.update(TABLE_TERMINALS, values, 

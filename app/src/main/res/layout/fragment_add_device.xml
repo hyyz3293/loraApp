@@ -2,8 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#F5F5F5">
+    android:orientation="vertical">
 
     <!-- 标题栏 -->
     <RelativeLayout
@@ -17,9 +16,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="添加终端"
-            android:textColor="#333333"
-            android:textSize="18sp"
+            android:text=""
+            android:textSize="30dp"
+            android:textColor="@color/black"
             android:textStyle="bold" />
 
         <TextView
@@ -29,28 +28,22 @@
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
             android:padding="8dp"
-            android:text="返回"
-            android:textColor="#666666"
-            android:textSize="16sp" />
+            android:text="设置终端"
+            android:textSize="30dp"
+            android:textColor="@color/black"/>
 
         <TextView
             android:id="@+id/btn_save"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="16dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="8dp"
-            android:text="保存"
-            android:textColor="#007AFF"
-            android:textSize="16sp" />
+            android:background="@drawable/bg_back_4"
+            android:textSize="16dp"
+            android:gravity="center"
+            android:textColor="#383B40"
+            android:text="返回"
+            android:textStyle="bold"
+            android:layout_width="98dp"
+            android:layout_height="32dp" />
 
     </RelativeLayout>
 
@@ -69,30 +62,41 @@
             <!-- 终端ID显示 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_height="43dp"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
                 android:background="#FFFFFF"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal"
+                >
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_weight="380"
+                    android:layout_height="match_parent"
                     android:text="终端ID"
+                    android:layout_marginRight="10dp"
+                    android:gravity="right|center"
                     android:textColor="#333333"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_terminal_id"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="#F0F0F0"
-                    android:padding="12dp"
+                    android:background="@drawable/edit_text_background"
+                    android:gravity="center_vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="500"
+                    android:layout_height="match_parent"
                     android:text="000010"
-                    android:textColor="#666666"
+                    android:textColor="@color/black"
                     android:textSize="16sp" />
+
+                <TextView
+
+                    android:layout_width="0dp"
+                    android:layout_weight="300"
+                    android:layout_height="match_parent"
+                      />
 
             </LinearLayout>
 
@@ -322,5 +326,37 @@
         </LinearLayout>
 
     </ScrollView>
+
+    <!-- 底部操作按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="#FFFFFF"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/btn_cancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="取消"
+            android:textColor="#383B40"
+            android:textSize="16sp"
+            android:background="@drawable/bg_back_4" />
+
+        <TextView
+            android:id="@+id/btn_confirm_pair"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:gravity="center"
+            android:text="完成配对"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:background="@drawable/bg_btn2_4" />
+    </LinearLayout>
 
 </LinearLayout>
