@@ -688,7 +688,7 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
         uiTerminal.setTerminalId(String.valueOf(entityTerminal.getTerminalId()));
     }
     uiTerminal.setTerminalName(entityTerminal.getDeviceName());
-    uiTerminal.setStatus(entityTerminal.getStatus());
+    uiTerminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.textToCode(entityTerminal.getStatus()));
     uiTerminal.setSignalStrength(entityTerminal.getSignalStrength());
     uiTerminal.setDepartment(entityTerminal.getDepartment());
     uiTerminal.setLocation(entityTerminal.getLocation());

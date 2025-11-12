@@ -942,7 +942,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 设备CODE（新字段）
         values.put(COLUMN_TERMINAL_DEVICE_CODE, terminal.getDeviceCode());
         values.put(COLUMN_TERMINAL_NAME, terminal.getTerminalName());
-        values.put(COLUMN_TERMINAL_STATUS, terminal.getStatus());
+        values.put(COLUMN_TERMINAL_STATUS, com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(terminal.getStatus()));
         values.put(COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
         values.put(COLUMN_TERMINAL_BATTERY_LEVEL, terminal.getBatteryLevel());
         values.put(COLUMN_TERMINAL_BATTERY_VOLTAGE, terminal.getBatteryVoltage());
@@ -974,7 +974,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     terminal.setDeviceCode(cursor.getString(codeIdx));
                 }
                 terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_NAME)));
-                terminal.setStatus(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS)));
+                {
+                    String st = cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS));
+                    terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.textToCode(st));
+                }
                 terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
                 
                 // 设置电量
@@ -985,6 +988,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     // 如果没有电量字段，使用信号强度作为默认值
                     terminal.setBatteryLevel(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
                 }
+                terminal.setBatteryStatus(terminal.getBatteryLevel() <= 20 ? 0 : 1);
                 
                 terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
                 terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
@@ -1014,6 +1018,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 // 设置时间戳
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
+                long nowMs = System.currentTimeMillis();
+                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 5 * 60 * 1000L) {
+                    terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
+                }
                 
                 terminals.add(terminal);
             } while (cursor.moveToNext());
@@ -1157,11 +1165,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 同步更新终端设备的电量、信号强度，并记扩展信息
         try {
             if (frame != null && deviceId != null) {
-                // 更新终端电量/信号指标
                 updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
-                // 异常取走（非法移走）时更新终端状态为“异常”
-                if (frame.evIllegalRemoval == 1) {
-                    updateTerminalStatusByDeviceId(deviceId, "异常");
+                boolean removed = frame.stLayer1NotInPlace == 1 || frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 || frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1;
+                if (removed) {
+                    if (frame.stPowerLockOn == 1) {
+                        updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
+                    } else {
+                        updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                    }
+                } else {
+                    updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
                 }
             }
         } catch (Exception e) {

@@ -289,7 +289,7 @@ public class DeviceListFragment extends Fragment {
                         discoveredTerminal.setDeviceName("终端ID：" + deviceId);
                         // 上行事件解析后，按“不是离线/异常即在线”的规则设置状态
                         boolean isAbnormal = (frameData.evIllegalRemoval == 1);
-                        discoveredTerminal.setStatus(isAbnormal ? "异常" : "在线");
+                        discoveredTerminal.setStatus(isAbnormal ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST : com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
                         // 同步展示关键指标（电量、电压、RSSI）
                         discoveredTerminal.setBatteryLevel(frameData.batteryLevel);
                         discoveredTerminal.setBatteryVoltage(frameData.batteryVoltage);

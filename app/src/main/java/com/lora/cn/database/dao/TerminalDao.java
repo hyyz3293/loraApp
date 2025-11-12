@@ -32,7 +32,7 @@ public class TerminalDao {
         values.put(DatabaseHelper.COLUMN_TERMINAL_NAME, terminal.getTerminalName());
         // 设备CODE
         values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_CODE, terminal.getDeviceCode());
-        values.put(DatabaseHelper.COLUMN_TERMINAL_STATUS, terminal.getStatus());
+        values.put(DatabaseHelper.COLUMN_TERMINAL_STATUS, com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(terminal.getStatus()));
         values.put(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
         values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
         values.put(DatabaseHelper.COLUMN_TERMINAL_LOCATION, terminal.getLocation());
@@ -136,7 +136,10 @@ public class TerminalDao {
             if (codeIdx != -1) {
                 terminal.setDeviceCode(cursor.getString(codeIdx));
             }
-            terminal.setStatus(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_STATUS)));
+            {
+                String st = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_STATUS));
+                terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.textToCode(st));
+            }
             terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH)));
             terminal.setDepartment(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT)));
             terminal.setLocation(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_LOCATION)));
@@ -151,6 +154,7 @@ public class TerminalDao {
             // 读取电量、电压、RSSI
             int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
             if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
+            terminal.setBatteryStatus(terminal.getBatteryLevel() <= 20 ? 0 : 1);
             int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
             if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
             int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
@@ -182,7 +186,10 @@ public class TerminalDao {
                 if (codeIdx != -1) {
                     terminal.setDeviceCode(cursor.getString(codeIdx));
                 }
-                terminal.setStatus(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_STATUS)));
+                {
+                    String st = cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_STATUS));
+                    terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.textToCode(st));
+                }
                 terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH)));
                 terminal.setDepartment(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT)));
                 terminal.setLocation(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_LOCATION)));
@@ -197,6 +204,7 @@ public class TerminalDao {
                 // 读取电量、电压、RSSI
                 int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
                 if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
+                terminal.setBatteryStatus(terminal.getBatteryLevel() <= 20 ? 0 : 1);
                 int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
                 if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
                 int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);

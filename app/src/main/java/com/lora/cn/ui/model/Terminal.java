@@ -9,9 +9,10 @@ public class Terminal {
     private String location;
     private int statusIconResId;
     private String statusText;
-    private String status;
+    private int status;
     private int batteryIconResId;
     private String batteryText;
+    private int batteryStatus;
     private boolean isImportant;
     private int signalStrength;
     private long createTime;
@@ -111,11 +112,11 @@ public class Terminal {
         this.statusText = statusText;
     }
 
-    public String getStatus() {
+    public int getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(int status) {
         this.status = status;
     }
 
@@ -133,6 +134,14 @@ public class Terminal {
 
     public void setBatteryText(String batteryText) {
         this.batteryText = batteryText;
+    }
+
+    public int getBatteryStatus() {
+        return batteryStatus;
+    }
+
+    public void setBatteryStatus(int batteryStatus) {
+        this.batteryStatus = batteryStatus;
     }
 
     public boolean isImportant() {

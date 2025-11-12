@@ -314,7 +314,7 @@ public class AddDeviceFragment extends Fragment {
         terminal.setTerminalId(terminalId);
         terminal.setDeviceCode(deviceCode);
         terminal.setTerminalName(deviceName);
-        terminal.setStatus("在线"); // 默认状态
+        terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE); // 默认状态
         terminal.setSignalStrength(0); // 默认信号强度
         terminal.setDepartment(""); // 默认部门
         terminal.setLocation(""); // 默认位置

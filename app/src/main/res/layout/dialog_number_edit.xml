@@ -68,7 +68,7 @@
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_edit_text"
                 android:hint=""
-                android:inputType="number"
+
                 android:paddingHorizontal="16dp"
                 android:textSize="16sp"
                 android:textColor="@color/black" />

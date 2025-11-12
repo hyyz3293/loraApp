@@ -60,19 +60,12 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
         TextView volumeValue = holder.getView(R.id.volume_value);
 
         volumeTitle.setText(item.getTitle());
-        
-        // 设置当前音量值
-        int currentVolume = 50; // 默认值
-        if (item.getVolume() != null && !item.getVolume().isEmpty()) {
-            try {
-                currentVolume = Integer.parseInt(item.getVolume());
-            } catch (NumberFormatException e) {
-                currentVolume = 50;
-            }
-        }
-        
-        volumeSeekBar.setProgress(currentVolume);
-        volumeValue.setText(String.valueOf(currentVolume));
+        android.media.AudioManager am = (android.media.AudioManager) holder.itemView.getContext().getSystemService(Context.AUDIO_SERVICE);
+        int max = am != null ? am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) : 100;
+        int sysVol = am != null ? am.getStreamVolume(android.media.AudioManager.STREAM_MUSIC) : 50;
+        volumeSeekBar.setMax(max);
+        volumeSeekBar.setProgress(sysVol);
+        volumeValue.setText(String.valueOf(sysVol));
 
         // 设置滑动监听
         volumeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -81,6 +74,9 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                 if (fromUser) {
                     volumeValue.setText(String.valueOf(progress));
                     item.setVolume(String.valueOf(progress));
+                    if (am != null) {
+                        am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, progress, 0);
+                    }
                 }
             }
 
@@ -89,8 +85,10 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                // 可以在这里保存音量设置
                 Context context = seekBar.getContext();
+                if (am != null) {
+                    am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, seekBar.getProgress(), 0);
+                }
                 Toast.makeText(context, "音量设置为: " + seekBar.getProgress(), Toast.LENGTH_SHORT).show();
             }
         });

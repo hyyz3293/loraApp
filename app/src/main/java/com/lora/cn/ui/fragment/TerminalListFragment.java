@@ -291,14 +291,15 @@ public class TerminalListFragment extends Fragment {
                     favoriteCount++;
                 }
 
-                // 统计状态数量
-                String status = terminal.getStatus();
-                if ("在线".equals(status)) {
+                int statusCode = terminal.getStatus();
+                if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE) {
                     onlineCount++;
-                } else if ("离线".equals(status)) {
+                } else if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
                     offlineCount++;
-                } else if ("异常".equals(status)) {
+                } else if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
                     abnormalLostCount++;
+                } else if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN) {
+                    normalTakenCount++;
                 }
 
                 // 统计电量状态
@@ -416,6 +417,9 @@ public class TerminalListFragment extends Fragment {
         try {
             androidx.fragment.app.Fragment fragment = new com.lora.cn.ui.fragment.AlertPendingListFragment();
             if (getActivity() != null) {
+                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).showDeviceList();
+                }
                 androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
                 android.view.View container = a.findViewById(R.id.fragment_device_list_container);
                 if (container != null) {
@@ -459,13 +463,16 @@ public class TerminalListFragment extends Fragment {
                 terminalInfo.location = dbTerminal.getLocation();
                 terminalInfo.signalStrength = dbTerminal.getSignalStrength();
                 terminalInfo.batteryLevel = dbTerminal.getBatteryLevel();
-                terminalInfo.status = "在线".equals(dbTerminal.getStatus()) ? 1 : 0;
+                terminalInfo.status = dbTerminal.getStatus();
                 terminalInfo.timestamp = System.currentTimeMillis();
                 terminalInfo.payloadHex = ""; // 可以从日志中获取最新的payload
 
                 // 导航到终端详情Fragment（根据terminalId从数据库加载）
                 com.lora.cn.ui.fragment.TerminalDetailFragment fragment = com.lora.cn.ui.fragment.TerminalDetailFragment.newInstance(dbTerminal.getTerminalId());
                 if (getActivity() != null) {
+                    if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                        ((com.lora.cn.ui.activity.MainActivity) getActivity()).showDeviceList();
+                    }
                     android.app.Activity a = getActivity();
                     android.view.View container = a.findViewById(R.id.fragment_device_list_container);
                     if (container != null) {
@@ -657,7 +664,7 @@ public class TerminalListFragment extends Fragment {
             // 根据状态设置图标
             int statusIcon = getStatusIcon(dbTerminal.getStatus());
             displayTerminal.setStatusIconResId(statusIcon);
-            displayTerminal.setStatusText(dbTerminal.getStatus());
+            displayTerminal.setStatusText(com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(dbTerminal.getStatus()));
 
             // 设置电量信息
             displayTerminal.setBatteryLevel(dbTerminal.getBatteryLevel());
@@ -716,17 +723,15 @@ public class TerminalListFragment extends Fragment {
     /**
      * 根据状态获取对应的图标资源ID
      */
-    private int getStatusIcon(String status) {
-        if (status == null) {
-            return R.mipmap.ic_xh_no;
-        }
-
-        switch (status) {
-            case "在线":
+    private int getStatusIcon(int statusCode) {
+        switch (statusCode) {
+            case com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE:
                 return R.mipmap.ic_xh_3;
-            case "异常":
+            case com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN:
                 return R.mipmap.ic_ds;
-            case "离线":
+            case com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN:
+                return R.mipmap.ic_blue_right;
+            case com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE:
             default:
                 return R.mipmap.ic_xh_no;
         }

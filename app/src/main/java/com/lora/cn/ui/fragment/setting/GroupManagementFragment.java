@@ -303,7 +303,7 @@ public class GroupManagementFragment extends Fragment  {
 
 
     public void onEditClick(Group group) {
-        if (hasPermission("group_edit")) {
+        if (hasPermission("setting")) {
             showEditGroupDialog(group);
         } else {
             Toast.makeText(requireContext(), "您没有编辑分组的权限", Toast.LENGTH_SHORT).show();
@@ -311,7 +311,7 @@ public class GroupManagementFragment extends Fragment  {
     }
 
     public void onDeleteClick(Group group) {
-        if (hasPermission("group_delete")) {
+        if (hasPermission("setting")) {
             deleteGroup(group);
         } else {
             Toast.makeText(requireContext(), "您没有删除分组的权限", Toast.LENGTH_SHORT).show();

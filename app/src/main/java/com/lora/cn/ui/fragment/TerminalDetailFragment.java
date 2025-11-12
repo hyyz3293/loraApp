@@ -128,7 +128,7 @@ public class TerminalDetailFragment extends Fragment {
                 tvDeviceId.setText(!TextUtils.isEmpty(t.getTerminalId()) ? t.getTerminalId() : deviceId);
                 tvDepartment.setText(!TextUtils.isEmpty(t.getDepartment()) ? t.getDepartment() : "-");
                 tvLocation.setText(!TextUtils.isEmpty(t.getLocation()) ? t.getLocation() : "-");
-                tvStatus.setText(!TextUtils.isEmpty(t.getStatus()) ? t.getStatus() : "-");
+                tvStatus.setText(com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus()));
                 tvBattery.setText(t.getBatteryLevel() + "%");
                 // 分组展示：将选择的分组与分类名用“-”连接，不同分组用“，”隔开
                 StringBuilder groupText = new StringBuilder();
@@ -165,12 +165,14 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_code != null) terminal_detail_code.setText(code);
 
                 // 状态（WiFi/在线状态）与电量
-                if (terminal_detail_wifi != null) terminal_detail_wifi.setText(!TextUtils.isEmpty(t.getStatus()) ? t.getStatus() : "-");
+                if (terminal_detail_wifi != null) terminal_detail_wifi.setText(com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus()));
                 if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
                 if (batteryView != null) batteryView.setBatteryLevel(t.getBatteryLevel());
 
                 // 异常/离线显示“立即处理”按钮
-                boolean showHandle = "异常".equals(t.getStatus()) || "离线".equals(t.getStatus());
+                int stCode = t.getStatus();
+                boolean showHandle = (stCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN)
+                        || (stCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 if (btnHandleNow != null) {
                     btnHandleNow.setVisibility(showHandle ? View.VISIBLE : View.GONE);
                     btnHandleNow.setText(waitingForUplink ? "处理完成" : "立即处理");

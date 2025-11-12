@@ -142,9 +142,10 @@ public class TerminalCheckFragment extends Fragment {
             int batteryNormal = 0, batteryLow = 0;
             int manualTake = 0; // 正常取走
             for (com.lora.cn.ui.model.Terminal t : terminals) {
-                String st = t.getStatus() != null ? t.getStatus() : "";
+                int sc = t.getStatus();
+                String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc);
                 if ("在线".equals(st)) online++;
-                else if (st.contains("异常")) abnormal++;
+                else if ("异常取走".equals(st)) abnormal++;
                 else offline++;
                 int bl = t.getBatteryLevel();
                 if (bl <= 20) batteryLow++; else batteryNormal++;
@@ -221,10 +222,11 @@ public class TerminalCheckFragment extends Fragment {
                                 || (t.getOtherId() == c.getCategoryId());
                         if (!match) continue;
 
-                        String st = t.getStatus() != null ? t.getStatus() : "";
+                        int sc2 = t.getStatus();
+                        String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc2);
                         if ("在线".equals(st)) { onlineCount++; }
                         else if ("离线".equals(st)) { offlineCount++; batteryOffline++; }
-                        else { /* 其它状态不计在线/离线 */ int bl = t.getBatteryLevel(); if (bl <= 20) batteryLow++; else batteryNormal++; }
+                        else { int bl = t.getBatteryLevel(); if (bl <= 20) batteryLow++; else batteryNormal++; }
 
                         List<com.lora.cn.ui.model.LogInfo> logs = dbHelper.getLogsByTerminalId(t.getTerminalId());
                         String hex = null;
