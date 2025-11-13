@@ -46,6 +46,8 @@ public class AddDeviceFragment extends Fragment {
     private TextView btnSave;
     private TextView btnCancel;
     private TextView btnConfirmPair;
+    private android.widget.LinearLayout llDynamicGroups;
+    private java.util.Map<Long, Long> selectedByGroup = new java.util.HashMap<>();
     
     private DatabaseManager dbManager;
     private TerminalDao terminalDao;
@@ -100,26 +102,20 @@ public class AddDeviceFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        
         initViews(view);
         initData();
         setupListeners();
-        loadCategoryData();
     }
     
     private void initViews(View view) {
         tvTerminalId = view.findViewById(R.id.tv_terminal_id);
         etDeviceId = view.findViewById(R.id.et_device_id);
         etDeviceName = view.findViewById(R.id.et_device_name);
-        etExtension = view.findViewById(R.id.et_extension);
-        spinnerDepartment = view.findViewById(R.id.spinner_department);
-        spinnerRoom = view.findViewById(R.id.spinner_room);
-        spinnerNursingGroup = view.findViewById(R.id.spinner_nursing_group);
-        spinnerOther = view.findViewById(R.id.spinner_other);
         btnBack = view.findViewById(R.id.btn_back);
         btnSave = view.findViewById(R.id.btn_save);
         btnCancel = view.findViewById(R.id.btn_cancel);
         btnConfirmPair = view.findViewById(R.id.btn_confirm_pair);
+        llDynamicGroups = view.findViewById(R.id.ll_dynamic_groups);
     }
     
     private void initData() {
@@ -148,6 +144,13 @@ public class AddDeviceFragment extends Fragment {
                 etDeviceName.setText(terminal.getTerminalName());
             }
         }
+        // 隐藏旧的静态分组分类控件，使用动态分组/分类选择
+        if (spinnerDepartment != null) spinnerDepartment.setVisibility(View.GONE);
+        if (spinnerRoom != null) spinnerRoom.setVisibility(View.GONE);
+        if (spinnerNursingGroup != null) spinnerNursingGroup.setVisibility(View.GONE);
+        if (spinnerOther != null) spinnerOther.setVisibility(View.GONE);
+        // 渲染动态分组与分类行
+        renderDynamicGroups();
     }
     
     private void setupListeners() {
@@ -171,74 +174,11 @@ public class AddDeviceFragment extends Fragment {
     }
     
     private void setupSpinnerListeners() {
-        // 科室选择监听
-        spinnerDepartment.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position > 0 && position <= departmentCategories.size()) {
-                    selectedDepartmentId = (int) departmentCategories.get(position - 1).getCategoryId();
-                } else {
-                    selectedDepartmentId = null;
-                }
-            }
-            
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                selectedDepartmentId = null;
-            }
-        });
-        
-        // 病房号选择监听
-        spinnerRoom.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position > 0 && position <= roomCategories.size()) {
-                    selectedRoomId = (int) roomCategories.get(position - 1).getCategoryId();
-                } else {
-                    selectedRoomId = null;
-                }
-            }
-            
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                selectedRoomId = null;
-            }
-        });
-        
-        // 护理组选择监听
-        spinnerNursingGroup.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position > 0 && position <= nursingGroupCategories.size()) {
-                    selectedNursingGroupId = (int) nursingGroupCategories.get(position - 1).getCategoryId();
-                } else {
-                    selectedNursingGroupId = null;
-                }
-            }
-            
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                selectedNursingGroupId = null;
-            }
-        });
-        
-        // 其他分类选择监听
-        spinnerOther.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position > 0 && position <= otherCategories.size()) {
-                    selectedOtherId = (int) otherCategories.get(position - 1).getCategoryId();
-                } else {
-                    selectedOtherId = null;
-                }
-            }
-            
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                selectedOtherId = null;
-            }
-        });
+        // 动态渲染行中已设置监听，无需额外处理
     }
+
+    private void loadGroupsDynamic() {}
+    private void loadCategoriesDynamic(long groupId) {}
     
     private void loadCategoryData() {
         try {
@@ -309,6 +249,69 @@ public class AddDeviceFragment extends Fragment {
         otherAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerOther.setAdapter(otherAdapter);
     }
+
+    private void renderDynamicGroups() {
+        try {
+            if (llDynamicGroups == null) return;
+            llDynamicGroups.removeAllViews();
+            java.util.List<com.lora.cn.database.entity.Group> groups = dbManager.getAllGroups();
+            for (com.lora.cn.database.entity.Group g : groups) {
+                android.widget.LinearLayout row = new android.widget.LinearLayout(requireContext());
+                row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+                row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                row.setBackgroundColor(android.graphics.Color.WHITE);
+                android.widget.LinearLayout.LayoutParams lpRow = new android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT,  android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+                lpRow.setMargins(0, 10, 0, 10);
+                row.setLayoutParams(lpRow);
+
+                android.widget.TextView tv = new android.widget.TextView(requireContext());
+                android.widget.LinearLayout.LayoutParams lpTv = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 380);
+                tv.setLayoutParams(lpTv);
+                tv.setText(g.getGroupName());
+                tv.setTextColor(android.graphics.Color.parseColor("#333333"));
+                tv.setTextSize(16);
+                tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                tv.setGravity(android.view.Gravity.RIGHT | android.view.Gravity.CENTER_VERTICAL);
+                tv.setPadding(0, 0, 10, 0);
+
+                android.widget.Spinner sp = new android.widget.Spinner(requireContext());
+                android.widget.LinearLayout.LayoutParams lpSp = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 500);
+                sp.setLayoutParams(lpSp);
+                sp.setBackgroundResource(R.drawable.spinner_background);
+
+                java.util.List<com.lora.cn.database.entity.Category> cats = dbManager.getCategoriesByGroupId(g.getGroupId());
+                java.util.List<String> names = new java.util.ArrayList<>();
+                for (com.lora.cn.database.entity.Category c : cats) names.add(c.getCategoryName());
+                android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                sp.setAdapter(adapter);
+                sp.setTag(cats);
+                sp.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                        Object tag = parent.getTag();
+                        if (tag instanceof java.util.List) {
+                            java.util.List<com.lora.cn.database.entity.Category> list = (java.util.List<com.lora.cn.database.entity.Category>) tag;
+                            if (position >= 0 && position < list.size()) {
+                                selectedByGroup.put(g.getGroupId(), list.get(position).getCategoryId());
+                            }
+                        }
+                    }
+                    @Override
+                    public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+                });
+
+                android.widget.TextView filler = new android.widget.TextView(requireContext());
+                android.widget.LinearLayout.LayoutParams lpFill = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 300);
+                filler.setLayoutParams(lpFill);
+
+                row.addView(tv);
+                row.addView(sp);
+                row.addView(filler);
+                llDynamicGroups.addView(row);
+            }
+        } catch (Exception ignored) {}
+    }
     
     private void saveDevice() {
         // 获取输入数据
@@ -352,11 +355,25 @@ public class AddDeviceFragment extends Fragment {
         terminal.setDepartment(""); // 默认部门
         terminal.setLocation(""); // 默认位置
         
-        // 设置分类ID
-        terminal.setDepartmentId(selectedDepartmentId != null ? selectedDepartmentId : 0);
-        terminal.setRoomId(selectedRoomId != null ? selectedRoomId : 0);
-        terminal.setNursingGroupId(selectedNursingGroupId != null ? selectedNursingGroupId : 0);
-        terminal.setOtherId(selectedOtherId != null ? selectedOtherId : 0);
+        Long dep = selectedByGroup.get(1L);
+        Long room = selectedByGroup.get(2L);
+        Long nur = selectedByGroup.get(3L);
+        Long oth = selectedByGroup.get(4L);
+        terminal.setDepartmentId(dep != null ? dep : 0);
+        terminal.setRoomId(room != null ? room : 0);
+        terminal.setNursingGroupId(nur != null ? nur : 0);
+        terminal.setOtherId(oth != null ? oth : 0);
+        try {
+            org.json.JSONObject ext = new org.json.JSONObject();
+            org.json.JSONObject extras = new org.json.JSONObject();
+            for (java.util.Map.Entry<Long, Long> e : selectedByGroup.entrySet()) {
+                if (e.getKey() > 4L) extras.put(String.valueOf(e.getKey()), e.getValue());
+            }
+            if (extras.length() > 0) {
+                ext.put("extra_groups", extras);
+                terminal.setExtension(ext.toString());
+            }
+        } catch (Exception ignored) {}
         
 //        // 设置扩展字段
 //        if (!TextUtils.isEmpty(deviceCode)) {

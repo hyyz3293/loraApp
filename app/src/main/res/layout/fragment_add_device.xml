@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/white"
     android:orientation="vertical">
 
     <!-- 标题栏 -->
@@ -50,7 +51,8 @@
     <!-- 内容区域 -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:fillViewport="true">
 
         <LinearLayout
@@ -58,7 +60,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
             <!-- 终端ID显示 -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -82,6 +83,7 @@
 
                 <TextView
                     android:id="@+id/tv_terminal_id"
+                    android:paddingLeft="28dp"
                     android:background="@drawable/edit_text_background"
                     android:gravity="center_vertical"
                     android:layout_width="0dp"
@@ -96,232 +98,101 @@
                     android:layout_width="0dp"
                     android:layout_weight="300"
                     android:layout_height="match_parent"
-                      />
+                    />
 
             </LinearLayout>
 
             <!-- 设备Code和设备名称横向输入 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_height="43dp"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
                 android:background="#FFFFFF"
                 android:orientation="horizontal"
-                android:padding="16dp">
+                >
 
-                <!-- 设备Code输入 -->
-                <LinearLayout
+                <TextView
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="设备Code *"
-                        android:textColor="#333333"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/et_device_id"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="8dp"
-                        android:background="@drawable/edit_text_background"
-                        android:hint="请输入设备Code"
-                        android:inputType="text"
-                        android:padding="12dp"
-                        android:textColor="#333333"
-                        android:textColorHint="#999999"
-                        android:textSize="16sp" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="#FFFFFF"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <!-- 设备Code输入 -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="设备名称 *"
-                        android:textColor="#333333"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/et_device_name"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="8dp"
-                        android:background="@drawable/edit_text_background"
-                        android:hint="请输入设备名称"
-                        android:inputType="text"
-                        android:padding="12dp"
-                        android:textColor="#333333"
-                        android:textColorHint="#999999"
-                        android:textSize="16sp" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- 科室选择 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="#FFFFFF"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="科室"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <Spinner
-                    android:id="@+id/spinner_department"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/spinner_background" />
-
-            </LinearLayout>
-
-            <!-- 病房号选择 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="#FFFFFF"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="病房号"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <Spinner
-                    android:id="@+id/spinner_room"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/spinner_background" />
-
-            </LinearLayout>
-
-            <!-- 护理组选择 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="#FFFFFF"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="护理组"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <Spinner
-                    android:id="@+id/spinner_nursing_group"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/spinner_background" />
-
-            </LinearLayout>
-
-            <!-- 其他分类选择 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="#FFFFFF"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="其他分类"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <Spinner
-                    android:id="@+id/spinner_other"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/spinner_background" />
-
-            </LinearLayout>
-
-            <!-- 扩展字段输入 -->
-            <LinearLayout
-                android:visibility="gone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:background="#FFFFFF"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="扩展字段"
+                    android:layout_weight="380"
+                    android:layout_height="match_parent"
+                    android:text="终端编号"
+                    android:layout_marginRight="10dp"
+                    android:gravity="right|center"
                     android:textColor="#333333"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <EditText
-                    android:id="@+id/et_extension"
-                    android:layout_width="match_parent"
-                    android:layout_height="80dp"
-                    android:layout_marginTop="8dp"
+                    android:id="@+id/et_device_id"
+                    android:paddingLeft="28dp"
                     android:background="@drawable/edit_text_background"
-                    android:gravity="top|start"
-                    android:hint="请输入扩展信息（可选）"
-                    android:inputType="textMultiLine"
-                    android:padding="12dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="500"
+                    android:layout_height="match_parent"
+                    android:hint="请输入设备Code"
+                    android:inputType="text"
                     android:textColor="#333333"
                     android:textColorHint="#999999"
                     android:textSize="16sp" />
 
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="300"
+                    android:layout_height="match_parent"
+                    />
+
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="43dp"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:background="#FFFFFF"
+                android:orientation="horizontal"
+                >
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="380"
+                    android:layout_height="match_parent"
+                    android:text="设备名称"
+                    android:layout_marginRight="10dp"
+                    android:gravity="right|center"
+                    android:textColor="#333333"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/et_device_name"
+                    android:paddingLeft="28dp"
+                    android:background="@drawable/edit_text_background"
+                    android:gravity="center_vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="500"
+                    android:layout_height="match_parent"
+                    android:hint="请输入设备名称"
+                    android:inputType="text"
+                    android:textColor="#333333"
+                    android:textColorHint="#999999"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="300"
+                    android:layout_height="match_parent"
+                    />
+
+            </LinearLayout>
+
+            <!-- 动态分组-分类容器（根据数据库中的分组数量动态渲染行） -->
+            <LinearLayout
+                android:id="@+id/ll_dynamic_groups"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
         </LinearLayout>
 

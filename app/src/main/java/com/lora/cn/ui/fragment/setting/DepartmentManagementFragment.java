@@ -22,9 +22,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
-import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.User;
-import com.lora.cn.ui.adapter.DepartmentAdapter;
+import com.lora.cn.database.entity.Category;
+import com.lora.cn.ui.adapter.CategoryAdapter;
 import com.lora.cn.utils.DialogUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.constant.SpConstant;
@@ -38,9 +38,9 @@ public class DepartmentManagementFragment extends Fragment {
     private TextView btnAdd;
     private RecyclerView rvDepartments;
     
-    private DepartmentAdapter departmentAdapter;
+    private CategoryAdapter departmentAdapter;
     private DatabaseManager dbManager;
-    private List<Department> allDepartments = new ArrayList<>();
+    private List<Category> allDepartments = new ArrayList<>();
     private long currentUserRoleId;
 
     @Nullable
@@ -79,7 +79,7 @@ public class DepartmentManagementFragment extends Fragment {
     }
     
     private void setupRecyclerView() {
-        departmentAdapter = new DepartmentAdapter();
+        departmentAdapter = new CategoryAdapter();
         rvDepartments.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvDepartments.setAdapter(departmentAdapter);
     }
@@ -100,60 +100,47 @@ public class DepartmentManagementFragment extends Fragment {
         }
         
         // 设置适配器点击监听器
-        departmentAdapter.addOnItemChildClickListener(R.id.tv_department_fz, new BaseQuickAdapter.OnItemChildClickListener<Department>() {
+        // 点击分类项（作为科室项）
+        departmentAdapter.addOnItemChildClickListener(R.id.tv_group_fz, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
             @Override
-            public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
-                Department department = baseQuickAdapter.getItem(i);
-                if (department != null) {
-                    onItemClickItem(department);
+            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
+                Category category = baseQuickAdapter.getItem(i);
+                if (category != null) {
+                    onItemClickItem(category);
                 }
             }
         });
-        
-        departmentAdapter.addOnItemChildClickListener(R.id.tv_department_edit, new BaseQuickAdapter.OnItemChildClickListener<Department>() {
+
+        departmentAdapter.addOnItemChildClickListener(R.id.tv_group_edit, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
             @Override
-            public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
-                Department department = baseQuickAdapter.getItem(i);
-                if (department != null && hasPermission("setting")) {
-                    onEditClick(department);
+            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
+                Category category = baseQuickAdapter.getItem(i);
+                if (category != null && hasPermission("setting")) {
+                    showEditDepartmentDialog(category);
                 } else {
                     Toast.makeText(requireContext(), "您没有编辑科室的权限", Toast.LENGTH_SHORT).show();
                 }
             }
         });
-        
-        departmentAdapter.addOnItemChildClickListener(R.id.tv_department_delete, new BaseQuickAdapter.OnItemChildClickListener<Department>() {
+
+        departmentAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
             @Override
-            public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
-                Department department = baseQuickAdapter.getItem(i);
-                if (department != null && hasPermission("setting")) {
-                    onDeleteClick(department);
+            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
+                Category category = baseQuickAdapter.getItem(i);
+                if (category != null && hasPermission("setting")) {
+                    deleteDepartmentByCategory(category);
                 } else {
                     Toast.makeText(requireContext(), "您没有删除科室的权限", Toast.LENGTH_SHORT).show();
                 }
             }
         });
         
-        departmentAdapter.addOnItemChildClickListener(R.id.switch_department_status, new BaseQuickAdapter.OnItemChildClickListener<Department>() {
-            @Override
-            public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
-                Department department = baseQuickAdapter.getItem(i);
-                if (department != null && hasPermission("setting")) {
-                    SwitchCompat switchStatus = (SwitchCompat) view;
-                    onStatusChanged(department, switchStatus.isChecked());
-                } else {
-                    // 恢复开关状态
-                    SwitchCompat switchStatus = (SwitchCompat) view;
-                    switchStatus.setChecked(department.getStatus() == 1);
-                    Toast.makeText(requireContext(), "您没有修改科室状态的权限", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        // 分类不支持状态开关，移除相关监听
     }
     
     private void loadDepartments() {
         try {
-            allDepartments = dbManager.getAllDepartments();
+            allDepartments = dbManager.getCategoriesByGroupId(1);
             departmentAdapter.submitList(allDepartments);
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载科室失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -163,133 +150,71 @@ public class DepartmentManagementFragment extends Fragment {
 
     
     private void showAddDepartmentDialog() {
-        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_department, null);
-        
-        EditText etDepartmentName = dialogView.findViewById(R.id.et_department_name);
-        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
-        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
-        
-        // 设置默认值
-        etSortOrder.setText("1");
-        switchStatus.setChecked(true);
-        
-        new AlertDialog.Builder(getContext())
-                .setTitle("新增科室")
-                .setView(dialogView)
-                .setPositiveButton("确定", (dialog, which) -> {
-                    String name = etDepartmentName.getText().toString().trim();
-                    String sortOrderStr = etSortOrder.getText().toString().trim();
-                    
-                    if (TextUtils.isEmpty(name)) {
-                        Toast.makeText(getContext(), "请输入科室名称", Toast.LENGTH_SHORT).show();
+        DialogUtils.showTextEditDialog(
+                getContext(),
+                "新增科室",
+                "科室名称",
+                "",
+                "",
+                newValue -> {
+                    if (TextUtils.isEmpty(newValue)) {
+                        Toast.makeText(requireContext(), "请输入科室名称", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    
-                    int sortOrder = 1;
-                    if (!TextUtils.isEmpty(sortOrderStr)) {
-                        try {
-                            sortOrder = Integer.parseInt(sortOrderStr);
-                        } catch (NumberFormatException e) {
-                            sortOrder = 1;
+                    try {
+                        long id = dbManager.addCategory(newValue, "", 1);
+                        if (id > 0) {
+                            Toast.makeText(requireContext(), "科室添加成功", Toast.LENGTH_SHORT).show();
+                            loadDepartments();
+                        } else {
+                            Toast.makeText(requireContext(), "科室添加失败", Toast.LENGTH_SHORT).show();
                         }
+                    } catch (Exception e) {
+                        Toast.makeText(requireContext(), "添加科室失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
-                    
-                    int status = switchStatus.isChecked() ? 1 : 0;
-                    addDepartment(name, sortOrder, status);
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                }
+        );
     }
     
-    private void showEditDepartmentDialog(Department department) {
-        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_department, null);
-        
-        EditText etDepartmentName = dialogView.findViewById(R.id.et_department_name);
-        EditText etSortOrder = dialogView.findViewById(R.id.et_sort_order);
-        SwitchCompat switchStatus = dialogView.findViewById(R.id.switch_status);
-        
-        // 设置当前值
-        etDepartmentName.setText(department.getDepartmentName());
-        etSortOrder.setText(String.valueOf(department.getSortOrder()));
-        switchStatus.setChecked(department.getStatus() == 1);
-        
-        new AlertDialog.Builder(getContext())
-                .setTitle("编辑科室")
-                .setView(dialogView)
-                .setPositiveButton("确定", (dialog, which) -> {
-                    String name = etDepartmentName.getText().toString().trim();
-                    String sortOrderStr = etSortOrder.getText().toString().trim();
-                    
-                    if (TextUtils.isEmpty(name)) {
-                        Toast.makeText(getContext(), "请输入科室名称", Toast.LENGTH_SHORT).show();
+    private void showEditDepartmentDialog(Category category) {
+        DialogUtils.showTextEditDialog(
+                getContext(),
+                "编辑科室",
+                "科室名称",
+                category.getCategoryName(),
+                "",
+                newValue -> {
+                    if (TextUtils.isEmpty(newValue)) {
+                        Toast.makeText(requireContext(), "请输入科室名称", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    
-                    int sortOrder = department.getSortOrder();
-                    if (!TextUtils.isEmpty(sortOrderStr)) {
-                        try {
-                            sortOrder = Integer.parseInt(sortOrderStr);
-                        } catch (NumberFormatException e) {
-                            sortOrder = department.getSortOrder();
+                    try {
+                        boolean success = dbManager.updateCategory(category.getCategoryId(), newValue, "", 1);
+                        if (success) {
+                            Toast.makeText(requireContext(), "科室更新成功", Toast.LENGTH_SHORT).show();
+                            loadDepartments();
+                        } else {
+                            Toast.makeText(requireContext(), "科室更新失败", Toast.LENGTH_SHORT).show();
                         }
+                    } catch (Exception e) {
+                        Toast.makeText(requireContext(), "更新科室失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
-                    
-                    int status = switchStatus.isChecked() ? 1 : 0;
-                    updateDepartment((int)department.getDepartmentId(), name, sortOrder, status);
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                }
+        );
     }
     
 
     
-    private void addDepartment(String name, int sortOrder, int status) {
-        try {
-            Department department = new Department();
-            department.setDepartmentName(name);
-            department.setSortOrder(sortOrder);
-            department.setStatus(status);
-            
-            long result = dbManager.insertDepartment(department);
-            if (result > 0) {
-                Toast.makeText(requireContext(), "科室添加成功", Toast.LENGTH_SHORT).show();
-                loadDepartments();
-            } else {
-                Toast.makeText(requireContext(), "科室添加失败", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "添加科室失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
+    // 科室以分组-分类的“科室”分组下的分类动态展示；新增/编辑/删除均操作Category表
     
-    private void updateDepartment(int departmentId, String name, int sortOrder, int status) {
-        try {
-            Department department = new Department();
-            department.setDepartmentId((long)departmentId);
-            department.setDepartmentName(name);
-            department.setSortOrder(sortOrder);
-            department.setStatus(status);
-            
-            int result = dbManager.updateDepartment(department);
-            if (result > 0) {
-                Toast.makeText(requireContext(), "科室更新成功", Toast.LENGTH_SHORT).show();
-                loadDepartments();
-            } else {
-                Toast.makeText(requireContext(), "科室更新失败", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "更新科室失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-    }
-    
-    private void deleteDepartment(Department department) {
+    private void deleteDepartmentByCategory(Category category) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("删除确认")
-                .setMessage("确定要删除科室 \"" + department.getDepartmentName() + "\" 吗？")
+                .setMessage("确定要删除科室 \"" + category.getCategoryName() + "\" 吗？")
                 .setPositiveButton("删除", (dialog, which) -> {
                     try {
-                        int result = dbManager.deleteDepartment(department.getDepartmentId());
-                        if (result > 0) {
+                        boolean success = dbManager.deleteCategory(category.getCategoryId());
+                        if (success) {
                             Toast.makeText(requireContext(), "科室删除成功", Toast.LENGTH_SHORT).show();
                             loadDepartments();
                         } else {
@@ -304,24 +229,11 @@ public class DepartmentManagementFragment extends Fragment {
     }
     
     // 点击事件处理方法
-    private void onEditClick(Department department) {
-        showEditDepartmentDialog(department);
+    private void onItemClickItem(Category category) {
+        Toast.makeText(requireContext(), "点击了科室: " + category.getCategoryName(), Toast.LENGTH_SHORT).show();
     }
     
-    private void onDeleteClick(Department department) {
-        deleteDepartment(department);
-    }
-    
-    private void onItemClickItem(Department department) {
-        // 可以在这里处理科室项点击事件，比如跳转到详情页面
-        Toast.makeText(requireContext(), "点击了科室: " + department.getDepartmentName(), Toast.LENGTH_SHORT).show();
-    }
-    
-    private void onStatusChanged(Department department, boolean isChecked) {
-         int newStatus = isChecked ? 1 : 0;
-         updateDepartment((int)department.getDepartmentId(), department.getDepartmentName(), 
-                         department.getSortOrder(), newStatus);
-     }
+    // 已移除状态切换，分类不包含状态字段
 
     /**
      * 检查当前用户是否有指定权限
