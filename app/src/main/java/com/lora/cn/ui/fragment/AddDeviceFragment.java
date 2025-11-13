@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -256,28 +257,32 @@ public class AddDeviceFragment extends Fragment {
             llDynamicGroups.removeAllViews();
             java.util.List<com.lora.cn.database.entity.Group> groups = dbManager.getAllGroups();
             for (com.lora.cn.database.entity.Group g : groups) {
-                android.widget.LinearLayout row = new android.widget.LinearLayout(requireContext());
-                row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-                row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-                row.setBackgroundColor(android.graphics.Color.WHITE);
-                android.widget.LinearLayout.LayoutParams lpRow = new android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT,  android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
-                lpRow.setMargins(0, 10, 0, 10);
-                row.setLayoutParams(lpRow);
-
-                android.widget.TextView tv = new android.widget.TextView(requireContext());
-                android.widget.LinearLayout.LayoutParams lpTv = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 380);
-                tv.setLayoutParams(lpTv);
-                tv.setText(g.getGroupName());
-                tv.setTextColor(android.graphics.Color.parseColor("#333333"));
-                tv.setTextSize(16);
-                tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                tv.setGravity(android.view.Gravity.RIGHT | android.view.Gravity.CENTER_VERTICAL);
-                tv.setPadding(0, 0, 10, 0);
-
-                android.widget.Spinner sp = new android.widget.Spinner(requireContext());
-                android.widget.LinearLayout.LayoutParams lpSp = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 500);
-                sp.setLayoutParams(lpSp);
-                sp.setBackgroundResource(R.drawable.spinner_background);
+                LayoutInflater v = LayoutInflater.from(getContext()); // 获取LayoutInflater实例
+                LinearLayout row = (LinearLayout) v.inflate(R.layout.item_add_device, null);
+                TextView tv= row.findViewById(R.id.item_device_title);
+                Spinner sp= row.findViewById(R.id.item_device_content);
+                //android.widget.LinearLayout row = new android.widget.LinearLayout(requireContext());
+//                row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+//                row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+//                row.setBackgroundColor(android.graphics.Color.WHITE);
+//                android.widget.LinearLayout.LayoutParams lpRow = new android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT,  android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+//                lpRow.setMargins(0, 10, 0, 10);
+//                row.setLayoutParams(lpRow);
+//
+//                android.widget.TextView tv = new android.widget.TextView(requireContext());
+//                android.widget.LinearLayout.LayoutParams lpTv = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 380);
+//                tv.setLayoutParams(lpTv);
+//                tv.setText(g.getGroupName());
+//                tv.setTextColor(android.graphics.Color.parseColor("#333333"));
+//                tv.setTextSize(16);
+//                tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+//                tv.setGravity(android.view.Gravity.RIGHT | android.view.Gravity.CENTER_VERTICAL);
+//                tv.setPadding(0, 0, 10, 0);
+//
+//                android.widget.Spinner sp = new android.widget.Spinner(requireContext());
+//                android.widget.LinearLayout.LayoutParams lpSp = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 500);
+//                sp.setLayoutParams(lpSp);
+//                sp.setBackgroundResource(R.drawable.spinner_background);
 
                 java.util.List<com.lora.cn.database.entity.Category> cats = dbManager.getCategoriesByGroupId(g.getGroupId());
                 java.util.List<String> names = new java.util.ArrayList<>();

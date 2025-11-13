@@ -35,7 +35,7 @@
             android:layout_height="match_parent"
             android:layout_weight="500" >
 
-            <TextView
+            <Spinner
                 android:id="@+id/item_device_content"
                 android:gravity="center_vertical"
                 android:layout_width="0dp"

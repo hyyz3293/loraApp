@@ -69,17 +69,32 @@
                 android:background="#FFFFFF"
                 android:orientation="horizontal"
                 >
-
-                <TextView
+                <LinearLayout
+                    android:orientation="horizontal"
                     android:layout_width="0dp"
                     android:layout_weight="380"
-                    android:layout_height="match_parent"
-                    android:text="终端ID"
-                    android:layout_marginRight="10dp"
-                    android:gravity="right|center"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:gravity="right|center_vertical"
+                    android:layout_height="match_parent" >
+
+                    <ImageView
+                        android:layout_width="4dp"
+                        android:layout_height="10dp"
+                        android:layout_marginRight="15dp"
+                        android:background="@drawable/bg_add_device"
+                        />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="终端ID"
+                        android:layout_marginRight="10dp"
+                        android:gravity="right|center"
+                        android:textColor="#333333"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
 
                 <TextView
                     android:id="@+id/tv_terminal_id"
@@ -112,16 +127,34 @@
                 android:orientation="horizontal"
                 >
 
-                <TextView
+                <LinearLayout
+                    android:orientation="horizontal"
                     android:layout_width="0dp"
                     android:layout_weight="380"
-                    android:layout_height="match_parent"
-                    android:text="终端编号"
-                    android:layout_marginRight="10dp"
-                    android:gravity="right|center"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:gravity="right|center_vertical"
+                    android:layout_height="match_parent" >
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="*"
+                        android:layout_marginRight="3dp"
+                        android:gravity="right|center"
+                        android:textColor="#E40000"
+                        android:textSize="16dp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="终端编号"
+                        android:layout_marginRight="10dp"
+                        android:gravity="right|center"
+                        android:textColor="#000000"
+                        android:textSize="16sp"
+                          />
+
+                </LinearLayout>
 
                 <EditText
                     android:id="@+id/et_device_id"
@@ -154,17 +187,37 @@
                 android:orientation="horizontal"
                 >
 
-                <TextView
+
+
+
+                <LinearLayout
+                    android:orientation="horizontal"
                     android:layout_width="0dp"
                     android:layout_weight="380"
-                    android:layout_height="match_parent"
-                    android:text="设备名称"
-                    android:layout_marginRight="10dp"
-                    android:gravity="right|center"
-                    android:textColor="#333333"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:gravity="right|center_vertical"
+                    android:layout_height="match_parent" >
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="*"
+                        android:layout_marginRight="3dp"
+                        android:gravity="right|center"
+                        android:textColor="#E40000"
+                        android:textSize="16dp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="设备名称"
+                        android:layout_marginRight="10dp"
+                        android:gravity="right|center"
+                        android:textColor="#000000"
+                        android:textSize="16sp"
+                          />
+
+                </LinearLayout>
                 <EditText
                     android:id="@+id/et_device_name"
                     android:paddingLeft="28dp"
@@ -180,6 +233,61 @@
                     android:textSize="16sp" />
 
                 <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="300"
+                    android:layout_height="match_parent"
+                    />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="43dp"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:background="#FFFFFF"
+                android:orientation="horizontal"
+                >
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="0dp"
+                    android:layout_weight="380"
+                    android:gravity="right|center_vertical"
+                    android:layout_height="match_parent" >
+
+                    <ImageView
+                        android:layout_width="4dp"
+                        android:layout_height="10dp"
+                        android:layout_marginRight="15dp"
+                        android:background="@drawable/bg_add_device"
+                        />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="分组"
+                        android:layout_marginRight="10dp"
+                        android:gravity="right|center"
+                        android:textColor="#333333"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+
+                <TextView
+
+                    android:paddingLeft="28dp"
+                    android:gravity="center_vertical"
+                    android:layout_width="0dp"
+                    android:layout_weight="500"
+                    android:layout_height="match_parent"
+                    android:text=""
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <TextView
+
                     android:layout_width="0dp"
                     android:layout_weight="300"
                     android:layout_height="match_parent"
