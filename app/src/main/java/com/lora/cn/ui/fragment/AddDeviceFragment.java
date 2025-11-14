@@ -335,7 +335,9 @@ public class AddDeviceFragment extends Fragment {
                             }
                         }
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                    LogUtils.e("ddx");
+                }
                 if (wantId > 0L) {
                     int idx = 0;
                     for (int k = 0; k < cats.size(); k++) {
@@ -359,13 +361,6 @@ public class AddDeviceFragment extends Fragment {
                     public void onNothingSelected(android.widget.AdapterView<?> parent) {}
                 });
 
-                android.widget.TextView filler = new android.widget.TextView(requireContext());
-                android.widget.LinearLayout.LayoutParams lpFill = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 300);
-                filler.setLayoutParams(lpFill);
-
-                row.addView(tv);
-                row.addView(sp);
-                row.addView(filler);
                 llDynamicGroups.addView(row);
             }
         } catch (Exception ignored) {
