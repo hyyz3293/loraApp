@@ -48,7 +48,7 @@ public class AddDeviceFragment extends Fragment {
     private TextView btnSave;
     private TextView btnCancel;
     private TextView btnConfirmPair;
-    private android.widget.LinearLayout llDynamicGroups;
+    private androidx.recyclerview.widget.RecyclerView llDynamicGroups;
     private java.util.Map<Long, Long> selectedByGroup = new java.util.HashMap<>();
     
     private DatabaseManager dbManager;
@@ -117,7 +117,7 @@ public class AddDeviceFragment extends Fragment {
         btnSave = view.findViewById(R.id.btn_save);
         btnCancel = view.findViewById(R.id.btn_cancel);
         btnConfirmPair = view.findViewById(R.id.btn_confirm_pair);
-        llDynamicGroups = view.findViewById(R.id.ll_dynamic_groups);
+        llDynamicGroups = view.findViewById(R.id.rv_dynamic_groups);
     }
     
     private void initData() {
@@ -255,114 +255,17 @@ public class AddDeviceFragment extends Fragment {
     private void renderDynamicGroups() {
         try {
             if (llDynamicGroups == null) return;
-            llDynamicGroups.removeAllViews();
             java.util.List<com.lora.cn.database.entity.Group> groups = dbManager.getAllGroups();
             if (groups == null || groups.isEmpty()) {
-                TextView tip = new TextView(requireContext());
-                tip.setText("暂无分组数据，请先在 设置→分组管理 中添加");
-                tip.setTextColor(android.graphics.Color.parseColor("#666666"));
-                tip.setTextSize(14);
-                llDynamicGroups.addView(tip);
+                llDynamicGroups.setVisibility(View.GONE);
                 return;
             }
-            for (int i = 0; i < groups.size(); i++) {
-                com.lora.cn.database.entity.Group g = groups.get(i);
-                LogUtils.e("===============>>>>>>." + new Gson().toJson(g));
-                LayoutInflater v = LayoutInflater.from(getContext()); // 获取LayoutInflater实例
-                LinearLayout row = (LinearLayout) v.inflate(R.layout.item_add_device, null);
-                TextView tv= row.findViewById(R.id.item_device_title);
-                Spinner sp= row.findViewById(R.id.item_device_content);
-                //android.widget.LinearLayout row = new android.widget.LinearLayout(requireContext());
-//                row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-//                row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-//                row.setBackgroundColor(android.graphics.Color.WHITE);
-//                android.widget.LinearLayout.LayoutParams lpRow = new android.widget.LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT,  android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
-//                lpRow.setMargins(0, 10, 0, 10);
-//                row.setLayoutParams(lpRow);
-//
-//                android.widget.TextView tv = new android.widget.TextView(requireContext());
-//                android.widget.LinearLayout.LayoutParams lpTv = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 380);
-//                tv.setLayoutParams(lpTv);
-//                tv.setText(g.getGroupName());
-//                tv.setTextColor(android.graphics.Color.parseColor("#333333"));
-//                tv.setTextSize(16);
-//                tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-//                tv.setGravity(android.view.Gravity.RIGHT | android.view.Gravity.CENTER_VERTICAL);
-//                tv.setPadding(0, 0, 10, 0);
-//
-//                android.widget.Spinner sp = new android.widget.Spinner(requireContext());
-//                android.widget.LinearLayout.LayoutParams lpSp = new android.widget.LinearLayout.LayoutParams(0, android.view.ViewGroup.LayoutParams.WRAP_CONTENT, 500);
-//                sp.setLayoutParams(lpSp);
-//                sp.setBackgroundResource(R.drawable.spinner_background);
-
-                tv.setText(g.getGroupName());
-                java.util.List<com.lora.cn.database.entity.Category> cats = dbManager.getCategoriesByGroupId(g.getGroupId());
-                java.util.List<String> names = new java.util.ArrayList<>();
-                if (cats != null) {
-                    for (com.lora.cn.database.entity.Category c : cats) names.add(c.getCategoryName());
-                }
-                if (names.isEmpty()) {
-                    names.add("暂无分类");
-                }
-                android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                sp.setAdapter(adapter);
-                sp.setTag(cats);
-                if (cats == null || cats.isEmpty()) {
-                    sp.setEnabled(false);
-                } else {
-                    sp.setEnabled(true);
-                }
-                // 预选中：编辑模式根据已有终端的分组分类设置默认选中
-                long wantId = 0L;
-                try {
-                    if (terminal != null) {
-                        long gid = g.getGroupId();
-                        if (gid == 1L) wantId = terminal.getDepartmentId();
-                        else if (gid == 2L) wantId = terminal.getRoomId();
-                        else if (gid == 3L) wantId = terminal.getNursingGroupId();
-                        else if (gid == 4L) wantId = terminal.getOtherId();
-                        else {
-                            String ext = terminal.getExtension();
-                            if (!android.text.TextUtils.isEmpty(ext)) {
-                                org.json.JSONObject obj = new org.json.JSONObject(ext);
-                                if (obj.has("extra_groups")) {
-                                    org.json.JSONObject ex = obj.getJSONObject("extra_groups");
-                                    if (ex.has(String.valueOf(gid))) {
-                                        wantId = ex.optLong(String.valueOf(gid), 0L);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (Exception ignored) {
-                    LogUtils.e("ddx");
-                }
-                if (wantId > 0L) {
-                    int idx = 0;
-                    for (int k = 0; k < cats.size(); k++) {
-                        if (cats.get(k).getCategoryId() == wantId) { idx = k; break; }
-                    }
-                    try { sp.setSelection(idx, false); } catch (Throwable ignored) {}
-                    selectedByGroup.put(g.getGroupId(), wantId);
-                }
-                sp.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
-                        Object tag = parent.getTag();
-                        if (tag instanceof java.util.List) {
-                            java.util.List<com.lora.cn.database.entity.Category> list = (java.util.List<com.lora.cn.database.entity.Category>) tag;
-                            if (position >= 0 && position < list.size()) {
-                                selectedByGroup.put(g.getGroupId(), list.get(position).getCategoryId());
-                            }
-                        }
-                    }
-                    @Override
-                    public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-                });
-
-                llDynamicGroups.addView(row);
-            }
+            llDynamicGroups.setVisibility(View.VISIBLE);
+            androidx.recyclerview.widget.LinearLayoutManager lm = new androidx.recyclerview.widget.LinearLayoutManager(requireContext());
+            llDynamicGroups.setLayoutManager(lm);
+            com.lora.cn.ui.adapter.DynamicGroupAdapter dgAdapter = new com.lora.cn.ui.adapter.DynamicGroupAdapter(dbManager, selectedByGroup, terminal);
+            llDynamicGroups.setAdapter(dgAdapter);
+            dgAdapter.submitList(groups);
         } catch (Exception ignored) {
             LogUtils.e("ggg");
         }
