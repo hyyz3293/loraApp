@@ -76,7 +76,15 @@ public class TerminalStatusListFragment extends Fragment {
         addTerminalBtn = view.findViewById(R.id.add_terminal);
         tvGroupCategory = view.findViewById(R.id.tv_group_category);
 
-        addTerminalBtn.setOnClickListener(v -> Toast.makeText(requireContext(), "请返回首页进行新增", Toast.LENGTH_SHORT).show());
+        if (addTerminalBtn != null) {
+            addTerminalBtn.setText("返回");
+            addTerminalBtn.setOnClickListener(v -> {
+                if (getActivity() instanceof androidx.appcompat.app.AppCompatActivity) {
+                    androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                    if (a != null) a.getSupportFragmentManager().popBackStack();
+                }
+            });
+        }
 
         EditText searchEditText = view.findViewById(R.id.et_search);
         if (searchEditText != null) {
