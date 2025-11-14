@@ -7,6 +7,7 @@ import android.text.InputType;
 import android.text.method.PasswordTransformationMethod;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,6 +30,8 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etPwd;
     private View userDropdownArea;
     private TextView btnLogin;
+    private ImageView ivPwdToggle;
+    private boolean pwdVisible = false;
 
     private DatabaseManager databaseManager;
     private List<User> allUsers;
@@ -53,6 +56,7 @@ public class LoginActivity extends AppCompatActivity {
         etUser = findViewById(R.id.login_user);
         etPwd = findViewById(R.id.login_pwd);
         userDropdownArea = findViewById(R.id.login_user_dw);
+        ivPwdToggle = findViewById(R.id.iv_pwd_toggle);
         btnLogin = findViewById(R.id.login);
 
         // 密码输入样式
@@ -61,33 +65,46 @@ public class LoginActivity extends AppCompatActivity {
             etPwd.setTransformationMethod(PasswordTransformationMethod.getInstance());
         }
 
-        // 账号下拉选择
+        // 账号下拉选择（仅当存在登录历史时显示）
         if (userDropdownArea != null) {
-            userDropdownArea.setOnClickListener(v -> showUserPicker());
-        }
-        if (etUser != null) {
-            etUser.setOnClickListener(v -> showUserPicker());
+            if (userOptions != null && userOptions.length > 0) {
+                userDropdownArea.setVisibility(View.VISIBLE);
+                userDropdownArea.setOnClickListener(v -> showUserPicker());
+                if (etUser != null) {
+                    etUser.setOnClickListener(v -> showUserPicker());
+                }
+            } else {
+                userDropdownArea.setVisibility(View.GONE);
+            }
         }
 
         // 登录按钮
         if (btnLogin != null) {
             btnLogin.setOnClickListener(v -> attemptLogin());
         }
+
+        ivPwdToggle.setImageResource(R.mipmap.ic_see);
+        // 密码明暗文切换
+        if (ivPwdToggle != null && etPwd != null) {
+            ivPwdToggle.setOnClickListener(v -> togglePasswordVisibility());
+        }
     }
 
     private void loadUsers() {
-        try {
-            allUsers = databaseManager.getActiveUsers();
-            List<String> userNames = new ArrayList<>();
-            for (User user : allUsers) {
-                userNames.add(user.getUserName() + " (" + user.getUserAccount() + ")");
-            }
-            userOptions = userNames.toArray(new String[0]);
-        } catch (Exception e) {
-            // 如果数据库中没有用户，使用默认选项
-            userOptions = new String[]{"请先在用户管理中添加用户"};
+        String history = SPUtils.getInstance().getString("login_history_accounts", "");
+        if (history == null || history.trim().isEmpty()) {
+            userOptions = new String[]{};
             allUsers = new ArrayList<>();
+            return;
         }
+        String[] accounts = history.split(",");
+        List<String> list = new ArrayList<>();
+        for (String acc : accounts) {
+            String a = acc.trim();
+            if (!a.isEmpty()) list.add(a);
+        }
+        userOptions = list.toArray(new String[0]);
+        allUsers = new ArrayList<>();
     }
 
     private void showUserPicker() {
@@ -128,6 +145,14 @@ public class LoginActivity extends AppCompatActivity {
                 SPUtils.getInstance().put("current_user_id", authenticatedUser.getUserId());
                 SPUtils.getInstance().put("current_user_name", authenticatedUser.getUserName());
                 SPUtils.getInstance().put("current_user_account", authenticatedUser.getUserAccount());
+                // 记录本机登录历史账号（成功后）
+                String history = SPUtils.getInstance().getString("login_history_accounts", "");
+                String acc = authenticatedUser.getUserAccount();
+                if (history == null || history.trim().isEmpty()) {
+                    SPUtils.getInstance().put("login_history_accounts", acc);
+                } else if (!history.contains(acc)) {
+                    SPUtils.getInstance().put("login_history_accounts", history + "," + acc);
+                }
                 
                 Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(LoginActivity.this, MainActivity.class);
@@ -141,5 +166,20 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         //overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+    }
+
+    private void togglePasswordVisibility() {
+        if (etPwd == null) return;
+        pwdVisible = !pwdVisible;
+        if (pwdVisible) {
+            etPwd.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            etPwd.setTransformationMethod(null);
+            if (ivPwdToggle != null) ivPwdToggle.setImageResource(R.mipmap.ic_see);
+        } else {
+            etPwd.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            etPwd.setTransformationMethod(PasswordTransformationMethod.getInstance());
+            if (ivPwdToggle != null) ivPwdToggle.setImageResource(R.mipmap.ic_see_no);
+        }
+        etPwd.setSelection(etPwd.getText() != null ? etPwd.getText().length() : 0);
     }
 }

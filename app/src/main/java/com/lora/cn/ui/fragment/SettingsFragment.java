@@ -99,9 +99,9 @@ public class SettingsFragment extends Fragment {
         if (hasPermission("setting")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
         }
-        if (hasPermission("setting")) {
-            settingList.add(new SettingItem(R.mipmap.ic_setting2, "自动返回首页时间"));
-        }
+//        if (hasPermission("setting")) {
+//            settingList.add(new SettingItem(R.mipmap.ic_setting2, "自动返回首页时间"));
+//        }
 
 
         // 设置RecyclerView

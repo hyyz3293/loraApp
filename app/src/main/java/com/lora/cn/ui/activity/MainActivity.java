@@ -19,6 +19,7 @@ import com.blankj.utilcode.util.SPUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.google.gson.Gson;
 import com.lora.cn.R;
+import com.lora.cn.constant.SpConstant;
 import com.lora.cn.events.UplinkDataEvent;
 import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.ui.adapter.MainPagerAdapter;
@@ -93,21 +94,16 @@ public class MainActivity extends AppCompatActivity {
     // 自动返回首页计时
     private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private long lastNonHomeStartMs = 0L;
+    private volatile long lastInteractionMs = System.currentTimeMillis();
     private final Runnable autoReturnRunnable = new Runnable() {
         @Override
         public void run() {
             try {
-                if (!isOnHome()) {
-                    if (lastNonHomeStartMs == 0L) {
-                        lastNonHomeStartMs = System.currentTimeMillis();
-                    }
-                    long timeoutMs = getAutoReturnTimeoutMs();
-                    if (System.currentTimeMillis() - lastNonHomeStartMs >= timeoutMs) {
-                        Log.i(TAG, "超时未在首页，自动返回首页");
-                        navigateHome();
-                    }
-                } else {
-                    lastNonHomeStartMs = 0L;
+                long timeoutMs = getAutoReturnTimeoutMs();
+                long idleMs = System.currentTimeMillis() - lastInteractionMs;
+                if (!isOnHome() && idleMs >= timeoutMs) {
+                    Log.i(TAG, "空闲超时，自动返回首页");
+                    navigateHome();
                 }
             } catch (Exception e) {
                 Log.e(TAG, "自动返回首页检查异常: " + e.getMessage());
@@ -197,13 +193,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
-        // 任意用户交互（点击/触摸）重置自动返回首页计时
         if (ev != null && ev.getAction() == android.view.MotionEvent.ACTION_DOWN) {
-            if (!isOnHome()) {
-                lastNonHomeStartMs = System.currentTimeMillis();
-            }
+            lastInteractionMs = System.currentTimeMillis();
         }
         return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public void onUserInteraction() {
+        super.onUserInteraction();
+        lastInteractionMs = System.currentTimeMillis();
     }
 
     private void initViews() {
@@ -392,6 +391,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void logout() {
         // 跳转到登录页面
+        SPUtils.getInstance().put(SpConstant.IS_LOGIN, false);
         Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);

@@ -26,6 +26,9 @@ public class PasswordChangeFragment extends Fragment {
     private EditText etConfirmPassword;
     private TextView btnCancelPassword;
     private TextView btnSavePassword;
+    private View ivToggleOld;
+    private View ivToggleNew;
+    private View ivToggleConfirm;
 
     private DatabaseManager databaseManager;
     private User currentUser;
@@ -60,6 +63,9 @@ public class PasswordChangeFragment extends Fragment {
         etConfirmPassword = view.findViewById(R.id.et_confirm_password);
         btnCancelPassword = view.findViewById(R.id.btn_cancel_password);
         btnSavePassword = view.findViewById(R.id.btn_save_password);
+        ivToggleOld = view.findViewById(R.id.iv_toggle_old_password);
+        ivToggleNew = view.findViewById(R.id.iv_toggle_new_password);
+        ivToggleConfirm = view.findViewById(R.id.iv_toggle_confirm_password);
         
         // 初始化数据库管理器
         databaseManager = DatabaseManager.getInstance(getContext());
@@ -78,6 +84,23 @@ public class PasswordChangeFragment extends Fragment {
                 changePassword();
             }
         });
+        if (ivToggleOld != null) ivToggleOld.setOnClickListener(v -> togglePasswordVisibility(etOldPassword));
+        if (ivToggleNew != null) ivToggleNew.setOnClickListener(v -> togglePasswordVisibility(etNewPassword));
+        if (ivToggleConfirm != null) ivToggleConfirm.setOnClickListener(v -> togglePasswordVisibility(etConfirmPassword));
+    }
+
+    private void togglePasswordVisibility(EditText editText) {
+        if (editText == null) return;
+        int currentType = editText.getInputType();
+        boolean isPassword = (currentType & android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD;
+        if (isPassword) {
+            editText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            editText.setTransformationMethod(null);
+        } else {
+            editText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            editText.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+        }
+        editText.setSelection(editText.getText() != null ? editText.getText().length() : 0);
     }
 
     private boolean validatePasswordInput() {

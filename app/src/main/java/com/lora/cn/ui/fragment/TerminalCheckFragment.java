@@ -100,8 +100,13 @@ public class TerminalCheckFragment extends Fragment {
     }
     
     private void initData() {
-        // 更新UI数据
-        updateRemainingCount(remainingCount);
+        // 更新UI数据（管理员不显示剩余次数）
+        if (isAdmin) {
+            android.view.View parent = (android.view.View) terminalRemainingNumber.getParent();
+            if (parent != null) parent.setVisibility(android.view.View.GONE);
+        } else {
+            updateRemainingCount(remainingCount);
+        }
         updateClearTime();
         
         // 初始化饼图数据
