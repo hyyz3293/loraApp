@@ -176,7 +176,7 @@ public class TerminalListFragment extends Fragment {
         terminalStatusAdapter.setOnItemClickListener((adapter1, view1, position1) -> {
             TerminalStatus item = (TerminalStatus) terminalStatusAdapter.getItem(position1);
             if (item == null) return;
-            TerminalListFragment fragment = TerminalListFragment.newInstance(item.getTitle());
+            TerminalStatusListFragment fragment = TerminalStatusListFragment.newInstance(item.getTitle());
             if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
                 com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
                 mainActivity.showDeviceList();
