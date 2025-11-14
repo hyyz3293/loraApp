@@ -244,9 +244,6 @@ public class TerminalDetailFragment extends Fragment {
                 return;
             }
             AddDeviceFragment fragment = AddDeviceFragment.newInstance(t, "edit");
-            if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
-                ((com.lora.cn.ui.activity.MainActivity) getActivity()).showDeviceList();
-            }
             androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
             if (a != null) {
                 a.getSupportFragmentManager().beginTransaction()
