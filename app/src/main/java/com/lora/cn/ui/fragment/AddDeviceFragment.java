@@ -290,17 +290,21 @@ public class AddDeviceFragment extends Fragment {
             return;
         }
         
-        // 检查设备ID是否已存在
-        try {
-            if (terminalDao.isDeviceIdExists(terminalId, 0)) {
-                Toast.makeText(getContext(), "设备ID已存在", Toast.LENGTH_SHORT).show();
-                etDeviceId.requestFocus();
+        // 判断模式：编辑跳过存在校验，新增需校验存在
+        String mode = getArguments() != null ? getArguments().getString("mode", "pair") : "pair";
+        boolean isEdit = "edit".equals(mode);
+        if (!isEdit) {
+            try {
+                if (terminalDao.isDeviceIdExists(terminalId, 0)) {
+                    Toast.makeText(getContext(), "设备ID已存在", Toast.LENGTH_SHORT).show();
+                    etDeviceId.requestFocus();
+                    return;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(getContext(), "检查设备ID失败", Toast.LENGTH_SHORT).show();
                 return;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getContext(), "检查设备ID失败", Toast.LENGTH_SHORT).show();
-            return;
         }
         
         // 创建终端对象
@@ -338,10 +342,15 @@ public class AddDeviceFragment extends Fragment {
 //            terminal.setDeviceCode(deviceCode);
 //        }
         
-        // 保存到数据库
+        // 保存到数据库（编辑→更新；新增→插入）
         try {
-            long result = terminalDao.insertTerminal(terminal);
-            if (result > 0) {
+            boolean ok;
+            if (isEdit) {
+                ok = terminalDao.updateTerminalByDeviceId(terminal) > 0;
+            } else {
+                ok = terminalDao.insertTerminal(terminal) > 0;
+            }
+            if (ok) {
                 // 记录添加终端的日志
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
                 com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
@@ -349,17 +358,17 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setTerminalName(deviceName);
                 logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("成功");
-                logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
-                logInfo.setAction("添加设备");
+                logInfo.setOperator("系统管理员");
+                logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
                 logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
                 
-                Toast.makeText(getContext(), "添加终端成功", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), isEdit ? "编辑终端成功" : "添加终端成功", Toast.LENGTH_SHORT).show();
                 
                 // 发送EventBus事件通知TerminalListFragment刷新
-                EventBus.getDefault().post(new TerminalRefreshEvent("新增终端: " + deviceName));
+                EventBus.getDefault().post(new TerminalRefreshEvent((isEdit ? "编辑终端: " : "新增终端: ") + deviceName));
                 
                 // 返回上一页
                 if (getParentFragmentManager().getBackStackEntryCount() > 0) {
@@ -374,13 +383,13 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("失败");
                 logInfo.setOperator("系统管理员");
-                logInfo.setAction("添加设备");
+                logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
                 logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
                 
-                Toast.makeText(getContext(), "添加终端失败", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), isEdit ? "编辑终端失败" : "添加终端失败", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -394,7 +403,7 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("异常");
                 logInfo.setOperator("系统管理员");
-                logInfo.setAction("添加设备");
+                logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
                 logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
@@ -403,7 +412,7 @@ public class AddDeviceFragment extends Fragment {
                 logException.printStackTrace();
             }
             
-            Toast.makeText(getContext(), "添加终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), (isEdit ? "编辑终端失败: " : "添加终端失败: ") + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 }

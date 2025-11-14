@@ -56,6 +56,40 @@ public class TerminalDao {
         
         return db.insert(DatabaseHelper.TABLE_TERMINALS, null, values);
     }
+
+    /**
+     * 按设备ID更新终端信息
+     */
+    public int updateTerminalByDeviceId(Terminal terminal) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(DatabaseHelper.COLUMN_TERMINAL_NAME, terminal.getTerminalName());
+        values.put(DatabaseHelper.COLUMN_TERMINAL_DEVICE_CODE, terminal.getDeviceCode());
+        values.put(DatabaseHelper.COLUMN_TERMINAL_STATUS, com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(terminal.getStatus()));
+        values.put(DatabaseHelper.COLUMN_TERMINAL_SIGNAL_STRENGTH, terminal.getSignalStrength());
+        values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
+        values.put(DatabaseHelper.COLUMN_TERMINAL_LOCATION, terminal.getLocation());
+        // 分类ID有效才更新
+        if (terminal.getDepartmentId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_DEPARTMENT_ID, terminal.getDepartmentId());
+        }
+        if (terminal.getRoomId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_ROOM_ID, terminal.getRoomId());
+        }
+        if (terminal.getNursingGroupId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_NURSING_GROUP_ID, terminal.getNursingGroupId());
+        }
+        if (terminal.getOtherId() > 0) {
+            values.put(DatabaseHelper.COLUMN_TERMINAL_OTHER_ID, terminal.getOtherId());
+        }
+        values.put(DatabaseHelper.COLUMN_TERMINAL_EXTENSION, terminal.getExtension());
+        values.put(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
+
+        return db.update(DatabaseHelper.TABLE_TERMINALS, values,
+                DatabaseHelper.COLUMN_TERMINAL_DEVICE_ID + "=?",
+                new String[]{terminal.getTerminalId()});
+    }
     
     /**
      * 更新终端收藏状态

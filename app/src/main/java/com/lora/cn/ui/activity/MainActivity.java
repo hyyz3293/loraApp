@@ -301,9 +301,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void showDeviceList() {
-        if (isDeviceListVisible) {
-            return;
-        }
+//        if (isDeviceListVisible) {
+//            return;
+//        }
 
         // 隐藏其他界面
         if (isUserInfoVisible) {
