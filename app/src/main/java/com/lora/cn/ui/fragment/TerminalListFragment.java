@@ -556,6 +556,14 @@ public class TerminalListFragment extends Fragment {
         return new TerminalListFragment();
     }
 
+    public static TerminalListFragment newInstance(String statusFilterTitle) {
+        TerminalListFragment f = new TerminalListFragment();
+        Bundle b = new Bundle();
+        b.putString("status_filter_title", statusFilterTitle);
+        f.setArguments(b);
+        return f;
+    }
+
     /**
      * 加载终端列表数据
      */

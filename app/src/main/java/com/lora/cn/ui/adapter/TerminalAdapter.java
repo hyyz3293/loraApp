@@ -13,6 +13,8 @@ import com.chad.library.adapter4.BaseQuickAdapter;
 import com.chad.library.adapter4.viewholder.QuickViewHolder;
 import com.lora.cn.R;
 import com.lora.cn.ui.model.Terminal;
+import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.Category;
 
 public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder> {
 
@@ -39,8 +41,35 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
 
         // 设置终端基本信息
         terminalTitle.setText(item.getName());
-        terminalKs.setText(item.getDepartment());
-        terminalBf.setText(item.getLocation());
+        String dept = item.getDepartment();
+        String room = item.getLocation();
+        String ngName = null;
+        String otherName = null;
+        try {
+            DatabaseManager dm = DatabaseManager.getInstance(holder.itemView.getContext());
+            if (item.getNursingGroupId() > 0) {
+                Category c = dm.getCategoryById(item.getNursingGroupId());
+                if (c != null) ngName = c.getCategoryName();
+            }
+            if (item.getOtherId() > 0) {
+                Category c2 = dm.getCategoryById(item.getOtherId());
+                if (c2 != null) otherName = c2.getCategoryName();
+            }
+        } catch (Exception ignored) {}
+        String line1 = "";
+        if (dept != null && !dept.isEmpty()) line1 += "科室-" + dept;
+        if (ngName != null && !ngName.isEmpty()) {
+            if (!line1.isEmpty()) line1 += "  ";
+            line1 += "护理组-" + ngName;
+        }
+        String line2 = "";
+        if (room != null && !room.isEmpty()) line2 += "病房-" + room;
+        if (otherName != null && !otherName.isEmpty()) {
+            if (!line2.isEmpty()) line2 += "  ";
+            line2 += "其他-" + otherName;
+        }
+        terminalKs.setText(line1);
+        terminalBf.setText(line2);
 
         // 设置状态信息
         ivStatusIcon.setImageResource(item.getStatusIconResId());

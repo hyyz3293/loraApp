@@ -1,63 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@color/white"
-    android:orientation="vertical">
+    android:layout_height="43dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="#FFFFFF"
+    android:layout_marginTop="10dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="43dp"
-        android:layout_marginBottom="10dp"
-        android:gravity="center_vertical"
-        android:background="#FFFFFF"
-        android:orientation="horizontal"
-        >
+    <TextView
+        android:id="@+id/item_device_title"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="380"
+        android:gravity="right|center"
+        android:textColor="#333333"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginRight="10dp"
+        android:text="分组" />
 
-        <TextView
-            android:id="@+id/item_device_title"
-            android:layout_width="0dp"
-            android:layout_weight="380"
-            android:layout_height="match_parent"
-            android:text="终端ID"
-            android:layout_marginRight="10dp"
-            android:gravity="right|center"
-            android:textColor="#333333"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:paddingLeft="28dp"
-            android:background="@drawable/edit_text_background"
-            android:gravity="center_vertical"
-            android:layout_width="0dp"
-            android:orientation="horizontal"
-            android:layout_height="match_parent"
-            android:layout_weight="500" >
-
-            <Spinner
-                android:id="@+id/item_device_content"
-                android:gravity="center_vertical"
-                android:layout_width="0dp"
-                android:layout_weight="500"
-                android:layout_height="match_parent"
-                android:text="000010"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
-
-            <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-
-        </LinearLayout>
-
-        <TextView
-
-            android:layout_width="0dp"
-            android:layout_weight="300"
-            android:layout_height="match_parent"
-            />
-
-    </LinearLayout>
+    <Spinner
+        android:id="@+id/item_device_content"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="500"
+        android:background="@drawable/spinner_background" />
 
 </LinearLayout>

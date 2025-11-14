@@ -17,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
@@ -256,7 +257,17 @@ public class AddDeviceFragment extends Fragment {
             if (llDynamicGroups == null) return;
             llDynamicGroups.removeAllViews();
             java.util.List<com.lora.cn.database.entity.Group> groups = dbManager.getAllGroups();
-            for (com.lora.cn.database.entity.Group g : groups) {
+            if (groups == null || groups.isEmpty()) {
+                TextView tip = new TextView(requireContext());
+                tip.setText("暂无分组数据，请先在 设置→分组管理 中添加");
+                tip.setTextColor(android.graphics.Color.parseColor("#666666"));
+                tip.setTextSize(14);
+                llDynamicGroups.addView(tip);
+                return;
+            }
+            for (int i = 0; i < groups.size(); i++) {
+                com.lora.cn.database.entity.Group g = groups.get(i);
+                LogUtils.e("===============>>>>>>." + new Gson().toJson(g));
                 LayoutInflater v = LayoutInflater.from(getContext()); // 获取LayoutInflater实例
                 LinearLayout row = (LinearLayout) v.inflate(R.layout.item_add_device, null);
                 TextView tv= row.findViewById(R.id.item_device_title);
@@ -284,13 +295,55 @@ public class AddDeviceFragment extends Fragment {
 //                sp.setLayoutParams(lpSp);
 //                sp.setBackgroundResource(R.drawable.spinner_background);
 
+                tv.setText(g.getGroupName());
                 java.util.List<com.lora.cn.database.entity.Category> cats = dbManager.getCategoriesByGroupId(g.getGroupId());
                 java.util.List<String> names = new java.util.ArrayList<>();
-                for (com.lora.cn.database.entity.Category c : cats) names.add(c.getCategoryName());
+                if (cats != null) {
+                    for (com.lora.cn.database.entity.Category c : cats) names.add(c.getCategoryName());
+                }
+                if (names.isEmpty()) {
+                    names.add("暂无分类");
+                }
                 android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 sp.setAdapter(adapter);
                 sp.setTag(cats);
+                if (cats == null || cats.isEmpty()) {
+                    sp.setEnabled(false);
+                } else {
+                    sp.setEnabled(true);
+                }
+                // 预选中：编辑模式根据已有终端的分组分类设置默认选中
+                long wantId = 0L;
+                try {
+                    if (terminal != null) {
+                        long gid = g.getGroupId();
+                        if (gid == 1L) wantId = terminal.getDepartmentId();
+                        else if (gid == 2L) wantId = terminal.getRoomId();
+                        else if (gid == 3L) wantId = terminal.getNursingGroupId();
+                        else if (gid == 4L) wantId = terminal.getOtherId();
+                        else {
+                            String ext = terminal.getExtension();
+                            if (!android.text.TextUtils.isEmpty(ext)) {
+                                org.json.JSONObject obj = new org.json.JSONObject(ext);
+                                if (obj.has("extra_groups")) {
+                                    org.json.JSONObject ex = obj.getJSONObject("extra_groups");
+                                    if (ex.has(String.valueOf(gid))) {
+                                        wantId = ex.optLong(String.valueOf(gid), 0L);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+                if (wantId > 0L) {
+                    int idx = 0;
+                    for (int k = 0; k < cats.size(); k++) {
+                        if (cats.get(k).getCategoryId() == wantId) { idx = k; break; }
+                    }
+                    try { sp.setSelection(idx, false); } catch (Throwable ignored) {}
+                    selectedByGroup.put(g.getGroupId(), wantId);
+                }
                 sp.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
@@ -315,7 +368,9 @@ public class AddDeviceFragment extends Fragment {
                 row.addView(filler);
                 llDynamicGroups.addView(row);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            LogUtils.e("ggg");
+        }
     }
     
     private void saveDevice() {

@@ -298,6 +298,7 @@
             <!-- 动态分组-分类容器（根据数据库中的分组数量动态渲染行） -->
             <LinearLayout
                 android:id="@+id/ll_dynamic_groups"
+                android:background="@color/black"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
