@@ -54,6 +54,8 @@ public class TerminalListFragment extends Fragment {
     private long selectedGroupId = -1; // -1: 全部分组
     private long selectedCategoryId = -1; // -1: 全部分类
     private List<Terminal> allDisplayTerminals = new ArrayList<>();
+    private String statusFilterTitle = null;
+    private String searchKeyword = "";
 
     // 数据库管理器
     private DatabaseManager databaseManager;
@@ -89,6 +91,9 @@ public class TerminalListFragment extends Fragment {
         }
 
         initViews(view);
+        if (getArguments() != null) {
+            statusFilterTitle = getArguments().getString("status_filter_title", null);
+        }
 
         // 检查查看终端列表权限（修正为正确的权限码：terminal_list）
         if (hasPermission("terminal_list")) {
@@ -115,40 +120,16 @@ public class TerminalListFragment extends Fragment {
             }
         });
 
-        // 搜索设备：点击搜索图标展示设备列表Fragment
+        // 终端名称搜索（就地过滤当前界面）
         EditText searchEditText = view.findViewById(R.id.et_search);
         if (searchEditText != null) {
-            searchEditText.setOnTouchListener((v, event) -> {
-                if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-                    android.graphics.drawable.Drawable right = searchEditText.getCompoundDrawables()[2];
-                    if (right != null && event.getX() >= (searchEditText.getWidth() - searchEditText.getPaddingRight() - right.getBounds().width())) {
-                        // 展示设备列表
-                        if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
-                            com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
-                            mainActivity.showDeviceList();
-                        }
-                        // 记录日志
-                        try {
-                            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                            String now = sdf.format(new java.util.Date());
-                            com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                            logInfo.setTerminalId("SYSTEM");
-                            logInfo.setTerminalName("终端列表");
-                            logInfo.setDeviceId("SYSTEM");
-                            logInfo.setStatus("设备打开");
-                            logInfo.setOperator("系统管理员");
-                            logInfo.setAction("打开附近设备搜索界面");
-                            logInfo.setOperationTime(now);
-                            logInfo.setCreateTime(now);
-                            dbHelper.addLog(logInfo);
-                        } catch (Exception e) {
-                            Log.e(TAG, "记录日志失败", e);
-                        }
-                        return true;
-                    }
+            searchEditText.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override public void afterTextChanged(android.text.Editable s) {
+                    searchKeyword = s != null ? s.toString().trim() : "";
+                    applyCurrentFilters();
                 }
-                return false;
             });
         }
 
@@ -195,26 +176,18 @@ public class TerminalListFragment extends Fragment {
         terminalStatusAdapter.setOnItemClickListener((adapter1, view1, position1) -> {
             TerminalStatus item = (TerminalStatus) terminalStatusAdapter.getItem(position1);
             if (item == null) return;
-            List<Terminal> filtered = new ArrayList<>();
-            String title = item.getTitle();
-            for (Terminal t : allDisplayTerminals) {
-                boolean match = false;
-                if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_IMPORTANT.equals(title)) {
-                    match = t.isFavorite();
-                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE.equals(title)) {
-                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE;
-                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE.equals(title)) {
-                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN.equals(title)) {
-                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN;
-                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(title)) {
-                    match = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
-                } else if (com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_LOW_BATTERY.equals(title)) {
-                    match = t.getBatteryLevel() <= 20;
-                }
-                if (match) filtered.add(t);
+            TerminalListFragment fragment = TerminalListFragment.newInstance(item.getTitle());
+            if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
+                mainActivity.showDeviceList();
             }
-            if (adapter != null) adapter.submitList(filtered);
+            androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+            if (a != null) {
+                a.getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_device_list_container, fragment)
+                        .addToBackStack("terminal_status_filter")
+                        .commit();
+            }
         });
 
         // 初始化终端列表
@@ -644,7 +617,7 @@ public class TerminalListFragment extends Fragment {
             if (terminals != null && !terminals.isEmpty()) {
                 // 转换数据库终端数据为UI显示格式
                 allDisplayTerminals = convertToDisplayTerminals(terminals);
-                adapter.submitList(new ArrayList<>(allDisplayTerminals));
+                applyCurrentFilters();
             } else {
                 // 如果数据库中没有数据，显示空列表
                 adapter.submitList(new ArrayList<>());
@@ -767,5 +740,34 @@ public class TerminalListFragment extends Fragment {
             default:
                 return R.mipmap.ic_xh_no;
         }
+    }
+    private void applyCurrentFilters() {
+        if (adapter == null) return;
+        List<Terminal> list = new ArrayList<>(allDisplayTerminals);
+        // 状态筛选标题
+        if (statusFilterTitle != null && !statusFilterTitle.isEmpty()) {
+            List<Terminal> filtered = new ArrayList<>();
+            for (Terminal t : list) {
+                boolean match = false;
+                if (TerminalStatusConstants.STATUS_IMPORTANT.equals(statusFilterTitle)) match = t.isFavorite();
+                else if (TerminalStatusConstants.STATUS_ONLINE.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_ONLINE;
+                else if (TerminalStatusConstants.STATUS_OFFLINE.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_OFFLINE;
+                else if (TerminalStatusConstants.STATUS_NORMAL_TAKEN.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_NORMAL_TAKEN;
+                else if (TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
+                else if (TerminalStatusConstants.STATUS_LOW_BATTERY.equals(statusFilterTitle)) match = t.getBatteryLevel() <= 20;
+                if (match) filtered.add(t);
+            }
+            list = filtered;
+        }
+        // 终端名称关键词
+        if (searchKeyword != null && !searchKeyword.isEmpty()) {
+            List<Terminal> filtered = new ArrayList<>();
+            for (Terminal t : list) {
+                String name = t.getTerminalName();
+                if (name != null && name.contains(searchKeyword)) filtered.add(t);
+            }
+            list = filtered;
+        }
+        adapter.submitList(list);
     }
 }
