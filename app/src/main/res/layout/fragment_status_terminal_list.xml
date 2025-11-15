@@ -253,45 +253,6 @@
         </LinearLayout>
     </RelativeLayout>
 
-    <!-- 待处理入口（浮标） -->
-    <RelativeLayout
-        android:id="@+id/ll_alert_pending"
-        android:visibility="gone"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <FrameLayout
-            android:layout_alignParentRight="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginRight="20dp"
-            android:layout_marginBottom="20dp"
-            android:background="@drawable/bg_white_12"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:id="@+id/btn_alert_pending"
-                android:text="待处理"
-                android:paddingLeft="12dp"
-                android:paddingRight="12dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <TextView
-                android:id="@+id/tv_alert_count"
-                android:layout_gravity="end|top"
-                android:background="#D00000"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:paddingLeft="6dp"
-                android:paddingRight="6dp"
-                android:layout_marginLeft="-8dp"
-                android:layout_marginTop="-8dp"
-                android:text="0"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-        </FrameLayout>
-    </RelativeLayout>
 
 </LinearLayout>
 

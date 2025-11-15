@@ -86,8 +86,7 @@ public class TerminalListFragment extends Fragment {
     private TextView btnAlertMinimize;
     private TextView btnAlertHandle;
     private View llAlertPending;
-    private TextView btnAlertPending;
-    private TextView tvAlertCount;
+
     private int pendingAlertCount = 0;
     private boolean alertMuted = false;
 
@@ -137,8 +136,8 @@ public class TerminalListFragment extends Fragment {
         btnAlertMinimize = view.findViewById(R.id.btn_alert_minimize);
         btnAlertHandle = view.findViewById(R.id.btn_alert_handle);
         llAlertPending = view.findViewById(R.id.ll_alert_pending);
-        btnAlertPending = view.findViewById(R.id.btn_alert_pending);
-        tvAlertCount = view.findViewById(R.id.tv_alert_count);
+//        btnAlertPending = view.findViewById(R.id.btn_alert_pending);
+//        tvAlertCount = view.findViewById(R.id.tv_alert_count);
 
         // 设置添加终端按钮点击事件
         addTerminalBtn.setOnClickListener(v -> {
@@ -233,9 +232,9 @@ public class TerminalListFragment extends Fragment {
                 if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
             });
         }
-        if (btnAlertPending != null) {
-            btnAlertPending.setOnClickListener(v -> openAlertPendingList());
-        }
+//        if (btnAlertPending != null) {
+//            btnAlertPending.setOnClickListener(v -> openAlertPendingList());
+//        }
     }
 
     private void initTerminalStatus() {
@@ -486,7 +485,7 @@ public class TerminalListFragment extends Fragment {
     }
 
     private void updatePendingBadge() {
-        if (tvAlertCount != null) tvAlertCount.setText(String.valueOf(pendingAlertCount));
+//        if (tvAlertCount != null) tvAlertCount.setText(String.valueOf(pendingAlertCount));
         if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
     }
 
