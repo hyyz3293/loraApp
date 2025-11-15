@@ -445,6 +445,49 @@ public class DialogUtils {
         dialog.show();
     }
 
+    public static class CountingProgress {
+        public final android.app.Dialog dialog;
+        public final android.widget.TextView tvTitle;
+        public final android.widget.TextView tvPercent;
+        public final android.widget.ProgressBar progressBar;
+        CountingProgress(android.app.Dialog d, android.widget.TextView t, android.widget.TextView p, android.widget.ProgressBar b) {
+            this.dialog = d; this.tvTitle = t; this.tvPercent = p; this.progressBar = b;
+        }
+    }
+
+    public static CountingProgress showCountingProgressDialog(android.content.Context context, String title, int initialPercent) {
+        android.app.Dialog dialog = new android.app.Dialog(context);
+        dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        android.view.View v = android.view.LayoutInflater.from(context).inflate(com.lora.cn.R.layout.dialog_counting_progress, null);
+        dialog.setContentView(v);
+        android.view.Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawableResource(android.R.color.transparent);
+            w.setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        android.widget.TextView tvTitle = v.findViewById(com.lora.cn.R.id.tv_title);
+        android.widget.TextView tvPercent = v.findViewById(com.lora.cn.R.id.tv_percent);
+        android.widget.ProgressBar bar = v.findViewById(com.lora.cn.R.id.progress_bar);
+        if (title != null) tvTitle.setText(title);
+        int p = Math.max(0, Math.min(100, initialPercent));
+        tvPercent.setText(p + "%");
+        bar.setProgress(p);
+        dialog.show();
+        return new CountingProgress(dialog, tvTitle, tvPercent, bar);
+    }
+
+    public static void updateCountingProgress(CountingProgress cp, int percent) {
+        if (cp == null) return;
+        int p = Math.max(0, Math.min(100, percent));
+        if (cp.tvPercent != null) cp.tvPercent.setText(p + "%");
+        if (cp.progressBar != null) cp.progressBar.setProgress(p);
+    }
+
+    public static void dismissCountingProgress(CountingProgress cp) {
+        if (cp == null) return;
+        try { cp.dialog.dismiss(); } catch (Exception ignored) {}
+    }
+
     /**
      * 显示处理备注自定义对话框
      * @param context 上下文

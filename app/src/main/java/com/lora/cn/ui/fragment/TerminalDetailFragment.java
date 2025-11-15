@@ -300,7 +300,7 @@ public class TerminalDetailFragment extends Fragment {
                     ivFavorite.setImageResource(target ? R.mipmap.ic_star_yeollw : R.mipmap.ic_start);
                     ivFavorite.setTag(target);
                     ///ivFavorite.setVisibility(View.GONE);
-                    Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
                     // 通知列表刷新收藏状态
                     org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("更新收藏: " + deviceId));
                 } else {
