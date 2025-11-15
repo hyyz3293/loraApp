@@ -86,9 +86,22 @@ public class TerminalListFragment extends Fragment {
     private TextView btnAlertMinimize;
     private TextView btnAlertHandle;
     private View llAlertPending;
+    private View llAlertPendingSmall;
+    private android.widget.TextView tvErrorNumber;
+    private android.widget.TextView tvErrorTitle;
+    private android.widget.TextView tvErrorName;
+    private android.widget.TextView tvErrorCode;
+    private android.widget.TextView tvErrorTime;
+    private android.widget.ImageView ivErrorSmall;
+    private android.widget.ImageView ivErrorClose;
+    private android.widget.TextView tvErrorVoiceNo;
+    private android.widget.TextView tvErrorComplete;
 
     private int pendingAlertCount = 0;
     private boolean alertMuted = false;
+    private final java.util.Deque<AlertItem> alertQueue = new java.util.ArrayDeque<>();
+    private AlertItem currentAlert = null;
+    private android.media.MediaPlayer alertPlayer;
 
     @Nullable
     @Override
@@ -136,6 +149,16 @@ public class TerminalListFragment extends Fragment {
         btnAlertMinimize = view.findViewById(R.id.btn_alert_minimize);
         btnAlertHandle = view.findViewById(R.id.btn_alert_handle);
         llAlertPending = view.findViewById(R.id.ll_alert_pending);
+        llAlertPendingSmall = view.findViewById(R.id.ll_alert_pending_small);
+        tvErrorNumber = view.findViewById(R.id.error_number);
+        tvErrorTitle = view.findViewById(R.id.error_title);
+        tvErrorName = view.findViewById(R.id.error_name);
+        tvErrorCode = view.findViewById(R.id.error_code);
+        tvErrorTime = view.findViewById(R.id.error_time);
+        ivErrorSmall = view.findViewById(R.id.error_small);
+        ivErrorClose = view.findViewById(R.id.error_close);
+        tvErrorVoiceNo = view.findViewById(R.id.error_voice_no);
+        tvErrorComplete = view.findViewById(R.id.error_complte);
 //        btnAlertPending = view.findViewById(R.id.btn_alert_pending);
 //        tvAlertCount = view.findViewById(R.id.tv_alert_count);
 
@@ -221,20 +244,38 @@ public class TerminalListFragment extends Fragment {
         }
         if (btnAlertMinimize != null) {
             btnAlertMinimize.setOnClickListener(v -> {
-                pendingAlertCount++;
-                updatePendingBadge();
-                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+                minimizePending();
             });
         }
         if (btnAlertHandle != null) {
             btnAlertHandle.setOnClickListener(v -> {
-                openAlertPendingList();
-                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+                handleCurrentAlert();
             });
         }
 //        if (btnAlertPending != null) {
 //            btnAlertPending.setOnClickListener(v -> openAlertPendingList());
 //        }
+        if (ivErrorSmall != null) {
+            ivErrorSmall.setOnClickListener(v -> minimizePending());
+        }
+        if (llAlertPendingSmall != null) {
+            llAlertPendingSmall.setOnClickListener(v -> expandPending());
+        }
+        if (ivErrorClose != null) {
+            ivErrorClose.setOnClickListener(v -> {
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+            });
+        }
+        if (tvErrorVoiceNo != null) {
+            tvErrorVoiceNo.setOnClickListener(v -> {
+                alertMuted = !alertMuted;
+                Toast.makeText(requireContext(), alertMuted ? "已静音" : "已取消静音", Toast.LENGTH_SHORT).show();
+            });
+        }
+        if (tvErrorComplete != null) {
+            tvErrorComplete.setOnClickListener(v -> handleCurrentAlert());
+        }
     }
 
     private void initTerminalStatus() {
@@ -471,10 +512,12 @@ public class TerminalListFragment extends Fragment {
         boolean low = (frame.evLowBattery == 1);
         boolean offline = false; // 离线依据业务状态维护，这里暂不处理
         if (lost || low || offline) {
-            String msg = lost ? "设备丢失" : (low ? "低电量报警" : "设备离线");
-            showAlertOverlay(msg);
-            pendingAlertCount++;
-            updatePendingBadge();
+            String msg = lost ? "异常丢失" : (low ? "低电量报警" : "设备离线");
+            AlertItem item = buildAlertItem(frame, msg);
+            alertQueue.addLast(item);
+            pendingAlertCount = alertQueue.size();
+            if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+            showLatestPending();
         }
     }
 
@@ -485,8 +528,8 @@ public class TerminalListFragment extends Fragment {
     }
 
     private void updatePendingBadge() {
-//        if (tvAlertCount != null) tvAlertCount.setText(String.valueOf(pendingAlertCount));
-        if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+        if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(pendingAlertCount));
+        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(pendingAlertCount > 0 ? View.VISIBLE : View.GONE);
     }
 
     private void evaluateAlertOverlay() {
@@ -497,11 +540,20 @@ public class TerminalListFragment extends Fragment {
                 if (t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) abnormal++;
                 if (t.getBatteryLevel() <= 20) low++;
             }
-            if (abnormal > 0 || low > 0) {
+            if (!alertQueue.isEmpty()) {
+                showLatestPending();
+            } else if (abnormal > 0 || low > 0) {
                 String msg = (abnormal > 0 && low > 0) ? "异常丢失/低电量" : (abnormal > 0 ? "异常丢失" : "低电量");
-                showAlertOverlay(msg);
+                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+                if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+                if (tvErrorTitle != null) tvErrorTitle.setText(msg);
+                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                pendingAlertCount = Math.max(abnormal + low, 1);
+                updatePendingBadge();
             } else {
                 if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
             }
         } catch (Exception ignored) {}
     }
@@ -530,6 +582,110 @@ public class TerminalListFragment extends Fragment {
         } catch (Exception e) {
             Log.e(TAG, "打开报警待处理列表失败", e);
         }
+    }
+
+    private void showLatestPending() {
+        currentAlert = alertQueue.peekLast();
+        if (currentAlert == null) return;
+        if (tvErrorTitle != null) tvErrorTitle.setText(currentAlert.title);
+        if (tvErrorName != null) tvErrorName.setText(currentAlert.name);
+        if (tvErrorCode != null) tvErrorCode.setText(currentAlert.code);
+        if (tvErrorTime != null) tvErrorTime.setText(currentAlert.time);
+        pendingAlertCount = alertQueue.size();
+        updatePendingBadge();
+        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+        if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+    }
+
+    private void minimizePending() {
+        if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+        updatePendingBadge();
+    }
+
+    private void expandPending() {
+        if (!alertQueue.isEmpty()) {
+            showLatestPending();
+        } else {
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+        }
+    }
+
+    private void handleCurrentAlert() {
+        if (currentAlert != null) {
+            alertQueue.remove(currentAlert);
+            currentAlert = null;
+        } else if (!alertQueue.isEmpty()) {
+            alertQueue.removeLast();
+        }
+        pendingAlertCount = alertQueue.size();
+        if (!alertQueue.isEmpty()) {
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+            updatePendingBadge();
+        } else {
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+            if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+        }
+    }
+
+    private AlertItem buildAlertItem(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame, String msg) {
+        String name = "";
+        String code = frame != null ? frame.deviceId : "";
+        String time = "";
+        try {
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            java.util.List<Terminal> terminals = dbHelper.getAllTerminals();
+            if (terminals != null) {
+                for (Terminal t : terminals) {
+                    if (t.getTerminalId() != null && t.getTerminalId().equalsIgnoreCase(code)) {
+                        name = t.getTerminalName();
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        if (frame != null && frame.dataTime != null) {
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                time = sdf.format(frame.dataTime);
+            } catch (Exception ignored) {}
+        }
+        AlertItem item = new AlertItem();
+        item.title = msg;
+        item.name = name;
+        item.code = code;
+        item.time = time;
+        return item;
+    }
+
+    private static class AlertItem {
+        String title;
+        String name;
+        String code;
+        String time;
+    }
+
+    private void playAlertSoundOnce() {
+        try {
+            if (alertPlayer != null) {
+                if (alertPlayer.isPlaying()) return;
+                try { alertPlayer.release(); } catch (Exception ignored) {}
+                alertPlayer = null;
+            }
+            android.content.res.AssetFileDescriptor afd = requireContext().getAssets().openFd("901028.wav");
+            android.media.MediaPlayer mp = new android.media.MediaPlayer();
+            mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            mp.setOnCompletionListener(p -> {
+                try { p.release(); } catch (Exception ignored) {}
+                if (alertPlayer == p) alertPlayer = null;
+            });
+            mp.prepare();
+            mp.start();
+            alertPlayer = mp;
+        } catch (Exception ignored) {}
     }
 
     private void onTerminalClick(int position, Terminal terminal) {

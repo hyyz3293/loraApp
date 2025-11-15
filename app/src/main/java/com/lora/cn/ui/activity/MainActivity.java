@@ -204,6 +204,29 @@ public class MainActivity extends AppCompatActivity {
 
     } 
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (!org.greenrobot.eventbus.EventBus.getDefault().isRegistered(this)) {
+            org.greenrobot.eventbus.EventBus.getDefault().register(this);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        if (org.greenrobot.eventbus.EventBus.getDefault().isRegistered(this)) {
+            org.greenrobot.eventbus.EventBus.getDefault().unregister(this);
+        }
+        try {
+            if (alertPlayer != null) {
+                if (alertPlayer.isPlaying()) alertPlayer.stop();
+                alertPlayer.release();
+                alertPlayer = null;
+            }
+        } catch (Exception ignored) {}
+        super.onStop();
+    }
+
     private void startTestTimer() {
         try {
             if (testUplinkHandler == null) {
@@ -238,6 +261,39 @@ public class MainActivity extends AppCompatActivity {
         tvUserName = findViewById(R.id.tv_user_name);
         fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
         fragmentDeviceListContainer = findViewById(R.id.fragment_device_list_container);
+        llAlertPending = findViewById(R.id.ll_alert_pending);
+        llAlertPendingSmall = findViewById(R.id.ll_alert_pending_small);
+        tvErrorNumber = findViewById(R.id.error_number);
+        tvErrorTitle = findViewById(R.id.error_title);
+        tvErrorName = findViewById(R.id.error_name);
+        tvErrorCode = findViewById(R.id.error_code);
+        tvErrorTime = findViewById(R.id.error_time);
+        ivErrorSmall = findViewById(R.id.error_small);
+        ivErrorClose = findViewById(R.id.error_close);
+        tvErrorVoiceNo = findViewById(R.id.error_voice_no);
+        tvErrorComplete = findViewById(R.id.error_complte);
+
+        if (ivErrorSmall != null) {
+            ivErrorSmall.setOnClickListener(v -> minimizePending());
+        }
+        if (llAlertPendingSmall != null) {
+            llAlertPendingSmall.setOnClickListener(v -> expandPending());
+        }
+        if (ivErrorClose != null) {
+            ivErrorClose.setOnClickListener(v -> {
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+            });
+        }
+        if (tvErrorVoiceNo != null) {
+            tvErrorVoiceNo.setOnClickListener(v -> {
+                alertMuted = !alertMuted;
+                android.widget.Toast.makeText(this, alertMuted ? "已静音" : "已取消静音", android.widget.Toast.LENGTH_SHORT).show();
+            });
+        }
+        if (tvErrorComplete != null) {
+            tvErrorComplete.setOnClickListener(v -> handleCurrentAlert());
+        }
     }
     
     private void initMenuTabs() {
@@ -295,6 +351,149 @@ public class MainActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> confirmLogout());
 
         tvUserName.setOnClickListener(v -> toggleUserInfo());
+    }
+
+    // 全局报警窗口状态
+    private View llAlertPending;
+    private View llAlertPendingSmall;
+    private android.widget.TextView tvErrorNumber;
+    private android.widget.TextView tvErrorTitle;
+    private android.widget.TextView tvErrorName;
+    private android.widget.TextView tvErrorCode;
+    private android.widget.TextView tvErrorTime;
+    private android.widget.ImageView ivErrorSmall;
+    private android.widget.ImageView ivErrorClose;
+    private android.widget.TextView tvErrorVoiceNo;
+    private android.widget.TextView tvErrorComplete;
+    private int pendingAlertCount = 0;
+    private boolean alertMuted = false;
+    private final java.util.Deque<AlertItem> alertQueue = new java.util.ArrayDeque<>();
+    private AlertItem currentAlert = null;
+    private android.media.MediaPlayer alertPlayer;
+
+    @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
+    public void onUplinkDataEvent(UplinkDataEvent event) {
+        if (event == null || alertMuted) return;
+        String hex = event.getHex();
+        LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
+        if (frame == null) return;
+        boolean lost = (frame.evIllegalRemoval == 1);
+        boolean low = (frame.evLowBattery == 1);
+        boolean offline = false;
+        if (lost || low || offline) {
+            String msg = lost ? "异常丢失" : (low ? "低电量报警" : "设备离线");
+            AlertItem item = buildAlertItem(frame, msg);
+            alertQueue.addLast(item);
+            pendingAlertCount = alertQueue.size();
+            playAlertSoundOnce();
+            showLatestPending();
+        }
+    }
+
+    private void showLatestPending() {
+        currentAlert = alertQueue.peekLast();
+        if (currentAlert == null) return;
+        if (tvErrorTitle != null) tvErrorTitle.setText(currentAlert.title);
+        if (tvErrorName != null) tvErrorName.setText(currentAlert.name);
+        if (tvErrorCode != null) tvErrorCode.setText(currentAlert.code);
+        if (tvErrorTime != null) tvErrorTime.setText(currentAlert.time);
+        updatePendingBadge();
+        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+        if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+    }
+
+    private void minimizePending() {
+        if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+        updatePendingBadge();
+    }
+
+    private void expandPending() {
+        if (!alertQueue.isEmpty()) {
+            showLatestPending();
+        } else {
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+        }
+    }
+
+    private void handleCurrentAlert() {
+        if (currentAlert != null) {
+            alertQueue.remove(currentAlert);
+            currentAlert = null;
+        } else if (!alertQueue.isEmpty()) {
+            alertQueue.removeLast();
+        }
+        pendingAlertCount = alertQueue.size();
+        if (!alertQueue.isEmpty()) {
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+            updatePendingBadge();
+        } else {
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+        }
+    }
+
+    private void updatePendingBadge() {
+        if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(pendingAlertCount));
+        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(pendingAlertCount > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private AlertItem buildAlertItem(LoRaFrameParser.ParsedFrame frame, String msg) {
+        String name = "";
+        String code = frame != null ? frame.deviceId : "";
+        String time = "";
+        try {
+            List<com.lora.cn.ui.model.Terminal> terminals = databaseHelper.getAllTerminals();
+            if (terminals != null) {
+                for (com.lora.cn.ui.model.Terminal t : terminals) {
+                    if (t.getTerminalId() != null && t.getTerminalId().equalsIgnoreCase(code)) {
+                        name = t.getTerminalName();
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        if (frame != null && frame.dataTime != null) {
+            try {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                time = sdf.format(frame.dataTime);
+            } catch (Exception ignored) {}
+        }
+        AlertItem item = new AlertItem();
+        item.title = msg;
+        item.name = name;
+        item.code = code;
+        item.time = time;
+        return item;
+    }
+
+    private static class AlertItem {
+        String title;
+        String name;
+        String code;
+        String time;
+    }
+
+    private void playAlertSoundOnce() {
+        try {
+            if (alertPlayer != null) {
+                if (alertPlayer.isPlaying()) return;
+                try { alertPlayer.release(); } catch (Exception ignored) {}
+                alertPlayer = null;
+            }
+            android.content.res.AssetFileDescriptor afd = getAssets().openFd("901028.wav");
+            android.media.MediaPlayer mp = new android.media.MediaPlayer();
+            mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+            mp.setOnCompletionListener(p -> {
+                try { p.release(); } catch (Exception ignored) {}
+                if (alertPlayer == p) alertPlayer = null;
+            });
+            mp.prepare();
+            mp.start();
+            alertPlayer = mp;
+        } catch (Exception ignored) {}
     }
 
     private void switchToTab(int tabIndex) {
