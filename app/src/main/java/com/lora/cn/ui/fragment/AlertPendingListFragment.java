@@ -78,10 +78,31 @@ public class AlertPendingListFragment extends Fragment {
                     if (prev == null || curT >= prevT) latest.put(key, li);
                 }
             }
+            java.util.Map<String, Long> lastNormalTime = new java.util.HashMap<>();
+            for (LogInfo li : all) {
+                int s = li.getStatusCode();
+                boolean normal = s == com.lora.cn.ui.constants.LogStatus.ONLINE.code
+                        || s == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
+                        || s == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
+                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
+                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
+                if (normal) {
+                    long t = parseMillis(li.getCreateTime());
+                    String key = li.getTerminalId();
+                    Long prev = lastNormalTime.get(key);
+                    if (prev == null || t >= prev) lastNormalTime.put(key, t);
+                }
+            }
             java.util.List<LogInfo> pending = new java.util.ArrayList<>(latest.values());
-            adapter.submitList(pending);
+            java.util.List<LogInfo> filtered = new java.util.ArrayList<>();
+            for (LogInfo li : pending) {
+                Long nt = lastNormalTime.get(li.getTerminalId());
+                long at = parseMillis(li.getCreateTime());
+                if (nt == null || at >= nt) filtered.add(li);
+            }
+            adapter.submitList(filtered);
             java.util.Set<Long> ids = new java.util.HashSet<>();
-            for (LogInfo li : pending) ids.add(li.getId());
+            for (LogInfo li : filtered) ids.add(li.getId());
             adapter.setAllowedHandleIds(ids);
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载报警列表失败", Toast.LENGTH_SHORT).show();
