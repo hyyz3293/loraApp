@@ -381,6 +381,7 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.Deque<AlertItem> alertQueue = new java.util.ArrayDeque<>();
     private AlertItem currentAlert = null;
     private android.media.MediaPlayer alertPlayer;
+    private final java.util.Set<String> offlineAlertedKeys = new java.util.HashSet<>();
     private android.os.Handler alertEvaluateHandler;
     private final Runnable alertEvaluateRunnable = new Runnable() {
         @Override public void run() {
@@ -551,44 +552,35 @@ public class MainActivity extends AppCompatActivity {
     private void evaluateAlertOverlayGlobal() {
         try {
             java.util.List<com.lora.cn.ui.model.Terminal> all = databaseHelper.getAllTerminals();
-            int abnormal = 0;
-            int low = 0;
-            int offline = 0;
-            com.lora.cn.ui.model.Terminal firstOffline = null;
+            boolean queuedAny = false;
             for (com.lora.cn.ui.model.Terminal t : all) {
-                if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) abnormal++;
-                if (t.getBatteryLevel() <= 20) low++;
+                String devId = t.getTerminalId();
+                String key = devId + ":offline";
                 if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    offline++;
-                    if (firstOffline == null) firstOffline = t;
-                }
-            }
-            if (offline > 0) {
-                boolean hasSame = false;
-                if (!alertQueue.isEmpty()) {
-                    AlertItem last = alertQueue.peekLast();
-                    hasSame = last != null && "设备离线".equals(last.title);
-                }
-                if (!hasSame) {
-                    AlertItem item = new AlertItem();
-                    item.title = "设备离线";
-                    item.name = firstOffline != null ? firstOffline.getTerminalName() : "";
-                    item.code = firstOffline != null ? firstOffline.getTerminalId() : "";
-                    item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    alertQueue.addLast(item);
-                    pendingAlertCount = alertQueue.size();
-                    try {
-                        if (firstOffline != null) {
-                            databaseHelper.addLog(firstOffline.getTerminalId(), firstOffline.getTerminalName(), firstOffline.getTerminalId(), "设备离线", "", "", "功能码=离线");
-                        }
-                    } catch (Exception ignored) {}
-                    startAlertRinging30s();
-                    showLatestPending();
+                    boolean spAlerted = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("offline_alerted_" + devId, false);
+                    if (!offlineAlertedKeys.contains(key) && !spAlerted) {
+                        AlertItem item = new AlertItem();
+                        item.title = "设备离线";
+                        item.name = t.getTerminalName();
+                        item.code = devId;
+                        item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                        alertQueue.addLast(item);
+                        pendingAlertCount = alertQueue.size();
+                        try { databaseHelper.addLog(devId, t.getTerminalName(), devId, "设备离线", "", "", "功能码=离线"); } catch (Exception ignored) {}
+                        offlineAlertedKeys.add(key);
+                        com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, true);
+                        startAlertRinging30s();
+                        queuedAny = true;
+                    }
                 } else {
-                    showLatestPending();
+                    offlineAlertedKeys.remove(key);
+                    com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, false);
                 }
-                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
             }
+            if (queuedAny || !alertQueue.isEmpty()) {
+                showLatestPending();
+            }
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
         } catch (Exception ignored) {}
     }
 
