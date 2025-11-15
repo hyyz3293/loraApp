@@ -134,26 +134,6 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
             terminalColl.setVisibility(View.VISIBLE);
             terminalColl.setImageResource(R.mipmap.ic_coll); // 已收藏图标
         }
-
-//        // 设置收藏点击事件
-//        terminalColl.setOnClickListener(v -> {
-//            if (onFavoriteClickListener != null) {
-//                boolean newFavoriteState = !item.isFavorite();
-//                item.setFavorite(newFavoriteState);
-//                item.setImportant(newFavoriteState);
-//
-//                // 更新图标
-//                terminalColl.setVisibility(View.GONE);
-//                if (newFavoriteState) {
-//                    terminalColl.setVisibility(View.VISIBLE);
-//                    terminalColl.setImageResource(R.mipmap.ic_coll);
-//                } else {
-//                    terminalColl.setImageResource(R.mipmap.ic_start);
-//                }
-//
-//                onFavoriteClickListener.onFavoriteClick(item, newFavoriteState);
-//            }
-//        });
     }
 
     @NonNull
