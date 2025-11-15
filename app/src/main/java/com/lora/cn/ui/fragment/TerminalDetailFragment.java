@@ -174,7 +174,9 @@ public class TerminalDetailFragment extends Fragment {
                     if (terminal_detail_battery != null) terminal_detail_battery.setText("");
                     if (batteryView != null) batteryView.setVisibility(View.GONE);
                     if (signalView != null) signalView.setVisibility(View.GONE);
-                } else {
+                } else if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE
+                        || t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN
+                        || t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
                     if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
                     if (batteryView != null) {
                         batteryView.setVisibility(View.VISIBLE);
@@ -196,7 +198,10 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
 
                 if (signalView != null && t.getStatus() != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    signalView.setSignalStrength(Math.max(0, Math.min(4, t.getSignalStrength())));
+                    int rssiRaw = Math.max(0, Math.min(138, t.getRssi()));
+                    float percent = (138 - rssiRaw) * 100f / 138f;
+                    int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+                    signalView.setSignalStrength(bars);
                 }
             } else {
                 // 无记录时，回退为占位符
@@ -359,6 +364,18 @@ public class TerminalDetailFragment extends Fragment {
                             String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                             try {
                                 dbHelper.updateLogHandled(item.getId(), user, time, remark);
+                                int s = item.getStatusCode();
+                                if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                                    int mask = 0;
+                                    if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) mask |= 0x00000001;
+                                    if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) mask |= 0x00000002;
+                                    String devHex = item.getDeviceId() != null ? item.getDeviceId() : "";
+                                    try {
+                                        com.lora.cn.network.MqttPacketsClient mqtt = new com.lora.cn.network.MqttPacketsClient();
+                                        com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqtt);
+                                        helper.sendDownlink8001Config(devHex, mask);
+                                    } catch (Exception ignored) {}
+                                }
                                 loadLogs();
                             } catch (Exception ignored) {}
                         }

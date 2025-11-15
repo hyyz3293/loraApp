@@ -105,8 +105,8 @@ public class LogInfoAlertAdapter extends BaseQuickAdapter<LogInfo, QuickViewHold
      */
     private void setTextOrPlaceholder(TextView textView, String text) {
         if (TextUtils.isEmpty(text)) {
-            textView.setText("");
-            textView.setBackground(ContextCompat.getDrawable(textView.getContext(), R.drawable.placeholder_empty));
+            textView.setText("-");
+            textView.setBackground(null);
         } else {
             textView.setText(text);
             textView.setBackground(null);

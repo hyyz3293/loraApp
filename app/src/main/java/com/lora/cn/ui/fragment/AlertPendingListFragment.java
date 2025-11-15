@@ -119,6 +119,18 @@ public class AlertPendingListFragment extends Fragment {
                 try {
                     DatabaseHelper db = DatabaseHelper.getInstance(requireContext());
                     db.updateLogHandled(item.getId(), user, time, remark);
+                    int s = item.getStatusCode();
+                    if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                        int mask = 0;
+                        if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) mask |= 0x00000001;
+                        if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) mask |= 0x00000002;
+                        String devHex = item.getDeviceId() != null ? item.getDeviceId() : "";
+                        try {
+                            com.lora.cn.network.MqttPacketsClient mqtt = new com.lora.cn.network.MqttPacketsClient();
+                            com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqtt);
+                            helper.sendDownlink8001Config(devHex, mask);
+                        } catch (Exception ignored) {}
+                    }
                     loadAlerts();
                 } catch (Exception ignored) {}
             }

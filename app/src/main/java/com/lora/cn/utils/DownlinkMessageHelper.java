@@ -198,4 +198,41 @@ public class DownlinkMessageHelper {
             true            // 需要确认
         );
     }
+
+    public String buildDownlink8001Hex(String deviceIdHex, int clearMask, int intervalMin) {
+        byte[] frame = LoRaProtocolParser.buildDownlink8001(
+                deviceIdHex,
+                (byte) 0x01,
+                System.currentTimeMillis(),
+                1,
+                0,
+                0,
+                0,
+                0,
+                clearMask,
+                intervalMin);
+        return LoRaProtocolParser.bytesToHex(frame);
+    }
+
+    public void sendDownlink8001Config(String deviceIdHex, int clearMask) {
+        byte[] frame = LoRaProtocolParser.buildDownlink8001(
+                deviceIdHex,
+                (byte) 0x01,
+                System.currentTimeMillis(),
+                1,
+                0,
+                0,
+                0,
+                0,
+                clearMask,
+                5);
+        String payloadHex = LoRaProtocolParser.bytesToHex(frame);
+        mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true);
+        Log.i(TAG, "下发8001配置: devEUI=" + deviceIdHex + ", clearMask=" + clearMask + ", interval=5, payload=" + payloadHex);
+    }
 }

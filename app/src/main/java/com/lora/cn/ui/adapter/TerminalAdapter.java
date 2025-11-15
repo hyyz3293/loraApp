@@ -78,6 +78,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         boolean isOffline = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE == item.getStatus();
         boolean isAbnormal = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN == item.getStatus();
         boolean isNormalTaken = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN == item.getStatus();
+        boolean isOnline = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE == item.getStatus();
         if (isOffline) {
             if (signalView != null) signalView.setVisibility(View.GONE);
             if (ivStatusIcon != null) {
@@ -86,7 +87,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
             }
             if (batteryView != null) batteryView.setVisibility(View.GONE);
             if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
-            tvStatusTitle.setText("");
+            tvStatusTitle.setText("离线");
             tvBatteryTitle.setText("");
         } else {
             if (isAbnormal) {
@@ -96,6 +97,16 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                     ivStatusIcon.setImageResource(R.mipmap.ic_ds);
                 }
                 tvStatusTitle.setText("异常丢失");
+            } else if (isOnline) {
+                int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
+                float percent = (138 - rssiRaw) * 100f / 138f;
+                int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+                if (signalView != null) {
+                    signalView.setVisibility(View.VISIBLE);
+                    signalView.setSignalStrength(bars);
+                }
+                if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
+                tvStatusTitle.setText("在线");
             } else if (isNormalTaken) {
                 if (signalView != null) signalView.setVisibility(View.GONE);
                 if (ivStatusIcon != null) {
