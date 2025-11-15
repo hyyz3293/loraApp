@@ -335,6 +335,35 @@ public class TerminalDetailFragment extends Fragment {
         try {
             List<LogInfo> logs = dbHelper.getLogsByTerminalId(deviceId);
             if (logs != null && !logs.isEmpty()) {
+                java.util.Map<Integer, LogInfo> latest = new java.util.HashMap<>();
+                for (LogInfo li : logs) {
+                    int s = li.getStatusCode();
+                    boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                            || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                            || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                    if (candidate) {
+                        LogInfo prev = latest.get(s);
+                        long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
+                        long curT = parseMillis(li.getCreateTime());
+                        if (prev == null || curT >= prevT) latest.put(s, li);
+                    }
+                }
+                java.util.Set<Long> allowedIds = new java.util.HashSet<>();
+                for (LogInfo v : latest.values()) allowedIds.add(v.getId());
+                logAdapter.setAllowedHandleIds(allowedIds);
+                logAdapter.setOnHandleClickListener(item -> {
+                    com.lora.cn.utils.DialogUtils.showRemarkDialog(requireContext(), "确认处理", "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
+                        @Override
+                        public void onConfirm(String remark) {
+                            String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                            String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                            try {
+                                dbHelper.updateLogHandled(item.getId(), user, time, remark);
+                                loadLogs();
+                            } catch (Exception ignored) {}
+                        }
+                    });
+                });
                 logAdapter.submitList(logs);
                 rvLogs.setVisibility(View.VISIBLE);
                 tvNoLogs.setVisibility(View.GONE);
@@ -346,6 +375,17 @@ public class TerminalDetailFragment extends Fragment {
             rvLogs.setVisibility(View.GONE);
             tvNoLogs.setVisibility(View.VISIBLE);
             tvNoLogs.setText("加载日志失败: " + e.getMessage());
+        }
+    }
+
+    private long parseMillis(String time) {
+        if (time == null || time.length() == 0) return -1L;
+        try {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+            java.util.Date d = sdf.parse(time);
+            return d != null ? d.getTime() : -1L;
+        } catch (Exception e) {
+            return -1L;
         }
     }
 

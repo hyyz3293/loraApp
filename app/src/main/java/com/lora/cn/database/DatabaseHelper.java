@@ -1038,9 +1038,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
                 long nowMs = System.currentTimeMillis();
-                long sec = com.blankj.utilcode.util.SPUtils.getInstance().getLong("terminal_offline_timeout_sec", 60);
-                if (sec <= 0) sec = 60;
-                long timeoutMs = sec * 1000L;
+                long timeoutMs = 10 * 60 * 1000L;
                 if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > timeoutMs) {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
@@ -1142,9 +1140,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (frame != null) {
             // 事件优先级：低电量 > 丢失 > 开锁/上锁 > 打开/关闭 > 取走/放入 > 定期上报 > 护士站查询
             // 备注：statusCode 使用 LogStatus 枚举的 code，便于统一展示
-             if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
-                     frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
-                    frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
+             if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 &&
+                     frame.stLayer2NotInPlace == 1 && frame.stLayer3NotInPlace == 1 &&
+                    frame.stLayer4NotInPlace == 1 && frame.stLayer5NotInPlace == 1)) {
                 // 非法移走 -> 设备丢失
                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
             } else if (frame.evLowBattery == 1) {
