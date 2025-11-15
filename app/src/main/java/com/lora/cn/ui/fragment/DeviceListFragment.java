@@ -186,9 +186,11 @@ public class DeviceListFragment extends Fragment {
                     com.lora.cn.database.entity.Terminal discoveredTerminal = new com.lora.cn.database.entity.Terminal();
                     discoveredTerminal.setDeviceId(deviceId);
                     discoveredTerminal.setDeviceName("终端ID：" + deviceId);
-                    // 只要不是“离线/异常”，显示为“在线”；离线无法由单条上行判断，这里仅按异常位判断
-                    boolean isAbnormal = (pf.evIllegalRemoval == 1);
-                    discoveredTerminal.setStatus(isAbnormal ? "异常" : "在线");
+                    // 在线规则：电源锁关且任一层板在位；否则不认为在线
+                    boolean anyLayerInPlace = pf.stLayer1NotInPlace == 0 || pf.stLayer2NotInPlace == 0 || pf.stLayer3NotInPlace == 0 || pf.stLayer4NotInPlace == 0 || pf.stLayer5NotInPlace == 0;
+                    boolean isOnline = (pf.stPowerLockOn == 0 && anyLayerInPlace);
+                    boolean isAbnormal = (pf.stPowerLockOn == 0) && (pf.stLayer1NotInPlace == 1 || pf.stLayer2NotInPlace == 1 || pf.stLayer3NotInPlace == 1 || pf.stLayer4NotInPlace == 1 || pf.stLayer5NotInPlace == 1);
+                    discoveredTerminal.setStatus(isAbnormal ? "异常" : (isOnline ? "在线" : ""));
                     // 同步展示关键指标（电量、电压、RSSI）
                     discoveredTerminal.setBatteryLevel(pf.batteryLevel);
                     discoveredTerminal.setBatteryVoltage(pf.batteryVoltage);

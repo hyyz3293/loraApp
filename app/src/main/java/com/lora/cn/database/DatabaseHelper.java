@@ -1147,7 +1147,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
                 // 非法移走 -> 设备丢失
                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
-            } else if (frame.stPowerLockOn == 1) {
+            } else if (frame.evLowBattery == 1) {
+                 // 低电量报警
+                 statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
+            } else if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 0 ||
+                    frame.stLayer2NotInPlace == 0 || frame.stLayer3NotInPlace == 0 ||
+                    frame.stLayer4NotInPlace == 0 || frame.stLayer5NotInPlace == 0)) {
+                // 在线：电源锁关，且任一层板在位
+                statusCode = com.lora.cn.ui.constants.LogStatus.ONLINE.code;
+             }else if (frame.stPowerLockOn == 1) {
                 // 开锁
                 statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
             } else if (frame.stPowerLockOn == 0) {
@@ -1159,11 +1167,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             } else if (frame.evManualPut == 1) {
                 // 设备关闭（放入）
                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
-            } else if (frame.evLowBattery == 1) {
-                // 低电量报警
-                statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
-            } else  {
-                // 未匹配事件，保持0
+            }  else  {
+                // 未匹配事件，不标记为在线
                 statusCode = 0;
             }
         }
@@ -1199,12 +1204,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
                 boolean anyLayerNotInPlace = frame.stLayer1NotInPlace == 1 || frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 || frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1;
                 boolean allLayersNotInPlace = frame.stLayer1NotInPlace == 1 && frame.stLayer2NotInPlace == 1 && frame.stLayer3NotInPlace == 1 && frame.stLayer4NotInPlace == 1 && frame.stLayer5NotInPlace == 1;
+                boolean anyLayerInPlace = frame.stLayer1NotInPlace == 0 || frame.stLayer2NotInPlace == 0 || frame.stLayer3NotInPlace == 0 || frame.stLayer4NotInPlace == 0 || frame.stLayer5NotInPlace == 0;
                 if (frame.stPowerLockOn == 0 && anyLayerNotInPlace) {
                     updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
                 } else if (frame.stPowerLockOn == 1 && allLayersNotInPlace) {
                     updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
-                } else {
+                } else if (frame.stPowerLockOn == 0 && anyLayerInPlace) {
                     updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                } else {
+                    // 其它情况不更新为在线
                 }
             }
         } catch (Exception e) {

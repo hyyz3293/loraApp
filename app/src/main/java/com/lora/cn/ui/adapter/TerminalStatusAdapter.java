@@ -53,8 +53,4 @@ public class TerminalStatusAdapter extends BaseQuickAdapter<TerminalStatus, Quic
     protected QuickViewHolder onCreateViewHolder(@NonNull Context context, @NonNull ViewGroup viewGroup, int i) {
         return new QuickViewHolder(R.layout.item_terminal_status, viewGroup);
     }
-
-
-
-
 }

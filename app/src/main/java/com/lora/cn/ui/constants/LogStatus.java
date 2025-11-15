@@ -4,11 +4,13 @@ public enum LogStatus {
     LOCK_CLOSE(1, "上锁"),
     LOCK_OPEN(2, "开锁"),
     DEVICE_OFF(3, "设备关闭"),
-    DEVICE_ON(4, "设备打开"),
+    DEVICE_ON(4, "正确取走"),
     DEVICE_LOST(5, "设备丢失"),
     DEVICE_OFFLINE(6, "设备离线"),
     LOW_BATTERY(7, "低电量报警"),
-    HANDLED(8, "处理");
+    HANDLED(8, "处理"),
+    ONLINE(9, "在线");
+
 
     public final int code;
     private final String label;

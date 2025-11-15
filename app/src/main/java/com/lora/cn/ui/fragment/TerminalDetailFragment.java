@@ -129,7 +129,11 @@ public class TerminalDetailFragment extends Fragment {
                 tvDepartment.setText(!TextUtils.isEmpty(t.getDepartment()) ? t.getDepartment() : "-");
                 tvLocation.setText(!TextUtils.isEmpty(t.getLocation()) ? t.getLocation() : "-");
                 tvStatus.setText(com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus()));
-                tvBattery.setText(t.getBatteryLevel() + "%");
+                if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
+                    tvBattery.setText("");
+                } else {
+                    tvBattery.setText(t.getBatteryLevel() + "%");
+                }
                 // 分组展示：将选择的分组与分类名用“-”连接，不同分组用“，”隔开
                 StringBuilder groupText = new StringBuilder();
                 com.lora.cn.database.DatabaseManager dm = com.lora.cn.database.DatabaseManager.getInstance(requireContext());
@@ -166,8 +170,18 @@ public class TerminalDetailFragment extends Fragment {
 
                 // 状态（WiFi/在线状态）与电量
                 if (terminal_detail_wifi != null) terminal_detail_wifi.setText(com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus()));
-                if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
-                if (batteryView != null) batteryView.setBatteryLevel(t.getBatteryLevel());
+                if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
+                    if (terminal_detail_battery != null) terminal_detail_battery.setText("");
+                    if (batteryView != null) batteryView.setVisibility(View.GONE);
+                    if (signalView != null) signalView.setVisibility(View.GONE);
+                } else {
+                    if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
+                    if (batteryView != null) {
+                        batteryView.setVisibility(View.VISIBLE);
+                        batteryView.setBatteryLevel(t.getBatteryLevel());
+                    }
+                    if (signalView != null) signalView.setVisibility(View.VISIBLE);
+                }
 
                 // 异常/离线显示“立即处理”按钮
                 int stCode = t.getStatus();
@@ -181,7 +195,9 @@ public class TerminalDetailFragment extends Fragment {
                 // 终端ID
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
 
-                if (signalView != null) signalView.setSignalStrength(Math.max(0, Math.min(4, t.getSignalStrength())));
+                if (signalView != null && t.getStatus() != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
+                    signalView.setSignalStrength(Math.max(0, Math.min(4, t.getSignalStrength())));
+                }
             } else {
                 // 无记录时，回退为占位符
                 tvTitle.setText("-");
@@ -371,6 +387,13 @@ public class TerminalDetailFragment extends Fragment {
                 // 刷新数据以反映最新状态与电量
                 bindData();
             }
+        } catch (Exception ignored) {}
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
+        try {
+            bindData();
         } catch (Exception ignored) {}
     }
 }
