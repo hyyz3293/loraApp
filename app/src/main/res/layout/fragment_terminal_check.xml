@@ -106,7 +106,7 @@
                 android:paddingRight="17dp"
                 android:gravity="center"
                 android:background="@drawable/bg_btn_4"
-                 android:layout_marginRight="10"
+                android:layout_marginRight="10dp"
                 android:layout_centerVertical="true"
                 android:text="导出"
                 android:textColor="#383B40"

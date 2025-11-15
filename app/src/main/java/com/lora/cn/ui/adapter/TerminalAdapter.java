@@ -33,8 +33,10 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         TextView terminalTitle = holder.getView(R.id.terminal_title);
         TextView terminalKs = holder.getView(R.id.terminal_ks);
         TextView terminalBf = holder.getView(R.id.terminal_bf);
+        com.lora.cn.ui.view.SignalStrengthView signalView = holder.getView(R.id.signal_view);
         ImageView ivStatusIcon = holder.getView(R.id.iv_status_icon);
         TextView tvStatusTitle = holder.getView(R.id.tv_status_title);
+        com.lora.cn.ui.view.BatteryView batteryView = holder.getView(R.id.battery_view);
         ImageView ivBatteryIcon = holder.getView(R.id.iv_battery_icon);
         TextView tvBatteryTitle = holder.getView(R.id.tv_battery_title);
         ImageView terminalColl = holder.getView(R.id.terminal_coll);
@@ -71,14 +73,49 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         terminalKs.setText(line1);
         terminalBf.setText(line2);
 
-        // 设置状态信息
-        ivStatusIcon.setImageResource(item.getStatusIconResId());
-        tvStatusTitle.setText(item.getStatusText());
+        // 信号强度使用SignalStrengthView，按-138~0对应138~0反向计算百分比
+        boolean isOffline = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE == item.getStatus();
+        if (isOffline) {
+            if (signalView != null) signalView.setVisibility(View.GONE);
+            if (ivStatusIcon != null) {
+                ivStatusIcon.setVisibility(View.VISIBLE);
+                ivStatusIcon.setImageResource(R.mipmap.ic_xh_no);
+            }
+            if (batteryView != null) batteryView.setVisibility(View.GONE);
+            if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
+            tvStatusTitle.setText("");
+            tvBatteryTitle.setText("");
+        } else {
+            int raw = Math.max(0, Math.min(138, item.getSignalStrength()));
+            float percent = (138 - raw) * 100f / 138f;
+            int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+            if (signalView != null) {
+                signalView.setVisibility(View.VISIBLE);
+                signalView.setSignalStrength(bars);
+            }
+            if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
+            tvStatusTitle.setText(String.format("%.0f%%", percent));
+        }
 
-        // 设置电池信息（显示电量）
-        // 显示电量图标（由列表转换逻辑根据电量选择不同资源）
-        ivBatteryIcon.setImageResource(item.getBatteryIconResId());
-        tvBatteryTitle.setText(item.getBatteryText());
+        // 电量使用BatteryView，背景透明、边框+四方格显示
+        if (!isOffline) {
+            int level = Math.max(0, Math.min(100, item.getBatteryLevel()));
+            boolean isLow = level <= 20;
+            if (isLow) {
+                if (batteryView != null) batteryView.setVisibility(View.GONE);
+                if (ivBatteryIcon != null) {
+                    ivBatteryIcon.setVisibility(View.VISIBLE);
+                    ivBatteryIcon.setImageResource(R.mipmap.ic_baterery_low);
+                }
+            } else {
+                if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
+                if (batteryView != null) {
+                    batteryView.setVisibility(View.VISIBLE);
+                    batteryView.setBatteryLevel(level);
+                }
+            }
+            tvBatteryTitle.setText(level + "%");
+        }
         
         // 设置收藏状态
         terminalColl.setVisibility(View.GONE);

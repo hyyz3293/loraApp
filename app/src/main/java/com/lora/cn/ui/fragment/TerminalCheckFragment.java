@@ -380,7 +380,7 @@ public class TerminalCheckFragment extends Fragment {
      */
     private void updateClearTime() {
         if (terminalClearTime != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
             terminalClearTime.setText(sdf.format(new Date()));
         }
     }

@@ -183,7 +183,7 @@ public class PieChartView extends View {
         float totalAngle = 0f;
         
         // 计算总角度，为间隔预留空间
-        float totalGapAngle = pieDataList.size() * gapAngle;
+        float totalGapAngle = pieDataList.size() > 1 ? pieDataList.size() * gapAngle : 0f;
         float availableAngle = 360f - totalGapAngle;
         
         for (int i = 0; i < pieDataList.size(); i++) {

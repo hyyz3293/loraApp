@@ -48,6 +48,8 @@
                 android:id="@+id/terminal_title"
                 android:textColor="@color/black"
                 android:textSize="16dp"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:textStyle="bold"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
@@ -81,10 +83,20 @@
             android:layout_weight="1"
             android:layout_height="wrap_content" >
 
-            <ImageView
-                android:id="@+id/iv_status_icon"
-                android:layout_width="16dp"
-                android:layout_height="16dp" />
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="20dp">
+                <com.lora.cn.ui.view.SignalStrengthView
+                    android:id="@+id/signal_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+                <ImageView
+                    android:id="@+id/iv_status_icon"
+                    android:layout_gravity="center"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:visibility="gone" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/tv_status_title"
@@ -107,10 +119,20 @@
             android:gravity="right"
             android:layout_height="wrap_content" >
 
-            <ImageView
-                android:id="@+id/iv_battery_icon"
-                android:layout_width="16dp"
-                android:layout_height="16dp" />
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="20dp">
+                <com.lora.cn.ui.view.BatteryView
+                    android:id="@+id/battery_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+                <ImageView
+                    android:id="@+id/iv_battery_icon"
+                    android:layout_gravity="center"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:visibility="gone" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/tv_battery_title"

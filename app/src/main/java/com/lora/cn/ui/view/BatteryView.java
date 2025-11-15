@@ -48,9 +48,10 @@ public class BatteryView extends View {
         terminalGap = dpToPx(context, 2);
         segmentSpacing = dpToPx(context, 3.5f);
 
-        // 外层电池油漆
+        // 外层电池油漆（透明背景，仅边框）
         outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        outerPaint.setStyle(Paint.Style.FILL);
+        outerPaint.setStyle(Paint.Style.STROKE);
+        outerPaint.setStrokeWidth(dpToPx(context, 1.5f));
 
         // 内部电量油漆
         innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -74,7 +75,7 @@ public class BatteryView extends View {
         float bodyWidth = width - terminalWidth - terminalGap;
         float bodyHeight = height;
 
-        // 绘制电池外层主体（圆角矩形）
+        // 绘制电池外层主体（圆角矩形边框）
         RectF bodyRect = new RectF(0, 0, bodyWidth, bodyHeight);
         canvas.drawRoundRect(bodyRect, cornerRadius, cornerRadius, outerPaint);
 
@@ -92,7 +93,9 @@ public class BatteryView extends View {
 
     private void drawBatterySegments(Canvas canvas, RectF bodyRect) {
         float segmentWidth = (bodyRect.width() - (segmentCount + 1) * segmentSpacing) / segmentCount;
-        float segmentHeight = bodyRect.height() - 4 * segmentSpacing; // 增加上下留白让方块更小
+        float top = bodyRect.top + segmentSpacing;
+        float bottom = bodyRect.bottom - segmentSpacing;
+        float segmentHeight = bottom - top;
 
         for (int i = 0; i < segmentCount; i++) {
             // 计算当前方格应该显示的电量阈值
@@ -101,9 +104,7 @@ public class BatteryView extends View {
             // 如果当前电量达到这个阈值，则显示该方格
             if (batteryLevel >= segmentThreshold) {
                 float left = bodyRect.left + segmentSpacing + i * (segmentWidth + segmentSpacing);
-                float top = bodyRect.top + segmentSpacing;
                 float right = left + segmentWidth;
-                float bottom = top + segmentHeight;
 
                 RectF segmentRect = new RectF(left, top, right, bottom);
                 canvas.drawRect(segmentRect, innerPaint);
