@@ -91,7 +91,7 @@ public class LogInfoAlertAdapter extends BaseQuickAdapter<LogInfo, QuickViewHold
     @NonNull
     @Override
     protected QuickViewHolder onCreateViewHolder(@NonNull Context context, @NonNull ViewGroup viewGroup, int i) {
-        return new QuickViewHolder(R.layout.item_terminal_log, viewGroup);
+        return new QuickViewHolder(R.layout.item_terminal_alert_log, viewGroup);
     }
 
     /**

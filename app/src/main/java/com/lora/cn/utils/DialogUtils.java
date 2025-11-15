@@ -463,37 +463,21 @@ public class DialogUtils {
         if (window != null) {
             window.setBackgroundDrawableResource(android.R.color.transparent);
             window.setLayout(
-                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.5),
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
                     android.view.ViewGroup.LayoutParams.WRAP_CONTENT
             );
         }
 
-        TextView label = dialogView.findViewById(R.id.tv_remark_label);
         EditText etRemark = dialogView.findViewById(R.id.et_remark);
-        label.setText(title);
+        ImageView ivClose = dialogView.findViewById(R.id.close);
+        TextView btnSure = dialogView.findViewById(R.id.sure);
+
         if (!TextUtils.isEmpty(defaultValue)) {
             etRemark.setText(defaultValue);
         }
 
-        Button btnCancel = new Button(context);
-        Button btnConfirm = new Button(context);
-        // 简化：使用系统按钮样式
-        btnCancel.setText("取消");
-        btnConfirm.setText("确定");
-
-        // 将按钮添加到布局尾部
-        if (dialogView instanceof android.widget.LinearLayout) {
-            android.widget.LinearLayout root = (android.widget.LinearLayout) dialogView;
-            android.widget.LinearLayout action = new android.widget.LinearLayout(context);
-            action.setOrientation(android.widget.LinearLayout.HORIZONTAL);
-            action.setPadding(0, 24, 0, 0);
-            action.addView(btnCancel);
-            action.addView(btnConfirm);
-            root.addView(action);
-        }
-
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
-        btnConfirm.setOnClickListener(v -> {
+        if (ivClose != null) ivClose.setOnClickListener(v -> dialog.dismiss());
+        if (btnSure != null) btnSure.setOnClickListener(v -> {
             String remark = etRemark.getText() != null ? etRemark.getText().toString().trim() : "";
             dialog.dismiss();
             if (onConfirm != null) onConfirm.onConfirm(remark);
