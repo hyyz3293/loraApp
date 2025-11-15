@@ -266,6 +266,8 @@ public class MainActivity extends AppCompatActivity {
         tvUserName = findViewById(R.id.tv_user_name);
         fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
         fragmentDeviceListContainer = findViewById(R.id.fragment_device_list_container);
+        View globalOverlay = findViewById(R.id.global_overlay_container);
+        if (globalOverlay != null) globalOverlay.bringToFront();
         llAlertPending = findViewById(R.id.ll_alert_pending);
         llAlertPendingSmall = findViewById(R.id.ll_alert_pending_small);
         tvErrorNumber = findViewById(R.id.error_number);
@@ -394,9 +396,6 @@ public class MainActivity extends AppCompatActivity {
         LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
         if (frame == null) return;
         if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
-        try {
-            if (!databaseHelper.isTerminalExists(frame.deviceId)) return;
-        } catch (Exception ignored) {}
         int statusCode;
         if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
                 frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||

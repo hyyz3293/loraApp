@@ -55,13 +55,14 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
 
         // 只有下行数据展示操作，其它情况不展示
         String act = item.getAction();
+        logOperation.setVisibility(android.view.View.GONE);
         boolean canHandle = item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
         boolean isLatestAllowed = allowedHandleIds.contains(item.getId());
         if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
             logOperation.setText("查看备注");
-            logOperation.setBackground(null);
+            //logOperation.setBackground(null);
             logOperation.setOnClickListener(v -> {
                 android.app.AlertDialog dlg = new android.app.AlertDialog.Builder(logOperation.getContext())
                         .setTitle("处理备注")
@@ -70,16 +71,20 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
                         .create();
                 dlg.show();
             });
+            logOperation.setVisibility(android.view.View.VISIBLE);
         } else if (canHandle && isLatestAllowed) {
             logOperation.setText("确认处理");
-            logOperation.setBackground(null);
+            //logOperation.setBackground(null);
             logOperation.setOnClickListener(v -> { if (onHandleClickListener != null) onHandleClickListener.onHandleClick(item); });
+            logOperation.setVisibility(android.view.View.VISIBLE);
         } else if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
             setTextOrPlaceholder(logOperation, act);
             logOperation.setOnClickListener(null);
+            logOperation.setVisibility(android.view.View.VISIBLE);
         } else {
             setTextOrPlaceholder(logOperation, "");
             logOperation.setOnClickListener(null);
+            logOperation.setVisibility(android.view.View.GONE);
         }
     }
 

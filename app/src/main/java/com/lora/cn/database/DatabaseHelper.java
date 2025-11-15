@@ -1038,7 +1038,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
                 long nowMs = System.currentTimeMillis();
-                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 10 * 60 * 1000L) {
+                long sec = com.blankj.utilcode.util.SPUtils.getInstance().getLong("terminal_offline_timeout_sec", 60);
+                if (sec <= 0) sec = 60;
+                long timeoutMs = sec * 1000L;
+                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > timeoutMs) {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
                 
