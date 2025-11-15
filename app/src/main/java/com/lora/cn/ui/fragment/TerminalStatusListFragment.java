@@ -118,9 +118,18 @@ public class TerminalStatusListFragment extends Fragment {
             });
         }
 
-        terminalRecycle.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(requireContext()));
+        androidx.recyclerview.widget.GridLayoutManager terminalLayoutManager = new androidx.recyclerview.widget.GridLayoutManager(getContext(), 4);
+        terminalRecycle.setLayoutManager(terminalLayoutManager);
         adapter = new TerminalAdapter();
         terminalRecycle.setAdapter(adapter);
+        adapter.setOnItemClickListener((adapter1, v1, position) -> {
+            if (hasPermission("terminal_detail")) {
+                Terminal terminal = (Terminal) adapter.getItem(position);
+                onTerminalClick(position, terminal);
+            } else {
+                Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void initStatusBar() {
@@ -153,16 +162,62 @@ public class TerminalStatusListFragment extends Fragment {
             List<Terminal> terminals = dbHelper.getAllTerminals();
             if (terminals != null && !terminals.isEmpty()) {
                 allDisplayTerminals.clear();
-                for (Terminal t : terminals) {
-                    t.setStatusIconResId(getStatusIcon(t.getStatus()));
-                    t.setStatusText(TerminalStatusConstants.codeToText(t.getStatus()));
-                    allDisplayTerminals.add(t);
-                }
+                allDisplayTerminals.addAll(convertToDisplayTerminals(terminals));
             } else {
                 adapter.submitList(new ArrayList<>());
             }
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** 将数据库终端数据转换为UI显示格式（与首页一致） */
+    private List<Terminal> convertToDisplayTerminals(List<Terminal> dbTerminals) {
+        List<Terminal> displayTerminals = new ArrayList<>();
+        for (Terminal dbTerminal : dbTerminals) {
+            Terminal displayTerminal = new Terminal();
+            displayTerminal.setId(dbTerminal.getId());
+            displayTerminal.setTerminalId(dbTerminal.getTerminalId());
+            displayTerminal.setTerminalName(dbTerminal.getTerminalName());
+            displayTerminal.setName(dbTerminal.getTerminalName());
+            String dept = dbTerminal.getDepartment();
+            if (android.text.TextUtils.isEmpty(dept) && dbTerminal.getDepartmentId() > 0) {
+                try {
+                    com.lora.cn.database.entity.Category c = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getDepartmentId());
+                    if (c != null) dept = c.getCategoryName();
+                } catch (Exception ignored) {}
+            }
+            String room = dbTerminal.getLocation();
+            if (android.text.TextUtils.isEmpty(room) && dbTerminal.getRoomId() > 0) {
+                try {
+                    com.lora.cn.database.entity.Category c2 = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getRoomId());
+                    if (c2 != null) room = c2.getCategoryName();
+                } catch (Exception ignored) {}
+            }
+            displayTerminal.setDepartment(dept);
+            displayTerminal.setLocation(room);
+            displayTerminal.setStatus(dbTerminal.getStatus());
+            displayTerminal.setSignalStrength(dbTerminal.getSignalStrength());
+            displayTerminal.setFavorite(dbTerminal.isFavorite());
+            int statusIcon = getStatusIcon(dbTerminal.getStatus());
+            displayTerminal.setStatusIconResId(statusIcon);
+            displayTerminal.setStatusText(TerminalStatusConstants.codeToText(dbTerminal.getStatus()));
+            displayTerminal.setBatteryLevel(dbTerminal.getBatteryLevel());
+            displayTerminal.setBatteryText(dbTerminal.getBatteryLevel() + "%");
+            displayTerminal.setImportant(dbTerminal.isFavorite());
+            displayTerminals.add(displayTerminal);
+        }
+        return displayTerminals;
+    }
+
+    private void onTerminalClick(int position, Terminal terminal) {
+        com.lora.cn.ui.fragment.TerminalDetailFragment fragment = com.lora.cn.ui.fragment.TerminalDetailFragment.newInstance(terminal.getTerminalId());
+        androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+        if (a != null) {
+            a.getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_device_list_container, fragment)
+                    .addToBackStack("terminal_detail")
+                    .commit();
         }
     }
 
