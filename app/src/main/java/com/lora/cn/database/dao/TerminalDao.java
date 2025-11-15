@@ -111,7 +111,7 @@ public class TerminalDao {
             logInfo.setTerminalId(terminalId);
             logInfo.setTerminalName(""); // 这里可以通过查询获取终端名称
             logInfo.setDeviceId(terminalId);
-            logInfo.setStatus(result > 0 ? "成功" : "失败");
+            logInfo.setStatusCode(0);
             logInfo.setOperator("");
             logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
             logInfo.setOperationTime("");

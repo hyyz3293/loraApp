@@ -419,8 +419,6 @@ public class TerminalListFragment extends Fragment {
                 int batteryLevel = terminal.getBatteryLevel();
                 if (batteryLevel <= 20) {
                     lowBatteryCount++;
-                } else if (batteryLevel > 60) {
-                    normalTakenCount++;
                 }
             }
 
@@ -818,7 +816,7 @@ public class TerminalListFragment extends Fragment {
                             logInfo.setTerminalId(terminal.getTerminalId());
                             logInfo.setTerminalName(terminal.getTerminalName());
                             logInfo.setDeviceId(terminal.getTerminalId());
-                            logInfo.setStatus(result > 0 ? "成功" : "失败");
+                            logInfo.setStatusCode(0);
                             logInfo.setOperator("");
                             logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
                             logInfo.setOperationTime("");
@@ -839,7 +837,7 @@ public class TerminalListFragment extends Fragment {
                                 logInfo.setTerminalId(terminal.getTerminalId());
                                 logInfo.setTerminalName(terminal.getTerminalName());
                                 logInfo.setDeviceId(terminal.getTerminalId());
-                                logInfo.setStatus("异常");
+                                logInfo.setStatusCode(0);
                                 logInfo.setOperator("");
                                 java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
                                 String now = sdf.format(new java.util.Date());

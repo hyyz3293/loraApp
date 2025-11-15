@@ -357,7 +357,7 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setTerminalId(terminalId);
                 logInfo.setTerminalName(deviceName);
                 logInfo.setDeviceId(deviceCode);
-                logInfo.setStatus("成功");
+                logInfo.setStatusCode(0);
                 logInfo.setOperator("");
                 logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
                 logInfo.setOperationTime("");
@@ -381,7 +381,7 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setTerminalId(terminalId);
                 logInfo.setTerminalName(deviceName);
                 logInfo.setDeviceId(deviceCode);
-                logInfo.setStatus("失败");
+                logInfo.setStatusCode(0);
                 logInfo.setOperator("");
                 logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
                 logInfo.setOperationTime("");
@@ -401,7 +401,7 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setTerminalId(terminalId);
                 logInfo.setTerminalName(deviceName);
                 logInfo.setDeviceId(deviceCode);
-                logInfo.setStatus("异常");
+                logInfo.setStatusCode(0);
                 logInfo.setOperator("");
                 logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
                 logInfo.setOperationTime("");

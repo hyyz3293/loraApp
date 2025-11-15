@@ -247,7 +247,7 @@ public class TerminalDetailDialog extends Dialog {
                 logInfo.setTerminalId(info.deviceId);
                 logInfo.setTerminalName(info.deviceName);
                 logInfo.setDeviceId(info.deviceId);
-                logInfo.setStatus("成功");
+                    logInfo.setStatusCode(0);
                 logInfo.setOperator("");
                 logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
@@ -265,7 +265,7 @@ public class TerminalDetailDialog extends Dialog {
                 logInfo.setTerminalId(info.deviceId);
                 logInfo.setTerminalName(info.deviceName);
                 logInfo.setDeviceId(info.deviceId);
-                logInfo.setStatus("失败");
+                    logInfo.setStatusCode(0);
                 logInfo.setOperator("");
                 logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
@@ -281,7 +281,7 @@ public class TerminalDetailDialog extends Dialog {
             logInfo.setTerminalId(info.deviceId);
             logInfo.setTerminalName(info.deviceName);
             logInfo.setDeviceId(info.deviceId);
-            logInfo.setStatus("异常");
+            logInfo.setStatusCode(0);
             logInfo.setOperator("");
             logInfo.setOperationTime("");
             logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
@@ -427,7 +427,7 @@ public class TerminalDetailDialog extends Dialog {
                     logInfo.setTerminalId(info.deviceId);
                     logInfo.setTerminalName(info.deviceName);
                     logInfo.setDeviceId(info.deviceId);
-                    logInfo.setStatus("下行处理");
+                    logInfo.setStatusCode(0);
                     logInfo.setOperator("");
                     logInfo.setOperationTime("");
                     logInfo.setCreateTime(formatTime(System.currentTimeMillis()));

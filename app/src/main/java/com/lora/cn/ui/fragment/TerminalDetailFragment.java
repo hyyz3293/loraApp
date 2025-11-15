@@ -181,15 +181,7 @@ public class TerminalDetailFragment extends Fragment {
                 // 终端ID
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
 
-                // 信号强度视图：将信号强度映射到0-4
-                int strength = t.getSignalStrength();
-                int level;
-                if (strength >= 75) level = 4;
-                else if (strength >= 50) level = 3;
-                else if (strength >= 25) level = 2;
-                else if (strength > 0) level = 1;
-                else level = 0;
-                if (signalView != null) signalView.setSignalStrength(level);
+                if (signalView != null) signalView.setSignalStrength(Math.max(0, Math.min(4, t.getSignalStrength())));
             } else {
                 // 无记录时，回退为占位符
                 tvTitle.setText("-");

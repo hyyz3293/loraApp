@@ -310,7 +310,7 @@ public class TerminalCheckFragment extends Fragment {
             logInfo.setTerminalId("ALL");
             logInfo.setTerminalName("所有终端");
             logInfo.setDeviceId("SYSTEM");
-            logInfo.setStatus("开始");
+            logInfo.setStatusCode(0);
             logInfo.setOperator("");
             logInfo.setAction("终端清点");
             logInfo.setOperationTime("");
@@ -346,7 +346,7 @@ public class TerminalCheckFragment extends Fragment {
                 logInfo.setTerminalId("ALL");
                 logInfo.setTerminalName("所有终端");
                 logInfo.setDeviceId("SYSTEM");
-                logInfo.setStatus("完成");
+                logInfo.setStatusCode(0);
                 logInfo.setOperator("");
                 logInfo.setAction("终端清点");
                 logInfo.setOperationTime("");

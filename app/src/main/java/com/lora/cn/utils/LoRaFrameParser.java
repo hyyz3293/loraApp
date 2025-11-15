@@ -48,7 +48,7 @@ public class LoRaFrameParser {
         public int evNurseQuery;         // Bit7: 护士站查询操作指令事件 (0/1)
 
         // 设备状态 bit 展开
-        public int stPowerLockOn;        // Bit0: 启用电源开关锁状态 1:开 0:关
+        public int stPowerLockOn;        // Bit0: 启用电源开关锁状态 0:开 1:关
         public int stLayer1NotInPlace;   // Bit1: 第1层开关状态 1:不在位 0:在位
         public int stLayer2NotInPlace;   // Bit2: 第2层开关状态 1:不在位 0:在位
         public int stLayer3NotInPlace;   // Bit3: 第3层开关状态 1:不在位 0:在位

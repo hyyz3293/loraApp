@@ -5,7 +5,7 @@ public class LogInfo {
     private String terminalId;
     private String terminalName;
     private String deviceId;
-    private String status;
+    private int statusCode;
     private String operator = "";
     private String operationTime = "";
     private String action;
@@ -15,11 +15,11 @@ public class LogInfo {
     }
 
     public LogInfo(String terminalId, String terminalName, String deviceId, 
-                   String status, String operator, String operationTime, String action) {
+                   int statusCode, String operator, String operationTime, String action) {
         this.terminalId = terminalId;
         this.terminalName = terminalName;
         this.deviceId = deviceId;
-        this.status = status;
+        this.statusCode = statusCode;
         this.operator = operator;
         this.operationTime = operationTime;
         this.action = action;
@@ -58,12 +58,12 @@ public class LogInfo {
         this.deviceId = deviceId;
     }
 
-    public String getStatus() {
-        return status;
+    public int getStatusCode() {
+        return statusCode;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setStatusCode(int statusCode) {
+        this.statusCode = statusCode;
     }
 
     public String getOperator() {
@@ -97,4 +97,15 @@ public class LogInfo {
     public void setCreateTime(String createTime) {
         this.createTime = createTime;
     }
+
+    private String handleUser = "";
+    private String handleTime = "";
+    private String handleRemark = "";
+
+    public String getHandleUser() { return handleUser; }
+    public void setHandleUser(String handleUser) { this.handleUser = handleUser; }
+    public String getHandleTime() { return handleTime; }
+    public void setHandleTime(String handleTime) { this.handleTime = handleTime; }
+    public String getHandleRemark() { return handleRemark; }
+    public void setHandleRemark(String handleRemark) { this.handleRemark = handleRemark; }
 }

@@ -46,9 +46,10 @@ public class AlertPendingListFragment extends Fragment {
             List<LogInfo> all = db.getAllLogs();
             List<LogInfo> pending = new ArrayList<>();
             for (LogInfo li : all) {
-                String s = li.getStatus();
-                if (s == null) continue;
-                if (s.contains("丢失") || s.contains("低电量") || s.contains("离线")) {
+                int s = li.getStatusCode();
+                if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
                     pending.add(li);
                 }
             }

@@ -87,14 +87,14 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
             tvStatusTitle.setText("");
             tvBatteryTitle.setText("");
         } else {
-            int raw = Math.max(0, Math.min(138, item.getSignalStrength()));
-            float percent = (138 - raw) * 100f / 138f;
-            int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+            int bars = Math.max(0, Math.min(4, item.getSignalStrength()));
             if (signalView != null) {
                 signalView.setVisibility(View.VISIBLE);
                 signalView.setSignalStrength(bars);
             }
             if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
+            int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
+            float percent = (138 - rssiRaw) * 100f / 138f;
             tvStatusTitle.setText(String.format("%.0f%%", percent));
         }
 

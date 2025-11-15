@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 16;
+    private static final int DATABASE_VERSION = 17;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -290,11 +290,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_LOG_TERMINAL_ID + " TEXT NOT NULL, " +
         COLUMN_LOG_TERMINAL_NAME + " TEXT NOT NULL, " +
         COLUMN_LOG_DEVICE_ID + " TEXT NOT NULL, " +
-        COLUMN_LOG_STATUS + " TEXT NOT NULL, " +
+        COLUMN_LOG_STATUS + " INTEGER NOT NULL, " +
         COLUMN_LOG_OPERATOR + " TEXT, " +
         COLUMN_LOG_OPERATION_TIME + " TEXT, " +
         COLUMN_LOG_ACTION + " TEXT NOT NULL, " +
-        COLUMN_LOG_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP" +
+        COLUMN_LOG_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        "handle_user TEXT, " +
+        "handle_time TEXT, " +
+        "handle_remark TEXT" +
         ")";
     
     // 创建索引的SQL语句
@@ -472,6 +475,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 16) {
             try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_FAVORITE_USER_ID + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 17) {
+            try { db.execSQL("DROP TABLE IF EXISTS " + TABLE_LOGS); } catch (Exception ignored) {}
+            db.execSQL(CREATE_TABLE_LOGS);
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -1053,7 +1060,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_TERMINAL_ID, terminalId);
         values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
         values.put(COLUMN_LOG_DEVICE_ID, deviceId);
-        values.put(COLUMN_LOG_STATUS, status);
+        int statusCode = com.lora.cn.ui.constants.LogStatus.fromText(status);
+        values.put(COLUMN_LOG_STATUS, statusCode);
         values.put(COLUMN_LOG_OPERATOR, operator == null ? "" : operator);
         values.put(COLUMN_LOG_OPERATION_TIME, operationTime == null ? "" : operationTime);
         values.put(COLUMN_LOG_ACTION, action);
@@ -1073,10 +1081,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_TERMINAL_ID, logInfo.getTerminalId());
         values.put(COLUMN_LOG_TERMINAL_NAME, logInfo.getTerminalName());
         values.put(COLUMN_LOG_DEVICE_ID, logInfo.getDeviceId());
-        values.put(COLUMN_LOG_STATUS, logInfo.getStatus());
+        values.put(COLUMN_LOG_STATUS, logInfo.getStatusCode());
         values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator() == null ? "" : logInfo.getOperator());
         values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime() == null ? "" : logInfo.getOperationTime());
         values.put(COLUMN_LOG_ACTION, logInfo.getAction());
+        values.put("handle_user", logInfo.getHandleUser());
+        values.put("handle_time", logInfo.getHandleTime());
+        values.put("handle_remark", logInfo.getHandleRemark());
         long result = db.insert(TABLE_LOGS, null, values);
         db.close();
         return result;
@@ -1102,8 +1113,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 解析帧
         com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
         String deviceId = frame != null ? frame.deviceId : null;
-        String terminalName = "上行数据";
-        String status = "";
+        String terminalName = "";
+        int statusCode = 0;
         String operator = "";
         String operationTime = "";
         String action = "接收上行数据";
@@ -1127,22 +1138,30 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 根据设备事件/状态位映射日志状态（来源：上行设备事件/状态）
         if (frame != null) {
             // 事件优先级：低电量 > 丢失 > 开锁/上锁 > 打开/关闭 > 取走/放入 > 定期上报 > 护士站查询
-            if (frame.evLowBattery == 1) {
-                status = "低电量报警";
-            } else if (frame.evIllegalRemoval == 1) {
-                status = "设备丢失";
-            } else if (frame.evPowerLockOpen == 1) {
-                status = "开锁";
-            } else if (frame.evPowerLockClose == 1) {
-                status = "上锁";
+            // 备注：statusCode 使用 LogStatus 枚举的 code，便于统一展示
+             if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
+                     frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
+                    frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
+                // 非法移走 -> 设备丢失
+                statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
+            } else if (frame.stPowerLockOn == 1) {
+                // 开锁
+                statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
+            } else if (frame.stPowerLockOn == 0) {
+                // 上锁
+                statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
             } else if (frame.evManualTake == 1) {
-                status = "设备打开";
+                // 设备打开（取走）
+                statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
             } else if (frame.evManualPut == 1) {
-                status = "设备关闭";
-            } else if (frame.evPeriodicReport == 1) {
-                status = "定期上报";
-            } else if (frame.evNurseQuery == 1) {
-                status = "护士站查询";
+                // 设备关闭（放入）
+                statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
+            } else if (frame.evLowBattery == 1) {
+                // 低电量报警
+                statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
+            } else  {
+                // 未匹配事件，保持0
+                statusCode = 0;
             }
         }
 
@@ -1155,14 +1174,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
               .append(", RSSI=").append(frame.rssi)
               .append(", 事件=").append(com.lora.cn.utils.LoRaFrameParser.getDeviceEventDescription(frame.deviceEvent));
             action = sb.toString();
+            String statusText = com.lora.cn.ui.constants.LogStatus.toText(statusCode);
+            android.util.Log.i("DatabaseHelper", "上行事件映射状态=" + statusText + ", deviceId=" + deviceId);
         } else {
             action = "接收上行数据: " + hex;
         }
 
-        values.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "uplink");
+        values.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
         values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
-        values.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "mqtt");
-        values.put(COLUMN_LOG_STATUS, status);
+        values.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+        values.put(COLUMN_LOG_STATUS, statusCode);
         values.put(COLUMN_LOG_OPERATOR, operator);
         values.put(COLUMN_LOG_OPERATION_TIME, "");
         values.put(COLUMN_LOG_ACTION, action);
@@ -1251,11 +1272,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             log.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_ID)));
             log.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_NAME)));
             log.setDeviceId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_DEVICE_ID)));
-            log.setStatus(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_STATUS)));
+            int st = cursor.getInt(cursor.getColumnIndex(COLUMN_LOG_STATUS));
+            log.setStatusCode(st);
             log.setOperator(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATOR)));
             log.setOperationTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATION_TIME)));
             log.setAction(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_ACTION)));
             log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_CREATE_TIME)));
+            int hUserIdx = cursor.getColumnIndex("handle_user");
+            int hTimeIdx = cursor.getColumnIndex("handle_time");
+            int hRemarkIdx = cursor.getColumnIndex("handle_remark");
+            if (hUserIdx != -1) log.setHandleUser(cursor.getString(hUserIdx));
+            if (hTimeIdx != -1) log.setHandleTime(cursor.getString(hTimeIdx));
+            if (hRemarkIdx != -1) log.setHandleRemark(cursor.getString(hRemarkIdx));
             
             logs.add(log);
         }
@@ -1277,11 +1305,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             log.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_ID)));
             log.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_NAME)));
             log.setDeviceId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_DEVICE_ID)));
-            log.setStatus(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_STATUS)));
+            int st = cursor.getInt(cursor.getColumnIndex(COLUMN_LOG_STATUS));
+            log.setStatusCode(st);
             log.setOperator(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATOR)));
             log.setOperationTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATION_TIME)));
             log.setAction(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_ACTION)));
             log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_CREATE_TIME)));
+            int hUserIdx = cursor.getColumnIndex("handle_user");
+            int hTimeIdx = cursor.getColumnIndex("handle_time");
+            int hRemarkIdx = cursor.getColumnIndex("handle_remark");
+            if (hUserIdx != -1) log.setHandleUser(cursor.getString(hUserIdx));
+            if (hTimeIdx != -1) log.setHandleTime(cursor.getString(hTimeIdx));
+            if (hRemarkIdx != -1) log.setHandleRemark(cursor.getString(hRemarkIdx));
             
             logs.add(log);
         }
@@ -1452,5 +1487,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         int result = db.delete(TABLE_TERMINALS, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{deviceId});
         return result;
+    }
+
+    /**
+     * 标记日志为已处理，并记录处理人/处理时间/备注
+     */
+    public int updateLogHandled(long logId, String handleUser, String handleTime, String handleRemark) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.HANDLED.code);
+        values.put("handle_user", handleUser == null ? "" : handleUser);
+        values.put("handle_time", handleTime == null ? "" : handleTime);
+        values.put("handle_remark", handleRemark == null ? "" : handleRemark);
+        try {
+            return db.update(TABLE_LOGS, values, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(logId)});
+        } finally {
+            db.close();
+        }
     }
 }

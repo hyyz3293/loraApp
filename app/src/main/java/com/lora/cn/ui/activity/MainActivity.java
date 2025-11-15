@@ -66,30 +66,30 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseHelper databaseHelper;
     private static final long TEST_INTERVAL = 30 * 1000; // 30秒
     private android.content.BroadcastReceiver brokerReadyReceiver;
-    private android.os.Handler testUplinkHandler;
-    private final Runnable testUplinkRunnable = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-                String time = sdf.format(new Date());
-                String hex = generateTestUplinkHex();
-
-                long result = databaseHelper.addUplinkLog(time, hex);
-                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
-
-                UplinkDataEvent event = new UplinkDataEvent(time, hex);
-                EventBus.getDefault().post(event);
-                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
-            } catch (Exception e) {
-                Log.e(TAG, "自动测试上行失败", e);
-            } finally {
-                if (testUplinkHandler != null) {
-                    testUplinkHandler.postDelayed(this, TEST_INTERVAL);
-                }
-            }
-        }
-    };
+//    private android.os.Handler testUplinkHandler;
+//    private final Runnable testUplinkRunnable = new Runnable() {
+//        @Override
+//        public void run() {
+//            try {
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+//                String time = sdf.format(new Date());
+//                String hex = generateTestUplinkHex();
+//
+//                long result = databaseHelper.addUplinkLog(time, hex);
+//                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
+//
+//                UplinkDataEvent event = new UplinkDataEvent(time, hex);
+//                EventBus.getDefault().post(event);
+//                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
+//            } catch (Exception e) {
+//                Log.e(TAG, "自动测试上行失败", e);
+//            } finally {
+//                if (testUplinkHandler != null) {
+//                    testUplinkHandler.postDelayed(this, TEST_INTERVAL);
+//                }
+//            }
+//        }
+//    };
 
     // 自动返回首页计时
     private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -113,28 +113,28 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private android.os.Handler startupLogHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-    private final Runnable startupLogRunnable = new Runnable() {
-        @Override
-        public void run() {
-            try {
-                com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(MainActivity.this);
-                db.updateTerminalStatusByDeviceId("SIM_DEV", com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
-                db.addLog(
-                        "SIM_DEV",
-                        "模拟设备",
-                        "SIM_DEV",
-                        "异常丢失",
-                        "",
-                        "",
-                        "接收上行数据: 模拟异常取走"
-                );
-                Log.i(TAG, "已发送启动2分钟后的异常取走日志");
-            } catch (Exception e) {
-                Log.e(TAG, "发送异常取走日志失败: " + e.getMessage());
-            }
-        }
-    };
+//    private android.os.Handler startupLogHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+//    private final Runnable startupLogRunnable = new Runnable() {
+//        @Override
+//        public void run() {
+//            try {
+//                com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(MainActivity.this);
+//                db.updateTerminalStatusByDeviceId("SIM_DEV", com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+//                db.addLog(
+//                        "SIM_DEV",
+//                        "模拟设备",
+//                        "SIM_DEV",
+//                        "异常丢失",
+//                        "",
+//                        "",
+//                        "接收上行数据: 模拟异常取走"
+//                );
+//                Log.i(TAG, "已发送启动2分钟后的异常取走日志");
+//            } catch (Exception e) {
+//                Log.e(TAG, "发送异常取走日志失败: " + e.getMessage());
+//            }
+//        }
+//    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -192,8 +192,8 @@ public class MainActivity extends AppCompatActivity {
         autoReturnHandler.removeCallbacks(autoReturnRunnable);
         autoReturnHandler.postDelayed(autoReturnRunnable, 1000);
 
-        startupLogHandler.removeCallbacks(startupLogRunnable);
-        startupLogHandler.postDelayed(startupLogRunnable, 120000);
+//        startupLogHandler.removeCallbacks(startupLogRunnable);
+//        startupLogHandler.postDelayed(startupLogRunnable, 120000);
         
         if (alertEvaluateHandler == null) {
             alertEvaluateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -232,18 +232,18 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
     }
 
-    private void startTestTimer() {
-        try {
-            if (testUplinkHandler == null) {
-                testUplinkHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-            }
-            testUplinkHandler.removeCallbacks(testUplinkRunnable);
-            testUplinkHandler.post(testUplinkRunnable);
-            Log.d(TAG, "自动测试上行计时器已启动，间隔: " + TEST_INTERVAL + "ms");
-        } catch (Exception e) {
-            Log.e(TAG, "启动自动测试上行计时器失败", e);
-        }
-    }
+//    private void startTestTimer() {
+//        try {
+//            if (testUplinkHandler == null) {
+//                testUplinkHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+//            }
+//            testUplinkHandler.removeCallbacks(testUplinkRunnable);
+//            testUplinkHandler.post(testUplinkRunnable);
+//            Log.d(TAG, "自动测试上行计时器已启动，间隔: " + TEST_INTERVAL + "ms");
+//        } catch (Exception e) {
+//            Log.e(TAG, "启动自动测试上行计时器失败", e);
+//        }
+//    }
 
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
@@ -752,32 +752,43 @@ public class MainActivity extends AppCompatActivity {
                                     long result = databaseHelper.addUplinkLog(time, hex);
                                     Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
                                     
-                                    // 同时存储到日志信息表
-                                    try {
-                                        long logResult = databaseHelper.addLog(
-                                            devEui,
-                                            "上行数据设备",
-                                            devEui,
-                                            "数据接收",
-                                            "",
-                                            "",
-                                            "接收上行数据: " + hex
-                                        );
-                                        Log.d(TAG, "上行数据存储到日志信息表，结果: " + logResult);
-                                    } catch (Exception e) {
-                                        Log.e(TAG, "存储上行数据到日志信息表失败: " + e.getMessage());
-                                    }
+//                                    // 同时存储到日志信息表
+//                                    try {
+//                                        long logResult = databaseHelper.addLog(
+//                                            devEui,
+//                                            "上行数据设备",
+//                                            devEui,
+//                                            "数据接收",
+//                                            "",
+//                                            "",
+//                                            "接收上行数据: " + hex
+//                                        );
+//                                        Log.d(TAG, "上行数据存储到日志信息表，结果: " + logResult);
+//                                    } catch (Exception e) {
+//                                        Log.e(TAG, "存储上行数据到日志信息表失败: " + e.getMessage());
+//                                    }
                                     
                                     // 通过EventBus广播（UplinkDataEvent暂时不可用）
                                     UplinkDataEvent event = new UplinkDataEvent(time, hex);
                                     EventBus.getDefault().post(event);
                                     Log.d(TAG, "上行数据准备广播: time=" + time + ", hex=" + hex);
-
                                     LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
+                                    Log.d(TAG, "==>>stPowerLockOn>: " + frameData.stPowerLockOn);
+                                    Log.d(TAG, "==>>stLayer1NotInPlace>: " + frameData.stLayer1NotInPlace);
+                                    Log.d(TAG, "==>>stLayer2NotInPlace>: " + frameData.stLayer2NotInPlace);
+                                    Log.d(TAG, "==>>stLayer3NotInPlace>: " + frameData.stLayer3NotInPlace);
+                                    Log.d(TAG, "==>>stLayer4NotInPlace>: " + frameData.stLayer4NotInPlace);
+                                    Log.d(TAG, "==>>stLayer5NotInPlace>: " + frameData.stLayer5NotInPlace);
 
-                                    Log.d(TAG, "==>>>: " + new Gson().toJson(frameData));
-
-                                    
+//                                    D  上行数据存储到上行日志表，结果: 25
+//                                    2025-11-15 21:25:18.642  4652-4652  MainActivity            com.lora.cn                          D  上行数据存储到日志信息表，结果: 26
+//                                    2025-11-15 21:25:18.666  4652-4652  MainActivity            com.lora.cn                          D  上行数据准备广播: time=2025-11-08T13:31:32.660661Z, hex=A528E2000100012509000105001820250926081049000000040000007E016964720000000000855A
+//                                    2025-11-15 21:25:18.680  4652-4652  MainActivity            com.lora.cn                          D  ==>>stPowerLockOn>: 0
+//                                    2025-11-15 21:25:18.680  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer1NotInPlace>: 1
+//                                    2025-11-15 21:25:18.680  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer2NotInPlace>: 1
+//                                    2025-11-15 21:25:18.681  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer3NotInPlace>: 1
+//                                    2025-11-15 21:25:18.681  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer4NotInPlace>: 1
+//                                    2025-11-15 21:25:18.681  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer5NotInPlace>: 1
 
                                 }
                                 
@@ -853,10 +864,10 @@ public class MainActivity extends AppCompatActivity {
                 brokerReadyReceiver = null;
             }
             autoReturnHandler.removeCallbacks(autoReturnRunnable);
-            if (testUplinkHandler != null) {
-                testUplinkHandler.removeCallbacks(testUplinkRunnable);
-                testUplinkHandler = null;
-            }
+//            if (testUplinkHandler != null) {
+//                testUplinkHandler.removeCallbacks(testUplinkRunnable);
+//                testUplinkHandler = null;
+//            }
             if (alertEvaluateHandler != null) {
                 alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
                 alertEvaluateHandler = null;

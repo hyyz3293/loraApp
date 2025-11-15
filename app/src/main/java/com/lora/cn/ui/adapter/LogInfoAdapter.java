@@ -32,7 +32,7 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         setTextOrPlaceholder(logTime, item.getCreateTime());
 
         // 设置状态字段，包含特殊状态的圆点和颜色
-        setStatusWithDot(logStatus, item.getStatus());
+        setStatusWithDot(logStatus, com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode()));
 
         // 设置名称字段 - 使用终端名称
         setTextOrPlaceholder(logName, item.getTerminalName());
@@ -40,15 +40,19 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         // 设置ID字段 - 使用设备ID
         setTextOrPlaceholder(logId, item.getDeviceId());
 
-        // 设置完成字段 - 使用操作员
-        setTextOrPlaceholder(logComplete, item.getOperator());
-
-        // 设置完成时间字段 - 使用操作时间
-        setTextOrPlaceholder(logCompleteTime, item.getOperationTime());
+        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+            setTextOrPlaceholder(logComplete, item.getHandleUser());
+            setTextOrPlaceholder(logCompleteTime, item.getHandleTime());
+        } else {
+            setTextOrPlaceholder(logComplete, item.getOperator());
+            setTextOrPlaceholder(logCompleteTime, item.getOperationTime());
+        }
 
         // 只有下行数据展示操作，其它情况不展示
         String act = item.getAction();
-        if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
+        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+            setTextOrPlaceholder(logOperation, item.getHandleRemark());
+        } else if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
             setTextOrPlaceholder(logOperation, act);
         } else {
             setTextOrPlaceholder(logOperation, "");
@@ -93,10 +97,10 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         Drawable dotDrawable = null;
         int textColor = Color.parseColor("#666666"); // 默认颜色
         
-        if ("设备丢失".equals(status) || "异常丢失".equals(status) || "离线".equals(status)) {
+        if ("设备丢失".equals(status) || "设备离线".equals(status)) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_red);
             textColor = Color.parseColor("#D30000");
-        } else if ("低电量报警".equals(status) || "低电量".equals(status)) {
+        } else if ("低电量报警".equals(status)) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_orange);
             textColor = Color.parseColor("#FF9F0F");
         } else if ("在线".equals(status)) {
