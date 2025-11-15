@@ -473,16 +473,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     Log.d(TAG, "==>>>: " + new Gson().toJson(frameData));
 
-                                    // 检测异常取走（非法移走）并更新终端状态及刷新列表
-                                    try {
-                                        if (frameData != null && frameData.deviceId != null && frameData.evIllegalRemoval == 1) {
-                                            int rows = databaseHelper.updateTerminalStatusByDeviceId(frameData.deviceId, "异常");
-                                            Log.d(TAG, "异常取走，更新终端状态结果: " + rows + ", deviceId=" + frameData.deviceId);
-                                            EventBus.getDefault().post(new TerminalRefreshEvent("异常取走: " + frameData.deviceId));
-                                        }
-                                    } catch (Exception e) {
-                                        Log.e(TAG, "处理异常取走状态更新失败: " + e.getMessage());
-                                    }
+                                    
 
                                 }
                                 

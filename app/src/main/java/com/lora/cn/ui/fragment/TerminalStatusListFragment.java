@@ -43,6 +43,18 @@ public class TerminalStatusListFragment extends Fragment {
 
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
+    private android.os.Handler autoRefreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable autoRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                loadTerminals();
+                applyCurrentFilters();
+            } finally {
+                autoRefreshHandler.postDelayed(this, 120000);
+            }
+        }
+    };
 
     @Nullable
     @Override
@@ -133,7 +145,11 @@ public class TerminalStatusListFragment extends Fragment {
             List<Terminal> terminals = dbHelper.getAllTerminals();
             if (terminals != null && !terminals.isEmpty()) {
                 allDisplayTerminals.clear();
-                allDisplayTerminals.addAll(terminals);
+                for (Terminal t : terminals) {
+                    t.setStatusIconResId(getStatusIcon(t.getStatus()));
+                    t.setStatusText(TerminalStatusConstants.codeToText(t.getStatus()));
+                    allDisplayTerminals.add(t);
+                }
             } else {
                 adapter.submitList(new ArrayList<>());
             }
@@ -181,6 +197,19 @@ public class TerminalStatusListFragment extends Fragment {
         b.putString("status_filter_title", statusFilterTitle);
         f.setArguments(b);
         return f;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
+        autoRefreshHandler.postDelayed(autoRefreshRunnable, 120000);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
     }
 
     private int getStatusIcon(int statusCode) {

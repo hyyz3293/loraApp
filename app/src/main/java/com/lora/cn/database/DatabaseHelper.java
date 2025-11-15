@@ -1031,7 +1031,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
                 long nowMs = System.currentTimeMillis();
-                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 5 * 60 * 1000L) {
+                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 10 * 60 * 1000L) {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
                 
@@ -1178,13 +1178,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             if (frame != null && deviceId != null) {
                 updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
-                boolean removed = frame.stLayer1NotInPlace == 1 || frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 || frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1;
-                if (removed) {
-                    if (frame.stPowerLockOn == 1) {
-                        updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
-                    } else {
-                        updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
-                    }
+                boolean anyLayerNotInPlace = frame.stLayer1NotInPlace == 1 || frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 || frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1;
+                boolean allLayersNotInPlace = frame.stLayer1NotInPlace == 1 && frame.stLayer2NotInPlace == 1 && frame.stLayer3NotInPlace == 1 && frame.stLayer4NotInPlace == 1 && frame.stLayer5NotInPlace == 1;
+                if (frame.stPowerLockOn == 0 && anyLayerNotInPlace) {
+                    updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                } else if (frame.stPowerLockOn == 1 && allLayersNotInPlace) {
+                    updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
                 } else {
                     updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
                 }

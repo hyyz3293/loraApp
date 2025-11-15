@@ -60,6 +60,18 @@ public class TerminalListFragment extends Fragment {
     // 数据库管理器
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
+    private android.os.Handler autoRefreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable autoRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                loadTerminals();
+                applyCurrentFilters();
+            } finally {
+                autoRefreshHandler.postDelayed(this, 120000);
+            }
+        }
+    };
 
     // 报警浮层与待处理入口
     private View llAlertOverlay;
@@ -353,6 +365,8 @@ public class TerminalListFragment extends Fragment {
             // 返回页面时刷新终端列表和状态统计，确保展示最新添加的设备
             loadTerminals();
             updateTerminalStatusFromDatabase();
+            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
+            autoRefreshHandler.postDelayed(autoRefreshRunnable, 120000);
         } catch (Exception e) {
             Log.e(TAG, "onResume 刷新终端列表失败", e);
         }
@@ -364,6 +378,7 @@ public class TerminalListFragment extends Fragment {
         if (EventBus.getDefault().isRegistered(this)) {
             EventBus.getDefault().unregister(this);
         }
+        autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
         super.onStop();
     }
 
@@ -528,6 +543,8 @@ public class TerminalListFragment extends Fragment {
     public static TerminalListFragment newInstance() {
         return new TerminalListFragment();
     }
+
+    
 
     public static TerminalListFragment newInstance(String statusFilterTitle) {
         TerminalListFragment f = new TerminalListFragment();
