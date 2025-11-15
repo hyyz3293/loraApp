@@ -113,6 +113,29 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private android.os.Handler startupLogHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable startupLogRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(MainActivity.this);
+                db.updateTerminalStatusByDeviceId("SIM_DEV", com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                db.addLog(
+                        "SIM_DEV",
+                        "模拟设备",
+                        "SIM_DEV",
+                        "异常丢失",
+                        "",
+                        "",
+                        "接收上行数据: 模拟异常取走"
+                );
+                Log.i(TAG, "已发送启动2分钟后的异常取走日志");
+            } catch (Exception e) {
+                Log.e(TAG, "发送异常取走日志失败: " + e.getMessage());
+            }
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -161,13 +184,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-        startTestTimer();
+        //startTestTimer();
         // 启动全局MQTT日志监听（优先连接本地Broker）
         startGlobalMqttLogging();
 
         // 启动自动返回首页的周期检查
         autoReturnHandler.removeCallbacks(autoReturnRunnable);
         autoReturnHandler.postDelayed(autoReturnRunnable, 1000);
+
+        startupLogHandler.removeCallbacks(startupLogRunnable);
+        startupLogHandler.postDelayed(startupLogRunnable, 120000);
 
 
         LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("a528e2000100012509000119001820250926083856000000080000007e0171635e0000000000915a");

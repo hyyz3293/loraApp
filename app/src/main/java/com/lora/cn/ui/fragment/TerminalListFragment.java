@@ -131,6 +131,14 @@ public class TerminalListFragment extends Fragment {
         spinnerTs = view.findViewById(R.id.spinner_ts);
         sxLeft = view.findViewById(R.id.sx_left);
         sxRight = view.findViewById(R.id.sx_right);
+        llAlertOverlay = view.findViewById(R.id.ll_alert_overlay);
+        tvAlertText = view.findViewById(R.id.tv_alert_text);
+        btnAlertMute = view.findViewById(R.id.btn_alert_mute);
+        btnAlertMinimize = view.findViewById(R.id.btn_alert_minimize);
+        btnAlertHandle = view.findViewById(R.id.btn_alert_handle);
+        llAlertPending = view.findViewById(R.id.ll_alert_pending);
+        btnAlertPending = view.findViewById(R.id.btn_alert_pending);
+        tvAlertCount = view.findViewById(R.id.tv_alert_count);
 
         // 设置添加终端按钮点击事件
         addTerminalBtn.setOnClickListener(v -> {
@@ -423,6 +431,7 @@ public class TerminalListFragment extends Fragment {
             updateTerminalStatusFromDatabase();
             autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
             autoRefreshHandler.postDelayed(autoRefreshRunnable, 120000);
+            evaluateAlertOverlay();
         } catch (Exception e) {
             Log.e(TAG, "onResume 刷新终端列表失败", e);
         }
@@ -479,6 +488,23 @@ public class TerminalListFragment extends Fragment {
     private void updatePendingBadge() {
         if (tvAlertCount != null) tvAlertCount.setText(String.valueOf(pendingAlertCount));
         if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+    }
+
+    private void evaluateAlertOverlay() {
+        try {
+            int abnormal = 0;
+            int low = 0;
+            for (Terminal t : allDisplayTerminals) {
+                if (t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) abnormal++;
+                if (t.getBatteryLevel() <= 20) low++;
+            }
+            if (abnormal > 0 || low > 0) {
+                String msg = (abnormal > 0 && low > 0) ? "异常丢失/低电量" : (abnormal > 0 ? "异常丢失" : "低电量");
+                showAlertOverlay(msg);
+            } else {
+                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void openAlertPendingList() {
@@ -883,6 +909,7 @@ public class TerminalListFragment extends Fragment {
         List<Terminal> page = new ArrayList<>();
         if (start < end) page = new ArrayList<>(filteredPageBase.subList(start, end));
         adapter.submitList(page);
+        evaluateAlertOverlay();
     }
 
     private void updatePaginationControls() {
