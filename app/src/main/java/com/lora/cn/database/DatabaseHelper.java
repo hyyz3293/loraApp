@@ -1346,6 +1346,58 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_TERMINAL_DEVICE_ID + "=?", 
                 new String[]{terminalId});
     }
+
+    public java.util.List<com.lora.cn.ui.model.Terminal> getTerminalsPaged(int limit, int offset) {
+        java.util.List<com.lora.cn.ui.model.Terminal> terminals = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql = "SELECT * FROM " + TABLE_TERMINALS + " ORDER BY " + COLUMN_TERMINAL_UPDATE_TIME + " DESC LIMIT ? OFFSET ?";
+        android.database.Cursor cursor = db.rawQuery(sql, new String[]{String.valueOf(limit), String.valueOf(offset)});
+        if (cursor.moveToFirst()) {
+            do {
+                com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
+                terminal.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_ID)));
+                terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_ID)));
+                terminal.setDeviceCode(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_CODE)));
+                terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_NAME)));
+                String stText = cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS));
+                terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.textToCode(stText));
+                terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+                terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
+                terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
+                terminal.setDepartmentId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT_ID)));
+                terminal.setRoomId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_ROOM_ID)));
+                terminal.setNursingGroupId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_NURSING_GROUP_ID)));
+                terminal.setOtherId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_OTHER_ID)));
+                int batteryLevelIndex = cursor.getColumnIndex(COLUMN_TERMINAL_BATTERY_LEVEL);
+                if (batteryLevelIndex != -1) {
+                    terminal.setBatteryLevel(cursor.getInt(batteryLevelIndex));
+                } else {
+                    terminal.setBatteryLevel(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+                }
+                terminal.setExtension(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_EXTENSION)));
+                terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
+                terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
+                long nowMs = System.currentTimeMillis();
+                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 10 * 60 * 1000L) {
+                    terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
+                }
+                terminals.add(terminal);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return terminals;
+    }
+
+    public int getTerminalsCount() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        android.database.Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_TERMINALS, null);
+        int count = 0;
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
+    }
     
     /**
      * 更新终端名称

@@ -785,6 +785,26 @@ public class TerminalListFragment extends Fragment {
             }
             list = filtered;
         }
+        // 下拉筛选
+        android.view.View root = getView();
+        if (root != null) {
+            android.widget.Spinner spinnerFilter = (android.widget.Spinner) root.findViewById(R.id.spinner_filter);
+            if (spinnerFilter != null && spinnerFilter.getSelectedItem() != null) {
+                String opt = String.valueOf(spinnerFilter.getSelectedItem());
+                if (!"全部".equals(opt)) {
+                    List<Terminal> filtered = new ArrayList<>();
+                    for (Terminal t : list) {
+                        boolean keep = true;
+                        String st = TerminalStatusConstants.codeToText(t.getStatus());
+                        if (opt.contains("只显示重点关注")) keep = t.isFavorite();
+                        else if (opt.contains("只显示异常关注")) keep = TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(st);
+                        else if (opt.contains("只显示没有信号")) keep = TerminalStatusConstants.STATUS_OFFLINE.equals(st);
+                        if (keep) filtered.add(t);
+                    }
+                    list = filtered;
+                }
+            }
+        }
         adapter.submitList(list);
     }
 }

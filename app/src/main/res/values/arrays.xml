@@ -10,7 +10,7 @@
     <!-- 筛选选择选项 -->
     <string-array name="filter_options">
         <item>全部</item>
-        <item>只显示重点关注</item>
+        <item>只显示重点关注的</item>
         <item>只显示异常关注</item>
         <item>只显示没有信号的</item>
     </string-array>
@@ -19,6 +19,9 @@
     <string-array name="page_size_options">
         <item>10条/页</item>
         <item>20条/页</item>
+        <item>30条/页</item>
+        <item>50条/页</item>
+        <item>100条/页</item>
     </string-array>
 
 

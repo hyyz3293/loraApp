@@ -37,6 +37,7 @@ public class TerminalCheckFragment extends Fragment {
     private PieChartView pieChartBattery;
     private TextView terminalRemainingNumber;
     private TextView terminalClearTime;
+    private TextView btnExportExcel;
     private TextView addTerminal;
     private RecyclerView terminalCheckRecycle;
     
@@ -85,6 +86,7 @@ public class TerminalCheckFragment extends Fragment {
         pieChartBattery = view.findViewById(R.id.pie_chart_battery);
         terminalRemainingNumber = view.findViewById(R.id.terminal_remaining_number);
         terminalClearTime = view.findViewById(R.id.terminal_clear_time);
+        btnExportExcel = view.findViewById(R.id.btn_export_excel);
         addTerminal = view.findViewById(R.id.add_terminal);
         terminalCheckRecycle = view.findViewById(R.id.terminal_check_recycle);
         
@@ -136,6 +138,7 @@ public class TerminalCheckFragment extends Fragment {
             
             startTerminalCheck();
         });
+        btnExportExcel.setOnClickListener(v -> exportExcel());
     }
     
     private void initPieChartData() {
@@ -392,6 +395,35 @@ public class TerminalCheckFragment extends Fragment {
         
         // 刷新图表适配器数据
         initChartAdapterData();
+    }
+    
+    private void exportExcel() {
+        try {
+            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+            java.util.List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
+            StringBuilder sb = new StringBuilder();
+            sb.append("终端ID,设备编号,终端名称,状态,电量,信号\n");
+            for (com.lora.cn.ui.model.Terminal t : terminals) {
+                String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus());
+                sb.append(t.getTerminalId()).append(',')
+                        .append(t.getDeviceCode() != null ? t.getDeviceCode() : "").append(',')
+                        .append(t.getTerminalName() != null ? t.getTerminalName() : "").append(',')
+                        .append(st).append(',')
+                        .append(t.getBatteryLevel()).append(',')
+                        .append(t.getSignalStrength())
+                        .append('\n');
+            }
+            java.io.File dir = new java.io.File(getContext().getFilesDir(), "exports");
+            if (!dir.exists()) dir.mkdirs();
+            String fileName = "terminal_check_" + System.currentTimeMillis() + ".csv";
+            java.io.File file = new java.io.File(dir, fileName);
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
+            fos.write(sb.toString().getBytes("UTF-8"));
+            fos.flush(); fos.close();
+            Toast.makeText(getContext(), "导出成功: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
     
     /**

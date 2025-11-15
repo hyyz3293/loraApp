@@ -25,7 +25,7 @@
         android:padding="12dp" >
 
         <TextView
-            android:textSize="20dp"
+            android:textSize="18dp"
             android:textColor="@color/black"
             android:text="终端清点"
             android:textStyle="bold"
@@ -33,7 +33,7 @@
             android:layout_height="wrap_content" />
 
         <LinearLayout
-            android:layout_marginLeft="32dp"
+            android:layout_marginLeft="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:layout_width="wrap_content"
@@ -45,7 +45,7 @@
                 android:layout_height="27dp" />
 
             <TextView
-                android:layout_marginLeft="16dp"
+                android:layout_marginLeft="12dp"
                 android:textSize="14dp"
                 android:textColor="#4F627D"
                 android:text="今日剩余次数："
@@ -98,6 +98,21 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent" >
+
+            <TextView
+                android:id="@+id/btn_export_excel"
+                android:layout_toLeftOf="@+id/add_terminal"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:gravity="center"
+                android:background="@drawable/bg_btn_4"
+                 android:layout_marginRight="10"
+                android:layout_centerVertical="true"
+                android:text="导出"
+                android:textColor="#383B40"
+                android:textSize="14dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
 
             <TextView
                 android:id="@+id/add_terminal"

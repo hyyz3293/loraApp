@@ -266,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         
-        btnLogout.setOnClickListener(v -> logout());
+        btnLogout.setOnClickListener(v -> confirmLogout());
 
         tvUserName.setOnClickListener(v -> toggleUserInfo());
     }
@@ -389,13 +389,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void logout() {
-        // 跳转到登录页面
-        SPUtils.getInstance().put(SpConstant.IS_LOGIN, false);
-        Intent intent = new Intent(this, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-        finish();
+    private void confirmLogout() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("确认退出登录")
+                .setMessage("确定要退出当前账号吗？")
+                .setPositiveButton("退出", (dialog, which) -> {
+                    SPUtils.getInstance().put(SpConstant.IS_LOGIN, false);
+                    Intent intent = new Intent(this, LoginActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     // ---------------- MQTT 全局连接与日志 -----------------
