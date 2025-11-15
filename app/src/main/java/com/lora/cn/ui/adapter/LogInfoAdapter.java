@@ -17,6 +17,9 @@ import com.lora.cn.R;
 import com.lora.cn.ui.model.LogInfo;
 
 public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
+    public interface OnHandleClickListener { void onHandleClick(LogInfo item); }
+    private OnHandleClickListener onHandleClickListener;
+    public void setOnHandleClickListener(OnHandleClickListener l) { this.onHandleClickListener = l; }
 
     @Override
     protected void onBindViewHolder(@NonNull QuickViewHolder holder, int i, @Nullable LogInfo item) {
@@ -50,12 +53,22 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
 
         // 只有下行数据展示操作，其它情况不展示
         String act = item.getAction();
+        boolean canHandle = item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
         if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
             setTextOrPlaceholder(logOperation, item.getHandleRemark());
+            logOperation.setOnClickListener(null);
+        } else if (canHandle) {
+            logOperation.setText("立即处理");
+            logOperation.setBackground(null);
+            logOperation.setOnClickListener(v -> { if (onHandleClickListener != null) onHandleClickListener.onHandleClick(item); });
         } else if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
             setTextOrPlaceholder(logOperation, act);
+            logOperation.setOnClickListener(null);
         } else {
             setTextOrPlaceholder(logOperation, "");
+            logOperation.setOnClickListener(null);
         }
     }
 

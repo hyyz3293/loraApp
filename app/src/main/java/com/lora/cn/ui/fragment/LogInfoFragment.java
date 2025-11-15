@@ -70,6 +70,7 @@ public class LogInfoFragment extends Fragment {
             }
         }
         logInfoAdapter = new LogInfoAdapter();
+        logInfoAdapter.setOnHandleClickListener(item -> showHandleDialogForLog(item));
         recyclerView.setAdapter(logInfoAdapter);
         applyTimeFilter();
         
@@ -78,6 +79,26 @@ public class LogInfoFragment extends Fragment {
             LogInfo log = logList.get(position);
             // 处理日志项点击事件
         });
+    }
+
+    private void showHandleDialogForLog(LogInfo item) {
+        if (item == null) return;
+        final android.widget.EditText et = new android.widget.EditText(requireContext());
+        et.setHint("填写处理备注");
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("确认处理")
+                .setView(et)
+                .setPositiveButton("确定", (d, w) -> {
+                    String remark = et.getText() != null ? et.getText().toString().trim() : "";
+                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                    String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                    try {
+                        databaseHelper.updateLogHandled(item.getId(), user, time, remark);
+                        initLogData();
+                    } catch (Exception ignored) {}
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void showStartPicker() {

@@ -300,7 +300,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
         if (tvErrorComplete != null) {
-            tvErrorComplete.setOnClickListener(v -> handleCurrentAlert());
+            tvErrorComplete.setOnClickListener(v -> showHandleDialogForCurrent());
         }
     }
     
@@ -399,6 +399,7 @@ public class MainActivity extends AppCompatActivity {
             AlertItem item = buildAlertItem(frame, msg);
             alertQueue.addLast(item);
             pendingAlertCount = alertQueue.size();
+            android.util.Log.i(TAG, "Global alert queued: " + msg + ", deviceId=" + (frame != null ? frame.deviceId : ""));
             startAlertRinging30s();
             showLatestPending();
         }
@@ -457,6 +458,7 @@ public class MainActivity extends AppCompatActivity {
         String name = "";
         String code = frame != null ? frame.deviceId : "";
         String time = "";
+        long logId = -1L;
         try {
             List<com.lora.cn.ui.model.Terminal> terminals = databaseHelper.getAllTerminals();
             if (terminals != null) {
@@ -465,6 +467,19 @@ public class MainActivity extends AppCompatActivity {
                         name = t.getTerminalName();
                         break;
                     }
+                }
+            }
+            List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(code);
+            if (logs != null && !logs.isEmpty()) {
+                for (com.lora.cn.ui.model.LogInfo li : logs) {
+                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ||
+                        li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                        logId = li.getId();
+                        break;
+                    }
+                }
+                if (logId <= 0) {
+                    logId = logs.get(0).getId();
                 }
             }
         } catch (Exception ignored) {}
@@ -479,6 +494,7 @@ public class MainActivity extends AppCompatActivity {
         item.name = name;
         item.code = code;
         item.time = time;
+        item.logId = logId;
         return item;
     }
 
@@ -487,6 +503,28 @@ public class MainActivity extends AppCompatActivity {
         String name;
         String code;
         String time;
+        long logId;
+    }
+
+    private void showHandleDialogForCurrent() {
+        if (currentAlert == null) return;
+        final android.widget.EditText et = new android.widget.EditText(this);
+        et.setHint("填写处理备注");
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("确认处理")
+                .setView(et)
+                .setPositiveButton("确定", (d, w) -> {
+                    String remark = et.getText() != null ? et.getText().toString().trim() : "";
+                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                    String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                    long id = currentAlert.logId;
+                    try {
+                        if (id > 0) databaseHelper.updateLogHandled(id, user, time, remark);
+                    } catch (Exception ignored) {}
+                    handleCurrentAlert();
+                })
+                .setNegativeButton("取消", null)
+                .show();
     }
 
     private void evaluateAlertOverlayGlobal() {
