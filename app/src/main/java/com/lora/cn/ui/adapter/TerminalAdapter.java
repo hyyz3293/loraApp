@@ -15,6 +15,7 @@ import com.lora.cn.R;
 import com.lora.cn.ui.model.Terminal;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.Category;
+import com.lora.cn.ui.view.SignalStrengthView;
 
 public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder> {
 
@@ -33,7 +34,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         TextView terminalTitle = holder.getView(R.id.terminal_title);
         TextView terminalKs = holder.getView(R.id.terminal_ks);
         TextView terminalBf = holder.getView(R.id.terminal_bf);
-        com.lora.cn.ui.view.SignalStrengthView signalView = holder.getView(R.id.signal_view);
+        SignalStrengthView signalView = holder.getView(R.id.signal_view);
         ImageView ivStatusIcon = holder.getView(R.id.iv_status_icon);
         TextView tvStatusTitle = holder.getView(R.id.tv_status_title);
         com.lora.cn.ui.view.BatteryView batteryView = holder.getView(R.id.battery_view);

@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -43,6 +44,12 @@ public class TerminalStatusListFragment extends Fragment {
     private final List<Terminal> allDisplayTerminals = new ArrayList<>();
     private String statusFilterTitle = null;
     private String searchKeyword = "";
+    private android.widget.Spinner spinnerTs;
+    private android.widget.ImageView sxLeft;
+    private android.widget.ImageView sxRight;
+    private int pageSize = 20;
+    private int currentPage = 0;
+    private List<Terminal> filteredPageBase = new ArrayList<>();
 
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
@@ -90,6 +97,9 @@ public class TerminalStatusListFragment extends Fragment {
         terminalRecycle = view.findViewById(R.id.terminal_recycle);
         addTerminalBtn = view.findViewById(R.id.add_terminal);
         tvGroupCategory = view.findViewById(R.id.tv_group_category);
+        spinnerTs = view.findViewById(R.id.spinner_ts);
+        sxLeft = view.findViewById(R.id.sx_left);
+        sxRight = view.findViewById(R.id.sx_right);
 
         btnBack = view.findViewById(R.id.btn_back);
         if (btnBack != null) {
@@ -106,10 +116,27 @@ public class TerminalStatusListFragment extends Fragment {
             });
         }
 //
-         toolbarTitle = view.findViewById(R.id.status_terminal_tile);
+        toolbarTitle = view.findViewById(R.id.status_terminal_tile);
+        ImageView statusIcon = view.findViewById(R.id.status_terminal_icon);
 //        toolbarLeftTitle = view.findViewById(R.id.toolbar_left_title);
         if (toolbarTitle != null) {
             toolbarTitle.setText(statusFilterTitle != null ? statusFilterTitle : "");
+        }
+        if (statusIcon != null) {
+            int res = 0;
+            if (statusFilterTitle != null) {
+                if (TerminalStatusConstants.STATUS_ONLINE.equals(statusFilterTitle)) res = R.mipmap.ic_xh_3;
+                else if (TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(statusFilterTitle)) res = R.mipmap.ic_ds;
+                else if (TerminalStatusConstants.STATUS_NORMAL_TAKEN.equals(statusFilterTitle)) res = R.mipmap.ic_blue_right;
+                else if (TerminalStatusConstants.STATUS_OFFLINE.equals(statusFilterTitle)) res = R.mipmap.ic_xh_no;
+                else if (TerminalStatusConstants.STATUS_LOW_BATTERY.equals(statusFilterTitle)) res = R.mipmap.ic_red_sd;
+            }
+            if (res != 0) {
+                statusIcon.setImageResource(res);
+                statusIcon.setVisibility(View.VISIBLE);
+            } else {
+                statusIcon.setVisibility(View.GONE);
+            }
         }
 
 
@@ -122,6 +149,44 @@ public class TerminalStatusListFragment extends Fragment {
                 @Override public void afterTextChanged(android.text.Editable s) {
                     searchKeyword = s != null ? s.toString().trim() : "";
                     applyCurrentFilters();
+                }
+            });
+        }
+        if (spinnerTs != null) {
+            spinnerTs.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override public void onItemSelected(android.widget.AdapterView<?> parent, View v, int position, long id) {
+                    Object item = parent.getItemAtPosition(position);
+                    int newSize = pageSize;
+                    if (item != null) {
+                        String s = String.valueOf(item).replaceAll("[^0-9]", "");
+                        if (!s.isEmpty()) {
+                            try { newSize = Integer.parseInt(s); } catch (Exception ignored) {}
+                        }
+                    }
+                    pageSize = newSize > 0 ? newSize : 20;
+                    currentPage = 0;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                }
+                @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            });
+        }
+        if (sxLeft != null) {
+            sxLeft.setOnClickListener(v -> {
+                if (currentPage > 0) {
+                    currentPage--;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                }
+            });
+        }
+        if (sxRight != null) {
+            sxRight.setOnClickListener(v -> {
+                int total = filteredPageBase != null ? filteredPageBase.size() : 0;
+                if ((currentPage + 1) * pageSize < total) {
+                    currentPage++;
+                    submitCurrentPage();
+                    updatePaginationControls();
                 }
             });
         }
@@ -168,12 +233,12 @@ public class TerminalStatusListFragment extends Fragment {
         try {
             DatabaseHelper dbHelper = DatabaseHelper.getInstance(requireContext());
             List<Terminal> terminals = dbHelper.getAllTerminals();
-            if (terminals != null && !terminals.isEmpty()) {
-                allDisplayTerminals.clear();
-                allDisplayTerminals.addAll(convertToDisplayTerminals(terminals));
-            } else {
-                adapter.submitList(new ArrayList<>());
-            }
+        if (terminals != null && !terminals.isEmpty()) {
+            allDisplayTerminals.clear();
+            allDisplayTerminals.addAll(convertToDisplayTerminals(terminals));
+        } else {
+            adapter.submitList(new ArrayList<>());
+        }
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
@@ -254,7 +319,55 @@ public class TerminalStatusListFragment extends Fragment {
             }
             list = filtered;
         }
-        adapter.submitList(list);
+        View root = getView();
+        if (root != null) {
+            android.widget.Spinner spinnerFilter = (android.widget.Spinner) root.findViewById(R.id.spinner_filter);
+            if (spinnerFilter != null && spinnerFilter.getSelectedItem() != null) {
+                String opt = String.valueOf(spinnerFilter.getSelectedItem());
+                if (!"全部".equals(opt)) {
+                    List<Terminal> filtered = new ArrayList<>();
+                    for (Terminal t : list) {
+                        boolean keep = true;
+                        String st = TerminalStatusConstants.codeToText(t.getStatus());
+                        if (opt.contains("只显示重点关注")) keep = t.isFavorite();
+                        else if (opt.contains("只显示异常关注")) keep = TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(st);
+                        else if (opt.contains("只显示没有信号")) keep = TerminalStatusConstants.STATUS_OFFLINE.equals(st);
+                        if (keep) filtered.add(t);
+                    }
+                    list = filtered;
+                }
+            }
+        }
+        filteredPageBase = list;
+        currentPage = 0;
+        submitCurrentPage();
+        updatePaginationControls();
+    }
+
+    private void submitCurrentPage() {
+        if (adapter == null) return;
+        int total = filteredPageBase != null ? filteredPageBase.size() : 0;
+        int start = currentPage * pageSize;
+        if (start < 0) start = 0;
+        if (start > total) start = total;
+        int end = Math.min(start + pageSize, total);
+        List<Terminal> page = new ArrayList<>();
+        if (start < end) page = new ArrayList<>(filteredPageBase.subList(start, end));
+        adapter.submitList(page);
+    }
+
+    private void updatePaginationControls() {
+        int total = filteredPageBase != null ? filteredPageBase.size() : 0;
+        boolean canPrev = currentPage > 0;
+        boolean canNext = (currentPage + 1) * pageSize < total;
+        if (sxLeft != null) {
+            sxLeft.setEnabled(canPrev);
+            sxLeft.setAlpha(canPrev ? 1f : 0.4f);
+        }
+        if (sxRight != null) {
+            sxRight.setEnabled(canNext);
+            sxRight.setAlpha(canNext ? 1f : 0.4f);
+        }
     }
 
     private boolean hasPermission(String permissionCode) {

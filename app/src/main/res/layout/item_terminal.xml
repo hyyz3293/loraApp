@@ -80,6 +80,7 @@
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="0dp"
+            android:gravity="center_vertical"
             android:layout_weight="1"
             android:layout_height="wrap_content" >
 
@@ -88,8 +89,8 @@
                 android:layout_height="20dp">
                 <com.lora.cn.ui.view.SignalStrengthView
                     android:id="@+id/signal_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_width="25dp"
+                    android:layout_height="12dp" />
                 <ImageView
                     android:id="@+id/iv_status_icon"
                     android:layout_gravity="center"
@@ -116,7 +117,7 @@
             android:orientation="horizontal"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:gravity="right"
+            android:gravity="right|center_vertical"
             android:layout_height="wrap_content" >
 
             <FrameLayout
@@ -124,8 +125,8 @@
                 android:layout_height="20dp">
                 <com.lora.cn.ui.view.BatteryView
                     android:id="@+id/battery_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_width="25dp"
+                    android:layout_height="12dp" />
                 <ImageView
                     android:id="@+id/iv_battery_icon"
                     android:layout_gravity="center"

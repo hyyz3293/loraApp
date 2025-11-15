@@ -9,9 +9,17 @@
         android:layout_width="match_parent"
         android:layout_height="50dp">
 
+        <ImageView
+            android:id="@+id/status_terminal_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="12dp" />
+
         <TextView
             android:id="@+id/status_terminal_tile"
-            android:layout_marginLeft="20dp"
+            android:layout_toRightOf="@id/status_terminal_icon"
+            android:layout_marginLeft="8dp"
             android:textSize="16dp"
             android:textColor="@color/black"
             android:text=""

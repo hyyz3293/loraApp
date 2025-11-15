@@ -56,6 +56,12 @@ public class TerminalListFragment extends Fragment {
     private List<Terminal> allDisplayTerminals = new ArrayList<>();
     private String statusFilterTitle = null;
     private String searchKeyword = "";
+    private android.widget.Spinner spinnerTs;
+    private android.widget.ImageView sxLeft;
+    private android.widget.ImageView sxRight;
+    private int pageSize = 20;
+    private int currentPage = 0;
+    private List<Terminal> filteredPageBase = new ArrayList<>();
 
     // 数据库管理器
     private DatabaseManager databaseManager;
@@ -122,6 +128,9 @@ public class TerminalListFragment extends Fragment {
         terminalRecycle = view.findViewById(R.id.terminal_recycle);
         addTerminalBtn = view.findViewById(R.id.add_terminal);
         tvGroupCategory = view.findViewById(R.id.tv_group_category);
+        spinnerTs = view.findViewById(R.id.spinner_ts);
+        sxLeft = view.findViewById(R.id.sx_left);
+        sxRight = view.findViewById(R.id.sx_right);
 
         // 设置添加终端按钮点击事件
         addTerminalBtn.setOnClickListener(v -> {
@@ -148,6 +157,44 @@ public class TerminalListFragment extends Fragment {
         // 初始化两级选择器入口（文本点击弹出选择）
         if (tvGroupCategory != null) {
             tvGroupCategory.setOnClickListener(v -> showGroupCategoryPicker());
+        }
+        if (spinnerTs != null) {
+            spinnerTs.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override public void onItemSelected(android.widget.AdapterView<?> parent, View v, int position, long id) {
+                    Object item = parent.getItemAtPosition(position);
+                    int newSize = pageSize;
+                    if (item != null) {
+                        String s = String.valueOf(item).replaceAll("[^0-9]", "");
+                        if (!s.isEmpty()) {
+                            try { newSize = Integer.parseInt(s); } catch (Exception ignored) {}
+                        }
+                    }
+                    pageSize = newSize > 0 ? newSize : 20;
+                    currentPage = 0;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                }
+                @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            });
+        }
+        if (sxLeft != null) {
+            sxLeft.setOnClickListener(v -> {
+                if (currentPage > 0) {
+                    currentPage--;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                }
+            });
+        }
+        if (sxRight != null) {
+            sxRight.setOnClickListener(v -> {
+                int total = filteredPageBase != null ? filteredPageBase.size() : 0;
+                if ((currentPage + 1) * pageSize < total) {
+                    currentPage++;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                }
+            });
         }
         // 报警浮层按钮行为
         if (btnAlertMute != null) {
@@ -733,9 +780,15 @@ public class TerminalListFragment extends Fragment {
                     }
                     if (match) filtered.add(t);
                 }
-                adapter.submitList(filtered);
+                filteredPageBase = filtered;
+                currentPage = 0;
+                submitCurrentPage();
+                updatePaginationControls();
             } else {
-                adapter.submitList(new ArrayList<>(base));
+                filteredPageBase = new ArrayList<>(base);
+                currentPage = 0;
+                submitCurrentPage();
+                updatePaginationControls();
             }
         } catch (Exception e) {
             Log.e(TAG, "应用过滤失败", e);
@@ -805,6 +858,35 @@ public class TerminalListFragment extends Fragment {
                 }
             }
         }
-        adapter.submitList(list);
+        filteredPageBase = list;
+        currentPage = 0;
+        submitCurrentPage();
+        updatePaginationControls();
+    }
+
+    private void submitCurrentPage() {
+        if (adapter == null) return;
+        int total = filteredPageBase != null ? filteredPageBase.size() : 0;
+        int start = currentPage * pageSize;
+        if (start < 0) start = 0;
+        if (start > total) start = total;
+        int end = Math.min(start + pageSize, total);
+        List<Terminal> page = new ArrayList<>();
+        if (start < end) page = new ArrayList<>(filteredPageBase.subList(start, end));
+        adapter.submitList(page);
+    }
+
+    private void updatePaginationControls() {
+        int total = filteredPageBase != null ? filteredPageBase.size() : 0;
+        boolean canPrev = currentPage > 0;
+        boolean canNext = (currentPage + 1) * pageSize < total;
+        if (sxLeft != null) {
+            sxLeft.setEnabled(canPrev);
+            sxLeft.setAlpha(canPrev ? 1f : 0.4f);
+        }
+        if (sxRight != null) {
+            sxRight.setEnabled(canNext);
+            sxRight.setAlpha(canNext ? 1f : 0.4f);
+        }
     }
 }
