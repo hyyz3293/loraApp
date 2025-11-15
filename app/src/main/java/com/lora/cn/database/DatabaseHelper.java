@@ -1054,8 +1054,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
         values.put(COLUMN_LOG_DEVICE_ID, deviceId);
         values.put(COLUMN_LOG_STATUS, status);
-        values.put(COLUMN_LOG_OPERATOR, operator);
-        values.put(COLUMN_LOG_OPERATION_TIME, operationTime);
+        values.put(COLUMN_LOG_OPERATOR, operator == null ? "" : operator);
+        values.put(COLUMN_LOG_OPERATION_TIME, operationTime == null ? "" : operationTime);
         values.put(COLUMN_LOG_ACTION, action);
         long result = db.insert(TABLE_LOGS, null, values);
         db.close();
@@ -1074,8 +1074,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_TERMINAL_NAME, logInfo.getTerminalName());
         values.put(COLUMN_LOG_DEVICE_ID, logInfo.getDeviceId());
         values.put(COLUMN_LOG_STATUS, logInfo.getStatus());
-        values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator());
-        values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime());
+        values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator() == null ? "" : logInfo.getOperator());
+        values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime() == null ? "" : logInfo.getOperationTime());
         values.put(COLUMN_LOG_ACTION, logInfo.getAction());
         long result = db.insert(TABLE_LOGS, null, values);
         db.close();
@@ -1109,12 +1109,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String action = "接收上行数据";
 
         // 尝试根据帧中的时间替换操作时间
-        try {
-            if (frame != null && frame.dataTime != null) {
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                operationTime = sdf.format(frame.dataTime);
-            }
-        } catch (Exception ignored) {}
+        
 
         // 根据设备ID查询终端表，获取终端名称等
         try {
@@ -1169,7 +1164,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "mqtt");
         values.put(COLUMN_LOG_STATUS, status);
         values.put(COLUMN_LOG_OPERATOR, operator);
-        values.put(COLUMN_LOG_OPERATION_TIME, operationTime);
+        values.put(COLUMN_LOG_OPERATION_TIME, "");
         values.put(COLUMN_LOG_ACTION, action);
 
         long result = db.insert(TABLE_LOGS, null, values);

@@ -311,9 +311,9 @@ public class TerminalCheckFragment extends Fragment {
             logInfo.setTerminalName("所有终端");
             logInfo.setDeviceId("SYSTEM");
             logInfo.setStatus("开始");
-            logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
+            logInfo.setOperator("");
             logInfo.setAction("终端清点");
-            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+            logInfo.setOperationTime("");
             logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
             
             dbHelper.addLog(logInfo);
@@ -347,9 +347,9 @@ public class TerminalCheckFragment extends Fragment {
                 logInfo.setTerminalName("所有终端");
                 logInfo.setDeviceId("SYSTEM");
                 logInfo.setStatus("完成");
-                logInfo.setOperator("系统管理员");
+                logInfo.setOperator("");
                 logInfo.setAction("终端清点");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);

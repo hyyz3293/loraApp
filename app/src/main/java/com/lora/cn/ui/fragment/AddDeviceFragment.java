@@ -358,9 +358,9 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setTerminalName(deviceName);
                 logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("成功");
-                logInfo.setOperator("系统管理员");
+                logInfo.setOperator("");
                 logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
@@ -382,9 +382,9 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setTerminalName(deviceName);
                 logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("失败");
-                logInfo.setOperator("系统管理员");
+                logInfo.setOperator("");
                 logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);
@@ -402,9 +402,9 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setTerminalName(deviceName);
                 logInfo.setDeviceId(deviceCode);
                 logInfo.setStatus("异常");
-                logInfo.setOperator("系统管理员");
+                logInfo.setOperator("");
                 logInfo.setAction(isEdit ? "编辑设备" : "添加设备");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
                 dbHelper.addLog(logInfo);

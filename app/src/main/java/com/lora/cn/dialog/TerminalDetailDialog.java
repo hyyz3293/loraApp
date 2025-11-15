@@ -248,8 +248,8 @@ public class TerminalDetailDialog extends Dialog {
                 logInfo.setTerminalName(info.deviceName);
                 logInfo.setDeviceId(info.deviceId);
                 logInfo.setStatus("成功");
-                logInfo.setOperator("用户");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setOperator("");
+                logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 logInfo.setAction("更新" + fieldName + "为: " + newValue);
                 
@@ -266,8 +266,8 @@ public class TerminalDetailDialog extends Dialog {
                 logInfo.setTerminalName(info.deviceName);
                 logInfo.setDeviceId(info.deviceId);
                 logInfo.setStatus("失败");
-                logInfo.setOperator("用户");
-                logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                logInfo.setOperator("");
+                logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 logInfo.setAction("更新" + fieldName + "失败");
                 
@@ -282,8 +282,8 @@ public class TerminalDetailDialog extends Dialog {
             logInfo.setTerminalName(info.deviceName);
             logInfo.setDeviceId(info.deviceId);
             logInfo.setStatus("异常");
-            logInfo.setOperator("用户");
-            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+            logInfo.setOperator("");
+            logInfo.setOperationTime("");
             logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
             logInfo.setAction("更新" + fieldName + "异常: " + e.getMessage());
             
@@ -428,8 +428,8 @@ public class TerminalDetailDialog extends Dialog {
                     logInfo.setTerminalName(info.deviceName);
                     logInfo.setDeviceId(info.deviceId);
                     logInfo.setStatus("下行处理");
-                    logInfo.setOperator("系统");
-                    logInfo.setOperationTime(formatTime(System.currentTimeMillis()));
+                    logInfo.setOperator("");
+                    logInfo.setOperationTime("");
                     logInfo.setCreateTime(formatTime(System.currentTimeMillis()));
                     logInfo.setAction("发送下行数据: " + hex);
                     databaseHelper.addLog(logInfo);

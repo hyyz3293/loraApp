@@ -6,8 +6,8 @@ public class LogInfo {
     private String terminalName;
     private String deviceId;
     private String status;
-    private String operator;
-    private String operationTime;
+    private String operator = "";
+    private String operationTime = "";
     private String action;
     private String createTime;
 

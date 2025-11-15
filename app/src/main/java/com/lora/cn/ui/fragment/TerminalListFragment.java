@@ -638,9 +638,9 @@ public class TerminalListFragment extends Fragment {
                             logInfo.setTerminalName(terminal.getTerminalName());
                             logInfo.setDeviceId(terminal.getTerminalId());
                             logInfo.setStatus(result > 0 ? "成功" : "失败");
-                            logInfo.setOperator("系统管理员"); // 这里可以根据实际登录用户设置
+                            logInfo.setOperator("");
                             logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-                            logInfo.setOperationTime(String.valueOf(System.currentTimeMillis()));
+                            logInfo.setOperationTime("");
                             logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
 
                             dbHelper.addLog(logInfo);
@@ -659,11 +659,11 @@ public class TerminalListFragment extends Fragment {
                                 logInfo.setTerminalName(terminal.getTerminalName());
                                 logInfo.setDeviceId(terminal.getTerminalId());
                                 logInfo.setStatus("异常");
-                                logInfo.setOperator("系统管理员");
+                                logInfo.setOperator("");
                                 java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
                                 String now = sdf.format(new java.util.Date());
                                 logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-                                logInfo.setOperationTime(now);
+                                logInfo.setOperationTime("");
                                 logInfo.setCreateTime(now);
 
                                 dbHelper.addLog(logInfo);

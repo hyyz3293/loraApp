@@ -457,13 +457,13 @@ public class MainActivity extends AppCompatActivity {
                                     // 同时存储到日志信息表
                                     try {
                                         long logResult = databaseHelper.addLog(
-                                            devEui,                    // terminalId
-                                            "上行数据设备",              // terminalName  
-                                            devEui,                    // deviceId
-                                            "数据接收",                 // status
-                                            "系统",                    // operator
-                                            time,                      // operationTime
-                                            "接收上行数据: " + hex       // action
+                                            devEui,
+                                            "上行数据设备",
+                                            devEui,
+                                            "数据接收",
+                                            "",
+                                            "",
+                                            "接收上行数据: " + hex
                                         );
                                         Log.d(TAG, "上行数据存储到日志信息表，结果: " + logResult);
                                     } catch (Exception e) {

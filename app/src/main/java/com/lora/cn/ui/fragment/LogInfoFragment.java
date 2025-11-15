@@ -16,6 +16,7 @@ import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.adapter.LogInfoAdapter;
 import com.lora.cn.ui.model.LogInfo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class LogInfoFragment extends Fragment {
@@ -23,6 +24,7 @@ public class LogInfoFragment extends Fragment {
     private RecyclerView recyclerView;
     private LogInfoAdapter logInfoAdapter;
     private DatabaseHelper databaseHelper;
+    List<LogInfo> logList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -44,7 +46,17 @@ public class LogInfoFragment extends Fragment {
         databaseHelper.cleanSampleLogData();
         
         // 从数据库获取真实日志数据
-        List<LogInfo> logList = databaseHelper.getAllLogs();
+        logList = databaseHelper.getAllLogs();
+        if (logList != null) {
+            List<LogInfo> upDown = new java.util.ArrayList<>();
+            for (LogInfo li : logList) {
+                String act = li != null ? li.getAction() : null;
+                if (act != null && (act.startsWith("接收上行数据") || act.startsWith("发送下行数据") || act.contains("功能码=") || act.contains("下行"))) {
+                    upDown.add(li);
+                }
+            }
+            logList = upDown;
+        }
         
         logInfoAdapter = new LogInfoAdapter();
         logInfoAdapter.submitList(logList);
