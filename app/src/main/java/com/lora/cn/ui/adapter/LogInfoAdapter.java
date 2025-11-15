@@ -20,6 +20,8 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
     public interface OnHandleClickListener { void onHandleClick(LogInfo item); }
     private OnHandleClickListener onHandleClickListener;
     public void setOnHandleClickListener(OnHandleClickListener l) { this.onHandleClickListener = l; }
+    private java.util.Set<Long> allowedHandleIds = new java.util.HashSet<>();
+    public void setAllowedHandleIds(java.util.Set<Long> ids) { this.allowedHandleIds = ids != null ? ids : new java.util.HashSet<>(); }
 
     @Override
     protected void onBindViewHolder(@NonNull QuickViewHolder holder, int i, @Nullable LogInfo item) {
@@ -56,11 +58,20 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         boolean canHandle = item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+        boolean isLatestAllowed = allowedHandleIds.contains(item.getId());
         if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
-            setTextOrPlaceholder(logOperation, item.getHandleRemark());
-            logOperation.setOnClickListener(null);
-        } else if (canHandle) {
-            logOperation.setText("立即处理");
+            logOperation.setText("查看备注");
+            logOperation.setBackground(null);
+            logOperation.setOnClickListener(v -> {
+                android.app.AlertDialog dlg = new android.app.AlertDialog.Builder(logOperation.getContext())
+                        .setTitle("处理备注")
+                        .setMessage(item.getHandleRemark() == null ? "" : item.getHandleRemark())
+                        .setPositiveButton("确定", null)
+                        .create();
+                dlg.show();
+            });
+        } else if (canHandle && isLatestAllowed) {
+            logOperation.setText("确认处理");
             logOperation.setBackground(null);
             logOperation.setOnClickListener(v -> { if (onHandleClickListener != null) onHandleClickListener.onHandleClick(item); });
         } else if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {

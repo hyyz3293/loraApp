@@ -301,6 +301,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (tvErrorComplete != null) {
             tvErrorComplete.setOnClickListener(v -> showHandleDialogForCurrent());
+            tvErrorComplete.setText("确认处理");
         }
     }
     
@@ -392,6 +393,10 @@ public class MainActivity extends AppCompatActivity {
         String hex = event.getHex();
         LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
         if (frame == null) return;
+        if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
+        try {
+            if (!databaseHelper.isTerminalExists(frame.deviceId)) return;
+        } catch (Exception ignored) {}
         int statusCode;
         if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
                 frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||

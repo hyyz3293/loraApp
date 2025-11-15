@@ -170,6 +170,7 @@ public class LogInfoFragment extends Fragment {
         List<LogInfo> out = new java.util.ArrayList<>();
         long startMs = parseMillis(selectedStartTime);
         long endMs = parseMillis(selectedEndTime);
+        java.util.Map<String, LogInfo> latestHandleMap = new java.util.HashMap<>();
         for (LogInfo li : src) {
             String ct = li != null ? li.getCreateTime() : null;
             long t = parseMillis(ct);
@@ -177,7 +178,19 @@ public class LogInfoFragment extends Fragment {
             if (startMs > 0) keep = keep && t >= startMs;
             if (endMs > 0) keep = keep && t <= endMs;
             if (keep) out.add(li);
+            int s = li.getStatusCode();
+            boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                    || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                    || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+            if (candidate) {
+                LogInfo prev = latestHandleMap.get(li.getTerminalId());
+                long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
+                if (prev == null || t >= prevT) latestHandleMap.put(li.getTerminalId(), li);
+            }
         }
+        java.util.Set<Long> allowedIds = new java.util.HashSet<>();
+        for (LogInfo v : latestHandleMap.values()) allowedIds.add(v.getId());
+        logInfoAdapter.setAllowedHandleIds(allowedIds);
         if (logInfoAdapter != null) logInfoAdapter.submitList(out);
     }
 }
