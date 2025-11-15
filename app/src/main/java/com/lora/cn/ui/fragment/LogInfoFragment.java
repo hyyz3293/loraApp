@@ -83,34 +83,30 @@ public class LogInfoFragment extends Fragment {
 
     private void showHandleDialogForLog(LogInfo item) {
         if (item == null) return;
-        final android.widget.EditText et = new android.widget.EditText(requireContext());
-        et.setHint("填写处理备注");
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setTitle("确认处理")
-                .setView(et)
-                .setPositiveButton("确定", (d, w) -> {
-                    String remark = et.getText() != null ? et.getText().toString().trim() : "";
-                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
-                    String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    try {
-                        databaseHelper.updateLogHandled(item.getId(), user, time, remark);
-                        int s = item.getStatusCode();
-                        if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                            int mask = 0;
-                            if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) mask |= 0x00000001;
-                            if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) mask |= 0x00000002;
-                            String devHex = item.getDeviceId() != null ? item.getDeviceId() : "";
-                            try {
-                                com.lora.cn.network.MqttPacketsClient mqtt = new com.lora.cn.network.MqttPacketsClient();
-                                com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqtt);
-                                helper.sendDownlink8001Config(devHex, mask);
-                            } catch (Exception ignored) {}
-                        }
-                        initLogData();
-                    } catch (Exception ignored) {}
-                })
-                .setNegativeButton("取消", null)
-                .show();
+        com.lora.cn.utils.DialogUtils.showRemarkDialog(requireContext(), "确认处理", "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
+            @Override
+            public void onConfirm(String remark) {
+                String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                try {
+                    databaseHelper.updateLogHandled(item.getId(), user, time, remark);
+                    int s = item.getStatusCode();
+                    if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                        int mask = 0;
+                        if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) mask |= 0x00000001;
+                        if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) mask |= 0x00000002;
+                        String devHex = item.getDeviceId() != null ? item.getDeviceId() : "";
+                        try {
+                            android.app.Activity a = getActivity();
+                            if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                                ((com.lora.cn.ui.activity.MainActivity) a).sendHandleDownlink(devHex, mask);
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    initLogData();
+                } catch (Exception ignored) {}
+            }
+        });
     }
 
     private void showStartPicker() {

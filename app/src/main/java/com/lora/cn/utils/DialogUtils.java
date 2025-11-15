@@ -7,6 +7,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
@@ -505,10 +506,12 @@ public class DialogUtils {
         Window window = dialog.getWindow();
         if (window != null) {
             window.setBackgroundDrawableResource(android.R.color.transparent);
-            window.setLayout(
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            );
+            window.setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            android.view.WindowManager.LayoutParams lp = window.getAttributes();
+            lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.6);
+            lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+            lp.gravity = android.view.Gravity.CENTER;
+            window.setAttributes(lp);
         }
 
         EditText etRemark = dialogView.findViewById(R.id.et_remark);
@@ -522,6 +525,10 @@ public class DialogUtils {
         if (ivClose != null) ivClose.setOnClickListener(v -> dialog.dismiss());
         if (btnSure != null) btnSure.setOnClickListener(v -> {
             String remark = etRemark.getText() != null ? etRemark.getText().toString().trim() : "";
+            if (android.text.TextUtils.isEmpty(remark)) {
+                android.widget.Toast.makeText(context, "请填写备注", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
             dialog.dismiss();
             if (onConfirm != null) onConfirm.onConfirm(remark);
         });

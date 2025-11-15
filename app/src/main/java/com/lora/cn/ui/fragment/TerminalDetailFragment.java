@@ -371,9 +371,10 @@ public class TerminalDetailFragment extends Fragment {
                                     if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) mask |= 0x00000002;
                                     String devHex = item.getDeviceId() != null ? item.getDeviceId() : "";
                                     try {
-                                        com.lora.cn.network.MqttPacketsClient mqtt = new com.lora.cn.network.MqttPacketsClient();
-                                        com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqtt);
-                                        helper.sendDownlink8001Config(devHex, mask);
+                                        android.app.Activity a = getActivity();
+                                        if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                                            ((com.lora.cn.ui.activity.MainActivity) a).sendHandleDownlink(devHex, mask);
+                                        }
                                     } catch (Exception ignored) {}
                                 }
                                 loadLogs();

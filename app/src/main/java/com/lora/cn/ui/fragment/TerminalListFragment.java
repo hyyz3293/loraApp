@@ -489,6 +489,16 @@ public class TerminalListFragment extends Fragment {
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
+        try {
+            loadTerminals();
+            updateTerminalStatusFromDatabase();
+            evaluateAlertOverlay();
+            if (adapter != null) adapter.notifyDataSetChanged();
+        } catch (Exception ignored) {}
+    }
+
     @Override
     public void onStop() {
         // 取消注册事件总线
@@ -499,19 +509,7 @@ public class TerminalListFragment extends Fragment {
         super.onStop();
     }
 
-    // 订阅终端刷新事件，收到后立即刷新列表与状态
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onTerminalRefreshEvent(TerminalRefreshEvent event) {
-        try {
-            loadTerminals();
-            updateTerminalStatusFromDatabase();
-            if (getContext() != null) {
-                Toast.makeText(getContext(), event != null ? event.getMessage() : "终端列表已刷新", Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "处理TerminalRefreshEvent失败", e);
-        }
-    }
+    
 
     
 
@@ -772,6 +770,7 @@ public class TerminalListFragment extends Fragment {
         try {
             DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
             List<Terminal> terminals = dbHelper.getAllTerminals();
+            Log.d(TAG, "loadTerminals fetched size=" + (terminals != null ? terminals.size() : -1));
 
             // 设置终端列表RecyclerView（如果还没有设置）
             if (adapter == null) {
@@ -845,16 +844,19 @@ public class TerminalListFragment extends Fragment {
             if (terminals != null && !terminals.isEmpty()) {
                 // 转换数据库终端数据为UI显示格式
                 allDisplayTerminals = convertToDisplayTerminals(terminals);
+                Log.d(TAG, "convertToDisplayTerminals size=" + allDisplayTerminals.size());
                 applyCurrentFilters();
             } else {
                 // 如果数据库中没有数据，显示空列表
                 adapter.submitList(new ArrayList<>());
+                Log.d(TAG, "loadTerminals no data -> submit empty list");
             }
         } catch (Exception e) {
             Log.e(TAG, "加载终端列表失败", e);
             // 出错时显示空列表
             if (adapter != null) {
                 adapter.submitList(new ArrayList<>());
+                Log.d(TAG, "loadTerminals error -> submit empty list");
             }
         }
     }
@@ -992,6 +994,7 @@ public class TerminalListFragment extends Fragment {
                 if (match) filtered.add(t);
             }
             list = filtered;
+            Log.d(TAG, "applyCurrentFilters after status filter size=" + list.size());
         }
         // 终端名称关键词
         if (searchKeyword != null && !searchKeyword.isEmpty()) {
@@ -1001,6 +1004,7 @@ public class TerminalListFragment extends Fragment {
                 if (name != null && name.contains(searchKeyword)) filtered.add(t);
             }
             list = filtered;
+            Log.d(TAG, "applyCurrentFilters after keyword filter size=" + list.size());
         }
         // 下拉筛选
         android.view.View root = getView();
@@ -1026,6 +1030,7 @@ public class TerminalListFragment extends Fragment {
         currentPage = 0;
         submitCurrentPage();
         updatePaginationControls();
+        Log.d(TAG, "submitCurrentPage with list size=" + list.size());
     }
 
     private void submitCurrentPage() {

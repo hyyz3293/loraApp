@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_marginLeft="300dp"
-    android:layout_marginRight="300dp"
-    android:layout_marginBottom="200dp"
-    android:layout_marginTop="200dp"
+    android:layout_marginLeft="100dp"
+    android:layout_marginRight="100dp"
+    android:layout_marginBottom="100dp"
+    android:layout_marginTop="100dp"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/white"
-    android:padding="16dp">
+    android:padding="20dp">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -24,6 +24,9 @@
 
         <ImageView
             android:id="@+id/close"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_alignParentRight="true"
             android:background="@mipmap/ic_b_close_round"
             android:layout_width="20dp"
             android:layout_height="20dp" />

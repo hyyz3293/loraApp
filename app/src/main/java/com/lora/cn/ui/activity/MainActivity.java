@@ -503,8 +503,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updatePendingBadge() {
-        if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(pendingAlertCount));
-        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(pendingAlertCount > 0 ? View.VISIBLE : View.GONE);
+        try {
+            java.util.Set<String> distinct = new java.util.HashSet<>();
+            for (AlertItem ai : alertQueue) {
+                if (ai == null) continue;
+                if ("设备丢失".equals(ai.title) || "低电量报警".equals(ai.title) || "设备离线".equals(ai.title)) {
+                    distinct.add((ai.code == null ? "" : ai.code) + ":" + ai.title);
+                }
+            }
+            int count = distinct.size();
+            pendingAlertCount = count;
+            if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(count));
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+            android.util.Log.d(TAG, "updatePendingBadge count=" + count + ", queueSize=" + alertQueue.size());
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "更新待处理徽标失败", e);
+        }
     }
 
     private AlertItem buildAlertItem(LoRaFrameParser.ParsedFrame frame, String msg) {
@@ -1154,5 +1168,16 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
     }
     // 显示添加设备界面
     showAddDeviceFragment(uiTerminal);
+}
+
+public void sendHandleDownlink(String devHex, int mask) {
+    try {
+        if (mqttClient != null) {
+            com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqttClient);
+            helper.sendDownlink8001Config(devHex, mask);
+        }
+    } catch (Exception e) {
+        android.util.Log.e(TAG, "下发处理下行失败 devEUI=" + devHex + ", mask=" + mask, e);
+    }
 }
 }
