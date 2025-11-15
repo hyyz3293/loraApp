@@ -499,25 +499,7 @@ public class TerminalListFragment extends Fragment {
         }
     }
 
-    // 接收上行事件，弹出右下角报警浮层
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onUplinkDataEvent(com.lora.cn.events.UplinkDataEvent event) {
-        if (event == null || alertMuted) return;
-        String hex = event.getHex();
-        com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
-        if (frame == null) return;
-        boolean lost = (frame.evIllegalRemoval == 1);
-        boolean low = (frame.evLowBattery == 1);
-        boolean offline = false; // 离线依据业务状态维护，这里暂不处理
-        if (lost || low || offline) {
-            String msg = lost ? "异常丢失" : (low ? "低电量报警" : "设备离线");
-            AlertItem item = buildAlertItem(frame, msg);
-            alertQueue.addLast(item);
-            pendingAlertCount = alertQueue.size();
-            if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
-            showLatestPending();
-        }
-    }
+    
 
     private void showAlertOverlay(String text) {
         if (tvAlertText != null) tvAlertText.setText(text);
@@ -532,27 +514,7 @@ public class TerminalListFragment extends Fragment {
 
     private void evaluateAlertOverlay() {
         try {
-            int abnormal = 0;
-            int low = 0;
-            for (Terminal t : allDisplayTerminals) {
-                if (t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) abnormal++;
-                if (t.getBatteryLevel() <= 20) low++;
-            }
-            if (!alertQueue.isEmpty()) {
-                showLatestPending();
-            } else if (abnormal > 0 || low > 0) {
-                String msg = (abnormal > 0 && low > 0) ? "异常丢失/低电量" : (abnormal > 0 ? "异常丢失" : "低电量");
-                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
-                if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
-                if (tvErrorTitle != null) tvErrorTitle.setText(msg);
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
-                pendingAlertCount = Math.max(abnormal + low, 1);
-                updatePendingBadge();
-            } else {
-                if (llAlertOverlay != null) llAlertOverlay.setVisibility(View.GONE);
-                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
-            }
+            // 全局弹窗由 MainActivity 负责，这里不再弹窗
         } catch (Exception ignored) {}
     }
 

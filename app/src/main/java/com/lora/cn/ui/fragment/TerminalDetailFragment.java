@@ -357,7 +357,7 @@ public class TerminalDetailFragment extends Fragment {
         super.onStop();
     }
 
-    // 接收上行数据：与当前设备匹配且处于等待状态时，移除“处理完成”按钮
+    // 订阅上行事件：匹配当前设备且处于等待状态时，刷新数据并结束等待
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onUplinkDataEvent(UplinkDataEvent event) {
         if (event == null) return;

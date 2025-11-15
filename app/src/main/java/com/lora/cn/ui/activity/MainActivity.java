@@ -386,16 +386,32 @@ public class MainActivity extends AppCompatActivity {
     };
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
+    // 订阅上行事件：根据状态位/事件映射警报类型，触发全局处理弹窗
     public void onUplinkDataEvent(UplinkDataEvent event) {
         if (event == null || alertMuted) return;
         String hex = event.getHex();
         LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
         if (frame == null) return;
-        boolean lost = (frame.evIllegalRemoval == 1);
-        boolean low = (frame.evLowBattery == 1);
-        boolean offline = false;
-        if (lost || low || offline) {
-            String msg = lost ? "异常丢失" : (low ? "低电量报警" : "设备离线");
+        int statusCode;
+        if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
+                frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
+                frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
+            statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
+        } else if (frame.stPowerLockOn == 1) {
+            statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
+        } else if (frame.stPowerLockOn == 0) {
+            statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+        } else if (frame.evManualTake == 1) {
+            statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
+        } else if (frame.evManualPut == 1) {
+            statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
+        } else if (frame.evLowBattery == 1) {
+            statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
+        } else {
+            statusCode = 0;
+        }
+        if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+            String msg = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "设备丢失" : "低电量报警";
             AlertItem item = buildAlertItem(frame, msg);
             alertQueue.addLast(item);
             pendingAlertCount = alertQueue.size();
