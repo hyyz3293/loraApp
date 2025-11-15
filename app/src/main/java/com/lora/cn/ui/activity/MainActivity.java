@@ -596,6 +596,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void goHome() {
+        navigateHome();
+    }
+
+    // 仅显示首页的覆盖容器，不加载“附近终端”页面
+    public void showOverlayOnly() {
+        try {
+            if (isUserInfoVisible) hideUserInfo();
+            fragmentDeviceListContainer.setVisibility(View.VISIBLE);
+            rvMenuTabs.setVisibility(View.INVISIBLE);
+            viewPager.setVisibility(View.GONE);
+            isDeviceListVisible = true;
+        } catch (Exception e) {
+            Log.e(TAG, "showOverlayOnly 异常: " + e.getMessage());
+        }
+    }
+
     // 生成符合解析器的测试上行hex
     private String generateTestUplinkHex() {
         try {

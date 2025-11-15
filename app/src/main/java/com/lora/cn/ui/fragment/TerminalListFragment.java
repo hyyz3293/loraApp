@@ -191,7 +191,7 @@ public class TerminalListFragment extends Fragment {
             TerminalStatusListFragment fragment = TerminalStatusListFragment.newInstance(item.getTitle());
             if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
                 com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
-                mainActivity.showDeviceList();
+                mainActivity.showOverlayOnly();
             }
             androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
             if (a != null) {

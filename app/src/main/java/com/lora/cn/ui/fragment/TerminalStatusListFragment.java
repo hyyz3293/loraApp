@@ -96,8 +96,12 @@ public class TerminalStatusListFragment extends Fragment {
                 ((android.widget.ImageView) btnBack).setImageResource(android.R.drawable.ic_menu_revert);
             }
             btnBack.setOnClickListener(v -> {
-                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
-                if (a != null) a.getSupportFragmentManager().popBackStack();
+                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).goHome();
+                } else {
+                    androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                    if (a != null) a.getSupportFragmentManager().popBackStack();
+                }
             });
         }
 
