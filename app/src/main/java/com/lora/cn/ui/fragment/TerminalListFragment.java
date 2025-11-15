@@ -336,8 +336,15 @@ public class TerminalListFragment extends Fragment {
 
             final long[] tempSelectedGroupId = {selectedGroupId};
             final long[] tempSelectedCategoryId = {selectedCategoryId};
+            final android.view.View[] lastGroupSelectedView = new android.view.View[1];
+            final android.view.View[] lastCategorySelectedView = new android.view.View[1];
 
             lvGroups.setOnItemClickListener((parent, view, position, id) -> {
+                try {
+                    if (lastGroupSelectedView[0] != null) lastGroupSelectedView[0].setBackgroundColor(android.graphics.Color.TRANSPARENT);
+                    view.setBackgroundColor(android.graphics.Color.parseColor("#E6F0FF"));
+                    lastGroupSelectedView[0] = view;
+                } catch (Exception ignored) {}
                 tempSelectedGroupId[0] = displayGroups.get(position).getGroupId();
                 // 加载分类
                 List<com.lora.cn.database.entity.Category> categories = tempSelectedGroupId[0] == -1 ? databaseManager.getAllCategories() : databaseManager.getCategoriesByGroupId(tempSelectedGroupId[0]);
@@ -351,7 +358,14 @@ public class TerminalListFragment extends Fragment {
                 for (com.lora.cn.database.entity.Category c : displayCategories) categoryNames.add(c.getCategoryName());
                 android.widget.ArrayAdapter<String> cAdapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, categoryNames);
                 lvCategories.setAdapter(cAdapter);
-                lvCategories.setOnItemClickListener((p, v, pos, i2) -> tempSelectedCategoryId[0] = displayCategories.get(pos).getCategoryId());
+                lvCategories.setOnItemClickListener((p, v, pos, i2) -> {
+                    try {
+                        if (lastCategorySelectedView[0] != null) lastCategorySelectedView[0].setBackgroundColor(android.graphics.Color.TRANSPARENT);
+                        v.setBackgroundColor(android.graphics.Color.parseColor("#E6F0FF"));
+                        lastCategorySelectedView[0] = v;
+                    } catch (Exception ignored) {}
+                    tempSelectedCategoryId[0] = displayCategories.get(pos).getCategoryId();
+                });
             });
 
             btnConfirm.setOnClickListener(v -> {

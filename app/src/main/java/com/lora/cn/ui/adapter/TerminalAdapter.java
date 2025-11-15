@@ -77,6 +77,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         // 信号强度使用SignalStrengthView，按-138~0对应138~0反向计算百分比
         boolean isOffline = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE == item.getStatus();
         boolean isAbnormal = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN == item.getStatus();
+        boolean isNormalTaken = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN == item.getStatus();
         if (isOffline) {
             if (signalView != null) signalView.setVisibility(View.GONE);
             if (ivStatusIcon != null) {
@@ -95,6 +96,13 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                     ivStatusIcon.setImageResource(R.mipmap.ic_ds);
                 }
                 tvStatusTitle.setText("异常丢失");
+            } else if (isNormalTaken) {
+                if (signalView != null) signalView.setVisibility(View.GONE);
+                if (ivStatusIcon != null) {
+                    ivStatusIcon.setVisibility(View.VISIBLE);
+                    ivStatusIcon.setImageResource(R.mipmap.ic_blue_right);
+                }
+                tvStatusTitle.setText("正常取走");
             } else {
                 int bars = Math.max(0, Math.min(4, item.getSignalStrength()));
                 if (signalView != null) {
