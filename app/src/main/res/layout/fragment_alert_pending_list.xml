@@ -3,18 +3,149 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@drawable/bg_white_12"
+    android:layout_margin="20dp"
     android:padding="12dp">
 
-    <TextView
-        android:text="报警待处理列表"
-        android:textColor="@color/black"
-        android:textStyle="bold"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+<!--    <TextView-->
+<!--        android:text="报警待处理列表"-->
+<!--        android:textColor="@color/black"-->
+<!--        android:textStyle="bold"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"/>-->
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_alerts"
+<!--    <androidx.recyclerview.widget.RecyclerView-->
+<!--        android:id="@+id/rv_alerts"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"/>-->
+
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="50dp">
+
+
+        <TextView
+            android:id="@+id/status_terminal_tile"
+             android:layout_marginLeft="8dp"
+            android:textSize="16dp"
+            android:textColor="@color/black"
+            android:text="报警待处理列表"
+            android:layout_centerVertical="true"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="34dp"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/btn_back"
+                android:background="@drawable/bg_back_4"
+                android:textSize="16dp"
+                android:gravity="center"
+                android:textColor="#383B40"
+                android:text="返回"
+                android:textStyle="bold"
+                android:layout_width="98dp"
+                android:layout_height="32dp" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_marginRight="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_height="50dp" >
+
+        <TextView
+            android:id="@+id/log_time"
+            android:text="时间"
+            android:gravity="center_vertical"
+            android:paddingLeft="5dp"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="188"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/log_statu"
+            android:text="状态"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="138"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/log_name"
+            android:text="终端列表"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="156"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/log_id"
+            android:text="终端ID"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="168"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+
+
+
+
+        <TextView
+            android:id="@+id/log_operation"
+            android:text="操作"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="107"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+    </LinearLayout>
+
+    <View
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
+
+
+
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_alerts"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="20dp"/>
 
 </LinearLayout>

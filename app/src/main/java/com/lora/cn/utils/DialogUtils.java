@@ -445,6 +445,63 @@ public class DialogUtils {
         dialog.show();
     }
 
+    /**
+     * 显示处理备注自定义对话框
+     * @param context 上下文
+     * @param title 标题
+     * @param defaultValue 默认备注
+     * @param onConfirm 确认回调（返回备注字符串）
+     */
+    public static void showRemarkDialog(Context context, String title, String defaultValue, OnConfirmListener onConfirm) {
+        Dialog dialog = new Dialog(context);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_handle_remark, null);
+        dialog.setContentView(dialogView);
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(
+                    (int) (context.getResources().getDisplayMetrics().widthPixels * 0.5),
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
+
+        TextView label = dialogView.findViewById(R.id.tv_remark_label);
+        EditText etRemark = dialogView.findViewById(R.id.et_remark);
+        label.setText(title);
+        if (!TextUtils.isEmpty(defaultValue)) {
+            etRemark.setText(defaultValue);
+        }
+
+        Button btnCancel = new Button(context);
+        Button btnConfirm = new Button(context);
+        // 简化：使用系统按钮样式
+        btnCancel.setText("取消");
+        btnConfirm.setText("确定");
+
+        // 将按钮添加到布局尾部
+        if (dialogView instanceof android.widget.LinearLayout) {
+            android.widget.LinearLayout root = (android.widget.LinearLayout) dialogView;
+            android.widget.LinearLayout action = new android.widget.LinearLayout(context);
+            action.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            action.setPadding(0, 24, 0, 0);
+            action.addView(btnCancel);
+            action.addView(btnConfirm);
+            root.addView(action);
+        }
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnConfirm.setOnClickListener(v -> {
+            String remark = etRemark.getText() != null ? etRemark.getText().toString().trim() : "";
+            dialog.dismiss();
+            if (onConfirm != null) onConfirm.onConfirm(remark);
+        });
+
+        dialog.show();
+    }
+
 
     public static void showRoleDialog(Context context, String title, List<Permission> allPermissions, Role role, OnConfirmListener onConfirm) {
         showRoleDialogs(context, title, allPermissions, role, null, new OnNumberEditListener() {

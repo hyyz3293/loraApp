@@ -302,8 +302,8 @@ public class MainActivity extends AppCompatActivity {
             });
         }
         if (tvErrorComplete != null) {
-            tvErrorComplete.setOnClickListener(v -> showHandleDialogForCurrent());
-            tvErrorComplete.setText("确认处理");
+            tvErrorComplete.setOnClickListener(v -> openAlertPendingList());
+            tvErrorComplete.setText("立即处理");
         }
     }
     
@@ -422,6 +422,7 @@ public class MainActivity extends AppCompatActivity {
             android.util.Log.i(TAG, "Global alert queued: " + msg + ", deviceId=" + (frame != null ? frame.deviceId : ""));
             startAlertRinging30s();
             showLatestPending();
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("上行刷新")); } catch (Exception ignored) {}
         }
     }
 
@@ -576,12 +577,34 @@ public class MainActivity extends AppCompatActivity {
                     item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                     alertQueue.addLast(item);
                     pendingAlertCount = alertQueue.size();
+                    try {
+                        if (firstOffline != null) {
+                            databaseHelper.addLog(firstOffline.getTerminalId(), firstOffline.getTerminalName(), firstOffline.getTerminalId(), "设备离线", "", "", "功能码=离线");
+                        }
+                    } catch (Exception ignored) {}
+                    startAlertRinging30s();
                     showLatestPending();
                 } else {
                     showLatestPending();
                 }
+                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
             }
         } catch (Exception ignored) {}
+    }
+
+    private void openAlertPendingList() {
+        try {
+            androidx.fragment.app.Fragment fragment = new com.lora.cn.ui.fragment.AlertPendingListFragment();
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_device_list_container, fragment)
+                    .addToBackStack("alert_pending")
+                    .commit();
+            fragmentDeviceListContainer.setVisibility(View.VISIBLE);
+            rvMenuTabs.setVisibility(View.INVISIBLE);
+            viewPager.setVisibility(View.GONE);
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "打开报警处理页面失败", e);
+        }
     }
 
     private android.os.Handler ringHandler;

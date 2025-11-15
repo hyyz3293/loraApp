@@ -15,7 +15,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.adapter.LogInfoAdapter;
+import com.lora.cn.ui.adapter.LogInfoAlertAdapter;
 import com.lora.cn.ui.model.LogInfo;
+import com.lora.cn.utils.DialogUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,8 @@ import java.util.List;
 public class AlertPendingListFragment extends Fragment {
 
     private RecyclerView rv;
-    private LogInfoAdapter adapter;
+    private LogInfoAlertAdapter adapter;
+
 
     @Nullable
     @Override
@@ -34,7 +37,8 @@ public class AlertPendingListFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_alert_pending_list, container, false);
         rv = v.findViewById(R.id.rv_alerts);
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new LogInfoAdapter();
+        adapter = new LogInfoAlertAdapter();
+        adapter.setOnHandleClickListener(this::showHandleDialogForLog);
         rv.setAdapter(adapter);
         loadAlerts();
         return v;
@@ -54,8 +58,27 @@ public class AlertPendingListFragment extends Fragment {
                 }
             }
             adapter.submitList(pending);
+            java.util.Set<Long> ids = new java.util.HashSet<>();
+            for (LogInfo li : pending) ids.add(li.getId());
+            adapter.setAllowedHandleIds(ids);
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载报警列表失败", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showHandleDialogForLog(LogInfo item) {
+        if (item == null) return;
+        DialogUtils.showRemarkDialog(requireContext(), "确认处理", "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
+            @Override
+            public void onConfirm(String remark) {
+                String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                try {
+                    DatabaseHelper db = DatabaseHelper.getInstance(requireContext());
+                    db.updateLogHandled(item.getId(), user, time, remark);
+                    loadAlerts();
+                } catch (Exception ignored) {}
+            }
+        });
     }
 }

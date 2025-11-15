@@ -518,31 +518,31 @@ public class TerminalListFragment extends Fragment {
         } catch (Exception ignored) {}
     }
 
-    private void openAlertPendingList() {
-        try {
-            androidx.fragment.app.Fragment fragment = new com.lora.cn.ui.fragment.AlertPendingListFragment();
-            if (getActivity() != null) {
-                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
-                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).showDeviceList();
-                }
-                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
-                android.view.View container = a.findViewById(R.id.fragment_device_list_container);
-                if (container != null) {
-                    container.setVisibility(View.VISIBLE);
-                    android.view.View rvTabs = a.findViewById(R.id.rv_menu_tabs);
-                    if (rvTabs != null) rvTabs.setVisibility(View.INVISIBLE);
-                    android.view.View vp = a.findViewById(R.id.view_pager);
-                    if (vp != null) vp.setVisibility(View.GONE);
-                }
-                a.getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_device_list_container, fragment)
-                        .addToBackStack("alert_pending")
-                        .commit();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "打开报警待处理列表失败", e);
-        }
-    }
+//    private void openAlertPendingList() {
+//        try {
+//            androidx.fragment.app.Fragment fragment = new com.lora.cn.ui.fragment.AlertPendingListFragment();
+//            if (getActivity() != null) {
+//                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+//                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).showDeviceList();
+//                }
+//                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+//                android.view.View container = a.findViewById(R.id.fragment_device_list_container);
+//                if (container != null) {
+//                    container.setVisibility(View.VISIBLE);
+//                    android.view.View rvTabs = a.findViewById(R.id.rv_menu_tabs);
+//                    if (rvTabs != null) rvTabs.setVisibility(View.INVISIBLE);
+//                    android.view.View vp = a.findViewById(R.id.view_pager);
+//                    if (vp != null) vp.setVisibility(View.GONE);
+//                }
+//                a.getSupportFragmentManager().beginTransaction()
+//                        .replace(R.id.fragment_device_list_container, fragment)
+//                        .addToBackStack("alert_pending")
+//                        .commit();
+//            }
+//        } catch (Exception e) {
+//            Log.e(TAG, "打开报警待处理列表失败", e);
+//        }
+//    }
 
     private void showLatestPending() {
         currentAlert = alertQueue.peekLast();
