@@ -43,7 +43,7 @@ public class AlertPendingListFragment extends Fragment {
     private void loadAlerts() {
         try {
             DatabaseHelper db = DatabaseHelper.getInstance(requireContext());
-            List<LogInfo> all = db.getAllLogs();
+            List<LogInfo> all = db.getAllLogsBoundToTerminals();
             List<LogInfo> pending = new ArrayList<>();
             for (LogInfo li : all) {
                 int s = li.getStatusCode();

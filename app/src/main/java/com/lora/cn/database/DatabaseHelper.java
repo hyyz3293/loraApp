@@ -1292,6 +1292,41 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return logs;
     }
 
+    /**
+     * 获取只绑定到已添加终端的日志（terminal_id 存在于终端表）
+     */
+    public java.util.List<com.lora.cn.ui.model.LogInfo> getAllLogsBoundToTerminals() {
+        java.util.List<com.lora.cn.ui.model.LogInfo> logs = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + TABLE_LOGS + " WHERE EXISTS (" +
+                "SELECT 1 FROM " + TABLE_TERMINALS + " t WHERE t." + COLUMN_TERMINAL_DEVICE_ID + " = " + TABLE_LOGS + "." + COLUMN_LOG_TERMINAL_ID +
+                ") ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC";
+        android.database.Cursor cursor = db.rawQuery(query, null);
+        while (cursor.moveToNext()) {
+            com.lora.cn.ui.model.LogInfo log = new com.lora.cn.ui.model.LogInfo();
+            log.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_LOG_ID)));
+            log.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_ID)));
+            log.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_NAME)));
+            log.setDeviceId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_DEVICE_ID)));
+            int st = cursor.getInt(cursor.getColumnIndex(COLUMN_LOG_STATUS));
+            log.setStatusCode(st);
+            log.setOperator(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATOR)));
+            log.setOperationTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATION_TIME)));
+            log.setAction(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_ACTION)));
+            log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_CREATE_TIME)));
+            int hUserIdx = cursor.getColumnIndex("handle_user");
+            int hTimeIdx = cursor.getColumnIndex("handle_time");
+            int hRemarkIdx = cursor.getColumnIndex("handle_remark");
+            if (hUserIdx != -1) log.setHandleUser(cursor.getString(hUserIdx));
+            if (hTimeIdx != -1) log.setHandleTime(cursor.getString(hTimeIdx));
+            if (hRemarkIdx != -1) log.setHandleRemark(cursor.getString(hRemarkIdx));
+            logs.add(log);
+        }
+        cursor.close();
+        db.close();
+        return logs;
+    }
+
     public java.util.List<com.lora.cn.ui.model.LogInfo> getLogsByTerminalId(String terminalId) {
         java.util.List<com.lora.cn.ui.model.LogInfo> logs = new java.util.ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();

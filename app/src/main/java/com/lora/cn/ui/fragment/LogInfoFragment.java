@@ -58,8 +58,8 @@ public class LogInfoFragment extends Fragment {
         // 先清理示例日志，避免展示假数据
         databaseHelper.cleanSampleLogData();
         
-        // 从数据库获取真实日志数据
-        logList = databaseHelper.getAllLogs();
+        // 从数据库获取真实日志数据（仅展示已添加终端的日志）
+        logList = databaseHelper.getAllLogsBoundToTerminals();
         baseLogs.clear();
         if (logList != null) {
             for (LogInfo li : logList) {
