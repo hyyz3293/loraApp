@@ -303,7 +303,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (tvErrorComplete != null) {
             tvErrorComplete.setOnClickListener(v -> openAlertPendingList());
-            tvErrorComplete.setText("立即处理");
+            tvErrorComplete.setText("确认处理");
         }
     }
     
@@ -527,26 +527,26 @@ public class MainActivity extends AppCompatActivity {
         long logId;
     }
 
-    private void showHandleDialogForCurrent() {
-        if (currentAlert == null) return;
-        final android.widget.EditText et = new android.widget.EditText(this);
-        et.setHint("填写处理备注");
-        new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("确认处理")
-                .setView(et)
-                .setPositiveButton("确定", (d, w) -> {
-                    String remark = et.getText() != null ? et.getText().toString().trim() : "";
-                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
-                    String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    long id = currentAlert.logId;
-                    try {
-                        if (id > 0) databaseHelper.updateLogHandled(id, user, time, remark);
-                    } catch (Exception ignored) {}
-                    handleCurrentAlert();
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
+//    private void showHandleDialogForCurrent() {
+//        if (currentAlert == null) return;
+//        final android.widget.EditText et = new android.widget.EditText(this);
+//        et.setHint("填写处理备注");
+//        new androidx.appcompat.app.AlertDialog.Builder(this)
+//                .setTitle("确认处理")
+//                .setView(et)
+//                .setPositiveButton("确定", (d, w) -> {
+//                    String remark = et.getText() != null ? et.getText().toString().trim() : "";
+//                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+//                    String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+//                    long id = currentAlert.logId;
+//                    try {
+//                        if (id > 0) databaseHelper.updateLogHandled(id, user, time, remark);
+//                    } catch (Exception ignored) {}
+//                    handleCurrentAlert();
+//                })
+//                .setNegativeButton("取消", null)
+//                .show();
+//    }
 
     private void evaluateAlertOverlayGlobal() {
         try {
@@ -599,6 +599,9 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_device_list_container, fragment)
                     .addToBackStack("alert_pending")
                     .commit();
+            llAlertPendingSmall.setVisibility(View.VISIBLE);
+            llAlertPending.setVisibility(View.GONE);
+
             fragmentDeviceListContainer.setVisibility(View.VISIBLE);
             rvMenuTabs.setVisibility(View.INVISIBLE);
             viewPager.setVisibility(View.GONE);
