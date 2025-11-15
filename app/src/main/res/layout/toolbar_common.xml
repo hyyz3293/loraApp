@@ -18,6 +18,18 @@
         android:padding="12dp"
          />
 
+    <TextView
+        android:id="@+id/toolbar_left_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_toEndOf="@id/btn_back"
+        android:layout_marginStart="4dp"
+        android:text=""
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
     <!-- 标题 -->
     <TextView
         android:id="@+id/toolbar_title"

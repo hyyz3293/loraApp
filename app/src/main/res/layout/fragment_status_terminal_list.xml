@@ -11,6 +11,7 @@
 
         <TextView
             android:id="@+id/status_terminal_tile"
+            android:layout_marginLeft="20dp"
             android:textSize="16dp"
             android:textColor="@color/black"
             android:text=""

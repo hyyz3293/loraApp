@@ -38,6 +38,7 @@ public class TerminalStatusListFragment extends Fragment {
     private TextView tvGroupCategory;
     private View btnBack;
     private TextView toolbarTitle;
+//    private TextView toolbarLeftTitle;
 
     private final List<Terminal> allDisplayTerminals = new ArrayList<>();
     private String statusFilterTitle = null;
@@ -62,7 +63,9 @@ public class TerminalStatusListFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_status_terminal_list, container, false);
-
+        if (getArguments() != null) {
+            statusFilterTitle = getArguments().getString("status_filter_title", null);
+        }
         databaseManager = DatabaseManager.getInstance(requireContext());
         long userId = SPUtils.getInstance().getLong("current_user_id", -1);
         if (userId != -1) {
@@ -71,9 +74,7 @@ public class TerminalStatusListFragment extends Fragment {
         }
 
         initViews(view);
-        if (getArguments() != null) {
-            statusFilterTitle = getArguments().getString("status_filter_title", null);
-        }
+
 
         if (hasPermission("terminal_list")) {
             //initStatusBar();
@@ -104,11 +105,14 @@ public class TerminalStatusListFragment extends Fragment {
                 }
             });
         }
-
-        toolbarTitle = view.findViewById(R.id.toolbar_title);
+//
+         toolbarTitle = view.findViewById(R.id.status_terminal_tile);
+//        toolbarLeftTitle = view.findViewById(R.id.toolbar_left_title);
         if (toolbarTitle != null) {
-            toolbarTitle.setText(statusFilterTitle != null ? statusFilterTitle : "状态列表");
+            toolbarTitle.setText(statusFilterTitle != null ? statusFilterTitle : "");
         }
+
+
 
         EditText searchEditText = view.findViewById(R.id.et_search);
         if (searchEditText != null) {
