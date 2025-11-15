@@ -364,7 +364,7 @@
 
             <RelativeLayout
                 android:id="@+id/ll_alert_pending_small"
-                android:visibility="visible"
+                android:visibility="gone"
                 android:background="@color/white"
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentRight="true"
