@@ -268,7 +268,13 @@ public class LoRaProtocolParser {
                                            int clearMask,
                                            int reportIntervalMin) {
         byte[] deviceId = hexToBytes(deviceIdHex);
-        if (deviceId == null || deviceId.length == 0) deviceId = new byte[8];
+        if (deviceId == null) deviceId = new byte[8];
+        if (deviceId.length != 8) {
+            byte[] fixed = new byte[8];
+            int copy = Math.min(deviceId.length, 8);
+            System.arraycopy(deviceId, 0, fixed, 0, copy);
+            deviceId = fixed;
+        }
         byte[] func = new byte[]{(byte) 0x80, 0x01};
         byte[] time = buildBcdTimeBytes(utcMs);
         byte ack = (byte) (ackResult & 0x01);
@@ -304,7 +310,7 @@ public class LoRaProtocolParser {
         byte xor = 0;
         for (int i = 1; i < idx; i++) xor ^= frame[i];
         frame[idx++] = xor;
-        frame[idx] = (byte) 0x5A;
+        frame[idx++] = (byte) 0x5A;
         return frame;
     }
 
