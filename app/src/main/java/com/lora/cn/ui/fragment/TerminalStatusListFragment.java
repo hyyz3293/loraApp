@@ -36,6 +36,7 @@ public class TerminalStatusListFragment extends Fragment {
     private TerminalAdapter adapter;
     private TextView addTerminalBtn;
     private TextView tvGroupCategory;
+    private View btnBack;
 
     private final List<Terminal> allDisplayTerminals = new ArrayList<>();
     private String statusFilterTitle = null;
@@ -88,13 +89,11 @@ public class TerminalStatusListFragment extends Fragment {
         addTerminalBtn = view.findViewById(R.id.add_terminal);
         tvGroupCategory = view.findViewById(R.id.tv_group_category);
 
-        if (addTerminalBtn != null) {
-            addTerminalBtn.setText("返回");
-            addTerminalBtn.setOnClickListener(v -> {
-                if (getActivity() instanceof androidx.appcompat.app.AppCompatActivity) {
-                    androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
-                    if (a != null) a.getSupportFragmentManager().popBackStack();
-                }
+        btnBack = view.findViewById(R.id.btn_back);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                if (a != null) a.getSupportFragmentManager().popBackStack();
             });
         }
 

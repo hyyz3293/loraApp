@@ -25,6 +25,7 @@ public class BatteryView extends View {
     private Paint outerPaint;
     private Paint innerPaint;
     private Paint terminalPaint;
+    private Paint emptySegmentPaint;
 
     public BatteryView(Context context) {
         super(context);
@@ -51,7 +52,7 @@ public class BatteryView extends View {
         // 外层电池油漆（透明背景，仅边框）
         outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         outerPaint.setStyle(Paint.Style.STROKE);
-        outerPaint.setStrokeWidth(dpToPx(context, 1.5f));
+        outerPaint.setStrokeWidth(dpToPx(context, 2f));
 
         // 内部电量油漆
         innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -60,6 +61,11 @@ public class BatteryView extends View {
         // 正极油漆
         terminalPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         terminalPaint.setStyle(Paint.Style.FILL);
+
+        // 空方格油漆（无电量方块颜色 #D3E1DC）
+        emptySegmentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        emptySegmentPaint.setStyle(Paint.Style.FILL);
+        emptySegmentPaint.setColor(Color.parseColor("#D3E1DC"));
 
         updateColors();
     }
@@ -98,16 +104,15 @@ public class BatteryView extends View {
         float segmentHeight = bottom - top;
 
         for (int i = 0; i < segmentCount; i++) {
-            // 计算当前方格应该显示的电量阈值
             int segmentThreshold = (i + 1) * (100 / segmentCount);
+            float left = bodyRect.left + segmentSpacing + i * (segmentWidth + segmentSpacing);
+            float right = left + segmentWidth;
+            RectF segmentRect = new RectF(left, top, right, bottom);
 
-            // 如果当前电量达到这个阈值，则显示该方格
             if (batteryLevel >= segmentThreshold) {
-                float left = bodyRect.left + segmentSpacing + i * (segmentWidth + segmentSpacing);
-                float right = left + segmentWidth;
-
-                RectF segmentRect = new RectF(left, top, right, bottom);
                 canvas.drawRect(segmentRect, innerPaint);
+            } else {
+                canvas.drawRect(segmentRect, emptySegmentPaint);
             }
         }
     }
