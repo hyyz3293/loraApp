@@ -31,7 +31,7 @@ android {
         multiDexEnabled true  // 添加这行
         // 临时兼容：为避免 Android 12+ PendingIntent 标志崩溃，降低 targetSdkVersion
         // 正式修复建议使用 hannesa2 修补库或在 AlarmPingSender 中添加 FLAG_IMMUTABLE
-        targetSdkVersion 35
+        targetSdkVersion 29
         versionCode 100000
         versionName "1.0.0"
     }

@@ -37,6 +37,7 @@ public class TerminalStatusListFragment extends Fragment {
     private TextView addTerminalBtn;
     private TextView tvGroupCategory;
     private View btnBack;
+    private TextView toolbarTitle;
 
     private final List<Terminal> allDisplayTerminals = new ArrayList<>();
     private String statusFilterTitle = null;
@@ -75,7 +76,7 @@ public class TerminalStatusListFragment extends Fragment {
         }
 
         if (hasPermission("terminal_list")) {
-            initStatusBar();
+            //initStatusBar();
             initTerminalList();
         } else {
             Toast.makeText(requireContext(), "您没有查看终端列表的权限", Toast.LENGTH_SHORT).show();
@@ -91,10 +92,18 @@ public class TerminalStatusListFragment extends Fragment {
 
         btnBack = view.findViewById(R.id.btn_back);
         if (btnBack != null) {
+            if (btnBack instanceof android.widget.ImageView) {
+                ((android.widget.ImageView) btnBack).setImageResource(android.R.drawable.ic_menu_revert);
+            }
             btnBack.setOnClickListener(v -> {
                 androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
                 if (a != null) a.getSupportFragmentManager().popBackStack();
             });
+        }
+
+        toolbarTitle = view.findViewById(R.id.toolbar_title);
+        if (toolbarTitle != null) {
+            toolbarTitle.setText(statusFilterTitle != null ? statusFilterTitle : "状态列表");
         }
 
         EditText searchEditText = view.findViewById(R.id.et_search);
