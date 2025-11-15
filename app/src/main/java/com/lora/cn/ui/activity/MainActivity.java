@@ -194,7 +194,12 @@ public class MainActivity extends AppCompatActivity {
 
         startupLogHandler.removeCallbacks(startupLogRunnable);
         startupLogHandler.postDelayed(startupLogRunnable, 120000);
-
+        
+        if (alertEvaluateHandler == null) {
+            alertEvaluateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        }
+        alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
+        alertEvaluateHandler.postDelayed(alertEvaluateRunnable, 1000);
 
         LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("a528e2000100012509000119001820250926083856000000080000007e0171635e0000000000915a");
 
@@ -288,6 +293,9 @@ public class MainActivity extends AppCompatActivity {
         if (tvErrorVoiceNo != null) {
             tvErrorVoiceNo.setOnClickListener(v -> {
                 alertMuted = !alertMuted;
+                if (alertMuted) {
+                    stopAlertRinging();
+                }
                 android.widget.Toast.makeText(this, alertMuted ? "已静音" : "已取消静音", android.widget.Toast.LENGTH_SHORT).show();
             });
         }
@@ -370,6 +378,12 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.Deque<AlertItem> alertQueue = new java.util.ArrayDeque<>();
     private AlertItem currentAlert = null;
     private android.media.MediaPlayer alertPlayer;
+    private android.os.Handler alertEvaluateHandler;
+    private final Runnable alertEvaluateRunnable = new Runnable() {
+        @Override public void run() {
+            try { evaluateAlertOverlayGlobal(); } finally { if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 60000); }
+        }
+    };
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
     public void onUplinkDataEvent(UplinkDataEvent event) {
@@ -385,7 +399,7 @@ public class MainActivity extends AppCompatActivity {
             AlertItem item = buildAlertItem(frame, msg);
             alertQueue.addLast(item);
             pendingAlertCount = alertQueue.size();
-            playAlertSoundOnce();
+            startAlertRinging30s();
             showLatestPending();
         }
     }
@@ -475,10 +489,50 @@ public class MainActivity extends AppCompatActivity {
         String time;
     }
 
-    private void playAlertSoundOnce() {
+    private void evaluateAlertOverlayGlobal() {
         try {
+            java.util.List<com.lora.cn.ui.model.Terminal> all = databaseHelper.getAllTerminals();
+            int abnormal = 0;
+            int low = 0;
+            int offline = 0;
+            com.lora.cn.ui.model.Terminal firstOffline = null;
+            for (com.lora.cn.ui.model.Terminal t : all) {
+                if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) abnormal++;
+                if (t.getBatteryLevel() <= 20) low++;
+                if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
+                    offline++;
+                    if (firstOffline == null) firstOffline = t;
+                }
+            }
+            if (offline > 0) {
+                boolean hasSame = false;
+                if (!alertQueue.isEmpty()) {
+                    AlertItem last = alertQueue.peekLast();
+                    hasSame = last != null && "设备离线".equals(last.title);
+                }
+                if (!hasSame) {
+                    AlertItem item = new AlertItem();
+                    item.title = "设备离线";
+                    item.name = firstOffline != null ? firstOffline.getTerminalName() : "";
+                    item.code = firstOffline != null ? firstOffline.getTerminalId() : "";
+                    item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                    alertQueue.addLast(item);
+                    pendingAlertCount = alertQueue.size();
+                    showLatestPending();
+                } else {
+                    showLatestPending();
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private android.os.Handler ringHandler;
+    private java.lang.Runnable ringStopRunnable;
+    private void startAlertRinging30s() {
+        try {
+            if (alertMuted) return;
+            if (alertPlayer != null && alertPlayer.isPlaying()) return;
             if (alertPlayer != null) {
-                if (alertPlayer.isPlaying()) return;
                 try { alertPlayer.release(); } catch (Exception ignored) {}
                 alertPlayer = null;
             }
@@ -486,6 +540,7 @@ public class MainActivity extends AppCompatActivity {
             android.media.MediaPlayer mp = new android.media.MediaPlayer();
             mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
             afd.close();
+            mp.setLooping(true);
             mp.setOnCompletionListener(p -> {
                 try { p.release(); } catch (Exception ignored) {}
                 if (alertPlayer == p) alertPlayer = null;
@@ -493,6 +548,24 @@ public class MainActivity extends AppCompatActivity {
             mp.prepare();
             mp.start();
             alertPlayer = mp;
+            if (ringHandler == null) ringHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            if (ringStopRunnable != null) ringHandler.removeCallbacks(ringStopRunnable);
+            ringStopRunnable = new java.lang.Runnable() {
+                @Override public void run() { stopAlertRinging(); }
+            };
+            ringHandler.postDelayed(ringStopRunnable, 30000);
+        } catch (Exception ignored) {}
+    }
+    private void stopAlertRinging() {
+        try {
+            if (ringHandler != null && ringStopRunnable != null) {
+                ringHandler.removeCallbacks(ringStopRunnable);
+            }
+            if (alertPlayer != null) {
+                try { if (alertPlayer.isPlaying()) alertPlayer.stop(); } catch (Exception ignored) {}
+                try { alertPlayer.release(); } catch (Exception ignored) {}
+                alertPlayer = null;
+            }
         } catch (Exception ignored) {}
     }
 
@@ -783,6 +856,10 @@ public class MainActivity extends AppCompatActivity {
             if (testUplinkHandler != null) {
                 testUplinkHandler.removeCallbacks(testUplinkRunnable);
                 testUplinkHandler = null;
+            }
+            if (alertEvaluateHandler != null) {
+                alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
+                alertEvaluateHandler = null;
             }
         } catch (Exception e) {
             Log.e(TAG, "发送测试上行数据失败: " + e.getMessage());

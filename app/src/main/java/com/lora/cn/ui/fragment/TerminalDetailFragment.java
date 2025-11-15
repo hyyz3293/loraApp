@@ -173,10 +173,10 @@ public class TerminalDetailFragment extends Fragment {
                 int stCode = t.getStatus();
                 boolean showHandle = (stCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN)
                         || (stCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
-                if (btnHandleNow != null) {
-                    btnHandleNow.setVisibility(showHandle ? View.VISIBLE : View.GONE);
-                    btnHandleNow.setText(waitingForUplink ? "处理完成" : "立即处理");
-                }
+//                if (btnHandleNow != null) {
+//                    btnHandleNow.setVisibility(showHandle ? View.VISIBLE : View.GONE);
+//                    btnHandleNow.setText(waitingForUplink ? "处理完成" : "立即处理");
+//                }
 
                 // 终端ID
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
@@ -204,7 +204,7 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_battery != null) terminal_detail_battery.setText("-");
                 if (terminal_detail_id != null) terminal_detail_id.setText(deviceId);
                 if (signalView != null) signalView.setSignalStrength(0);
-                if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
+                //if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
             }
         } catch (Exception ignored) {}
 
@@ -303,23 +303,23 @@ public class TerminalDetailFragment extends Fragment {
             }
         });
 
-        // 立即处理按钮：下发查询并等待上行回复
-        if (btnHandleNow != null) {
-            btnHandleNow.setOnClickListener(v -> {
-                String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
-                waitingForUplink = true;
-                btnHandleNow.setText("处理完成");
-                Toast.makeText(requireContext(), "已下发查询，等待设备上行回复", Toast.LENGTH_SHORT).show();
-                try {
-                    MqttPacketsClient mqttClient = new MqttPacketsClient();
-                    DownlinkMessageHelper helper = new DownlinkMessageHelper(mqttClient);
-                    helper.sendQueryStatusDownlink(deviceId);
-                } catch (Exception e) {
-                    // 下发失败不影响等待流程，仅提示
-                    Toast.makeText(requireContext(), "下发失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+//        // 立即处理按钮：下发查询并等待上行回复
+//        if (btnHandleNow != null) {
+//            btnHandleNow.setOnClickListener(v -> {
+//                String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+//                waitingForUplink = true;
+//                btnHandleNow.setText("处理完成");
+//                Toast.makeText(requireContext(), "已下发查询，等待设备上行回复", Toast.LENGTH_SHORT).show();
+//                try {
+//                    MqttPacketsClient mqttClient = new MqttPacketsClient();
+//                    DownlinkMessageHelper helper = new DownlinkMessageHelper(mqttClient);
+//                    helper.sendQueryStatusDownlink(deviceId);
+//                } catch (Exception e) {
+//                    // 下发失败不影响等待流程，仅提示
+//                    Toast.makeText(requireContext(), "下发失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+//                }
+//            });
+//        }
     }
 
     private void loadLogs() {
@@ -375,7 +375,7 @@ public class TerminalDetailFragment extends Fragment {
             String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
             if (waitingForUplink && deviceId.equalsIgnoreCase(frame.deviceId)) {
                 waitingForUplink = false;
-                if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
+                //if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
                 // 刷新数据以反映最新状态与电量
                 bindData();
             }
