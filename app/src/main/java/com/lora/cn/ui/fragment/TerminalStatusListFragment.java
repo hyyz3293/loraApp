@@ -152,6 +152,15 @@ public class TerminalStatusListFragment extends Fragment {
                 }
             });
         }
+        android.widget.Spinner spinnerFilter = view.findViewById(R.id.spinner_filter);
+        if (spinnerFilter != null) {
+            spinnerFilter.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override public void onItemSelected(android.widget.AdapterView<?> parent, View v, int position, long id) {
+                    applyCurrentFilters();
+                }
+                @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            });
+        }
         if (spinnerTs != null) {
             spinnerTs.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
                 @Override public void onItemSelected(android.widget.AdapterView<?> parent, View v, int position, long id) {
