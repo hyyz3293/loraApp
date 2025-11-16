@@ -1203,15 +1203,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 boolean anyLayerNotInPlace = frame.stLayer1NotInPlace == 1 || frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 || frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1;
                 boolean allLayersNotInPlace = frame.stLayer1NotInPlace == 1 && frame.stLayer2NotInPlace == 1 && frame.stLayer3NotInPlace == 1 && frame.stLayer4NotInPlace == 1 && frame.stLayer5NotInPlace == 1;
                 boolean anyLayerInPlace = frame.stLayer1NotInPlace == 0 || frame.stLayer2NotInPlace == 0 || frame.stLayer3NotInPlace == 0 || frame.stLayer4NotInPlace == 0 || frame.stLayer5NotInPlace == 0;
-                if (frame.stPowerLockOn == 0 && anyLayerNotInPlace) {
-                    updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                if (frame.stPowerLockOn == 0 && allLayersNotInPlace) {
+                    int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                    android.util.Log.d("DatabaseHelper", "更新终端状态为异常丢失 deviceId=" + deviceId + ", rows=" + rows);
                 } else if (frame.stPowerLockOn == 1 && allLayersNotInPlace) {
-                    updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
+                    int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
+                    android.util.Log.d("DatabaseHelper", "更新终端状态为正常取走 deviceId=" + deviceId + ", rows=" + rows);
                 } else if (frame.stPowerLockOn == 0 && anyLayerInPlace) {
-                    updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                    int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                    android.util.Log.d("DatabaseHelper", "更新终端状态为在线 deviceId=" + deviceId + ", rows=" + rows);
                 } else {
-                    // 其它情况不更新为在线
+                    android.util.Log.d("DatabaseHelper", "保持原状态 deviceId=" + deviceId);
                 }
+                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId)); } catch (Exception ignored) {}
             }
         } catch (Exception e) {
             android.util.Log.e("DatabaseHelper", "更新终端电量/信号/状态失败", e);

@@ -397,42 +397,21 @@ public class MainActivity extends AppCompatActivity {
         LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
         if (frame == null) return;
         if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
-        int statusCode;
-        if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
-                frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
-                frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
-            statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
-        } else if (frame.evLowBattery == 1) {
-            statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
-        } else if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 0 ||
-                frame.stLayer2NotInPlace == 0 || frame.stLayer3NotInPlace == 0 ||
-                frame.stLayer4NotInPlace == 0 || frame.stLayer5NotInPlace == 0)) {
-            statusCode = com.lora.cn.ui.constants.LogStatus.ONLINE.code;
-        } else if (frame.stPowerLockOn == 1) {
-            statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
-        } else if (frame.stPowerLockOn == 0) {
-            statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
-        } else if (frame.evManualTake == 1) {
-            statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
-        } else if (frame.evManualPut == 1) {
-            statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
-        } else {
-            statusCode = 0;
-        }
+        int statusCode = 0;
+        try {
+            java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(frame.deviceId);
+            if (logs != null && !logs.isEmpty()) {
+                statusCode = logs.get(0).getStatusCode();
+            }
+        } catch (Exception ignored) {}
         if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
             String msg = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "设备丢失" : "低电量报警";
             AlertItem item = buildAlertItem(frame, msg);
             alertQueue.addLast(item);
-            pendingAlertCount = alertQueue.size();
-            android.util.Log.i(TAG, "Global alert queued: " + msg + ", deviceId=" + (frame != null ? frame.deviceId : ""));
+            updatePendingBadge();
             startAlertRinging30s();
             showLatestPending();
-            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("上行刷新")); } catch (Exception ignored) {}
-        } else if (statusCode == com.lora.cn.ui.constants.LogStatus.ONLINE.code
-                || statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
-                || statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
-                || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
-                || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code) {
+        } else {
             String devId = frame.deviceId;
             if (devId != null) {
                 java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
@@ -443,14 +422,11 @@ public class MainActivity extends AppCompatActivity {
                 }
                 alertQueue.clear();
                 alertQueue.addAll(newQueue);
-                pendingAlertCount = alertQueue.size();
-                offlineAlertedKeys.remove(devId + ":offline");
-                com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, false);
+                updatePendingBadge();
                 if (pendingAlertCount == 0) {
                     if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                     if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
                 } else {
-                    updatePendingBadge();
                     showLatestPending();
                 }
             }
