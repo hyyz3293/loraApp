@@ -152,11 +152,17 @@ public class TerminalCheckFragment extends Fragment {
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 int sc = t.getStatus();
                 String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc);
-                if ("在线".equals(st)) online++;
-                else if ("异常取走".equals(st)) abnormal++;
-                else offline++;
-                int bl = t.getBatteryLevel();
-                if (bl <= 20) batteryLow++; else batteryNormal++;
+                if ("在线".equals(st)) {
+                    online++;
+                } else if ("异常取走".equals(st)) {
+                    abnormal++;
+                } else {
+                    offline++;
+                }
+                if (!"离线".equals(st)) {
+                    int bl = t.getBatteryLevel();
+                    if (bl <= 20) batteryLow++; else batteryNormal++;
+                }
 
                 // 解析最近一条上行，统计“正常取走”
                 List<com.lora.cn.ui.model.LogInfo> logs = dbHelper.getLogsByTerminalId(t.getTerminalId());
@@ -405,15 +411,20 @@ public class TerminalCheckFragment extends Fragment {
             sb.append("终端ID,设备编号,终端名称,状态,电量,信号\n");
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus());
+                String battery = "离线".equals(st) ? "" : String.valueOf(Math.max(0, Math.min(100, t.getBatteryLevel())));
+                String signal = "离线".equals(st) ? "" : String.valueOf(Math.max(0, Math.min(4, t.getSignalStrength())));
                 sb.append(t.getTerminalId()).append(',')
                         .append(t.getDeviceCode() != null ? t.getDeviceCode() : "").append(',')
                         .append(t.getTerminalName() != null ? t.getTerminalName() : "").append(',')
                         .append(st).append(',')
-                        .append(t.getBatteryLevel()).append(',')
-                        .append(t.getSignalStrength())
+                        .append(battery).append(',')
+                        .append(signal)
                         .append('\n');
             }
-            java.io.File dir = new java.io.File(getContext().getFilesDir(), "exports");
+
+            java.io.File dir = requireContext().getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
+            if (dir == null) dir = requireContext().getExternalFilesDir(null);
+            if (dir == null) dir = new java.io.File(requireContext().getFilesDir(), "exports");
             if (!dir.exists()) dir.mkdirs();
             String fileName = "terminal_check_" + System.currentTimeMillis() + ".csv";
             java.io.File file = new java.io.File(dir, fileName);
