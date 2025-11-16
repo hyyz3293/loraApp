@@ -22,6 +22,8 @@ public class LogInfoAlertAdapter extends BaseQuickAdapter<LogInfo, QuickViewHold
     public void setOnHandleClickListener(OnHandleClickListener l) { this.onHandleClickListener = l; }
     private java.util.Set<Long> allowedHandleIds = new java.util.HashSet<>();
     public void setAllowedHandleIds(java.util.Set<Long> ids) { this.allowedHandleIds = ids != null ? ids : new java.util.HashSet<>(); }
+    private java.util.Map<Long, String> handledSourceLabels = new java.util.HashMap<>();
+    public void setHandledSourceLabels(java.util.Map<Long, String> map) { this.handledSourceLabels = map != null ? map : new java.util.HashMap<>(); }
 
     @Override
     protected void onBindViewHolder(@NonNull QuickViewHolder holder, int i, @Nullable LogInfo item) {
@@ -37,7 +39,12 @@ public class LogInfoAlertAdapter extends BaseQuickAdapter<LogInfo, QuickViewHold
         setTextOrPlaceholder(logTime, item.getCreateTime());
 
         // 设置状态字段，包含特殊状态的圆点和颜色
-        setStatusWithDot(logStatus, com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode()));
+        String displayStatus = com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode());
+        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+            String src = handledSourceLabels.get(item.getId());
+            if (src != null && src.length() > 0) displayStatus = src;
+        }
+        setStatusWithDot(logStatus, displayStatus);
 
         // 设置名称字段 - 使用终端名称
         setTextOrPlaceholder(logName, item.getTerminalName());
@@ -131,10 +138,10 @@ public class LogInfoAlertAdapter extends BaseQuickAdapter<LogInfo, QuickViewHold
         Drawable dotDrawable = null;
         int textColor = Color.parseColor("#666666"); // 默认颜色
         
-        if ("设备丢失".equals(status) || "设备离线".equals(status)) {
+        if ("设备丢失".equals(status) || "设备离线".equals(status) || status.contains("设备丢失") || status.contains("设备离线")) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_red);
             textColor = Color.parseColor("#D30000");
-        } else if ("低电量报警".equals(status)) {
+        } else if ("低电量报警".equals(status) || status.contains("低电量报警")) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_orange);
             textColor = Color.parseColor("#FF9F0F");
         } else if ("在线".equals(status)) {

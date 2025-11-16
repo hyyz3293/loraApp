@@ -393,6 +393,27 @@ public class TerminalDetailFragment extends Fragment {
                         }
                     });
                 });
+                java.util.Map<Long, String> handledLabels = new java.util.HashMap<>();
+                try {
+                    for (LogInfo li : logs) {
+                        if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                            long ref = parseMillis(li.getHandleTime());
+                            if (ref <= 0) ref = parseMillis(li.getCreateTime());
+                            LogInfo src = null;
+                            for (LogInfo x : logs) {
+                                int s2 = x.getStatusCode();
+                                boolean candidate2 = s2 == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                                        || s2 == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                                        || s2 == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                                if (!candidate2) continue;
+                                long tt2 = parseMillis(x.getCreateTime());
+                                if (tt2 > 0 && tt2 <= ref) { if (src == null || tt2 >= parseMillis(src.getCreateTime())) src = x; }
+                            }
+                            if (src != null) handledLabels.put(li.getId(), com.lora.cn.ui.constants.LogStatus.toText(src.getStatusCode()));
+                        }
+                    }
+                } catch (Exception ignored) {}
+                logAdapter.setHandledSourceLabels(handledLabels);
                 logAdapter.submitList(logs);
                 rvLogs.setVisibility(View.VISIBLE);
                 tvNoLogs.setVisibility(View.GONE);

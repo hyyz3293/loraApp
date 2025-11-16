@@ -253,6 +253,38 @@ public class LogInfoFragment extends Fragment {
             if (nt == null || at >= nt) allowedIds.add(v.getId());
         }
         logInfoAdapter.setAllowedHandleIds(allowedIds);
+        java.util.Map<Long, String> handledLabels = new java.util.HashMap<>();
+        try {
+            com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
+            java.util.Map<String, java.util.List<LogInfo>> byDev = new java.util.HashMap<>();
+            for (LogInfo li : out) {
+                String dev = li.getTerminalId();
+                java.util.List<LogInfo> lst = byDev.get(dev);
+                if (lst == null) { lst = new java.util.ArrayList<>(); byDev.put(dev, lst); }
+                lst.add(li);
+            }
+            for (java.util.List<LogInfo> lst : byDev.values()) {
+                for (LogInfo li : lst) {
+                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                        long ref = parseMillis(li.getHandleTime());
+                        if (ref <= 0) ref = parseMillis(li.getCreateTime());
+                        java.util.List<LogInfo> logs = db.getLogsByTerminalId(li.getTerminalId());
+                        LogInfo origin = null;
+                        for (LogInfo x : logs) {
+                            int s = x.getStatusCode();
+                            boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                                    || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                                    || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                            if (!candidate) continue;
+                            long tt = parseMillis(x.getCreateTime());
+                            if (tt > 0 && tt <= ref) { if (origin == null || tt >= parseMillis(origin.getCreateTime())) origin = x; }
+                        }
+                        if (origin != null) handledLabels.put(li.getId(), com.lora.cn.ui.constants.LogStatus.toText(origin.getStatusCode()));
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        logInfoAdapter.setHandledSourceLabels(handledLabels);
         if (logInfoAdapter != null) logInfoAdapter.submitList(out);
     }
 }
