@@ -43,6 +43,7 @@ public class TerminalCheckFragment extends Fragment {
     
     // 新增适配器
     private TerminalChartAdapter terminalChartAdapter;
+    private java.util.List<com.lora.cn.ui.model.TerminalChartData> chartDataList = new java.util.ArrayList<>();
     
     // 数据字段
     private int remainingCount = 1;
@@ -295,6 +296,8 @@ public class TerminalCheckFragment extends Fragment {
                     list.add(data);
                 }
             }
+            chartDataList.clear();
+            chartDataList.addAll(list);
             terminalChartAdapter.submitList(list);
         } catch (Exception e) {
             Log.e("TerminalCheckFragment", "初始化图表适配器真实数据失败: " + e.getMessage());
@@ -405,21 +408,43 @@ public class TerminalCheckFragment extends Fragment {
     
     private void exportExcel() {
         try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            java.util.List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
             StringBuilder sb = new StringBuilder();
-            sb.append("终端ID,设备编号,终端名称,状态,电量,信号\n");
-            for (com.lora.cn.ui.model.Terminal t : terminals) {
-                String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus());
-                String battery = "离线".equals(st) ? "" : String.valueOf(Math.max(0, Math.min(100, t.getBatteryLevel())));
-                String signal = "离线".equals(st) ? "" : String.valueOf(Math.max(0, Math.min(4, t.getSignalStrength())));
-                sb.append(t.getTerminalId()).append(',')
-                        .append(t.getDeviceCode() != null ? t.getDeviceCode() : "").append(',')
-                        .append(t.getTerminalName() != null ? t.getTerminalName() : "").append(',')
-                        .append(st).append(',')
-                        .append(battery).append(',')
-                        .append(signal)
-                        .append('\n');
+            String NL = "\r\n";
+            sb.append("分类,在线,离线,正常取走,异常丢失,电量正常,低电量,离线(电量)").append(NL);
+            for (com.lora.cn.ui.model.TerminalChartData d : chartDataList) {
+                String label = d.getOnlineTitle();
+                java.util.Map<String, Integer> online = new java.util.HashMap<>();
+                for (com.lora.cn.ui.model.ChartItem ci : d.getOnlineChartItems()) {
+                    String k = ci.getKey();
+                    String v = ci.getValue();
+                    String num = v.replaceAll("[^0-9]", "");
+                    int n = num.isEmpty() ? 0 : Integer.parseInt(num);
+                    online.put(k, n);
+                }
+                java.util.Map<String, Integer> battery = new java.util.HashMap<>();
+                for (com.lora.cn.ui.model.ChartItem ci2 : d.getBatteryChartItems()) {
+                    String k = ci2.getKey();
+                    String v = ci2.getValue();
+                    String num = v.replaceAll("[^0-9]", "");
+                    int n = num.isEmpty() ? 0 : Integer.parseInt(num);
+                    battery.put(k, n);
+                }
+                int on = online.getOrDefault("在线", 0);
+                int off = online.getOrDefault("离线", 0);
+                int take = online.getOrDefault("正常取走", 0);
+                int loss = online.getOrDefault("异常丢失", 0);
+                int bn = battery.getOrDefault("电量正常", 0);
+                int bl = battery.getOrDefault("低电量", 0);
+                int boff = battery.getOrDefault("离线", 0);
+                sb.append(label).append(',')
+                        .append(on).append(',')
+                        .append(off).append(',')
+                        .append(take).append(',')
+                        .append(loss).append(',')
+                        .append(bn).append(',')
+                        .append(bl).append(',')
+                        .append(boff)
+                        .append(NL);
             }
 
             java.io.File dir = requireContext().getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
@@ -429,6 +454,7 @@ public class TerminalCheckFragment extends Fragment {
             String fileName = "terminal_check_" + System.currentTimeMillis() + ".csv";
             java.io.File file = new java.io.File(dir, fileName);
             java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
+            fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
             fos.write(sb.toString().getBytes("UTF-8"));
             fos.flush(); fos.close();
             Toast.makeText(getContext(), "导出成功: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
