@@ -528,6 +528,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void handleAlertHandled(String devId, int statusCode) {
+        try {
+            java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
+            for (AlertItem ai : alertQueue) {
+                boolean sameDev = devId != null && devId.equalsIgnoreCase(ai.code);
+                boolean abnormal = "设备丢失".equals(ai.title) || "低电量报警".equals(ai.title) || "设备离线".equals(ai.title);
+                if (!(sameDev && abnormal)) newQueue.addLast(ai);
+            }
+            alertQueue.clear();
+            alertQueue.addAll(newQueue);
+            lastAlertTypes.remove(devId);
+            pendingAlertCount = alertQueue.size();
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            updatePendingBadge();
+        } catch (Exception ignored) {}
+    }
+
     private AlertItem buildAlertItem(LoRaFrameParser.ParsedFrame frame, String msg) {
         String name = "";
         String code = frame != null ? frame.deviceId : "";

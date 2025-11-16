@@ -113,6 +113,12 @@ public class LogInfoFragment extends Fragment {
                     try {
                         android.app.Activity a = getActivity();
                         if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                            ((com.lora.cn.ui.activity.MainActivity) a).handleAlertHandled(item.getDeviceId(), s);
+                        }
+                    } catch (Exception ignored) {}
+                    try {
+                        android.app.Activity a = getActivity();
+                        if (a instanceof com.lora.cn.ui.activity.MainActivity) {
                             ((com.lora.cn.ui.activity.MainActivity) a).updatePendingBadge();
                         }
                     } catch (Exception ignored) {}

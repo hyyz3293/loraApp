@@ -1548,7 +1548,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("handle_time", handleTime == null ? "" : handleTime);
         values.put("handle_remark", handleRemark == null ? "" : handleRemark);
         try {
-            return db.update(TABLE_LOGS, values, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(logId)});
+            int r = db.update(TABLE_LOGS, values, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(logId)});
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("处理刷新:" + logId)); } catch (Exception ignored) {}
+            return r;
         } finally {
             db.close();
         }

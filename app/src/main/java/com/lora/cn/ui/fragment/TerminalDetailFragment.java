@@ -383,6 +383,12 @@ public class TerminalDetailFragment extends Fragment {
                                     } catch (Exception ignored) {}
                                 }
                                 loadLogs();
+                                try {
+                                    android.app.Activity a = getActivity();
+                                    if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                                        ((com.lora.cn.ui.activity.MainActivity) a).handleAlertHandled(item.getDeviceId(), s);
+                                    }
+                                } catch (Exception ignored) {}
                             } catch (Exception ignored) {}
                         }
                     });
