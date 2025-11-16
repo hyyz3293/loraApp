@@ -232,6 +232,11 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
     }
 
+    @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
+    public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
+        try { updatePendingBadge(); } catch (Exception ignored) {}
+    }
+
 //    private void startTestTimer() {
 //        try {
 //            if (testUplinkHandler == null) {
@@ -368,6 +373,12 @@ public class MainActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> confirmLogout());
 
         tvUserName.setOnClickListener(v -> toggleUserInfo());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try { updatePendingBadge(); } catch (Exception ignored) {}
     }
 
     // 全局报警窗口状态
@@ -584,8 +595,8 @@ public class MainActivity extends AppCompatActivity {
                 String devId = t.getTerminalId();
                 String key = devId + ":offline";
                 if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    boolean spAlerted = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("offline_alerted_" + devId, false);
-                    if (!offlineAlertedKeys.contains(key) && !spAlerted) {
+                    //boolean spAlerted = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("offline_alerted_" + devId, false);
+                    if (!offlineAlertedKeys.contains(key) && !false) {
                         AlertItem item = new AlertItem();
                         item.title = "设备离线";
                         item.name = t.getTerminalName();
@@ -595,13 +606,13 @@ public class MainActivity extends AppCompatActivity {
                         pendingAlertCount = alertQueue.size();
                         try { databaseHelper.addLog(devId, t.getTerminalName(), devId, "设备离线", "", "", "功能码=离线"); } catch (Exception ignored) {}
                         offlineAlertedKeys.add(key);
-                        com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, true);
+                        //com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, true);
                         startAlertRinging30s();
                         queuedAny = true;
                     }
                 } else {
                     offlineAlertedKeys.remove(key);
-                    com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, false);
+                    //com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, false);
                 }
             }
             if (queuedAny || !alertQueue.isEmpty()) {

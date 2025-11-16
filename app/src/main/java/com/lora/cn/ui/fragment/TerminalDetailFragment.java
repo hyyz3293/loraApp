@@ -123,6 +123,11 @@ public class TerminalDetailFragment extends Fragment {
             com.lora.cn.database.dao.TerminalDao dao = new com.lora.cn.database.dao.TerminalDao(dbHelper);
             com.lora.cn.ui.model.Terminal t = dao.getTerminalByDeviceId(deviceId);
             if (t != null) {
+                long nowMs = System.currentTimeMillis();
+                long timeoutMs = 60 * 1000L;
+                if (t.getUpdateTime() <= 0 || nowMs - t.getUpdateTime() > timeoutMs) {
+                    t.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
+                }
                 // 顶部基础信息
                 tvTitle.setText(!TextUtils.isEmpty(t.getTerminalName()) ? t.getTerminalName() : "-");
                 tvDeviceId.setText(!TextUtils.isEmpty(t.getTerminalId()) ? t.getTerminalId() : deviceId);

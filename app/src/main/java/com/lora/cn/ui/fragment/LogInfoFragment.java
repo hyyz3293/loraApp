@@ -73,6 +73,12 @@ public class LogInfoFragment extends Fragment {
         logInfoAdapter.setOnHandleClickListener(item -> showHandleDialogForLog(item));
         recyclerView.setAdapter(logInfoAdapter);
         applyTimeFilter();
+        try {
+            android.app.Activity a = getActivity();
+            if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                ((com.lora.cn.ui.activity.MainActivity) a).updatePendingBadge();
+            }
+        } catch (Exception ignored) {}
         
         // 设置点击事件
         logInfoAdapter.setOnItemClickListener((adapter, view, position) -> {
@@ -104,6 +110,12 @@ public class LogInfoFragment extends Fragment {
                         } catch (Exception ignored) {}
                     }
                     initLogData();
+                    try {
+                        android.app.Activity a = getActivity();
+                        if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                            ((com.lora.cn.ui.activity.MainActivity) a).updatePendingBadge();
+                        }
+                    } catch (Exception ignored) {}
                 } catch (Exception ignored) {}
             }
         });
