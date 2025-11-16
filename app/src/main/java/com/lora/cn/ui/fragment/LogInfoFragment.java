@@ -32,6 +32,26 @@ public class LogInfoFragment extends Fragment {
     private String selectedStartTime = "";
     private String selectedEndTime = "";
     private List<LogInfo> baseLogs = new ArrayList<>();
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (!org.greenrobot.eventbus.EventBus.getDefault().isRegistered(this)) {
+            org.greenrobot.eventbus.EventBus.getDefault().register(this);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        if (org.greenrobot.eventbus.EventBus.getDefault().isRegistered(this)) {
+            org.greenrobot.eventbus.EventBus.getDefault().unregister(this);
+        }
+        super.onStop();
+    }
+
+    @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
+    public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
+        try { initLogData(); } catch (Exception ignored) {}
+    }
 
     @Nullable
     @Override
@@ -210,9 +230,10 @@ public class LogInfoFragment extends Fragment {
                     || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                     || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
             if (candidate) {
-                LogInfo prev = latestHandleMap.get(li.getTerminalId());
+                String key = (li.getTerminalId() == null ? "" : li.getTerminalId()) + ":" + s;
+                LogInfo prev = latestHandleMap.get(key);
                 long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
-                if (prev == null || t >= prevT) latestHandleMap.put(li.getTerminalId(), li);
+                if (prev == null || t >= prevT) latestHandleMap.put(key, li);
             } else {
                 boolean normal = s == com.lora.cn.ui.constants.LogStatus.ONLINE.code
                         || s == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
