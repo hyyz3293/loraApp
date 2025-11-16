@@ -313,6 +313,7 @@ public class MainActivity extends AppCompatActivity {
         menuTabs.add(new MenuTab("日志信息", 1));
         menuTabs.add(new MenuTab("清点终端", 2));
         menuTabs.add(new MenuTab("设置", 3));
+        //menuTabs.add(new MenuTab("报警处理", -1));
         
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
@@ -355,7 +356,12 @@ public class MainActivity extends AppCompatActivity {
         menuTabAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener<MenuTab>() {
             @Override
             public void onClick(@NonNull BaseQuickAdapter<MenuTab, ?> baseQuickAdapter, @NonNull View view, int position) {
-                switchToTab(position);
+                com.lora.cn.ui.model.MenuTab tab = menuTabs.get(position);
+                if (tab != null && "报警处理".equals(tab.getTitle())) {
+                    openAlertPendingList();
+                } else {
+                    switchToTab(position);
+                }
             }
         });
         
@@ -478,7 +484,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void updatePendingBadge() {
+    public void updatePendingBadge() {
         try {
             java.util.Set<String> distinct = new java.util.HashSet<>();
             for (AlertItem ai : alertQueue) {

@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -84,9 +85,9 @@ public class PasswordChangeFragment extends Fragment {
                 changePassword();
             }
         });
-        if (ivToggleOld != null) ivToggleOld.setOnClickListener(v -> togglePasswordVisibility(etOldPassword));
-        if (ivToggleNew != null) ivToggleNew.setOnClickListener(v -> togglePasswordVisibility(etNewPassword));
-        if (ivToggleConfirm != null) ivToggleConfirm.setOnClickListener(v -> togglePasswordVisibility(etConfirmPassword));
+        if (ivToggleOld != null) ivToggleOld.setOnClickListener(v -> { togglePasswordVisibility(etOldPassword); setToggleIcon((ImageView) v, etOldPassword); });
+        if (ivToggleNew != null) ivToggleNew.setOnClickListener(v -> { togglePasswordVisibility(etNewPassword); setToggleIcon((ImageView) v, etNewPassword); });
+        if (ivToggleConfirm != null) ivToggleConfirm.setOnClickListener(v -> { togglePasswordVisibility(etConfirmPassword); setToggleIcon((ImageView) v, etConfirmPassword); });
     }
 
     private void togglePasswordVisibility(EditText editText) {
@@ -101,6 +102,13 @@ public class PasswordChangeFragment extends Fragment {
             editText.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
         }
         editText.setSelection(editText.getText() != null ? editText.getText().length() : 0);
+    }
+
+    private void setToggleIcon(ImageView iv, EditText et) {
+        if (iv == null || et == null) return;
+        int type = et.getInputType();
+        boolean visible = (type & android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD;
+        iv.setImageResource(visible ? R.mipmap.ic_see : R.mipmap.ic_see_no);
     }
 
     private boolean validatePasswordInput() {

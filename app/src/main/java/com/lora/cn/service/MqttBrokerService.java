@@ -102,7 +102,16 @@ public class MqttBrokerService extends Service {
             broker.startServer(config);
             currentPort = port;
             String ipSummary = getIpSummary();
+            String primaryIp = "";
+            if (ipSummary != null && !ipSummary.isEmpty()) {
+                String[] arr = ipSummary.split(",");
+                if (arr.length > 0) primaryIp = arr[0].trim();
+            }
             Log.i(CHANNEL_ID, "MQTT Broker started. Port=" + port + ", IPs=" + ipSummary);
+            com.blankj.utilcode.util.SPUtils.getInstance().put("mqtt_ip_summary", ipSummary == null ? "" : ipSummary);
+            if (!primaryIp.isEmpty()) {
+                com.blankj.utilcode.util.SPUtils.getInstance().put("mqtt_primary_ip", primaryIp);
+            }
             // 标记就绪并广播
             com.blankj.utilcode.util.SPUtils.getInstance().put("mqtt_local_broker_ready", true);
             Intent ready = new Intent("com.lora.cn.MQTT_BROKER_READY");

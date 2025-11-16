@@ -133,6 +133,12 @@ public class AlertPendingListFragment extends Fragment {
                         } catch (Exception ignored) {}
                     }
                     loadAlerts();
+                    try {
+                        androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                        if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                            ((com.lora.cn.ui.activity.MainActivity) a).updatePendingBadge();
+                        }
+                    } catch (Exception ignored) {}
                 } catch (Exception ignored) {}
             }
         });

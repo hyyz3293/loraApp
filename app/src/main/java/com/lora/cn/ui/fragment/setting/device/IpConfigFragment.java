@@ -103,7 +103,18 @@ public class IpConfigFragment extends Fragment {
     }
 
     private void loadCurrentNetworkInfo() {
-        // 加载已保存的网关IP到输入框
+        String mqttIp = SPUtils.getInstance().getString("mqtt_primary_ip", "");
+        if (!TextUtils.isEmpty(mqttIp) && mqttIp.contains(".")) {
+            String[] parts = mqttIp.split("\\.");
+            if (parts.length == 4) {
+                ip1.setText(parts[0]);
+                ip2.setText(parts[1]);
+                ip3.setText(parts[2]);
+                ip4.setText(parts[3]);
+                return;
+            }
+        }
+
         String savedIp = SPUtils.getInstance().getString("gateway_ip", "");
         if (!TextUtils.isEmpty(savedIp) && savedIp.contains(".")) {
             String[] parts = savedIp.split("\\.");
@@ -112,12 +123,10 @@ public class IpConfigFragment extends Fragment {
                 ip2.setText(parts[1]);
                 ip3.setText(parts[2]);
                 ip4.setText(parts[3]);
+                return;
             }
         }
 
-        // 加载已保存的账号密码（当前布局不支持账号密码输入）
-
-        // 若未保存或当前输入为空，尝试自动获取WiFi网关并填充
         boolean inputsEmpty = TextUtils.isEmpty(safeText(ip1))
                 && TextUtils.isEmpty(safeText(ip2))
                 && TextUtils.isEmpty(safeText(ip3))
