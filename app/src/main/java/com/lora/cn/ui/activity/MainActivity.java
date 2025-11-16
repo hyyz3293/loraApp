@@ -518,7 +518,10 @@ public class MainActivity extends AppCompatActivity {
             int count = distinct.size();
             pendingAlertCount = count;
             if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(count));
-            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+            if (llAlertPendingSmall != null) {
+                boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
+                llAlertPendingSmall.setVisibility(!bigVisible && count > 0 ? View.VISIBLE : View.GONE);
+            }
             android.util.Log.d(TAG, "updatePendingBadge count=" + count + ", queueSize=" + alertQueue.size());
         } catch (Exception e) {
             android.util.Log.e(TAG, "更新待处理徽标失败", e);
