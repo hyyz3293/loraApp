@@ -27,9 +27,12 @@ public class PasswordChangeFragment extends Fragment {
     private EditText etConfirmPassword;
     private TextView btnCancelPassword;
     private TextView btnSavePassword;
-    private View ivToggleOld;
-    private View ivToggleNew;
-    private View ivToggleConfirm;
+    private android.widget.ImageView ivToggleOld;
+    private android.widget.ImageView ivToggleNew;
+    private android.widget.ImageView ivToggleConfirm;
+    private boolean oldVisible = false;
+    private boolean newVisible = false;
+    private boolean confirmVisible = false;
 
     private DatabaseManager databaseManager;
     private User currentUser;
@@ -85,16 +88,14 @@ public class PasswordChangeFragment extends Fragment {
                 changePassword();
             }
         });
-        if (ivToggleOld != null) ivToggleOld.setOnClickListener(v -> { togglePasswordVisibility(etOldPassword); setToggleIcon((ImageView) v, etOldPassword); });
-        if (ivToggleNew != null) ivToggleNew.setOnClickListener(v -> { togglePasswordVisibility(etNewPassword); setToggleIcon((ImageView) v, etNewPassword); });
-        if (ivToggleConfirm != null) ivToggleConfirm.setOnClickListener(v -> { togglePasswordVisibility(etConfirmPassword); setToggleIcon((ImageView) v, etConfirmPassword); });
+        if (ivToggleOld != null) ivToggleOld.setOnClickListener(v -> { oldVisible = !oldVisible; applyVisibility(etOldPassword, oldVisible); ivToggleOld.setImageResource(oldVisible ? R.mipmap.ic_see : R.mipmap.ic_see_no); });
+        if (ivToggleNew != null) ivToggleNew.setOnClickListener(v -> { newVisible = !newVisible; applyVisibility(etNewPassword, newVisible); ivToggleNew.setImageResource(newVisible ? R.mipmap.ic_see : R.mipmap.ic_see_no); });
+        if (ivToggleConfirm != null) ivToggleConfirm.setOnClickListener(v -> { confirmVisible = !confirmVisible; applyVisibility(etConfirmPassword, confirmVisible); ivToggleConfirm.setImageResource(confirmVisible ? R.mipmap.ic_see : R.mipmap.ic_see_no); });
     }
 
-    private void togglePasswordVisibility(EditText editText) {
+    private void applyVisibility(EditText editText, boolean visible) {
         if (editText == null) return;
-        int currentType = editText.getInputType();
-        boolean isPassword = (currentType & android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD;
-        if (isPassword) {
+        if (visible) {
             editText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
             editText.setTransformationMethod(null);
         } else {
@@ -102,13 +103,6 @@ public class PasswordChangeFragment extends Fragment {
             editText.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
         }
         editText.setSelection(editText.getText() != null ? editText.getText().length() : 0);
-    }
-
-    private void setToggleIcon(ImageView iv, EditText et) {
-        if (iv == null || et == null) return;
-        int type = et.getInputType();
-        boolean visible = (type & android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) == android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD;
-        iv.setImageResource(visible ? R.mipmap.ic_see : R.mipmap.ic_see_no);
     }
 
     private boolean validatePasswordInput() {
