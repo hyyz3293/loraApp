@@ -398,6 +398,7 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.Deque<AlertItem> alertQueue = new java.util.ArrayDeque<>();
     private AlertItem currentAlert = null;
     private android.media.MediaPlayer alertPlayer;
+    private final java.util.Map<String, Integer> lastAlertTypes = new java.util.HashMap<>();
     private final java.util.Set<String> offlineAlertedKeys = new java.util.HashSet<>();
     private android.os.Handler alertEvaluateHandler;
     private final Runnable alertEvaluateRunnable = new Runnable() {
@@ -422,12 +423,21 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (Exception ignored) {}
         if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+            String devId = frame.deviceId;
             String msg = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "设备丢失" : "低电量报警";
-            AlertItem item = buildAlertItem(frame, msg);
-            alertQueue.addLast(item);
-            updatePendingBadge();
-            startAlertRinging30s();
-            showLatestPending();
+            Integer last = lastAlertTypes.get(devId);
+            if (last == null || last != statusCode) {
+                AlertItem item = buildAlertItem(frame, msg);
+                alertQueue.addLast(item);
+                lastAlertTypes.put(devId, statusCode);
+                updatePendingBadge();
+                startAlertRinging30s();
+                showLatestPending();
+            } else {
+                updatePendingBadge();
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
+            }
         } else {
             String devId = frame.deviceId;
             if (devId != null) {
@@ -439,6 +449,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 alertQueue.clear();
                 alertQueue.addAll(newQueue);
+                lastAlertTypes.remove(devId);
                 updatePendingBadge();
                 if (pendingAlertCount == 0) {
                     if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
@@ -593,31 +604,29 @@ public class MainActivity extends AppCompatActivity {
             boolean queuedAny = false;
             for (com.lora.cn.ui.model.Terminal t : all) {
                 String devId = t.getTerminalId();
-                String key = devId + ":offline";
                 if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    boolean spAlerted = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("offline_alerted_" + devId, false);
-                    if (!offlineAlertedKeys.contains(key) && !spAlerted) {
+                    Integer last = lastAlertTypes.get(devId);
+                    if (last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
                         AlertItem item = new AlertItem();
                         item.title = "设备离线";
                         item.name = t.getTerminalName();
                         item.code = devId;
                         item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                         alertQueue.addLast(item);
+                        lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
                         pendingAlertCount = alertQueue.size();
                         try { databaseHelper.addLog(devId, t.getTerminalName(), devId, "设备离线", "", "", "功能码=离线"); } catch (Exception ignored) {}
-                        offlineAlertedKeys.add(key);
-                        com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, true);
                         startAlertRinging30s();
                         queuedAny = true;
                     }
                 } else {
-                    offlineAlertedKeys.remove(key);
-                    com.blankj.utilcode.util.SPUtils.getInstance().put("offline_alerted_" + devId, false);
+                    lastAlertTypes.remove(devId);
                 }
             }
             if (queuedAny || !alertQueue.isEmpty()) {
                 showLatestPending();
             }
+            updatePendingBadge();
             try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
         } catch (Exception ignored) {}
     }

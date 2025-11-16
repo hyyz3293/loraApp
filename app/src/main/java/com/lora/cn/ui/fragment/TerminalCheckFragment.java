@@ -408,9 +408,11 @@ public class TerminalCheckFragment extends Fragment {
     
     private void exportExcel() {
         try {
-            StringBuilder sb = new StringBuilder();
             String NL = "\r\n";
-            sb.append("分类,在线,离线,正常取走,异常丢失,电量正常,低电量,离线(电量)").append(NL);
+            StringBuilder sbStatus = new StringBuilder();
+            StringBuilder sbBattery = new StringBuilder();
+            sbStatus.append("分类,在线,离线,正常取走,异常丢失").append(NL);
+            sbBattery.append("分类,电量正常,低电量,离线").append(NL);
             for (com.lora.cn.ui.model.TerminalChartData d : chartDataList) {
                 String label = d.getOnlineTitle();
                 java.util.Map<String, Integer> online = new java.util.HashMap<>();
@@ -436,11 +438,13 @@ public class TerminalCheckFragment extends Fragment {
                 int bn = battery.getOrDefault("电量正常", 0);
                 int bl = battery.getOrDefault("低电量", 0);
                 int boff = battery.getOrDefault("离线", 0);
-                sb.append(label).append(',')
+                sbStatus.append(label).append(',')
                         .append(on).append(',')
                         .append(off).append(',')
                         .append(take).append(',')
-                        .append(loss).append(',')
+                        .append(loss)
+                        .append(NL);
+                sbBattery.append(label).append(',')
                         .append(bn).append(',')
                         .append(bl).append(',')
                         .append(boff)
@@ -451,13 +455,18 @@ public class TerminalCheckFragment extends Fragment {
             if (dir == null) dir = requireContext().getExternalFilesDir(null);
             if (dir == null) dir = new java.io.File(requireContext().getFilesDir(), "exports");
             if (!dir.exists()) dir.mkdirs();
-            String fileName = "terminal_check_" + System.currentTimeMillis() + ".csv";
-            java.io.File file = new java.io.File(dir, fileName);
-            java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
-            fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
-            fos.write(sb.toString().getBytes("UTF-8"));
-            fos.flush(); fos.close();
-            Toast.makeText(getContext(), "导出成功: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            long ts = System.currentTimeMillis();
+            java.io.File fileStatus = new java.io.File(dir, "terminal_check_status_" + ts + ".csv");
+            java.io.File fileBattery = new java.io.File(dir, "terminal_check_battery_" + ts + ".csv");
+            java.io.FileOutputStream fos1 = new java.io.FileOutputStream(fileStatus);
+            fos1.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+            fos1.write(sbStatus.toString().getBytes("UTF-8"));
+            fos1.flush(); fos1.close();
+            java.io.FileOutputStream fos2 = new java.io.FileOutputStream(fileBattery);
+            fos2.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+            fos2.write(sbBattery.toString().getBytes("UTF-8"));
+            fos2.flush(); fos2.close();
+            Toast.makeText(getContext(), "导出成功: \n" + fileStatus.getAbsolutePath() + "\n" + fileBattery.getAbsolutePath(), Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(getContext(), "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
