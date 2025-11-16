@@ -359,8 +359,24 @@ public class TerminalDetailFragment extends Fragment {
                     }
                 }
                 java.util.Set<Long> allowedIds = new java.util.HashSet<>();
+                java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
+                for (LogInfo li : logs) {
+                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                        long t = parseMillis(li.getCreateTime());
+                        Long prev = lastHandledTime.get(li.getTerminalId());
+                        if (prev == null || t >= prev) lastHandledTime.put(li.getTerminalId(), t);
+                    }
+                }
                 for (LogInfo v : latest.values()) allowedIds.add(v.getId());
-                logAdapter.setAllowedHandleIds(allowedIds);
+                java.util.Set<Long> filteredIds = new java.util.HashSet<>();
+                for (LogInfo v : logs) {
+                    if (allowedIds.contains(v.getId())) {
+                        Long ht = lastHandledTime.get(v.getTerminalId());
+                        long at = parseMillis(v.getCreateTime());
+                        if (ht == null || at > ht) filteredIds.add(v.getId());
+                    }
+                }
+                logAdapter.setAllowedHandleIds(filteredIds);
                 logAdapter.setOnHandleClickListener(item -> {
                     com.lora.cn.utils.DialogUtils.showRemarkDialog(requireContext(), "确认处理", "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
                         @Override

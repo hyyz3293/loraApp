@@ -218,6 +218,7 @@ public class LogInfoFragment extends Fragment {
         long endMs = parseMillis(selectedEndTime);
         java.util.Map<String, LogInfo> latestHandleMap = new java.util.HashMap<>();
         java.util.Map<String, Long> lastNormalTime = new java.util.HashMap<>();
+        java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
         for (LogInfo li : src) {
             String ct = li != null ? li.getCreateTime() : null;
             long t = parseMillis(ct);
@@ -244,13 +245,20 @@ public class LogInfoFragment extends Fragment {
                     Long prev = lastNormalTime.get(li.getTerminalId());
                     if (prev == null || t >= prev) lastNormalTime.put(li.getTerminalId(), t);
                 }
+                if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                    Long prevH = lastHandledTime.get(li.getTerminalId());
+                    if (prevH == null || t >= prevH) lastHandledTime.put(li.getTerminalId(), t);
+                }
             }
         }
         java.util.Set<Long> allowedIds = new java.util.HashSet<>();
         for (LogInfo v : latestHandleMap.values()) {
             Long nt = lastNormalTime.get(v.getTerminalId());
+            Long ht = lastHandledTime.get(v.getTerminalId());
             long at = parseMillis(v.getCreateTime());
-            if (nt == null || at >= nt) allowedIds.add(v.getId());
+            boolean afterNormal = nt == null || at >= nt;
+            boolean afterHandled = ht == null || at > ht;
+            if (afterNormal && afterHandled) allowedIds.add(v.getId());
         }
         logInfoAdapter.setAllowedHandleIds(allowedIds);
         java.util.Map<Long, String> handledLabels = new java.util.HashMap<>();

@@ -79,6 +79,7 @@ public class AlertPendingListFragment extends Fragment {
                 }
             }
             java.util.Map<String, Long> lastNormalTime = new java.util.HashMap<>();
+            java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
             for (LogInfo li : all) {
                 int s = li.getStatusCode();
                 boolean normal = s == com.lora.cn.ui.constants.LogStatus.ONLINE.code
@@ -92,13 +93,20 @@ public class AlertPendingListFragment extends Fragment {
                     Long prev = lastNormalTime.get(key);
                     if (prev == null || t >= prev) lastNormalTime.put(key, t);
                 }
+                if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                    long t = parseMillis(li.getCreateTime());
+                    String key = li.getTerminalId();
+                    Long prev = lastHandledTime.get(key);
+                    if (prev == null || t >= prev) lastHandledTime.put(key, t);
+                }
             }
             java.util.List<LogInfo> pending = new java.util.ArrayList<>(latest.values());
             java.util.List<LogInfo> filtered = new java.util.ArrayList<>();
             for (LogInfo li : pending) {
                 Long nt = lastNormalTime.get(li.getTerminalId());
+                Long ht = lastHandledTime.get(li.getTerminalId());
                 long at = parseMillis(li.getCreateTime());
-                if (nt == null || at >= nt) filtered.add(li);
+                if ((nt == null || at >= nt) && (ht == null || at > ht)) filtered.add(li);
             }
             adapter.submitList(filtered);
             java.util.Set<Long> ids = new java.util.HashSet<>();
