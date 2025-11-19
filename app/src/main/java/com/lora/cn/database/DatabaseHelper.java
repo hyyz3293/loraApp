@@ -704,6 +704,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.close();
         } catch (Exception ignored) {}
     }
+
+    public void debugLogAdminRoleAndUser() {
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            long rid = -1;
+            android.database.Cursor rc = db.rawQuery("SELECT " + COLUMN_ROLE_ID + " FROM " + TABLE_ROLES + " WHERE " + COLUMN_ROLE_NAME + "='管理员'", null);
+            if (rc.moveToFirst()) rid = rc.getLong(0);
+            rc.close();
+            android.util.Log.d("DatabaseHelper", "管理员角色查询结果 roleId=" + rid);
+
+            android.database.Cursor uc = db.rawQuery("SELECT " + COLUMN_USER_ID + ", " + COLUMN_USER_ACCOUNT + ", " + COLUMN_USER_ROLE_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + "='admin'", null);
+            if (uc.moveToFirst()) {
+                long uid = uc.getLong(0);
+                String acc = uc.getString(1);
+                long urid = uc.getLong(2);
+                android.util.Log.d("DatabaseHelper", "默认用户查询结果 userId=" + uid + ", account=" + acc + ", roleId=" + urid);
+            } else {
+                android.util.Log.d("DatabaseHelper", "默认用户查询结果: 未找到admin账号");
+            }
+            uc.close();
+            db.close();
+        } catch (Exception e) {
+            android.util.Log.e("DatabaseHelper", "debugLogAdminRoleAndUser异常: " + e.getMessage());
+        }
+    }
     
     /**
      * 插入初始权限数据

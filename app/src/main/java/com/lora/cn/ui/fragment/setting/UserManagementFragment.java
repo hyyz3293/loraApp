@@ -120,6 +120,24 @@ public class UserManagementFragment extends Fragment {
         try {
             com.lora.cn.database.DatabaseHelper.getInstance(requireContext()).ensureDefaultAdminRoleAssigned();
             allUsers = databaseManager.getAllUsers();
+            if (allUsers != null) {
+                for (com.lora.cn.database.entity.User u : allUsers) {
+                    try {
+                        if (u.getRole() == null) {
+                            com.lora.cn.database.entity.Role r = databaseManager.getRoleById((int) u.getRoleId());
+                            u.setRole(r);
+                        }
+                        if (u.getPosition() == null) {
+                            com.lora.cn.database.entity.Position p = databaseManager.getPositionById(u.getPositionId());
+                            u.setPosition(p);
+                        }
+                        if (u.getDepartment() == null) {
+                            com.lora.cn.database.entity.Department d = databaseManager.getDepartmentById(u.getDepartmentId());
+                            u.setDepartment(d);
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
             userAdapter.submitList(allUsers);
         } catch (Exception e) {
             LogUtils.e("UserManagementFragment", "加载用户列表失败: " + e.getMessage());
