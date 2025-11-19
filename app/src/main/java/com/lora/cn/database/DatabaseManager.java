@@ -313,6 +313,21 @@ public class DatabaseManager {
     public List<Department> getAllDepartments() {
         return departmentDao.getAllDepartments();
     }
+
+//    public void ensureDefaultDepartmentsSeeded() {
+//        try {
+//            if (departmentDao.getDepartmentCount() == 0) {
+//                String[] defaults = new String[]{"神经科", "内科", "外科", "急诊科", "ICU", "儿科"};
+//                for (int i = 0; i < defaults.length; i++) {
+//                    Department d = new Department();
+//                    d.setDepartmentName(defaults[i]);
+//                    d.setSortOrder(i + 1);
+//                    d.setStatus(1);
+//                    departmentDao.insertDepartment(d);
+//                }
+//            }
+//        } catch (Exception ignored) {}
+//    }
     
     /**
      * 检查科室名称是否存在

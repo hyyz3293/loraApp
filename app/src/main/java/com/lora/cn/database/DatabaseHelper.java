@@ -667,6 +667,38 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
     }
+
+    public void ensureDefaultAdminRoleAssigned() {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            long adminRid = -1;
+            android.database.Cursor rc = db.rawQuery("SELECT " + COLUMN_ROLE_ID + " FROM " + TABLE_ROLES + " WHERE " + COLUMN_ROLE_NAME + "='管理员'", null);
+            if (rc.moveToFirst()) adminRid = rc.getLong(0);
+            rc.close();
+            if (adminRid <= 0) {
+                ContentValues roleValues = new ContentValues();
+                roleValues.put(COLUMN_ROLE_NAME, "管理员");
+                roleValues.put(COLUMN_ROLE_DESCRIPTION, "系统管理员，拥有所有权限");
+                roleValues.put(COLUMN_ROLE_SORT_ORDER, 1);
+                roleValues.put(COLUMN_ROLE_STATUS, 1);
+                adminRid = db.insert(TABLE_ROLES, null, roleValues);
+                db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + ") SELECT " + adminRid + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
+            }
+
+            android.database.Cursor c = db.rawQuery("SELECT " + COLUMN_USER_ID + ", " + COLUMN_USER_ROLE_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + "='admin' OR " + COLUMN_USER_NAME + "='管理员'", null);
+            while (c.moveToNext()) {
+                long uid = c.getLong(0);
+                long currentRid = c.getLong(1);
+                if (adminRid > 0 && currentRid != adminRid) {
+                    ContentValues up = new ContentValues();
+                    up.put(COLUMN_USER_ROLE_ID, adminRid);
+                    db.update(TABLE_USERS, up, COLUMN_USER_ID + "=?", new String[]{String.valueOf(uid)});
+                }
+            }
+            c.close();
+            db.close();
+        } catch (Exception ignored) {}
+    }
     
     /**
      * 插入初始权限数据

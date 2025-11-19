@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.blankj.utilcode.util.LogUtils;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.Category;
 import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.Position;
 import com.lora.cn.database.entity.Role;
@@ -118,6 +119,7 @@ public class UserManagementFragment extends Fragment {
     
     private void loadUsers() {
         try {
+            com.lora.cn.database.DatabaseHelper.getInstance(requireContext()).ensureDefaultAdminRoleAssigned();
             allUsers = databaseManager.getAllUsers();
             userAdapter.submitList(allUsers);
         } catch (Exception e) {
@@ -155,10 +157,7 @@ public class UserManagementFragment extends Fragment {
             spinnerDepartment.setEnabled(true);
             spinnerDepartment.setClickable(true);
             spinnerDepartment.setPrompt("选择科室");
-            spinnerDepartment.setOnTouchListener((v, event) -> {
-                spinnerDepartment.performClick();
-                return false;
-            });
+            spinnerDepartment.setOnTouchListener(null);
         } catch (Exception ignored) {}
         
         // 如果是编辑模式，填充数据
@@ -228,6 +227,8 @@ public class UserManagementFragment extends Fragment {
     
     private void setupSpinners(Spinner spinnerRole, Spinner spinnerPosition, Spinner spinnerDepartment) {
         try {
+            com.lora.cn.database.DatabaseHelper.getInstance(requireContext()).ensureDefaultAdminRoleAssigned();
+
             // 设置角色下拉框
             List<Role> roles = databaseManager.getActiveRoles();
             List<String> roleNames = new ArrayList<>();
@@ -251,15 +252,19 @@ public class UserManagementFragment extends Fragment {
             spinnerPosition.setTag(positions);
             
             // 设置科室下拉框
-            List<Department> departments = databaseManager.getAllDepartments();
+            //allDepartments = dbManager.getCategoriesByGroupId(1);
+            List<Category> departments = databaseManager.getCategoriesByGroupId(1);
             List<String> departmentNames = new ArrayList<>();
-            for (Department department : departments) {
-                departmentNames.add(department.getDepartmentName());
+            for (Category department : departments) {
+                departmentNames.add(department.getCategoryName());
             }
             ArrayAdapter<String> departmentAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, departmentNames);
             departmentAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerDepartment.setAdapter(departmentAdapter);
             spinnerDepartment.setTag(departments);
+            if (!departments.isEmpty()) {
+                spinnerDepartment.setSelection(0);
+            }
             if (departments.isEmpty()) {
                 Toast.makeText(requireContext(), "科室列表为空，请先在科室管理中添加科室", Toast.LENGTH_SHORT).show();
             }
@@ -274,6 +279,7 @@ public class UserManagementFragment extends Fragment {
         Object tag = spinner.getTag();
         if (tag instanceof List) {
             List<?> items = (List<?>) tag;
+            boolean matched = false;
             for (int i = 0; i < items.size(); i++) {
                 Object item = items.get(i);
                 long itemId = 0;
@@ -286,7 +292,17 @@ public class UserManagementFragment extends Fragment {
                 }
                 if (itemId == targetId) {
                     spinner.setSelection(i);
+                    matched = true;
                     break;
+                }
+            }
+            if (!matched && (items.size() > 0) && items.get(0) instanceof Role) {
+                for (int i = 0; i < items.size(); i++) {
+                    Role r = (Role) items.get(i);
+                    if (r != null && "管理员".equals(r.getRoleName())) {
+                        spinner.setSelection(i);
+                        break;
+                    }
                 }
             }
         }
@@ -354,6 +370,22 @@ public class UserManagementFragment extends Fragment {
         }
         Position selectedPosition = getSelectedItem(spinnerPosition, Position.class);
         Department selectedDepartment = getSelectedItem(spinnerDepartment, Department.class);
+        if (selectedDepartment == null) {
+            try {
+                Object tagDept = spinnerDepartment.getTag();
+                java.util.List<Department> deptList;
+                if (tagDept instanceof java.util.List) {
+                    deptList = (java.util.List<Department>) tagDept;
+                } else {
+                    deptList = databaseManager.getAllDepartments();
+                }
+                int idx = spinnerDepartment.getSelectedItemPosition();
+                if (deptList != null && !deptList.isEmpty()) {
+                    if (idx >= 0 && idx < deptList.size()) selectedDepartment = deptList.get(idx);
+                    else selectedDepartment = deptList.get(0);
+                }
+            } catch (Exception ignored) {}
+        }
         
         if (selectedRole == null) {
             Toast.makeText(requireContext(), "请选择用户角色", Toast.LENGTH_SHORT).show();
