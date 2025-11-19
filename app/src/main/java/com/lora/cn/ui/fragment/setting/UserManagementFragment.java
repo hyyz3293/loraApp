@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.blankj.utilcode.util.LogUtils;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
-import com.lora.cn.database.entity.Category;
 import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.Position;
 import com.lora.cn.database.entity.Role;
@@ -253,10 +252,10 @@ public class UserManagementFragment extends Fragment {
             
             // 设置科室下拉框
             //allDepartments = dbManager.getCategoriesByGroupId(1);
-            List<Category> departments = databaseManager.getCategoriesByGroupId(1);
+            List<Department> departments = databaseManager.getAllDepartments();
             List<String> departmentNames = new ArrayList<>();
-            for (Category department : departments) {
-                departmentNames.add(department.getCategoryName());
+            for (Department department : departments) {
+                departmentNames.add(department.getDepartmentName());
             }
             ArrayAdapter<String> departmentAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, departmentNames);
             departmentAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);

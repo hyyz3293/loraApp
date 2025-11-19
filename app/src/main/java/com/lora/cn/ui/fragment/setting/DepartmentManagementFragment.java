@@ -22,9 +22,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
+import com.lora.cn.database.entity.Department;
 import com.lora.cn.database.entity.User;
 import com.lora.cn.database.entity.Category;
 import com.lora.cn.ui.adapter.CategoryAdapter;
+import com.lora.cn.ui.adapter.DepartmentAdapter;
 import com.lora.cn.utils.DialogUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.constant.SpConstant;
@@ -38,9 +40,9 @@ public class DepartmentManagementFragment extends Fragment {
     private TextView btnAdd;
     private RecyclerView rvDepartments;
     
-    private CategoryAdapter departmentAdapter;
+    private DepartmentAdapter departmentAdapter;
     private DatabaseManager dbManager;
-    private List<Category> allDepartments = new ArrayList<>();
+    private List<Department> allDepartments = new ArrayList<>();
     private long currentUserRoleId;
 
     @Nullable
@@ -79,7 +81,7 @@ public class DepartmentManagementFragment extends Fragment {
     }
     
     private void setupRecyclerView() {
-        departmentAdapter = new CategoryAdapter();
+        departmentAdapter = new DepartmentAdapter();
         rvDepartments.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvDepartments.setAdapter(departmentAdapter);
     }
@@ -125,7 +127,7 @@ public class DepartmentManagementFragment extends Fragment {
 
         departmentAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
             @Override
-            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
+            public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Category category = baseQuickAdapter.getItem(i);
                 if (category != null && hasPermission("setting")) {
                     deleteDepartmentByCategory(category);
@@ -140,7 +142,7 @@ public class DepartmentManagementFragment extends Fragment {
     
     private void loadDepartments() {
         try {
-            allDepartments = dbManager.getCategoriesByGroupId(1);
+            allDepartments = dbManager.getAllDepartments();
             departmentAdapter.submitList(allDepartments);
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载科室失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
