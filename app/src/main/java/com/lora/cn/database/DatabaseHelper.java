@@ -556,6 +556,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 插入默认管理员用户
         insertDefaultAdminUser(db);
+
+        // 插入默认科室数据（用于科室管理和用户管理的科室下拉）
+        db.execSQL("INSERT INTO " + TABLE_DEPARTMENTS + " (" + COLUMN_DEPARTMENT_NAME + ", " + COLUMN_DEPARTMENT_SORT_ORDER + ", " + COLUMN_DEPARTMENT_STATUS + ") VALUES ('科室1', 1, 1)");
+        db.execSQL("INSERT INTO " + TABLE_DEPARTMENTS + " (" + COLUMN_DEPARTMENT_NAME + ", " + COLUMN_DEPARTMENT_SORT_ORDER + ", " + COLUMN_DEPARTMENT_STATUS + ") VALUES ('科室2', 2, 1)");
+        db.execSQL("INSERT INTO " + TABLE_DEPARTMENTS + " (" + COLUMN_DEPARTMENT_NAME + ", " + COLUMN_DEPARTMENT_SORT_ORDER + ", " + COLUMN_DEPARTMENT_STATUS + ") VALUES ('科室3', 3, 1)");
     }
     
     /**

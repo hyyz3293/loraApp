@@ -102,35 +102,24 @@ public class DepartmentManagementFragment extends Fragment {
         }
         
         // 设置适配器点击监听器
-        // 点击分类项（作为科室项）
-        departmentAdapter.addOnItemChildClickListener(R.id.tv_group_fz, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
+        departmentAdapter.addOnItemChildClickListener(R.id.tv_department_edit, new BaseQuickAdapter.OnItemChildClickListener<Department>() {
             @Override
-            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
-                Category category = baseQuickAdapter.getItem(i);
-                if (category != null) {
-                    onItemClickItem(category);
-                }
-            }
-        });
-
-        departmentAdapter.addOnItemChildClickListener(R.id.tv_group_edit, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
-            @Override
-            public void onItemClick(@NonNull BaseQuickAdapter<Category, ?> baseQuickAdapter, @NonNull View view, int i) {
-                Category category = baseQuickAdapter.getItem(i);
-                if (category != null && hasPermission("setting")) {
-                    showEditDepartmentDialog(category);
+            public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
+                Department dept = baseQuickAdapter.getItem(i);
+                if (dept != null && hasPermission("setting")) {
+                    showEditDepartmentDialog(dept);
                 } else {
                     Toast.makeText(requireContext(), "您没有编辑科室的权限", Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
-        departmentAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Category>() {
+        departmentAdapter.addOnItemChildClickListener(R.id.tv_department_delete, new BaseQuickAdapter.OnItemChildClickListener<Department>() {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
-                Category category = baseQuickAdapter.getItem(i);
-                if (category != null && hasPermission("setting")) {
-                    deleteDepartmentByCategory(category);
+                Department dept = baseQuickAdapter.getItem(i);
+                if (dept != null && hasPermission("setting")) {
+                    deleteDepartment(dept);
                 } else {
                     Toast.makeText(requireContext(), "您没有删除科室的权限", Toast.LENGTH_SHORT).show();
                 }
@@ -164,7 +153,8 @@ public class DepartmentManagementFragment extends Fragment {
                         return;
                     }
                     try {
-                        long id = dbManager.addCategory(newValue, "", 1);
+                        int sort = dbManager.getDepartmentCount() + 1;
+                        long id = dbManager.addDepartment(newValue, sort, 1);
                         if (id > 0) {
                             Toast.makeText(requireContext(), "科室添加成功", Toast.LENGTH_SHORT).show();
                             loadDepartments();
@@ -178,12 +168,12 @@ public class DepartmentManagementFragment extends Fragment {
         );
     }
     
-    private void showEditDepartmentDialog(Category category) {
+    private void showEditDepartmentDialog(Department dept) {
         DialogUtils.showTextEditDialog(
                 getContext(),
                 "编辑科室",
                 "科室名称",
-                category.getCategoryName(),
+                dept.getDepartmentName(),
                 "",
                 newValue -> {
                     if (TextUtils.isEmpty(newValue)) {
@@ -191,8 +181,9 @@ public class DepartmentManagementFragment extends Fragment {
                         return;
                     }
                     try {
-                        boolean success = dbManager.updateCategory(category.getCategoryId(), newValue, "", 1);
-                        if (success) {
+                        dept.setDepartmentName(newValue);
+                        int r = dbManager.updateDepartment(dept);
+                        if (r > 0) {
                             Toast.makeText(requireContext(), "科室更新成功", Toast.LENGTH_SHORT).show();
                             loadDepartments();
                         } else {
@@ -209,14 +200,14 @@ public class DepartmentManagementFragment extends Fragment {
     
     // 科室以分组-分类的“科室”分组下的分类动态展示；新增/编辑/删除均操作Category表
     
-    private void deleteDepartmentByCategory(Category category) {
+    private void deleteDepartment(Department dept) {
         new AlertDialog.Builder(requireContext())
                 .setTitle("删除确认")
-                .setMessage("确定要删除科室 \"" + category.getCategoryName() + "\" 吗？")
+                .setMessage("确定要删除科室 \"" + dept.getDepartmentName() + "\" 吗？")
                 .setPositiveButton("删除", (dialog, which) -> {
                     try {
-                        boolean success = dbManager.deleteCategory(category.getCategoryId());
-                        if (success) {
+                        int r = dbManager.deleteDepartment(dept.getDepartmentId());
+                        if (r > 0) {
                             Toast.makeText(requireContext(), "科室删除成功", Toast.LENGTH_SHORT).show();
                             loadDepartments();
                         } else {
@@ -231,8 +222,8 @@ public class DepartmentManagementFragment extends Fragment {
     }
     
     // 点击事件处理方法
-    private void onItemClickItem(Category category) {
-        Toast.makeText(requireContext(), "点击了科室: " + category.getCategoryName(), Toast.LENGTH_SHORT).show();
+    private void onItemClickItem(Department dept) {
+        Toast.makeText(requireContext(), "点击了科室: " + dept.getDepartmentName(), Toast.LENGTH_SHORT).show();
     }
     
     // 已移除状态切换，分类不包含状态字段

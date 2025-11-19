@@ -252,6 +252,7 @@ public class UserManagementFragment extends Fragment {
             
             // 设置科室下拉框
             //allDepartments = dbManager.getCategoriesByGroupId(1);
+            databaseManager.ensureDefaultDepartmentsSeeded();
             List<Department> departments = databaseManager.getAllDepartments();
             List<String> departmentNames = new ArrayList<>();
             for (Department department : departments) {
