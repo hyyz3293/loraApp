@@ -24,6 +24,8 @@ public class LogInfoFragment extends Fragment {
     private RecyclerView recyclerView;
     private LogInfoAdapter logInfoAdapter;
     private DatabaseHelper databaseHelper;
+    private android.widget.Spinner spinnerLogType;
+    private android.widget.Spinner spinnerPolice;
     List<LogInfo> logList = new ArrayList<>();
     private android.view.View rlStart;
     private android.view.View rlEnd;
@@ -70,8 +72,30 @@ public class LogInfoFragment extends Fragment {
         rlEnd = view.findViewById(R.id.time_end_time);
         tvStart = view.findViewById(R.id.time_start_time_tv);
         tvEnd = view.findViewById(R.id.time_end_time_tv);
+        spinnerLogType = view.findViewById(R.id.log_type);
+        spinnerPolice = view.findViewById(R.id.spinner_police);
         if (rlStart != null) rlStart.setOnClickListener(v -> showStartPicker());
         if (rlEnd != null) rlEnd.setOnClickListener(v -> showEndPicker());
+        if (spinnerLogType != null) spinnerLogType.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View v, int pos, long id) { applyTimeFilter(); }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        if (spinnerPolice != null) spinnerPolice.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View v, int pos, long id) { applyTimeFilter(); }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        if (rlStart != null) rlStart.setOnLongClickListener(v -> {
+            selectedStartTime = "";
+            if (tvStart != null) tvStart.setText("开始时间");
+            applyTimeFilter();
+            return true;
+        });
+        if (rlEnd != null) rlEnd.setOnLongClickListener(v -> {
+            selectedEndTime = "";
+            if (tvEnd != null) tvEnd.setText("结束时间");
+            applyTimeFilter();
+            return true;
+        });
     }
 
     private void initLogData() {
@@ -216,6 +240,8 @@ public class LogInfoFragment extends Fragment {
         List<LogInfo> out = new java.util.ArrayList<>();
         long startMs = parseMillis(selectedStartTime);
         long endMs = parseMillis(selectedEndTime);
+        int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
+        int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
         java.util.Map<String, LogInfo> latestHandleMap = new java.util.HashMap<>();
         java.util.Map<String, Long> lastNormalTime = new java.util.HashMap<>();
         java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
@@ -225,6 +251,18 @@ public class LogInfoFragment extends Fragment {
             boolean keep = true;
             if (startMs > 0) keep = keep && t >= startMs;
             if (endMs > 0) keep = keep && t <= endMs;
+            if (keep) {
+                int sCode = li.getStatusCode();
+                boolean isAlarm = sCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        || sCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                        || sCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                boolean isHandled = sCode == com.lora.cn.ui.constants.LogStatus.HANDLED.code;
+                if (typeSel == 1 && !isAlarm) keep = false; // 报警日志
+                else if (typeSel == 2 && (isAlarm || isHandled)) keep = false; // 普通日志（非报警且非处理）
+                else if (typeSel == 3 && !isHandled) keep = false; // 处理日志
+                if (policeSel == 1 && !isHandled) keep = false; // 已处理
+                else if (policeSel == 2 && isHandled) keep = false; // 未处理
+            }
             if (keep) out.add(li);
             int s = li.getStatusCode();
             boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code

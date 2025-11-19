@@ -83,7 +83,7 @@ public class LoginActivity extends AppCompatActivity {
             btnLogin.setOnClickListener(v -> attemptLogin());
         }
 
-        ivPwdToggle.setImageResource(R.mipmap.ic_see);
+        ivPwdToggle.setImageResource(R.mipmap.ic_see_no);
         // 密码明暗文切换
         if (ivPwdToggle != null && etPwd != null) {
             ivPwdToggle.setOnClickListener(v -> togglePasswordVisibility());

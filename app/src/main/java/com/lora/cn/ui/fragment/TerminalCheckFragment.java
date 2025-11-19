@@ -230,11 +230,16 @@ public class TerminalCheckFragment extends Fragment {
                     int onlineCount = 0, offlineCount = 0;
 
                     for (com.lora.cn.ui.model.Terminal t : terminals) {
-                        // 动态匹配：终端四类分类ID只要有一个与当前分类ID相等，即归属该分类
+                        // 动态匹配：优先按分类ID匹配；未设置ID时回退按名称匹配
                         boolean match = (t.getDepartmentId() == c.getCategoryId())
                                 || (t.getRoomId() == c.getCategoryId())
                                 || (t.getNursingGroupId() == c.getCategoryId())
                                 || (t.getOtherId() == c.getCategoryId());
+                        if (!match) {
+                            String cname = c.getCategoryName();
+                            match = (cname != null && cname.equals(t.getDepartment()))
+                                    || (cname != null && cname.equals(t.getLocation()));
+                        }
                         if (!match) continue;
 
                         int sc2 = t.getStatus();
@@ -311,8 +316,7 @@ public class TerminalCheckFragment extends Fragment {
         isChecking = true;
         addTerminal.setText("清点中...");
         addTerminal.setEnabled(false);
-        
-        // 记录开始清点的日志
+
         try {
             DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
             com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
@@ -324,50 +328,42 @@ public class TerminalCheckFragment extends Fragment {
             logInfo.setAction("终端清点");
             logInfo.setOperationTime("");
             logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-            
             dbHelper.addLog(logInfo);
         } catch (Exception e) {
             Log.e("TerminalCheckFragment", "记录清点开始日志失败", e);
         }
-        
-        // 模拟清点过程（实际项目中这里应该调用相应的API）
-        new android.os.Handler().postDelayed(() -> {
-            // 清点完成
-            isChecking = false;
-            addTerminal.setText("开始清点");
-            addTerminal.setEnabled(true);
-            
-            // 减少剩余次数（管理员不减少）
-            if (!isAdmin) {
-                updateRemainingCount(remainingCount - 1);
+
+        com.lora.cn.utils.DialogUtils.CountingProgress cp = com.lora.cn.utils.DialogUtils.showCountingProgressDialog(requireContext(), "清点中...", 0);
+        final int totalSec = 60;
+        android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+        final int[] sec = {0};
+        Runnable r = new Runnable() {
+            @Override public void run() {
+                try {
+                    sec[0]++;
+                    int percent = Math.min(100, (int) Math.round(sec[0] * 100.0 / totalSec));
+                    com.lora.cn.utils.DialogUtils.updateCountingProgress(cp, percent);
+                    if (sec[0] < totalSec) {
+                        h.postDelayed(this, 1000);
+                    } else {
+                        com.lora.cn.utils.DialogUtils.dismissCountingProgress(cp);
+                        isChecking = false;
+                        addTerminal.setText("开始清点");
+                        addTerminal.setEnabled(true);
+                        if (!isAdmin) updateRemainingCount(remainingCount - 1);
+                        updateClearTime();
+                        refreshData();
+                        Toast.makeText(getContext(), "清点完成", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    try { com.lora.cn.utils.DialogUtils.dismissCountingProgress(cp); } catch (Exception ignored) {}
+                    isChecking = false;
+                    addTerminal.setText("开始清点");
+                    addTerminal.setEnabled(true);
+                }
             }
-            
-            // 更新清点时间
-            updateClearTime();
-            
-            // 刷新数据（这里可以调用API获取最新数据）
-            refreshData();
-            
-            // 记录清点完成的日志
-            try {
-                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                logInfo.setTerminalId("ALL");
-                logInfo.setTerminalName("所有终端");
-                logInfo.setDeviceId("SYSTEM");
-                logInfo.setStatusCode(0);
-                logInfo.setOperator("");
-                logInfo.setAction("终端清点");
-                logInfo.setOperationTime("");
-                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-                
-                dbHelper.addLog(logInfo);
-            } catch (Exception e) {
-                Log.e("TerminalCheckFragment", "记录清点完成日志失败", e);
-            }
-            
-            Toast.makeText(getContext(), "清点完成", Toast.LENGTH_SHORT).show();
-        }, 2000); // 模拟2秒的清点时间
+        };
+        h.postDelayed(r, 1000);
     }
     
     /**

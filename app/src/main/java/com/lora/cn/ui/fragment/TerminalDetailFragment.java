@@ -124,7 +124,7 @@ public class TerminalDetailFragment extends Fragment {
             com.lora.cn.ui.model.Terminal t = dao.getTerminalByDeviceId(deviceId);
             if (t != null) {
                 long nowMs = System.currentTimeMillis();
-                long timeoutMs = 60 * 1000L;
+                long timeoutMs = 10 * 60 * 1000L;
                 if (t.getUpdateTime() <= 0 || nowMs - t.getUpdateTime() > timeoutMs) {
                     t.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
@@ -203,9 +203,7 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
 
                 if (signalView != null && t.getStatus() != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    int rssiRaw = Math.max(0, Math.min(138, t.getRssi()));
-                    float percent = (138 - rssiRaw) * 100f / 138f;
-                    int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+                    int bars = Math.max(0, Math.min(4, t.getSignalStrength()));
                     signalView.setSignalStrength(bars);
                 }
             } else {

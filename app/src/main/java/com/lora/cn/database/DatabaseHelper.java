@@ -604,11 +604,38 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      */
     private void insertDefaultAdminUser(SQLiteDatabase db) {
         // 检查admin用户是否已存在
-        android.database.Cursor cursor = db.rawQuery("SELECT " + COLUMN_USER_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + " = 'admin'", null);
+        android.database.Cursor cursor = db.rawQuery("SELECT " + COLUMN_USER_ID + ", " + COLUMN_USER_ROLE_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + " = 'admin'", null);
         
         if (cursor.moveToFirst()) {
-            // admin用户已存在，不需要重复插入
+            // admin用户已存在，确保其角色为“管理员”
+            long userId = cursor.getLong(0);
+            long currentRoleId = cursor.getLong(1);
             cursor.close();
+
+            // 获取管理员角色ID（若不存在则创建）
+            android.database.Cursor rc = db.rawQuery("SELECT " + COLUMN_ROLE_ID + " FROM " + TABLE_ROLES + " WHERE " + COLUMN_ROLE_NAME + " = '管理员'", null);
+            long adminRoleId = -1;
+            if (rc.moveToFirst()) {
+                adminRoleId = rc.getLong(0);
+            }
+            rc.close();
+            if (adminRoleId == -1) {
+                ContentValues roleValues = new ContentValues();
+                roleValues.put(COLUMN_ROLE_NAME, "管理员");
+                roleValues.put(COLUMN_ROLE_DESCRIPTION, "系统管理员，拥有所有权限");
+                roleValues.put(COLUMN_ROLE_SORT_ORDER, 1);
+                roleValues.put(COLUMN_ROLE_STATUS, 1);
+                adminRoleId = db.insert(TABLE_ROLES, null, roleValues);
+                // 分配所有权限
+                db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + ") SELECT " + adminRoleId + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
+            }
+
+            if (adminRoleId > 0 && currentRoleId != adminRoleId) {
+                ContentValues up = new ContentValues();
+                up.put(COLUMN_USER_ROLE_ID, adminRoleId);
+                db.update(TABLE_USERS, up, COLUMN_USER_ID + "=?", new String[]{String.valueOf(userId)});
+                android.util.Log.d("DatabaseHelper", "已为默认管理员用户分配管理员角色: userId=" + userId + ", roleId=" + adminRoleId);
+            }
             return;
         }
         cursor.close();
@@ -1038,7 +1065,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
                 long nowMs = System.currentTimeMillis();
-                long timeoutMs = 60 * 1000L;
+                long timeoutMs = 10 * 60 * 1000L;
                 if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > timeoutMs) {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }

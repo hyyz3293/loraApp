@@ -6,7 +6,8 @@
     <LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent"
+        android:paddingRight="16dp" >
 
         <LinearLayout
             android:layout_weight="188"
@@ -136,7 +137,7 @@
                android:textColor="@color/white"
                android:textSize="11dp"
                android:textStyle="bold"
-               android:layout_width="84dp"
+               android:layout_width="wrap_content"
                android:layout_height="30dp" />
 
        </LinearLayout>

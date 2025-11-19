@@ -62,6 +62,11 @@ public class IpConfigFragment extends Fragment {
         ip2 = view.findViewById(R.id.ip2);
         ip3 = view.findViewById(R.id.ip3);
         ip4 = view.findViewById(R.id.ip4);
+        try {
+            connectBtn.setVisibility(View.GONE);
+            ip1.setEnabled(false); ip2.setEnabled(false); ip3.setEnabled(false); ip4.setEnabled(false);
+            ip1.setFocusable(false); ip2.setFocusable(false); ip3.setFocusable(false); ip4.setFocusable(false);
+        } catch (Exception ignored) {}
     }
 
     private void initListener() {
@@ -75,28 +80,7 @@ public class IpConfigFragment extends Fragment {
             }
         });
 
-        // 连接按钮：校验并保存网关IP
-        connectBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String s1 = safeText(ip1);
-                String s2 = safeText(ip2);
-                String s3 = safeText(ip3);
-                String s4 = safeText(ip4);
-
-                if (!isValidOctet(s1) || !isValidOctet(s2) || !isValidOctet(s3) || !isValidOctet(s4)) {
-                    Toast.makeText(requireContext(), "请输入有效的IP地址", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                String gatewayIp = s1 + "." + s2 + "." + s3 + "." + s4;
-                SPUtils.getInstance().put("gateway_ip", gatewayIp);
-
-                // 账号密码功能暂不支持（当前布局没有账号密码输入框）
-
-                Toast.makeText(requireContext(), "网关IP已保存: " + gatewayIp, Toast.LENGTH_SHORT).show();
-            }
-        });
+        // 移除连接按钮交互，IP仅回显
 
         // 自动获取按钮功能合并到连接按钮中
         // 用户点击连接按钮时，如果IP地址为空，自动尝试获取网关IP

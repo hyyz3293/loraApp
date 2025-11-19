@@ -148,6 +148,14 @@ public class DeviceListFragment extends Fragment {
         btnSearchTerminal.setText("搜索中...");
         
         Toast.makeText(getContext(), "正在搜索附近终端，请等待上行数据...", Toast.LENGTH_LONG).show();
+        // 开始一次新的搜索时，清空已发现列表，避免返回后数据丢失问题
+        try {
+            allTerminals.clear();
+            discoveredDeviceIds.clear();
+            deviceListAdapter.submitList(allTerminals);
+            deviceListAdapter.notifyDataSetChanged();
+            updateUI();
+        } catch (Exception ignored) {}
         
         // 3秒后恢复按钮状态
         btnSearchTerminal.postDelayed(() -> {
@@ -161,9 +169,17 @@ public class DeviceListFragment extends Fragment {
             DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
             // 从本地日志库中提取最近上行的设备，作为“附近终端”来源
             List<LogInfo> logs = dbHelper.getAllLogs();
-            allTerminals = new ArrayList<>();
-            // 为避免重复，重置本次会话的已发现设备集合
-            discoveredDeviceIds = new java.util.HashSet<>();
+            // 清理已添加到终端表的设备，不再展示在发现列表中
+            if (allTerminals != null && !allTerminals.isEmpty()) {
+                java.util.Iterator<com.lora.cn.database.entity.Terminal> it = allTerminals.iterator();
+                while (it.hasNext()) {
+                    com.lora.cn.database.entity.Terminal t = it.next();
+                    if (t != null && !TextUtils.isEmpty(t.getDeviceId()) && dbHelper.isTerminalExists(t.getDeviceId())) {
+                        it.remove();
+                        discoveredDeviceIds.remove(t.getDeviceId());
+                    }
+                }
+            }
 
             if (logs != null) {
                 for (LogInfo li : logs) {

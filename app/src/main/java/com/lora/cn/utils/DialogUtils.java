@@ -118,8 +118,8 @@ public class DialogUtils {
             
             try {
                 int number = Integer.parseInt(inputValue);
-                if (number < 0 || number > 999) {
-                    Toast.makeText(context, "请输入0-999之间的数字", Toast.LENGTH_SHORT).show();
+                if (number >= 0 && number > 100) {
+                    Toast.makeText(context, "请输入0-100之间的数字", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 
@@ -461,10 +461,18 @@ public class DialogUtils {
         dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
         android.view.View v = android.view.LayoutInflater.from(context).inflate(com.lora.cn.R.layout.dialog_counting_progress, null);
         dialog.setContentView(v);
-        android.view.Window w = dialog.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawableResource(android.R.color.transparent);
-            w.setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        dialog.setCancelable(false);
+        dialog.setCanceledOnTouchOutside(false);
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            android.view.WindowManager.LayoutParams lp = window.getAttributes();
+            lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.6);
+            lp.height = (int) (context.getResources().getDisplayMetrics().heightPixels * 0.2);
+            lp.gravity = android.view.Gravity.CENTER;
+            window.setAttributes(lp);
         }
         android.widget.TextView tvTitle = v.findViewById(com.lora.cn.R.id.tv_title);
         android.widget.TextView tvPercent = v.findViewById(com.lora.cn.R.id.tv_percent);
@@ -509,7 +517,7 @@ public class DialogUtils {
             window.setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
             android.view.WindowManager.LayoutParams lp = window.getAttributes();
             lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.6);
-            lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+            lp.height = (int) (context.getResources().getDisplayMetrics().heightPixels * 0.6);
             lp.gravity = android.view.Gravity.CENTER;
             window.setAttributes(lp);
         }

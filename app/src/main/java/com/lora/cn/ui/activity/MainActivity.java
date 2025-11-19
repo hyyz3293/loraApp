@@ -289,7 +289,7 @@ public class MainActivity extends AppCompatActivity {
             ivErrorSmall.setOnClickListener(v -> minimizePending());
         }
         if (llAlertPendingSmall != null) {
-            llAlertPendingSmall.setOnClickListener(v -> expandPending());
+            llAlertPendingSmall.setOnClickListener(v -> openAlertPendingList());
         }
         if (ivErrorClose != null) {
             ivErrorClose.setOnClickListener(v -> {
@@ -307,7 +307,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
         if (tvErrorComplete != null) {
-            tvErrorComplete.setOnClickListener(v -> openAlertPendingList());
+            tvErrorComplete.setOnClickListener(v -> showImmediateHandleDialog());
             tvErrorComplete.setText("确认处理");
         }
     }
@@ -363,7 +363,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(@NonNull BaseQuickAdapter<MenuTab, ?> baseQuickAdapter, @NonNull View view, int position) {
                 com.lora.cn.ui.model.MenuTab tab = menuTabs.get(position);
                 if (tab != null && "报警处理".equals(tab.getTitle())) {
-                    openAlertPendingList();
+                    showImmediateHandleDialog();
                 } else {
                     switchToTab(position);
                 }
@@ -373,6 +373,56 @@ public class MainActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> confirmLogout());
 
         tvUserName.setOnClickListener(v -> toggleUserInfo());
+    }
+
+    private void showImmediateHandleDialog() {
+        try {
+            AlertItem target = null;
+            if (!alertQueue.isEmpty()) {
+                target = alertQueue.peekLast();
+            } else {
+                com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(this);
+                java.util.List<com.lora.cn.ui.model.LogInfo> all = db.getAllLogs();
+                com.lora.cn.ui.model.LogInfo pick = null;
+                for (com.lora.cn.ui.model.LogInfo li : all) {
+                    int s = li.getStatusCode();
+                    boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                            || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                            || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                    if (!candidate) continue;
+                    if (pick == null) pick = li;
+                }
+                if (pick != null) {
+                    target = new AlertItem();
+                    target.title = com.lora.cn.ui.constants.LogStatus.toText(pick.getStatusCode());
+                    target.name = pick.getTerminalName();
+                    target.code = pick.getTerminalId();
+                    target.time = pick.getCreateTime();
+                    target.logId = pick.getId();
+                }
+            }
+            if (target == null) return;
+            String devHex = target.code != null ? target.code : "";
+            String title = "确认处理";
+            AlertItem finalTarget = target;
+            com.lora.cn.utils.DialogUtils.showRemarkDialog(this, title, "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
+                @Override
+                public void onConfirm(String remark) {
+                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                    String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                    try {
+                        if (finalTarget.logId > 0) databaseHelper.updateLogHandled(finalTarget.logId, user, time, remark);
+                        int mask = 0;
+                        if ("设备丢失".equals(finalTarget.title)) mask |= 0x00000001;
+                        if ("低电量报警".equals(finalTarget.title)) mask |= 0x00000002;
+                        if (mask != 0) {
+                            try { sendHandleDownlink(devHex, mask); } catch (Exception ignored) {}
+                        }
+                        handleAlertHandled(devHex, 0);
+                    } catch (Exception ignored) {}
+                }
+            });
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -480,12 +530,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void expandPending() {
-        if (!alertQueue.isEmpty()) {
-            showLatestPending();
-        } else {
-            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
-        }
+//        if (!alertQueue.isEmpty()) {
+//            showLatestPending();
+//        } else {
+//            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+//            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+//        }
+        openAlertPendingList();
     }
 
     private void handleCurrentAlert() {

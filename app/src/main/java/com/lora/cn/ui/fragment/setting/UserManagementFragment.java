@@ -151,6 +151,15 @@ public class UserManagementFragment extends Fragment {
         
         // 设置下拉框数据
         setupSpinners(spinnerRole, spinnerPosition, spinnerDepartment);
+        try {
+            spinnerDepartment.setEnabled(true);
+            spinnerDepartment.setClickable(true);
+            spinnerDepartment.setPrompt("选择科室");
+            spinnerDepartment.setOnTouchListener((v, event) -> {
+                spinnerDepartment.performClick();
+                return false;
+            });
+        } catch (Exception ignored) {}
         
         // 如果是编辑模式，填充数据
         boolean isEdit = user != null;
@@ -180,6 +189,19 @@ public class UserManagementFragment extends Fragment {
         } else {
             switchStatus.setChecked(true);
             rgGender.check(R.id.rb_male);
+            try {
+                Object tag = spinnerRole.getTag();
+                if (tag instanceof java.util.List) {
+                    java.util.List<Role> roles = (java.util.List<Role>) tag;
+                    for (int i = 0; i < roles.size(); i++) {
+                        Role r = roles.get(i);
+                        if (r != null && "管理员".equals(r.getRoleName())) {
+                            spinnerRole.setSelection(i);
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
         }
         
         String title = isEdit ? "编辑用户" : "新增用户";
@@ -238,7 +260,10 @@ public class UserManagementFragment extends Fragment {
             departmentAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerDepartment.setAdapter(departmentAdapter);
             spinnerDepartment.setTag(departments);
-            
+            if (departments.isEmpty()) {
+                Toast.makeText(requireContext(), "科室列表为空，请先在科室管理中添加科室", Toast.LENGTH_SHORT).show();
+            }
+
         } catch (Exception e) {
             LogUtils.e("UserManagementFragment", "设置下拉框数据失败: " + e.getMessage());
             Toast.makeText(requireContext(), "加载数据失败", Toast.LENGTH_SHORT).show();
@@ -319,6 +344,14 @@ public class UserManagementFragment extends Fragment {
         
         // 获取选中的角色、职位、科室
         Role selectedRole = getSelectedItem(spinnerRole, Role.class);
+        if (selectedRole == null) {
+            try {
+                List<Role> roles = databaseManager.getActiveRoles();
+                for (Role r : roles) {
+                    if (r != null && "管理员".equals(r.getRoleName())) { selectedRole = r; break; }
+                }
+            } catch (Exception ignored) {}
+        }
         Position selectedPosition = getSelectedItem(spinnerPosition, Position.class);
         Department selectedDepartment = getSelectedItem(spinnerDepartment, Department.class);
         

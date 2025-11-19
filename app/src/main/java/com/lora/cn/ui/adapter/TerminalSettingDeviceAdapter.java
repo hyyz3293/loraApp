@@ -61,11 +61,12 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
 
         volumeTitle.setText(item.getTitle());
         android.media.AudioManager am = (android.media.AudioManager) holder.itemView.getContext().getSystemService(Context.AUDIO_SERVICE);
-        int max = am != null ? am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) : 100;
-        int sysVol = am != null ? am.getStreamVolume(android.media.AudioManager.STREAM_MUSIC) : 50;
-        volumeSeekBar.setMax(max);
-        volumeSeekBar.setProgress(sysVol);
-        volumeValue.setText(String.valueOf(sysVol));
+        int sysMax = am != null ? am.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) : 15;
+        int sysVol = am != null ? am.getStreamVolume(android.media.AudioManager.STREAM_MUSIC) : 8;
+        int normalized = Math.round(sysVol * 100f / Math.max(1, sysMax));
+        volumeSeekBar.setMax(100);
+        volumeSeekBar.setProgress(normalized);
+        volumeValue.setText(String.valueOf(normalized));
 
         // 设置滑动监听
         volumeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -75,7 +76,9 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                     volumeValue.setText(String.valueOf(progress));
                     item.setVolume(String.valueOf(progress));
                     if (am != null) {
-                        am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, progress, 0);
+                        int newVol = Math.round(progress * Math.max(1, sysMax) / 100f);
+                        newVol = Math.max(0, Math.min(sysMax, newVol));
+                        am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, newVol, 0);
                     }
                 }
             }
@@ -87,7 +90,9 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
             public void onStopTrackingTouch(SeekBar seekBar) {
                 Context context = seekBar.getContext();
                 if (am != null) {
-                    am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, seekBar.getProgress(), 0);
+                    int newVol = Math.round(seekBar.getProgress() * Math.max(1, sysMax) / 100f);
+                    newVol = Math.max(0, Math.min(sysMax, newVol));
+                    am.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, newVol, 0);
                 }
                 Toast.makeText(context, "音量设置为: " + seekBar.getProgress(), Toast.LENGTH_SHORT).show();
             }
@@ -106,7 +111,11 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
         if (item.getValue() != null && !item.getValue().isEmpty()) {
             currentNum = item.getValue();
         }
-        numberValue.setText(currentNum);
+        if (item.getIndex() == 4) {
+            numberValue.setText(currentNum);
+        } else {
+            numberValue.setText(currentNum);
+        }
 
         // 设置点击监听，使用工具类显示对话框
         layoutNumber.setOnClickListener(v -> {
@@ -122,8 +131,9 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                     break;
                 case 4:
                     title = "低电量报警值";
-                    hint = "电量值";
-                    value = item.getValue() != null ? item.getValue() : "2";
+                    hint = "电量值(0-100)";
+                    value = item.getValue() != null ? item.getValue() : "20";
+                    unit = "%";
                     break;
                 case 5:
                     title = "回到首页时间设置";
@@ -140,10 +150,21 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                     value,
                     unit,
                     newValue -> {
-                        // 确认回调
-                        item.setValue(newValue);
-                        numberValue.setText(newValue);
-                        Toast.makeText(v.getContext(), "设置成功: " + newValue, Toast.LENGTH_SHORT).show();
+                        String out = newValue;
+                        if (item.getIndex() == 4) {
+                            try {
+                                int n = Integer.parseInt(newValue);
+                                n = Math.max(0, Math.min(100, n));
+                                out = String.valueOf(n);
+                            } catch (Exception ignored) {}
+                        }
+                        item.setValue(out);
+                        if (item.getIndex() == 4) {
+                            numberValue.setText(out + "%");
+                        } else {
+                            numberValue.setText(out);
+                        }
+                        Toast.makeText(v.getContext(), "设置成功: " + out + (item.getIndex()==4?"%":""), Toast.LENGTH_SHORT).show();
                     }
             );
         });

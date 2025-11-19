@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="360dp"
-    android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:paddingLeft="40dp"
+    android:paddingRight="40dp"
+    android:paddingTop="26dp"
+    android:gravity="center"
+    android:paddingBottom="26dp"
     android:background="@color/white">
 
     <LinearLayout
@@ -18,29 +22,41 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="清点中..."
-            android:textColor="@color/black"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textColor="#54595E"
+            android:textSize="20sp" />
 
         <TextView
             android:id="@+id/tv_percent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0%"
-            android:textColor="@color/black"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textColor="#54595E"
+            android:textSize="20sp" />
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        style="@android:style/Widget.ProgressBar.Horizontal"
+
+    <LinearLayout
+        android:gravity="center"
+        android:layout_marginTop="24dp"
+        android:paddingLeft="24dp"
+        android:background="@drawable/bg_add_progress"
+        android:paddingRight="24dp"
         android:layout_width="match_parent"
-        android:layout_height="20dp"
-        android:layout_marginTop="16dp"
-        android:progress="0"
-        android:max="100"
-        android:progressTint="#1586FF"
-        android:progressBackgroundTint="#E6EEF7" />
+        android:layout_height="48dp" >
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+
+            android:progress="0"
+            android:max="100"
+            android:indeterminateOnly="false"
+            android:progressDrawable="@drawable/progress_counting" />
+
+
+    </LinearLayout>
+
 
 </LinearLayout>

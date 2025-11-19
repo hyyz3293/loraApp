@@ -14,12 +14,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
-import com.lora.cn.ui.adapter.LogInfoAdapter;
 import com.lora.cn.ui.adapter.LogInfoAlertAdapter;
 import com.lora.cn.ui.model.LogInfo;
 import com.lora.cn.utils.DialogUtils;
-
-import java.util.ArrayList;
 import java.util.List;
 
 /**
