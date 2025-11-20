@@ -735,67 +735,67 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      */
     private void insertInitialPermissions(SQLiteDatabase db) {
         // 终端管理权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_list', '终端列表', 'terminal', '查看终端列表')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_add', '添加终端', 'terminal', '添加新终端设备')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_detail', '终端详情', 'terminal', '查看终端详细信息')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_edit', '编辑终端', 'terminal', '编辑终端信息')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_delete', '删除终端', 'terminal', '删除终端设备')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_mark', '标记终端', 'terminal', '标记终端状态')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_confirm', '确认处理', 'terminal', '确认终端处理结果')");
         
         // 日志管理权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('log_info', '日志信息', 'log', '查看日志信息')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('log_export', '导出日志', 'log', '导出日志文件')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('log_confirm', '确认处理', 'log', '确认日志处理结果')");
         
         // 清理终端权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('clean_terminal', '清理终端', 'clean', '清理终端数据')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('clean_export', '导出清理', 'clean', '导出清理数据')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('clean_start_count', '开始清点', 'clean', '开始清点操作')");
         
         // 设置权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('setting_device', '设备设置', 'setting', '设备相关设置')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('setting_sound', '声音设置', 'setting', '声音相关设置')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('setting_wifi', 'WiFi连接', 'setting', 'WiFi连接设置')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('setting_ip', 'IP配置', 'setting', 'IP地址配置')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('setting_count', '清点次数', 'setting', '清点次数设置')");
         
         // 角色管理权限（归属设置）
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('role_add', '新增角色', 'setting', '新增角色')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('role_edit', '编辑角色', 'setting', '编辑角色信息')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('role_delete', '删除角色', 'setting', '删除角色')");
         
         // 用户管理权限（归属设置）
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('user_add', '新增用户', 'setting', '新增用户账户')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('user_edit', '编辑用户', 'setting', '编辑用户信息')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('user_delete', '删除用户', 'setting', '删除用户账户')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('user_reset_password', '重置密码', 'setting', '重置用户密码')");
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('user_disable', '启用/禁用用户', 'setting', '启用或禁用用户账户')");
     }
     
@@ -806,42 +806,42 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         // 插入完整的树形权限数据，使用正确的SQL语法
         
         // Level 0 - 顶级权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('terminal_list', '终端列表', 'terminal', '终端管理模块', 1, NULL, 0, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('log_info', '日志信息', 'log', '日志管理模块', 1, NULL, 0, 2)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('clean_terminal', '清理终端', 'clean', '清理终端模块', 1, NULL, 0, 3)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('setting', '设置', 'setting', '系统设置模块', 1, NULL, 0, 4)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('role_management', '角色管理', 'setting', '角色管理模块', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting' LIMIT 1), 1, 5)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
@@ -849,14 +849,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 ") VALUES ('user_management', '用户管理', 'setting', '用户管理模块', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting' LIMIT 1), 1, 6)");
 
         // Level 1 - 终端列表的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('terminal_add', '添加终端', 'terminal', '添加新终端设备', 1, 1, 1, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
@@ -864,28 +864,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 ") VALUES ('terminal_detail', '终端详情', 'terminal', '查看终端详细信息', 1, 1, 1, 2)");
 
         // Level 2 - 终端详情的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('terminal_edit', '编辑', 'terminal', '编辑终端信息', 1, 8, 2, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('terminal_delete', '删除', 'terminal', '删除终端设备', 1, 8, 2, 2)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('terminal_mark', '标记', 'terminal', '标记终端状态', 1, 8, 2, 3)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
@@ -893,14 +893,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 ") VALUES ('terminal_confirm', '确认处理', 'terminal', '确认终端处理结果', 1, 8, 2, 4)");
 
         // Level 1 - 日志信息的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('log_export', '导出', 'log', '导出日志文件', 1, 2, 1, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
@@ -908,14 +908,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 ") VALUES ('log_confirm', '确认处理', 'log', '确认日志处理结果', 1, 2, 1, 2)");
 
         // Level 1 - 清理终端的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('clean_export', '导出', 'clean', '导出清理数据', 1, 3, 1, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
@@ -923,7 +923,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 ") VALUES ('clean_start_count', '开始清点', 'clean', '开始清点操作', 1, 3, 1, 2)");
 
         // Level 1 - 设置的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
@@ -933,28 +933,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
         // Level 2 - 设备设置的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('setting_sound', '声音设置', '设置相关', '声音相关设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('setting_wifi', 'WiFi连接', '设置相关', 'WiFi连接设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 2)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('setting_ip', 'IP配置', '设置相关', 'IP地址配置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 3)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
@@ -962,50 +962,71 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 ") VALUES ('setting_count', '清点次数', '设置相关', '清点次数设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 4)");
 
         // Level 1 - 角色管理的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('role_add', '新增', 'role', '新增角色', 1, 5, 1, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('role_edit', '编辑', 'role', '编辑角色信息', 1, 5, 1, 2)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('role_delete', '删除', 'role', '删除角色', 1, 5, 1, 3)");
 
-        // Level 1 - 用户管理的子权限
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        // Level 1 - 用户管理的子权限（挂载到 user_management）
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('user_add', '新增', 'user', '新增用户', 1, 6, 1, 1)");
+                ") VALUES ('user_add', '新增', 'setting', '新增用户', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='user_management' LIMIT 1), 1, 1)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('user_edit', '编辑', 'user', '编辑用户信息', 1, 6, 1, 2)");
+                ") VALUES ('user_edit', '编辑', 'setting', '编辑用户信息', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='user_management' LIMIT 1), 1, 2)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('user_delete', '删除', 'setting', '删除用户', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='user_management' LIMIT 1), 1, 3)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('user_reset_password', '重置密码', 'setting', '重置用户密码', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='user_management' LIMIT 1), 1, 4)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('user_disable', '启用/禁用', 'setting', '启用或禁用用户账户', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='user_management' LIMIT 1), 1, 5)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('user_delete', '删除', 'user', '删除用户', 1, 6, 1, 3)");
 
-        db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
