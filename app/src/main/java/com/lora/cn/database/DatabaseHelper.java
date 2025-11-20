@@ -839,14 +839,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('role_management', '角色管理', 'setting', '角色管理模块', 1, 4, 1, 5)");
+                ") VALUES ('role_management', '角色管理', 'setting', '角色管理模块', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting' LIMIT 1), 1, 5)");
 
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('user_management', '用户管理', 'setting', '用户管理模块', 1, 4, 1, 6)");
+                ") VALUES ('user_management', '用户管理', 'setting', '用户管理模块', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting' LIMIT 1), 1, 6)");
 
         // Level 1 - 终端列表的子权限
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
@@ -928,7 +928,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('setting_device', '设备设置', 'setting', '设备相关设置', 1, 4, 1, 1)");
+                ") VALUES ('setting_device', '设备设置', '设置相关', '设备相关设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting' LIMIT 1), 1, 1)");
 
 
 
@@ -938,28 +938,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('setting_sound', '声音设置', 'setting', '声音相关设置', 1, 16, 2, 1)");
+                ") VALUES ('setting_sound', '声音设置', '设置相关', '声音相关设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 1)");
 
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('setting_wifi', 'WiFi连接', 'setting', 'WiFi连接设置', 1, 16, 2, 2)");
+                ") VALUES ('setting_wifi', 'WiFi连接', '设置相关', 'WiFi连接设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 2)");
 
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('setting_ip', 'IP配置', 'setting', 'IP地址配置', 1, 16, 2, 3)");
+                ") VALUES ('setting_ip', 'IP配置', '设置相关', 'IP地址配置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 3)");
 
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('setting_count', '清点次数', 'setting', '清点次数设置', 1, 16, 2, 4)");
+                ") VALUES ('setting_count', '清点次数', '设置相关', '清点次数设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 4)");
 
         // Level 1 - 角色管理的子权限
         db.execSQL("INSERT INTO " + TABLE_PERMISSIONS + " (" +
