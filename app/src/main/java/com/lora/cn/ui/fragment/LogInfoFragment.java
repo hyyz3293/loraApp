@@ -160,8 +160,8 @@ public class LogInfoFragment extends Fragment {
                     String endStr = selectedEndTime;
                     int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
                     int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-                    totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, true);
-                    java.util.List<LogInfo> first = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, true, pageSize, currentPage);
+                    totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, false);
+                    java.util.List<LogInfo> first = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
                     displayedLogs.clear();
                     if (first != null) displayedLogs.addAll(first);
                     recalcAndSubmit(displayedLogs);
@@ -184,7 +184,7 @@ public class LogInfoFragment extends Fragment {
                         return;
                     }
                     currentPage++;
-                    java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, true, pageSize, currentPage);
+                    java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
                     if (next != null && !next.isEmpty()) {
                         displayedLogs.addAll(next);
                         recalcAndSubmit(displayedLogs);
@@ -406,8 +406,8 @@ public class LogInfoFragment extends Fragment {
         String startStr = selectedStartTime;
         String endStr = selectedEndTime;
         currentPage = 0;
-        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, true);
-        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, true, pageSize, currentPage);
+        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, false);
+        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
         displayedLogs.clear();
         if (out != null) displayedLogs.addAll(out);
         recalcAndSubmit(displayedLogs);
@@ -433,45 +433,33 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void recalcAndSubmit(java.util.List<LogInfo> list) {
-        java.util.Map<String, LogInfo> latestHandleMap = new java.util.HashMap<>();
-        java.util.Map<String, Long> lastNormalTime = new java.util.HashMap<>();
         java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
+        java.util.Map<String, LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
         for (LogInfo li : list) {
             String ct = li != null ? li.getCreateTime() : null;
             long t = parseMillis(ct);
             int s = li.getStatusCode();
+            if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                Long prevH = lastHandledTime.get(li.getTerminalId());
+                if (prevH == null || t >= prevH) lastHandledTime.put(li.getTerminalId(), t);
+                continue;
+            }
             boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                     || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                     || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
             if (candidate) {
                 String key = (li.getTerminalId() == null ? "" : li.getTerminalId()) + ":" + s;
-                LogInfo prev = latestHandleMap.get(key);
+                LogInfo prev = latestByDeviceStatus.get(key);
                 long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
-                if (prev == null || t >= prevT) latestHandleMap.put(key, li);
-            } else {
-                boolean normal = s == com.lora.cn.ui.constants.LogStatus.ONLINE.code
-                        || s == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
-                        || s == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
-                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
-                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
-                if (normal) {
-                    Long prev = lastNormalTime.get(li.getTerminalId());
-                    if (prev == null || t >= prev) lastNormalTime.put(li.getTerminalId(), t);
-                }
-                if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
-                    Long prevH = lastHandledTime.get(li.getTerminalId());
-                    if (prevH == null || t >= prevH) lastHandledTime.put(li.getTerminalId(), t);
-                }
+                if (prev == null || t >= prevT) latestByDeviceStatus.put(key, li);
             }
         }
         java.util.Set<Long> allowedIds = new java.util.HashSet<>();
-        for (LogInfo v : latestHandleMap.values()) {
-            Long nt = lastNormalTime.get(v.getTerminalId());
+        for (LogInfo v : latestByDeviceStatus.values()) {
             Long ht = lastHandledTime.get(v.getTerminalId());
             long at = parseMillis(v.getCreateTime());
-            boolean afterNormal = nt == null || at >= nt;
             boolean afterHandled = ht == null || at > ht;
-            if (afterNormal && afterHandled) allowedIds.add(v.getId());
+            if (afterHandled) allowedIds.add(v.getId());
         }
         if (!hasPermission("log_confirm")) allowedIds.clear();
         if (logInfoAdapter != null) logInfoAdapter.setAllowedHandleIds(allowedIds);

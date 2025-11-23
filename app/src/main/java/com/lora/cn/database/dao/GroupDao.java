@@ -35,7 +35,6 @@ public class GroupDao {
         values.put(DatabaseHelper.COLUMN_GROUP_DESCRIPTION, group.getGroupDescription());
         
         long result = db.insert(DatabaseHelper.TABLE_GROUPS, null, values);
-        db.close();
         
         return result;
     }
@@ -57,7 +56,6 @@ public class GroupDao {
             cursor.close();
         }
         
-        db.close();
         return group;
     }
     
@@ -78,7 +76,6 @@ public class GroupDao {
             cursor.close();
         }
         
-        db.close();
         return group;
     }
     
@@ -100,7 +97,6 @@ public class GroupDao {
             cursor.close();
         }
         
-        db.close();
         return groups;
     }
     
@@ -119,7 +115,6 @@ public class GroupDao {
         String[] whereArgs = {String.valueOf(group.getGroupId())};
         
         int result = db.update(DatabaseHelper.TABLE_GROUPS, values, whereClause, whereArgs);
-        db.close();
         
         return result;
     }

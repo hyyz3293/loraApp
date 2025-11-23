@@ -175,7 +175,12 @@ public class TerminalDao {
             int gnIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_NAMES);
             if (gnIdx != -1) terminal.setGroupNamesText(cursor.getString(gnIdx));
             long currentUserId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-            try { terminal.setFavorite(dbHelper.isFavoriteForUser(currentUserId, terminal.getTerminalId())); } catch (Exception ignored) {}
+            if (currentUserId > 0) {
+                try { terminal.setFavorite(dbHelper.isFavoriteForUser(currentUserId, terminal.getTerminalId())); } catch (Exception ignored) {}
+            } else {
+                int favIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE);
+                if (favIdx != -1) terminal.setFavorite(cursor.getInt(favIdx) == 1);
+            }
             terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME)));
             terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME)));
             // 读取电量、电压、RSSI
@@ -230,9 +235,12 @@ public class TerminalDao {
                 int gnIdx2 = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_NAMES);
                 if (gnIdx2 != -1) terminal.setGroupNamesText(cursor.getString(gnIdx2));
         long currentUserId2 = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-        try {
-            terminal.setFavorite(dbHelper.isFavoriteForUser(currentUserId2, terminal.getTerminalId()));
-        } catch (Exception ignored) {}
+        if (currentUserId2 > 0) {
+            try { terminal.setFavorite(dbHelper.isFavoriteForUser(currentUserId2, terminal.getTerminalId())); } catch (Exception ignored) {}
+        } else {
+            int favIdx2 = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE);
+            if (favIdx2 != -1) terminal.setFavorite(cursor.getInt(favIdx2) == 1);
+        }
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME)));
                 // 读取电量、电压、RSSI

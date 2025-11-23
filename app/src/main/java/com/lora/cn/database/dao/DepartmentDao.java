@@ -36,7 +36,6 @@ public class DepartmentDao {
         values.put(DatabaseHelper.COLUMN_DEPARTMENT_STATUS, department.getStatus());
         
         long result = db.insert(DatabaseHelper.TABLE_DEPARTMENTS, null, values);
-        db.close();
         
         return result;
     }
@@ -61,7 +60,6 @@ public class DepartmentDao {
             cursor.close();
         }
         
-        db.close();
         return departments;
     }
     
@@ -82,7 +80,6 @@ public class DepartmentDao {
             cursor.close();
         }
         
-        db.close();
         return department;
     }
     
@@ -103,7 +100,6 @@ public class DepartmentDao {
             cursor.close();
         }
         
-        db.close();
         return department;
     }
     
@@ -123,7 +119,6 @@ public class DepartmentDao {
         String[] whereArgs = {String.valueOf(department.getDepartmentId())};
         
         int result = db.update(DatabaseHelper.TABLE_DEPARTMENTS, values, whereClause, whereArgs);
-        db.close();
         
         return result;
     }
@@ -138,7 +133,6 @@ public class DepartmentDao {
         String[] whereArgs = {String.valueOf(departmentId)};
         
         int result = db.delete(DatabaseHelper.TABLE_DEPARTMENTS, whereClause, whereArgs);
-        db.close();
         
         return result;
     }
@@ -161,7 +155,6 @@ public class DepartmentDao {
             cursor.close();
         }
         
-        db.close();
         return exists;
     }
     

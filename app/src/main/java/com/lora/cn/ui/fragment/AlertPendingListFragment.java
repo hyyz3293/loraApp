@@ -61,6 +61,7 @@ public class AlertPendingListFragment extends Fragment {
     private void loadAlerts() {
         try {
             DatabaseHelper db = DatabaseHelper.getInstance(requireContext());
+            try { db.syncLowBatteryFlags(); } catch (Exception ignored) {}
             List<LogInfo> all = db.getAllLogsBoundToTerminals();
             java.util.Map<String, LogInfo> latest = new java.util.HashMap<>();
             for (LogInfo li : all) {

@@ -1467,6 +1467,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (frame != null) {
             // 事件优先级：低电量 > 丢失 > 开锁/上锁 > 打开/关闭 > 取走/放入 > 定期上报 > 护士站查询
             // 备注：statusCode 使用 LogStatus 枚举的 code，便于统一展示
+
+
              if (frame.stPowerLockOn == 1 && (frame.stLayer1NotInPlace == 1 ||
                      frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
                     frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
@@ -1536,17 +1538,26 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 }
                 try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId)); } catch (Exception ignored) {}
                 int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                String lbKey = "low_battery_flag_device_" + deviceId;
+                boolean flagged = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(lbKey, false);
                 if (frame.batteryLevel <= lowTh) {
-                    ContentValues v2 = new ContentValues();
-                    v2.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
-                    v2.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
-                    v2.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
-                    v2.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
-                    v2.put(COLUMN_LOG_OPERATOR, "");
-                    v2.put(COLUMN_LOG_OPERATION_TIME, nowStr);
-                    v2.put(COLUMN_LOG_ACTION, "设备低电量");
-                    v2.put(COLUMN_LOG_CREATE_TIME, nowStr);
-                    db.insert(targetTable, null, v2);
+                    if (!flagged) {
+                        ContentValues v2 = new ContentValues();
+                        v2.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+                        v2.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
+                        v2.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+                        v2.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
+                        v2.put(COLUMN_LOG_OPERATOR, "");
+                        v2.put(COLUMN_LOG_OPERATION_TIME, nowStr);
+                        v2.put(COLUMN_LOG_ACTION, "设备低电量");
+                        v2.put(COLUMN_LOG_CREATE_TIME, nowStr);
+                        db.insert(targetTable, null, v2);
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, true);
+                    }
+                } else {
+                    if (flagged) {
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, false);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -1631,6 +1642,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return logs;
+    }
+
+    public void syncLowBatteryFlags() {
+        try {
+            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            java.util.List<com.lora.cn.ui.model.Terminal> terminals = getAllTerminals();
+            String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+            SQLiteDatabase db = this.getWritableDatabase();
+            for (com.lora.cn.ui.model.Terminal t : terminals) {
+                String deviceId = t.getTerminalId();
+                String lbKey = "low_battery_flag_device_" + deviceId;
+                boolean flagged = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(lbKey, false);
+                if (t.getBatteryLevel() <= lowTh) {
+                    if (!flagged) {
+                        android.content.ContentValues v2 = new android.content.ContentValues();
+                        v2.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+                        v2.put(COLUMN_LOG_TERMINAL_NAME, t.getTerminalName());
+                        v2.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+                        v2.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
+                        v2.put(COLUMN_LOG_OPERATOR, "");
+                        v2.put(COLUMN_LOG_OPERATION_TIME, nowStr);
+                        v2.put(COLUMN_LOG_ACTION, "设备低电量");
+                        v2.put(COLUMN_LOG_CREATE_TIME, nowStr);
+                        db.insert(TABLE_LOGS, null, v2);
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, true);
+                    }
+                } else {
+                    if (flagged) {
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, false);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     /**

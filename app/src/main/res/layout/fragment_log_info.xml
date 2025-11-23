@@ -34,7 +34,7 @@
             <LinearLayout
                 android:background="@drawable/spinner_background"
                 android:layout_width="102dp"
-                android:layout_height="48dp" >
+                android:layout_height="38dp" >
 
                 <Spinner
                     android:id="@+id/log_type"
@@ -57,7 +57,7 @@
             <LinearLayout
                 android:background="@drawable/spinner_background"
                 android:layout_width="102dp"
-                android:layout_height="48dp" >
+                android:layout_height="32dp" >
 
                 <Spinner
                     android:id="@+id/spinner_police"
@@ -70,8 +70,8 @@
 
             <LinearLayout
                 android:background="@drawable/spinner_background"
-                android:layout_width="60dp"
-                android:layout_height="48dp" >
+                android:layout_width="50dp"
+                android:layout_height="32dp" >
 
                 <Spinner
                     android:id="@+id/spinner_ts"
@@ -84,8 +84,7 @@
             </LinearLayout>
 
             <TextView
-                android:layout_marginLeft="15dp"
-                android:textSize="12dp"
+                android:textSize="11dp"
                 android:textColor="@color/black"
                 android:text="日志时间："
                 android:textStyle="bold"
@@ -96,7 +95,7 @@
             <RelativeLayout
                 android:id="@+id/time_start_time"
                 android:background="@drawable/time_background"
-                android:layout_width="102dp"
+                android:layout_width="82dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
                 android:layout_height="30dp" >
@@ -129,7 +128,7 @@
             <RelativeLayout
                 android:id="@+id/time_end_time"
                 android:background="@drawable/time_background"
-                android:layout_width="102dp"
+                android:layout_width="82dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
                 android:layout_height="30dp" >

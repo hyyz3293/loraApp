@@ -37,7 +37,6 @@ public class PositionDao {
         values.put(DatabaseHelper.COLUMN_POSITION_STATUS, position.getStatus());
         
         long result = db.insert(DatabaseHelper.TABLE_POSITIONS, null, values);
-        db.close();
         
         return result;
     }
@@ -62,7 +61,6 @@ public class PositionDao {
             cursor.close();
         }
         
-        db.close();
         return positions;
     }
     
@@ -83,7 +81,6 @@ public class PositionDao {
             cursor.close();
         }
         
-        db.close();
         return position;
     }
     
@@ -104,7 +101,6 @@ public class PositionDao {
             cursor.close();
         }
         
-        db.close();
         return position;
     }
     
@@ -124,7 +120,6 @@ public class PositionDao {
         String[] whereArgs = {String.valueOf(position.getPositionId())};
         
         int result = db.update(DatabaseHelper.TABLE_POSITIONS, values, whereClause, whereArgs);
-        db.close();
         
         return result;
     }
@@ -139,7 +134,6 @@ public class PositionDao {
         String[] whereArgs = {String.valueOf(positionId)};
         
         int result = db.delete(DatabaseHelper.TABLE_POSITIONS, whereClause, whereArgs);
-        db.close();
         
         return result;
     }
@@ -162,7 +156,6 @@ public class PositionDao {
             cursor.close();
         }
         
-        db.close();
         return exists;
     }
     

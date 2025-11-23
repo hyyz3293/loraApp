@@ -348,23 +348,31 @@ public class TerminalDetailFragment extends Fragment {
         });
 
         // 收藏点击切换
+        ivFavorite.setClickable(true);
         ivFavorite.setOnClickListener(v -> {
             String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
             Object tag = ivFavorite.getTag();
             boolean current = tag instanceof Boolean ? (Boolean) tag : false;
             boolean target = !current;
             try {
-                int result = dbHelper.updateTerminalFavoriteStatus(deviceId, target);
-                if (result > 0) {
-                    ivFavorite.setImageResource(target ? R.mipmap.ic_star_yeollw : R.mipmap.ic_start);
-                    ivFavorite.setTag(target);
-                    ///ivFavorite.setVisibility(View.GONE);
-                    //Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
-                    // 通知列表刷新收藏状态
-                    org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("更新收藏: " + deviceId));
+                long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                if (uid > 0) {
+                    dbHelper.setFavoriteForUser(uid, deviceId, target);
                 } else {
-                    Toast.makeText(requireContext(), "更新收藏状态失败", Toast.LENGTH_SHORT).show();
+                    dbHelper.updateTerminalFavoriteStatus(deviceId, target);
                 }
+                ivFavorite.setImageResource(target ? R.mipmap.ic_star_yeollw : R.mipmap.ic_start);
+                if (target) {
+                    ivFavorite.setColorFilter(android.graphics.Color.parseColor("#FFD700"));
+                } else {
+                    ivFavorite.clearColorFilter();
+                }
+                ivFavorite.setTag(target);
+                ///ivFavorite.setVisibility(View.GONE);
+                //Toast.makeText(requireContext(), target ? "已收藏" : "已取消收藏", Toast.LENGTH_SHORT).show();
+                // 通知列表刷新收藏状态
+                org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("更新收藏: " + deviceId));
+                ivFavorite.invalidate();
             } catch (Exception e) {
                 Toast.makeText(requireContext(), "收藏操作异常: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
@@ -394,38 +402,33 @@ public class TerminalDetailFragment extends Fragment {
         try {
             List<LogInfo> logs = dbHelper.getLogsByTerminalId(deviceId);
             if (logs != null && !logs.isEmpty()) {
-                java.util.Map<Integer, LogInfo> latest = new java.util.HashMap<>();
+                java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
+                java.util.Map<String, LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
                 for (LogInfo li : logs) {
+                    long t = parseMillis(li.getCreateTime());
                     int s = li.getStatusCode();
+                    if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                        Long prev = lastHandledTime.get(li.getTerminalId());
+                        if (prev == null || t >= prev) lastHandledTime.put(li.getTerminalId(), t);
+                        continue;
+                    }
                     boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                             || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                             || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
                     if (candidate) {
-                        LogInfo prev = latest.get(s);
-                        long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
-                        long curT = parseMillis(li.getCreateTime());
-                        if (prev == null || curT >= prevT) latest.put(s, li);
+                        String key = (li.getTerminalId() == null ? "" : li.getTerminalId()) + ":" + s;
+                        LogInfo prevLog = latestByDeviceStatus.get(key);
+                        long prevT = prevLog != null ? parseMillis(prevLog.getCreateTime()) : -1L;
+                        if (prevLog == null || t >= prevT) latestByDeviceStatus.put(key, li);
                     }
                 }
                 java.util.Set<Long> allowedIds = new java.util.HashSet<>();
-                java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
-                for (LogInfo li : logs) {
-                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
-                        long t = parseMillis(li.getCreateTime());
-                        Long prev = lastHandledTime.get(li.getTerminalId());
-                        if (prev == null || t >= prev) lastHandledTime.put(li.getTerminalId(), t);
-                    }
+                for (LogInfo v : latestByDeviceStatus.values()) {
+                    Long ht = lastHandledTime.get(v.getTerminalId());
+                    long at = parseMillis(v.getCreateTime());
+                    if (ht == null || at > ht) allowedIds.add(v.getId());
                 }
-                for (LogInfo v : latest.values()) allowedIds.add(v.getId());
-                java.util.Set<Long> filteredIds = new java.util.HashSet<>();
-                for (LogInfo v : logs) {
-                    if (allowedIds.contains(v.getId())) {
-                        Long ht = lastHandledTime.get(v.getTerminalId());
-                        long at = parseMillis(v.getCreateTime());
-                        if (ht == null || at > ht) filteredIds.add(v.getId());
-                    }
-                }
-                logAdapter.setAllowedHandleIds(filteredIds);
+                logAdapter.setAllowedHandleIds(allowedIds);
                 logAdapter.setOnHandleClickListener(item -> {
                     com.lora.cn.utils.DialogUtils.showRemarkDialog(requireContext(), "确认处理", "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
                         @Override

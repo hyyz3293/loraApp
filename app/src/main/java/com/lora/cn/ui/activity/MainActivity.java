@@ -158,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             databaseHelper.ensureDefaultAdminRoleAssigned();
             databaseHelper.debugLogAdminRoleAndUser();
+            databaseHelper.syncLowBatteryFlags();
         } catch (Exception e) {
             android.util.Log.e(TAG, "初始化管理员角色/用户日志失败: " + e.getMessage());
         }

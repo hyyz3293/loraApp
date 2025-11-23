@@ -37,7 +37,6 @@ public class CategoryDao {
         values.put(DatabaseHelper.COLUMN_CATEGORY_GROUP_ID, category.getGroupId());
         
         long result = db.insert(DatabaseHelper.TABLE_CATEGORIES, null, values);
-        db.close();
         
         return result;
     }
@@ -59,7 +58,6 @@ public class CategoryDao {
             cursor.close();
         }
         
-        db.close();
         return category;
     }
     
@@ -84,7 +82,6 @@ public class CategoryDao {
             cursor.close();
         }
         
-        db.close();
         return categories;
     }
     
@@ -108,7 +105,6 @@ public class CategoryDao {
             cursor.close();
         }
         
-        db.close();
         return categories;
     }
     
@@ -162,7 +158,6 @@ public class CategoryDao {
             cursor.close();
         }
         
-        db.close();
         return categories;
     }
     
@@ -182,7 +177,6 @@ public class CategoryDao {
         String[] whereArgs = {String.valueOf(category.getCategoryId())};
         
         int result = db.update(DatabaseHelper.TABLE_CATEGORIES, values, whereClause, whereArgs);
-        db.close();
         
         return result;
     }
@@ -197,7 +191,6 @@ public class CategoryDao {
         String[] whereArgs = {String.valueOf(categoryId)};
         
         int result = db.delete(DatabaseHelper.TABLE_CATEGORIES, whereClause, whereArgs);
-        db.close();
         
         return result;
     }
@@ -212,7 +205,6 @@ public class CategoryDao {
         String[] whereArgs = {String.valueOf(groupId)};
         
         int result = db.delete(DatabaseHelper.TABLE_CATEGORIES, whereClause, whereArgs);
-        db.close();
         
         return result;
     }
@@ -235,7 +227,6 @@ public class CategoryDao {
             cursor.close();
         }
         
-        db.close();
         return exists;
     }
     
@@ -258,7 +249,6 @@ public class CategoryDao {
             cursor.close();
         }
         
-        db.close();
         return exists;
     }
     
