@@ -115,7 +115,7 @@ public class LogInfoFragment extends Fragment {
                         String endStr = selectedEndTime;
                         int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
                         int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-                        java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, true, pageSize, currentPage);
+                        java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
                         if (next != null && !next.isEmpty()) {
                             displayedLogs.addAll(next);
                             recalcAndSubmit(displayedLogs);
@@ -333,8 +333,8 @@ public class LogInfoFragment extends Fragment {
         int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
         String startStr = selectedStartTime;
         String endStr = selectedEndTime;
-        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, true);
-        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, true, pageSize, currentPage);
+        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, false);
+        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
         displayedLogs.clear();
         if (out != null) displayedLogs.addAll(out);
         recalcAndSubmit(displayedLogs);

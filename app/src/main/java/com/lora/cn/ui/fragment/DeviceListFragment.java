@@ -154,6 +154,8 @@ public class DeviceListFragment extends Fragment {
             deviceListAdapter.notifyDataSetChanged();
             updateUI();
         } catch (Exception ignored) {}
+
+        loadTerminals();
         
         // 3秒后恢复按钮状态
         btnSearchTerminal.postDelayed(() -> {

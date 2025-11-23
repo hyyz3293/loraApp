@@ -956,11 +956,37 @@ public class TerminalListFragment extends Fragment {
                     }
                     if (match) filtered.add(t);
                 }
+                java.util.Collections.sort(filtered, new java.util.Comparator<Terminal>() {
+                    @Override
+                    public int compare(Terminal a, Terminal b) {
+                        int ra = a.isFavorite() ? 0 : ((a.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || a.getStatus() == TerminalStatusConstants.CODE_OFFLINE) ? 1 : 2);
+                        int rb = b.isFavorite() ? 0 : ((b.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || b.getStatus() == TerminalStatusConstants.CODE_OFFLINE) ? 1 : 2);
+                        if (ra != rb) return ra - rb;
+                        String an = a.getTerminalName();
+                        String bn = b.getTerminalName();
+                        if (an == null) an = "";
+                        if (bn == null) bn = "";
+                        return an.compareTo(bn);
+                    }
+                });
                 filteredPageBase = filtered;
                 currentPage = 0;
                 submitCurrentPage();
                 updatePaginationControls();
             } else {
+                java.util.Collections.sort(base, new java.util.Comparator<Terminal>() {
+                    @Override
+                    public int compare(Terminal a, Terminal b) {
+                        int ra = a.isFavorite() ? 0 : ((a.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || a.getStatus() == TerminalStatusConstants.CODE_OFFLINE) ? 1 : 2);
+                        int rb = b.isFavorite() ? 0 : ((b.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || b.getStatus() == TerminalStatusConstants.CODE_OFFLINE) ? 1 : 2);
+                        if (ra != rb) return ra - rb;
+                        String an = a.getTerminalName();
+                        String bn = b.getTerminalName();
+                        if (an == null) an = "";
+                        if (bn == null) bn = "";
+                        return an.compareTo(bn);
+                    }
+                });
                 filteredPageBase = new ArrayList<>(base);
                 currentPage = 0;
                 submitCurrentPage();
@@ -1036,6 +1062,19 @@ public class TerminalListFragment extends Fragment {
                 }
             }
         }
+        java.util.Collections.sort(list, new java.util.Comparator<Terminal>() {
+            @Override
+            public int compare(Terminal a, Terminal b) {
+                int ra = a.isFavorite() ? 0 : ((a.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || a.getStatus() == TerminalStatusConstants.CODE_OFFLINE) ? 1 : 2);
+                int rb = b.isFavorite() ? 0 : ((b.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || b.getStatus() == TerminalStatusConstants.CODE_OFFLINE) ? 1 : 2);
+                if (ra != rb) return ra - rb;
+                String an = a.getTerminalName();
+                String bn = b.getTerminalName();
+                if (an == null) an = "";
+                if (bn == null) bn = "";
+                return an.compareTo(bn);
+            }
+        });
         filteredPageBase = list;
         currentPage = 0;
         submitCurrentPage();

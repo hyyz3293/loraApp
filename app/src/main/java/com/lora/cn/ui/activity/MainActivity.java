@@ -1060,7 +1060,7 @@ public class MainActivity extends AppCompatActivity {
                                 // 存储到数据库
                                 if (!"-".equals(hex)) {
                                     // 存储到上行数据日志表
-                                    long result = databaseHelper.addUplinkLog(time, hex);
+                                    long result = databaseHelper.addUplinkLog(hex);
                                     Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
                                     try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新")); } catch (Exception ignored) {}
                                     

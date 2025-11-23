@@ -97,35 +97,21 @@ public class TerminalDao {
      * 更新终端收藏状态
      */
     public int updateTerminalFavoriteStatus(String terminalId, boolean isFavorite) {
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        ContentValues values = new ContentValues();
-        
-        values.put(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE, isFavorite ? 1 : 0);
-        values.put(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
-        
-        int result = db.update(DatabaseHelper.TABLE_TERMINALS, values, 
-                DatabaseHelper.COLUMN_TERMINAL_DEVICE_ID + "=?", 
-                new String[]{terminalId});
-        
-        // 记录收藏状态变更日志
+        long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", 0L);
+        try { dbHelper.setFavoriteForUser(uid, terminalId, isFavorite); } catch (Exception ignored) {}
         try {
             com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
             logInfo.setTerminalId(terminalId);
-            logInfo.setTerminalName(""); // 这里可以通过查询获取终端名称
+            logInfo.setTerminalName("");
             logInfo.setDeviceId(terminalId);
             logInfo.setStatusCode(0);
             logInfo.setOperator("");
             logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
             logInfo.setOperationTime("");
             logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-            
             dbHelper.addLog(logInfo);
-        } catch (Exception e) {
-            // 日志记录失败不影响主要操作
-            e.printStackTrace();
-        }
-        
-        return result;
+        } catch (Exception ignored) {}
+        return 1;
     }
     
     /**
@@ -247,12 +233,10 @@ public class TerminalDao {
                 if (giIdx2 != -1) terminal.setGroupIdsText(cursor.getString(giIdx2));
                 int gnIdx2 = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_NAMES);
                 if (gnIdx2 != -1) terminal.setGroupNamesText(cursor.getString(gnIdx2));
-                int fav2 = cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE));
-                int favUserId2 = 0;
-                int favUserIdx2 = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_FAVORITE_USER_ID);
-                if (favUserIdx2 != -1) favUserId2 = cursor.getInt(favUserIdx2);
-                long currentUserId2 = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                terminal.setFavorite(fav2 == 1 && favUserId2 == (int) currentUserId2);
+        long currentUserId2 = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+        try {
+            terminal.setFavorite(dbHelper.isFavoriteForUser(currentUserId2, terminal.getTerminalId()));
+        } catch (Exception ignored) {}
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME)));
                 // 读取电量、电压、RSSI

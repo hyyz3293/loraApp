@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 19;
+    private static final int DATABASE_VERSION = 20;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -140,6 +140,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
     public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
     
+    // 用户关注映射表
+    public static final String TABLE_USER_FAVORITES = "user_favorites";
+    public static final String COLUMN_UF_ID = "id";
+    public static final String COLUMN_UF_USER_ID = "user_id";
+    public static final String COLUMN_UF_DEVICE_ID = "terminal_device_id";
+    public static final String COLUMN_UF_CREATE_TIME = "create_time";
+    private static final String CREATE_TABLE_USER_FAVORITES =
+        "CREATE TABLE " + TABLE_USER_FAVORITES + " (" +
+        COLUMN_UF_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_UF_USER_ID + " INTEGER NOT NULL, " +
+        COLUMN_UF_DEVICE_ID + " TEXT NOT NULL, " +
+        COLUMN_UF_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        "UNIQUE(" + COLUMN_UF_USER_ID + "," + COLUMN_UF_DEVICE_ID + ")" +
+        ")";
+
     // 创建分组表的SQL语句
     private static final String CREATE_TABLE_GROUPS = 
         "CREATE TABLE " + TABLE_GROUPS + " (" +
@@ -375,6 +390,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 创建日志表
         db.execSQL(CREATE_TABLE_LOGS);
+        // 创建未绑定日志表
+        db.execSQL(CREATE_TABLE_LOGS_UNBOUND);
+        // 创建用户收藏关系表
+        db.execSQL(CREATE_TABLE_USER_FAVORITES);
         // 创建未绑定终端日志表
         db.execSQL(CREATE_TABLE_LOGS_UNBOUND);
         
@@ -512,6 +531,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_GROUP_IDS + " TEXT"); } catch (Exception ignored) {}
             try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_GROUP_NAMES + " TEXT"); } catch (Exception ignored) {}
         }
+        if (oldVersion < 20) {
+            try { db.execSQL(CREATE_TABLE_USER_FAVORITES); } catch (Exception ignored) {}
+        }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
         // db.execSQL("DROP TABLE IF EXISTS " + TABLE_POSITIONS);
@@ -526,6 +548,33 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         super.onOpen(db);
         // 启用外键约束
         db.execSQL("PRAGMA foreign_keys=ON;");
+    }
+
+    public boolean isFavoriteForUser(long userId, String deviceId) {
+        if (userId <= 0 || deviceId == null) return false;
+        SQLiteDatabase db = this.getReadableDatabase();
+        android.database.Cursor c = db.rawQuery("SELECT 1 FROM " + TABLE_USER_FAVORITES + " WHERE " + COLUMN_UF_USER_ID + "=? AND " + COLUMN_UF_DEVICE_ID + "=? LIMIT 1",
+                new String[]{String.valueOf(userId), deviceId});
+        boolean res = c.moveToFirst();
+        c.close();
+        db.close();
+        return res;
+    }
+
+    public void setFavoriteForUser(long userId, String deviceId, boolean favorite) {
+        if (userId <= 0 || deviceId == null) return;
+        SQLiteDatabase db = this.getWritableDatabase();
+        if (favorite) {
+            ContentValues v = new ContentValues();
+            v.put(COLUMN_UF_USER_ID, userId);
+            v.put(COLUMN_UF_DEVICE_ID, deviceId);
+            v.put(COLUMN_UF_CREATE_TIME, System.currentTimeMillis());
+            db.insertWithOnConflict(TABLE_USER_FAVORITES, null, v, SQLiteDatabase.CONFLICT_IGNORE);
+        } else {
+            db.delete(TABLE_USER_FAVORITES, COLUMN_UF_USER_ID + "=? AND " + COLUMN_UF_DEVICE_ID + "=?",
+                    new String[]{String.valueOf(userId), deviceId});
+        }
+        db.close();
     }
     
     /**
@@ -1327,8 +1376,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("handle_remark", logInfo.getHandleRemark());
         boolean exists = (logInfo.getDeviceId() != null && isTerminalExists(logInfo.getDeviceId()))
                 || (logInfo.getTerminalId() != null && isTerminalExists(logInfo.getTerminalId()));
-        String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
-        long result = db.insert(targetTable, null, values);
+        String targetTable2 = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
+        long result = db.insert(targetTable2, null, values);
         db.close();
         return result;
     }
@@ -1342,11 +1391,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     /**
      * 添加上行数据日志
-     * @param time 时间字符串
      * @param hex 十六进制数据
      * @return 插入的行ID
      */
-    public long addUplinkLog(String time, String hex) {
+    public long addUplinkLog(String hex) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
 
@@ -1420,9 +1468,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
         values.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
         values.put(COLUMN_LOG_STATUS, statusCode);
+        String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
         values.put(COLUMN_LOG_OPERATOR, operator);
-        values.put(COLUMN_LOG_OPERATION_TIME, "");
+        values.put(COLUMN_LOG_OPERATION_TIME, nowStr);
         values.put(COLUMN_LOG_ACTION, action);
+        values.put(COLUMN_LOG_CREATE_TIME, nowStr);
 
         boolean exists = deviceId != null && isTerminalExists(deviceId);
         String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;

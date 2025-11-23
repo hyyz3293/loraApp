@@ -103,12 +103,12 @@ public class TerminalCheckFragment extends Fragment {
     }
     
     private void initData() {
-        // 更新UI数据（管理员不显示剩余次数）
+        // 更新UI数据（管理员不显示剩余次数；普通用户按账号与日期初始化剩余次数）
         if (isAdmin) {
             android.view.View parent = (android.view.View) terminalRemainingNumber.getParent();
             if (parent != null) parent.setVisibility(android.view.View.GONE);
         } else {
-            updateRemainingCount(remainingCount);
+            initDailyRemainingForUser();
         }
         updateClearTime();
         
@@ -352,7 +352,7 @@ public class TerminalCheckFragment extends Fragment {
                         try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
                         addTerminal.setText("开始清点");
                         addTerminal.setEnabled(true);
-                        if (!isAdmin) updateRemainingCount(remainingCount - 1);
+                        if (!isAdmin) decrementRemainingForUser();
                         updateClearTime();
                         refreshData();
                         Toast.makeText(getContext(), "清点完成", Toast.LENGTH_SHORT).show();
@@ -524,5 +524,36 @@ public class TerminalCheckFragment extends Fragment {
 
     public static TerminalCheckFragment newInstance() {
         return new TerminalCheckFragment();
+    }
+
+    private long currentUserIdCache = -1L;
+    private void initDailyRemainingForUser() {
+        try {
+            int defaultCnt = com.blankj.utilcode.util.SPUtils.getInstance().getInt("terminal_check_count", 2);
+            long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1L);
+            currentUserIdCache = uid;
+            String dateKey = "check_last_date_user_" + uid;
+            String remainKey = "check_remaining_user_" + uid;
+            String today = new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(new java.util.Date());
+            String last = com.blankj.utilcode.util.SPUtils.getInstance().getString(dateKey);
+            int remain = com.blankj.utilcode.util.SPUtils.getInstance().getInt(remainKey, -1);
+            if (!today.equals(last) || remain < 0) {
+                com.blankj.utilcode.util.SPUtils.getInstance().put(dateKey, today);
+                com.blankj.utilcode.util.SPUtils.getInstance().put(remainKey, defaultCnt);
+                updateRemainingCount(defaultCnt);
+            } else {
+                updateRemainingCount(remain);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void decrementRemainingForUser() {
+        try {
+            long uid = currentUserIdCache > 0 ? currentUserIdCache : com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1L);
+            String remainKey = "check_remaining_user_" + uid;
+            int newRemain = Math.max(0, remainingCount - 1);
+            com.blankj.utilcode.util.SPUtils.getInstance().put(remainKey, newRemain);
+            updateRemainingCount(newRemain);
+        } catch (Exception ignored) {}
     }
 }
