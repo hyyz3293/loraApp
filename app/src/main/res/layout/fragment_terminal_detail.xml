@@ -190,8 +190,8 @@
 
                 <com.lora.cn.ui.view.BatteryView
                     android:id="@+id/batteryView"
-                    android:layout_width="40dp"
-                    android:layout_height="20dp" />
+                    android:layout_width="30dp"
+                    android:layout_height="15dp" />
 
                 <Button
                     android:id="@+id/btn_handle_now"

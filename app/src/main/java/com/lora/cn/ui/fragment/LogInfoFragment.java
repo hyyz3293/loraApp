@@ -35,6 +35,15 @@ public class LogInfoFragment extends Fragment {
     private String selectedStartTime = "";
     private String selectedEndTime = "";
     private List<LogInfo> baseLogs = new ArrayList<>();
+    private int pageSize = 20;
+    private int currentPage = 0;
+    private java.util.List<LogInfo> filteredPageBase = new java.util.ArrayList<>();
+    private int totalFilteredCount = 0;
+    private java.util.List<LogInfo> displayedLogs = new java.util.ArrayList<>();
+    private boolean isAutoLoading = false;
+    private android.widget.Spinner spinnerTs;
+    private android.widget.ImageView sxLeft;
+    private android.widget.ImageView sxRight;
     @Override
     public void onStart() {
         super.onStart();
@@ -67,7 +76,8 @@ public class LogInfoFragment extends Fragment {
 
     private void initViews(View view) {
         recyclerView = view.findViewById(R.id.terminal_log_recycle);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        LinearLayoutManager lm = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(lm);
         databaseHelper = DatabaseHelper.getInstance(getContext());
         rlStart = view.findViewById(R.id.time_start_time);
         rlEnd = view.findViewById(R.id.time_end_time);
@@ -76,6 +86,9 @@ public class LogInfoFragment extends Fragment {
         spinnerLogType = view.findViewById(R.id.log_type);
         spinnerPolice = view.findViewById(R.id.spinner_police);
         btnExport = view.findViewById(R.id.btn_export_log_excel);
+        spinnerTs = view.findViewById(R.id.spinner_ts);
+        sxLeft = view.findViewById(R.id.sx_left);
+        sxRight = view.findViewById(R.id.sx_right);
         if (btnExport != null) btnExport.setOnClickListener(v -> exportLogs());
         if (rlStart != null) rlStart.setOnClickListener(v -> showStartPicker());
         if (rlEnd != null) rlEnd.setOnClickListener(v -> showEndPicker());
@@ -87,6 +100,68 @@ public class LogInfoFragment extends Fragment {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View v, int pos, long id) { applyTimeFilter(); }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                if (dy <= 0) return;
+                try {
+                    int lastVisible = lm.findLastVisibleItemPosition();
+                    int count = logInfoAdapter != null ? logInfoAdapter.getItemCount() : 0;
+                    boolean atBottom = lastVisible >= count - 1;
+                    boolean canRight = (currentPage + 1) * pageSize < totalFilteredCount;
+                    if (atBottom && canRight && !isAutoLoading) {
+                        isAutoLoading = true;
+                        currentPage++;
+                        String startStr = selectedStartTime;
+                        String endStr = selectedEndTime;
+                        int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
+                        int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
+                        java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, true, pageSize, currentPage);
+                        if (next != null && !next.isEmpty()) {
+                            displayedLogs.addAll(next);
+                            recalcAndSubmit(displayedLogs);
+                        }
+                        updatePaginationControls();
+                        isAutoLoading = false;
+                    }
+                } catch (Exception ignored) {}
+            }
+        });
+        if (spinnerTs != null) {
+            spinnerTs.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View v, int position, long id) {
+                    Object item = parent.getItemAtPosition(position);
+                    int newSize = pageSize;
+                    if (item != null) {
+                        String s = String.valueOf(item).replaceAll("[^0-9]", "");
+                        if (!s.isEmpty()) {
+                            try { newSize = Integer.parseInt(s); } catch (Exception ignored) {}
+                        }
+                    }
+                    pageSize = newSize > 0 ? newSize : 20;
+                    currentPage = 0;
+                    applyTimeFilter();
+                }
+                @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+            });
+        }
+        if (sxLeft != null) {
+            sxLeft.setOnClickListener(v -> {
+                if (currentPage > 0) {
+                    currentPage--;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                }
+            });
+        }
+        if (sxRight != null) {
+            sxRight.setOnClickListener(v -> {
+                if ((currentPage + 1) * pageSize < totalFilteredCount) {
+                    currentPage++;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                }
+            });
+        }
         try {
             if (spinnerLogType != null) spinnerLogType.setSelection(0, false);
             if (spinnerPolice != null) spinnerPolice.setSelection(0, false);
@@ -251,34 +326,43 @@ public class LogInfoFragment extends Fragment {
 
     private void applyTimeFilter() {
         if (logInfoAdapter == null) return;
-        List<LogInfo> src = baseLogs != null ? baseLogs : new java.util.ArrayList<>();
         List<LogInfo> out = new java.util.ArrayList<>();
         long startMs = parseMillis(selectedStartTime);
         long endMs = parseMillis(selectedEndTime);
         int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
         int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
+        String startStr = selectedStartTime;
+        String endStr = selectedEndTime;
+        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, true);
+        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, true, pageSize, currentPage);
+        displayedLogs.clear();
+        if (out != null) displayedLogs.addAll(out);
+        recalcAndSubmit(displayedLogs);
+        updatePaginationControls();
+    }
+
+    private void submitCurrentPage() {
+        try {
+            if (logInfoAdapter != null) logInfoAdapter.submitList(filteredPageBase);
+        } catch (Exception ignored) {}
+    }
+
+    private void updatePaginationControls() {
+        try {
+            boolean canLeft = currentPage > 0;
+            boolean canRight = (currentPage + 1) * pageSize < totalFilteredCount;
+            if (sxLeft != null) sxLeft.setEnabled(canLeft);
+            if (sxRight != null) sxRight.setEnabled(canRight);
+        } catch (Exception ignored) {}
+    }
+
+    private void recalcAndSubmit(java.util.List<LogInfo> list) {
         java.util.Map<String, LogInfo> latestHandleMap = new java.util.HashMap<>();
         java.util.Map<String, Long> lastNormalTime = new java.util.HashMap<>();
         java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
-        for (LogInfo li : src) {
+        for (LogInfo li : list) {
             String ct = li != null ? li.getCreateTime() : null;
             long t = parseMillis(ct);
-            boolean keep = true;
-            if (startMs > 0) keep = keep && t >= startMs;
-            if (endMs > 0) keep = keep && t <= endMs;
-            if (keep) {
-                int sCode = li.getStatusCode();
-                boolean isAlarm = sCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                        || sCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
-                        || sCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
-                boolean isHandled = sCode == com.lora.cn.ui.constants.LogStatus.HANDLED.code;
-                if (typeSel == 1 && !isAlarm) keep = false; // 报警日志
-                else if (typeSel == 2 && (isAlarm || isHandled)) keep = false; // 普通日志（非报警且非处理）
-                else if (typeSel == 3 && !isHandled) keep = false; // 处理日志
-                if (policeSel == 1 && !isHandled) keep = false; // 已处理
-                else if (policeSel == 2 && isHandled) keep = false; // 未处理
-            }
-            if (keep) out.add(li);
             int s = li.getStatusCode();
             boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                     || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
@@ -318,7 +402,7 @@ public class LogInfoFragment extends Fragment {
         try {
             com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
             java.util.Map<String, java.util.List<LogInfo>> byDev = new java.util.HashMap<>();
-            for (LogInfo li : out) {
+            for (LogInfo li : list) {
                 String dev = li.getTerminalId();
                 java.util.List<LogInfo> lst = byDev.get(dev);
                 if (lst == null) { lst = new java.util.ArrayList<>(); byDev.put(dev, lst); }
@@ -346,7 +430,8 @@ public class LogInfoFragment extends Fragment {
             }
         } catch (Exception ignored) {}
         if (logInfoAdapter != null) logInfoAdapter.setHandledSourceLabels(handledLabels);
-        if (logInfoAdapter != null) logInfoAdapter.submitList(out);
+        filteredPageBase = new java.util.ArrayList<>(list);
+        submitCurrentPage();
     }
 
     private void exportLogs() {

@@ -25,7 +25,7 @@
             android:padding="12dp" >
 
             <TextView
-                android:textSize="14dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="日志类型："
                 android:textStyle="bold"
@@ -41,17 +41,14 @@
                     android:id="@+id/log_type"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:paddingLeft="15dp"
-                    android:paddingRight="15dp"
                     android:entries="@array/log_type_options"
                     />
 
             </LinearLayout>
 
-
             <TextView
-                android:layout_marginLeft="15dp"
-                android:textSize="14dp"
+                android:layout_marginLeft="10dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="报警处理："
                 android:textStyle="bold"
@@ -67,17 +64,29 @@
                     android:id="@+id/spinner_police"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:paddingLeft="15dp"
-                    android:paddingRight="15dp"
                     android:entries="@array/log_police_options"
                     />
 
             </LinearLayout>
 
+            <LinearLayout
+                android:background="@drawable/spinner_background"
+                android:layout_width="60dp"
+                android:layout_height="48dp" >
+
+                <Spinner
+                    android:id="@+id/spinner_ts"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:entries="@array/page_size_options"
+                    android:background="@drawable/spinner_no_arrow_background"
+                    />
+
+            </LinearLayout>
 
             <TextView
                 android:layout_marginLeft="15dp"
-                android:textSize="14dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="日志时间："
                 android:textStyle="bold"
@@ -88,7 +97,7 @@
             <RelativeLayout
                 android:id="@+id/time_start_time"
                 android:background="@drawable/time_background"
-                android:layout_width="112dp"
+                android:layout_width="102dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
                 android:layout_height="30dp" >
@@ -98,7 +107,7 @@
                     android:layout_centerVertical="true"
                     android:text="开始时间"
                     android:textColor="#767676"
-                    android:textSize="13dp"
+                    android:textSize="11dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 
@@ -121,7 +130,7 @@
             <RelativeLayout
                 android:id="@+id/time_end_time"
                 android:background="@drawable/time_background"
-                android:layout_width="112dp"
+                android:layout_width="102dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
                 android:layout_height="30dp" >
@@ -131,7 +140,7 @@
                     android:layout_centerVertical="true"
                     android:text="结束时间"
                     android:textColor="#767676"
-                    android:textSize="13dp"
+                    android:textSize="11dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 

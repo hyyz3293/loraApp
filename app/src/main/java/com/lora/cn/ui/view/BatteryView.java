@@ -102,18 +102,23 @@ public class BatteryView extends View {
     }
 
     private void drawBatterySegments(Canvas canvas, RectF bodyRect) {
-        float segmentWidth = (bodyRect.width() - (segmentCount + 1) * segmentSpacingX) / segmentCount;
         float strokeInset = outerPaint.getStrokeWidth() / 2f;
-        float top = bodyRect.top + strokeInset + segmentTopMargin;
-        float bottom = bodyRect.bottom - strokeInset - segmentBottomMargin;
-        float segmentHeight = bottom - top;
+        float dynSpacingX = Math.max(dpToPx(getContext(), 1f), bodyRect.width() * 0.04f);
+        float dynTopMargin = Math.max(dpToPx(getContext(), 1.0f), bodyRect.height() * 0.08f);
+        float dynBottomMargin = Math.max(dpToPx(getContext(), 0.8f), bodyRect.height() * 0.06f);
+        float usableWidth = bodyRect.width() - (segmentCount + 1) * dynSpacingX;
+        float segmentWidth = Math.max(dpToPx(getContext(), 6f), usableWidth / segmentCount);
+        float top = bodyRect.top + strokeInset + dynTopMargin;
+        float bottom = bodyRect.bottom - strokeInset - dynBottomMargin;
 
         for (int i = 0; i < segmentCount; i++) {
             int segmentThreshold = (i + 1) * (100 / segmentCount);
-            float left = bodyRect.left + segmentSpacingX + i * (segmentWidth + segmentSpacingX);
+            float left = bodyRect.left + dynSpacingX + i * (segmentWidth + dynSpacingX);
             float right = left + segmentWidth;
+            if (right > bodyRect.right - strokeInset) {
+                right = bodyRect.right - strokeInset;
+            }
             RectF segmentRect = new RectF(left, top, right, bottom);
-
             if (batteryLevel >= segmentThreshold) {
                 canvas.drawRect(segmentRect, innerPaint);
             } else {

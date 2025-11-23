@@ -1600,6 +1600,85 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return logs;
     }
 
+    public int queryLogsCount(String startTime, String endTime, int typeSel, int policeSel, boolean includeUnbound) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String where = buildLogWhereClause(startTime, endTime, typeSel, policeSel);
+        String sql = "SELECT COUNT(*) FROM " + TABLE_LOGS + where;
+        int total = 0;
+        android.database.Cursor c = db.rawQuery(sql, null);
+        if (c.moveToFirst()) total += c.getInt(0);
+        c.close();
+        if (includeUnbound) {
+            String sql2 = "SELECT COUNT(*) FROM " + TABLE_LOGS_UNBOUND + where;
+            android.database.Cursor c2 = db.rawQuery(sql2, null);
+            if (c2.moveToFirst()) total += c2.getInt(0);
+            c2.close();
+        }
+        db.close();
+        return total;
+    }
+
+    public java.util.List<com.lora.cn.ui.model.LogInfo> queryLogsPaged(String startTime, String endTime, int typeSel, int policeSel, boolean includeUnbound, int pageSize, int pageIndex) {
+        java.util.List<com.lora.cn.ui.model.LogInfo> out = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String where = buildLogWhereClause(startTime, endTime, typeSel, policeSel);
+        int offset = Math.max(0, pageIndex) * Math.max(1, pageSize);
+        String base = "SELECT * FROM %s" + where;
+        String sql;
+        if (includeUnbound) {
+            sql = String.format(java.util.Locale.getDefault(), base, TABLE_LOGS) +
+                  " UNION ALL " + String.format(java.util.Locale.getDefault(), base, TABLE_LOGS_UNBOUND) +
+                  " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT " + pageSize + " OFFSET " + offset;
+        } else {
+            sql = String.format(java.util.Locale.getDefault(), base, TABLE_LOGS) +
+                  " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT " + pageSize + " OFFSET " + offset;
+        }
+        android.database.Cursor cursor = db.rawQuery(sql, null);
+        while (cursor.moveToNext()) {
+            com.lora.cn.ui.model.LogInfo log = new com.lora.cn.ui.model.LogInfo();
+            log.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_LOG_ID)));
+            log.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_ID)));
+            log.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_NAME)));
+            log.setDeviceId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_DEVICE_ID)));
+            int st = cursor.getInt(cursor.getColumnIndex(COLUMN_LOG_STATUS));
+            log.setStatusCode(st);
+            log.setOperator(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATOR)));
+            log.setOperationTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATION_TIME)));
+            log.setAction(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_ACTION)));
+            log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_CREATE_TIME)));
+            int hUserIdx = cursor.getColumnIndex("handle_user");
+            int hTimeIdx = cursor.getColumnIndex("handle_time");
+            int hRemarkIdx = cursor.getColumnIndex("handle_remark");
+            if (hUserIdx != -1) log.setHandleUser(cursor.getString(hUserIdx));
+            if (hTimeIdx != -1) log.setHandleTime(cursor.getString(hTimeIdx));
+            if (hRemarkIdx != -1) log.setHandleRemark(cursor.getString(hRemarkIdx));
+            out.add(log);
+        }
+        cursor.close();
+        db.close();
+        return out;
+    }
+
+    private String buildLogWhereClause(String startTime, String endTime, int typeSel, int policeSel) {
+        java.util.List<String> conds = new java.util.ArrayList<>();
+        if (startTime != null && !startTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " >= '" + startTime + "' ");
+        if (endTime != null && !endTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " <= '" + endTime + "' ");
+        if (typeSel == 1) {
+            conds.add(COLUMN_LOG_STATUS + " IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + ")");
+        } else if (typeSel == 2) {
+            conds.add(COLUMN_LOG_STATUS + " NOT IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + "," + com.lora.cn.ui.constants.LogStatus.HANDLED.code + ")");
+        } else if (typeSel == 3) {
+            conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.HANDLED.code);
+        }
+        if (policeSel == 1) {
+            conds.add("(handle_user IS NOT NULL AND TRIM(handle_user) <> '')");
+        } else if (policeSel == 2) {
+            conds.add("(handle_user IS NULL OR TRIM(handle_user) = '')");
+        }
+        if (conds.isEmpty()) return "";
+        return " WHERE " + android.text.TextUtils.join(" AND ", conds);
+    }
+
     public java.util.List<com.lora.cn.ui.model.LogInfo> getLogsByTerminalId(String terminalId) {
         java.util.List<com.lora.cn.ui.model.LogInfo> logs = new java.util.ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
