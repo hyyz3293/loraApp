@@ -99,12 +99,27 @@ public class AlertPendingListFragment extends Fragment {
                 }
             }
             java.util.List<LogInfo> pending = new java.util.ArrayList<>(latest.values());
+            java.util.Map<String, com.lora.cn.ui.model.Terminal> terminalById = new java.util.HashMap<>();
+            for (com.lora.cn.ui.model.Terminal t : db.getAllTerminals()) {
+                terminalById.put(t.getTerminalId(), t);
+            }
+            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             java.util.List<LogInfo> filtered = new java.util.ArrayList<>();
             for (LogInfo li : pending) {
-                Long nt = lastNormalTime.get(li.getTerminalId());
                 Long ht = lastHandledTime.get(li.getTerminalId());
                 long at = parseMillis(li.getCreateTime());
-                if ((nt == null || at >= nt) && (ht == null || at > ht)) filtered.add(li);
+                if (ht == null || at > ht) {
+                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                        com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                        if (t != null) {
+                            boolean isOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                            boolean isLowNow = t.getBatteryLevel() <= lowTh;
+                            if (!isOffline && isLowNow) filtered.add(li);
+                        }
+                    } else {
+                        filtered.add(li);
+                    }
+                }
             }
             adapter.submitList(filtered);
             java.util.Set<Long> ids = new java.util.HashSet<>();

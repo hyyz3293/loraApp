@@ -178,8 +178,9 @@ public class BatteryView extends View {
      * 根据电量更新颜色
      */
     private void updateColors() {
-        // 判断是否为低电量（这里假设低于20%为低电量）
-        boolean isLowBattery = batteryLevel <= 20;
+        int lowTh = 20;
+        try { lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20); } catch (Exception ignored) {}
+        boolean isLowBattery = batteryLevel <= lowTh;
 
         if (isLowBattery) {
             outerPaint.setColor(lowBatteryOuterColor);

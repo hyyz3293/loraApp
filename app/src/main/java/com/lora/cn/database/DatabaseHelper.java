@@ -1326,7 +1326,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     // 如果没有电量字段，使用信号强度作为默认值
                     terminal.setBatteryLevel(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
                 }
-                terminal.setBatteryStatus(terminal.getBatteryLevel() <= 20 ? 0 : 1);
+                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                terminal.setBatteryStatus(terminal.getBatteryLevel() <= lowTh ? 0 : 1);
                 
                 terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
                 terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));

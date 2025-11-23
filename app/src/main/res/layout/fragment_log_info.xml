@@ -95,7 +95,7 @@
             <RelativeLayout
                 android:id="@+id/time_start_time"
                 android:background="@drawable/time_background"
-                android:layout_width="82dp"
+                android:layout_width="102dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
                 android:layout_height="30dp" >
@@ -128,7 +128,7 @@
             <RelativeLayout
                 android:id="@+id/time_end_time"
                 android:background="@drawable/time_background"
-                android:layout_width="82dp"
+                android:layout_width="102dp"
                 android:paddingLeft="18dp"
                 android:paddingRight="18dp"
                 android:layout_height="30dp" >
