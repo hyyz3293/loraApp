@@ -133,7 +133,9 @@ public class TerminalDetailFragment extends Fragment {
                 tvDeviceId.setText(!TextUtils.isEmpty(t.getTerminalId()) ? t.getTerminalId() : deviceId);
                 tvDepartment.setText(!TextUtils.isEmpty(t.getDepartment()) ? t.getDepartment() : "-");
                 tvLocation.setText(!TextUtils.isEmpty(t.getLocation()) ? t.getLocation() : "-");
-                tvStatus.setText(com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(t.getStatus()));
+                int rssiRawTop = Math.max(0, Math.min(138, t.getRssi()));
+                float percentTop = (138 - rssiRawTop) * 100f / 138f;
+                tvStatus.setText(String.format("%.0f%%", percentTop));
                 if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
                     tvBattery.setText("");
                 } else {
@@ -204,7 +206,7 @@ public class TerminalDetailFragment extends Fragment {
 
                 if (signalView != null && t.getStatus() != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
                     int rssiRaw = Math.max(0, Math.min(138, t.getRssi()));
-                    float percent = (138 - rssiRaw) * 100f / 138f;
+                    float percent = (rssiRaw) * 100f / 138f;
                     int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
                     signalView.setSignalStrength(bars);
                     if (tvStatus != null) tvStatus.setText(String.format("%.0f%%", percent));

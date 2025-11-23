@@ -9,7 +9,7 @@
     android:orientation="vertical"
     android:paddingLeft="20dp"
     android:paddingRight="20dp"
-    android:background="@color/white">
+    android:background="@drawable/bg_white_12">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -49,6 +49,7 @@
     <TextView
         android:id="@+id/sure"
         android:layout_marginTop="20dp"
+        android:layout_marginBottom="20dp"
         android:layout_width="match_parent"
         android:layout_marginLeft="50dp"
         android:layout_marginRight="50dp"

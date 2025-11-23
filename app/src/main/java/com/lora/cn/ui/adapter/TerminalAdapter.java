@@ -100,15 +100,16 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
             } else if (isOnline) {
                 int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
-                float percent = (138 - rssiRaw) * 100f / 138f;
+                float percent = (rssiRaw) * 100f / 138f;
                 int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
                 if (signalView != null) {
-                    LogUtils.e("setSignalStrength===" + bars+ "+=======" + item.getRssi());
+                    LogUtils.e("setSignalStrength===bars=" + bars+ "+=======" + item.getRssi() + "====percent=" + percent);
+
                     signalView.setVisibility(View.VISIBLE);
                     signalView.setSignalStrength(bars);
                 }
                 if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
-                tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                tvStatusTitle.setText(String.format("%.0f%%", percent));
             } else if (isNormalTaken) {
                 if (signalView != null) signalView.setVisibility(View.GONE);
                 if (ivStatusIcon != null) {
@@ -120,7 +121,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
                 float percent = (138 - rssiRaw) * 100f / 138f;
                 int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
-                LogUtils.e("setSignalStrength===" + bars);
+                LogUtils.e("setSignalStrength===bars=" + bars+ "+=======" + item.getRssi() + "====percent=" + percent);
                 if (signalView != null) {
                     signalView.setVisibility(View.VISIBLE);
                     signalView.setSignalStrength(bars);

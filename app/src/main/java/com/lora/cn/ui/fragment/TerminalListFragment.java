@@ -19,6 +19,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.blankj.utilcode.util.LogUtils;
+import com.google.gson.Gson;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.DatabaseHelper;
@@ -413,6 +415,9 @@ public class TerminalListFragment extends Fragment {
             int offlineCount = 0;
 
             for (com.lora.cn.ui.model.Terminal terminal : allTerminals) {
+
+                LogUtils.e("----.>>>>>>. " + new Gson().toJson(terminal));
+
                 // 统计收藏数量
                 if (terminal.isFavorite()) {
                     favoriteCount++;
@@ -602,35 +607,35 @@ public class TerminalListFragment extends Fragment {
         }
     }
 
-    private AlertItem buildAlertItem(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame, String msg) {
-        String name = "";
-        String code = frame != null ? frame.deviceId : "";
-        String time = "";
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            java.util.List<Terminal> terminals = dbHelper.getAllTerminals();
-            if (terminals != null) {
-                for (Terminal t : terminals) {
-                    if (t.getTerminalId() != null && t.getTerminalId().equalsIgnoreCase(code)) {
-                        name = t.getTerminalName();
-                        break;
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        if (frame != null && frame.dataTime != null) {
-            try {
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                time = sdf.format(frame.dataTime);
-            } catch (Exception ignored) {}
-        }
-        AlertItem item = new AlertItem();
-        item.title = msg;
-        item.name = name;
-        item.code = code;
-        item.time = time;
-        return item;
-    }
+//    private AlertItem buildAlertItem(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame, String msg) {
+//        String name = "";
+//        String code = frame != null ? frame.deviceId : "";
+//        String time = "";
+//        try {
+//            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+//            java.util.List<Terminal> terminals = dbHelper.getAllTerminals();
+//            if (terminals != null) {
+//                for (Terminal t : terminals) {
+//                    if (t.getTerminalId() != null && t.getTerminalId().equalsIgnoreCase(code)) {
+//                        name = t.getTerminalName();
+//                        break;
+//                    }
+//                }
+//            }
+//        } catch (Exception ignored) {}
+//        if (frame != null && frame.dataTime != null) {
+//            try {
+//                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+//                time = sdf.format(frame.dataTime);
+//            } catch (Exception ignored) {}
+//        }
+//        AlertItem item = new AlertItem();
+//        item.title = msg;
+//        item.name = name;
+//        item.code = code;
+//        item.time = time;
+//        return item;
+//    }
 
     private static class AlertItem {
         String title;
@@ -890,6 +895,8 @@ public class TerminalListFragment extends Fragment {
                     if (c2 != null) room = c2.getCategoryName();
                 } catch (Exception ignored) {}
             }
+            displayTerminal.setRssi(dbTerminal.getRssi());
+
             displayTerminal.setDepartment(dept);
             displayTerminal.setLocation(room);
             displayTerminal.setStatus(dbTerminal.getStatus());

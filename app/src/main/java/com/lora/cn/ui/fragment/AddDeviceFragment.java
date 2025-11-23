@@ -317,6 +317,11 @@ public class AddDeviceFragment extends Fragment {
         terminal.setSignalStrength(0); // 默认信号强度
         terminal.setDepartment(""); // 默认部门
         terminal.setLocation(""); // 默认位置
+        if (this.terminal != null) {
+            if (this.terminal.getBatteryLevel() > 0) terminal.setBatteryLevel(this.terminal.getBatteryLevel());
+            if (this.terminal.getBatteryVoltage() > 0) terminal.setBatteryVoltage(this.terminal.getBatteryVoltage());
+            if (this.terminal.getRssi() > 0) terminal.setRssi(this.terminal.getRssi());
+        }
         
         Long dep = selectedByGroup.get(1L);
         Long room = selectedByGroup.get(2L);
@@ -348,8 +353,16 @@ public class AddDeviceFragment extends Fragment {
             boolean ok;
             if (isEdit) {
                 ok = terminalDao.updateTerminalByDeviceId(terminal) > 0;
+                try {
+                    DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                    dbHelper.updateTerminalMetricsByDeviceId(terminalId,
+                            Math.max(0, terminal.getBatteryLevel()),
+                            Math.max(0, terminal.getRssi()),
+                            Math.max(0, terminal.getBatteryVoltage()));
+                } catch (Exception ignored) {}
             } else {
-                ok = terminalDao.insertTerminal(terminal) > 0;
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
+                ok = dbHelper.addTerminal(terminal) > 0;
             }
             if (ok) {
                 // 记录添加终端的日志
