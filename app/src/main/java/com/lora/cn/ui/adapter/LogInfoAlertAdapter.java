@@ -137,16 +137,21 @@ public class LogInfoAlertAdapter extends BaseQuickAdapter<LogInfo, QuickViewHold
         // 根据状态设置圆点和文字颜色
         Drawable dotDrawable = null;
         int textColor = Color.parseColor("#666666"); // 默认颜色
-        
-        if ("设备丢失".equals(status) || "设备离线".equals(status) || status.contains("设备丢失") || status.contains("设备离线")) {
+
+        if ("设备丢失".equals(status) || status.contains("设备丢失") ) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_red);
-            textColor = Color.parseColor("#D30000");
+            textColor = Color.parseColor("#666666");
         } else if ("低电量报警".equals(status) || status.contains("低电量报警")) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_orange);
             textColor = Color.parseColor("#FF9F0F");
-        } else if ("在线".equals(status)) {
-            dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_green);
-            textColor = Color.parseColor("#00C851");
+        }
+//        else if ("在线".equals(status)) {
+//            dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_green);
+//            textColor = Color.parseColor("#00C851");
+//        }
+        else if ("设备离线".equals(status) || status.contains("设备离线")) {
+            dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_gary);
+            textColor = Color.parseColor("#666666");
         }
         
         // 设置文字颜色
