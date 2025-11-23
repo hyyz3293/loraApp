@@ -150,6 +150,7 @@ public class TerminalCheckFragment extends Fragment {
             int online = 0, offline = 0, abnormal = 0;
             int batteryNormal = 0, batteryLow = 0;
             int manualTake = 0; // 正常取走
+            int lowThreshold = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 int sc = t.getStatus();
                 String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc);
@@ -162,9 +163,11 @@ public class TerminalCheckFragment extends Fragment {
                 } else {
                     offline++;
                 }
-                if (!"设备离线".equals(st)) {
-                    int bl = t.getBatteryLevel();
-                    if (bl <= 20) batteryLow++; else batteryNormal++;
+                int bl = t.getBatteryLevel();
+                if ("设备离线".equals(st)) {
+                    // 离线计入电量离线
+                } else {
+                    if (bl <= lowThreshold) batteryLow++; else batteryNormal++;
                 }
             }
             int totalStatus = Math.max(1, online + offline + abnormal + manualTake);
@@ -229,17 +232,13 @@ public class TerminalCheckFragment extends Fragment {
                     int batteryNormal = 0, batteryLow = 0, batteryOffline = 0;
                     int onlineCount = 0, offlineCount = 0;
 
+                    int lowThreshold2 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                     for (com.lora.cn.ui.model.Terminal t : terminals) {
-                        boolean match;
-                        if (gid == depGroupId && depGroupId > 0L) {
-                            match = (t.getDepartmentId() == (int) c.getCategoryId());
-                        } else if (gid == roomGroupId && roomGroupId > 0L) {
-                            match = (t.getRoomId() == (int) c.getCategoryId());
-                        } else if (gid == nursingGroupId && nursingGroupId > 0L) {
-                            match = (t.getNursingGroupId() == (int) c.getCategoryId());
-                        } else if (gid == otherGroupId && otherGroupId > 0L) {
-                            match = (t.getOtherId() == (int) c.getCategoryId());
-                        } else {
+                        boolean match = (t.getDepartmentId() == (int) c.getCategoryId())
+                                || (t.getRoomId() == (int) c.getCategoryId())
+                                || (t.getNursingGroupId() == (int) c.getCategoryId())
+                                || (t.getOtherId() == (int) c.getCategoryId());
+                        if (!match) {
                             long val = 0L;
                             try {
                                 String ext = t.getExtension();
@@ -263,7 +262,8 @@ public class TerminalCheckFragment extends Fragment {
                         else if ("设备离线".equals(st)) { offlineCount++; batteryOffline++; }
                         else if ("正常取走".equals(st)) { manualTake++; }
                         else if ("异常取走".equals(st)) { illegalLoss++; }
-                        else { int bl = t.getBatteryLevel(); if (bl <= 20) batteryLow++; else batteryNormal++; }
+                        int bl = t.getBatteryLevel();
+                        if (!"设备离线".equals(st)) { if (bl <= lowThreshold2) batteryLow++; else batteryNormal++; }
                     }
 
                     com.lora.cn.ui.model.TerminalChartData data = new com.lora.cn.ui.model.TerminalChartData();

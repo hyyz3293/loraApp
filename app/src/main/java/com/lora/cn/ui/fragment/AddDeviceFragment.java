@@ -39,7 +39,7 @@ public class AddDeviceFragment extends Fragment {
     private TextView tvTerminalId;
     private EditText etDeviceId;
     private EditText etDeviceName;
-    private EditText etExtension; // 用作设备CODE输入框（字段映射为device_code）
+    //private EditText etExtension; // 用作设备CODE输入框（字段映射为device_code）
     private Spinner spinnerDepartment;
     private Spinner spinnerRoom;
     private Spinner spinnerNursingGroup;
@@ -322,25 +322,61 @@ public class AddDeviceFragment extends Fragment {
             if (this.terminal.getBatteryVoltage() > 0) terminal.setBatteryVoltage(this.terminal.getBatteryVoltage());
             if (this.terminal.getRssi() > 0) terminal.setRssi(this.terminal.getRssi());
         }
+
+        long depIdSel = 0L, roomIdSel = 0L, nurIdSel = 0L, othIdSel = 0L;
+        try {
+            if (spinnerDepartment != null && departmentCategories != null) {
+                int pos = spinnerDepartment.getSelectedItemPosition();
+                if (pos > 0 && pos - 1 < departmentCategories.size()) depIdSel = departmentCategories.get(pos - 1).getCategoryId();
+            }
+            if (spinnerRoom != null && roomCategories != null) {
+                int pos = spinnerRoom.getSelectedItemPosition();
+                if (pos > 0 && pos - 1 < roomCategories.size()) roomIdSel = roomCategories.get(pos - 1).getCategoryId();
+            }
+            if (spinnerNursingGroup != null && nursingGroupCategories != null) {
+                int pos = spinnerNursingGroup.getSelectedItemPosition();
+                if (pos > 0 && pos - 1 < nursingGroupCategories.size()) nurIdSel = nursingGroupCategories.get(pos - 1).getCategoryId();
+            }
+            if (spinnerOther != null && otherCategories != null) {
+                int pos = spinnerOther.getSelectedItemPosition();
+                if (pos > 0 && pos - 1 < otherCategories.size()) othIdSel = otherCategories.get(pos - 1).getCategoryId();
+            }
+        } catch (Exception ignored) {}
+        if (depIdSel > 0) terminal.setDepartmentId(depIdSel);
+        if (roomIdSel > 0) terminal.setRoomId(roomIdSel);
+        if (nurIdSel > 0) terminal.setNursingGroupId(nurIdSel);
+        if (othIdSel > 0) terminal.setOtherId(othIdSel);
         
         Long dep = selectedByGroup.get(1L);
         Long room = selectedByGroup.get(2L);
         Long nur = selectedByGroup.get(3L);
         Long oth = selectedByGroup.get(4L);
-        terminal.setDepartmentId(dep != null ? dep : 0);
-        terminal.setRoomId(room != null ? room : 0);
-        terminal.setNursingGroupId(nur != null ? nur : 0);
-        terminal.setOtherId(oth != null ? oth : 0);
+        if (dep != null && dep > 0) terminal.setDepartmentId(dep);
+        if (room != null && room > 0) terminal.setRoomId(room);
+        if (nur != null && nur > 0) terminal.setNursingGroupId(nur);
+        if (oth != null && oth > 0) terminal.setOtherId(oth);
         try {
-            org.json.JSONObject ext = new org.json.JSONObject();
-            org.json.JSONObject extras = new org.json.JSONObject();
+            StringBuilder idsSb = new StringBuilder();
+            StringBuilder namesSb = new StringBuilder();
+            com.lora.cn.database.DatabaseManager dm = com.lora.cn.database.DatabaseManager.getInstance(getContext());
             for (java.util.Map.Entry<Long, Long> e : selectedByGroup.entrySet()) {
-                if (e.getKey() > 4L) extras.put(String.valueOf(e.getKey()), e.getValue());
+                Long gid = e.getKey(); Long cid = e.getValue();
+                if (gid == null || cid == null || gid <= 0L || cid <= 0L) continue;
+                if (idsSb.length() > 0) idsSb.append(',');
+                idsSb.append(gid).append(':').append(cid);
+                String gname = String.valueOf(gid);
+                String cname = String.valueOf(cid);
+                try {
+                    com.lora.cn.database.entity.Group g = dm.getGroupById(gid);
+                    if (g != null && g.getGroupName() != null) gname = g.getGroupName();
+                    com.lora.cn.database.entity.Category c = dm.getCategoryById(cid);
+                    if (c != null && c.getCategoryName() != null) cname = c.getCategoryName();
+                } catch (Exception ignored2) {}
+                if (namesSb.length() > 0) namesSb.append(',');
+                namesSb.append(gname).append('-').append(cname);
             }
-            if (extras.length() > 0) {
-                ext.put("extra_groups", extras);
-                terminal.setExtension(ext.toString());
-            }
+            terminal.setGroupIdsText(idsSb.toString());
+            terminal.setGroupNamesText(namesSb.toString());
         } catch (Exception ignored) {}
         
 //        // 设置扩展字段
@@ -377,7 +413,7 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
-                dbHelper.addLog(logInfo);
+                //dbHelper.addLog(logInfo);
                 
                 Toast.makeText(getContext(), isEdit ? "编辑终端成功" : "添加终端成功", Toast.LENGTH_SHORT).show();
                 
@@ -401,7 +437,7 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
-                dbHelper.addLog(logInfo);
+                //dbHelper.addLog(logInfo);
                 
                 Toast.makeText(getContext(), isEdit ? "编辑终端失败" : "添加终端失败", Toast.LENGTH_SHORT).show();
             }
@@ -421,7 +457,7 @@ public class AddDeviceFragment extends Fragment {
                 logInfo.setOperationTime("");
                 logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
                 
-                dbHelper.addLog(logInfo);
+                //dbHelper.addLog(logInfo);
             } catch (Exception logException) {
                 logException.printStackTrace();
             }

@@ -44,13 +44,25 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         ImageView terminalColl = holder.getView(R.id.terminal_coll);
 
         // 设置终端基本信息
-        terminalTitle.setText(item.getName());
+        String title = item.getName();
+        if (title == null || title.isEmpty()) title = item.getTerminalName();
+        if (title == null || title.isEmpty()) title = item.getTerminalId();
+        terminalTitle.setText(title);
         String dept = item.getDepartment();
         String room = item.getLocation();
         String ngName = null;
         String otherName = null;
+        java.util.List<String> dynTokens = new java.util.ArrayList<>();
         try {
             DatabaseManager dm = DatabaseManager.getInstance(holder.itemView.getContext());
+            if ((dept == null || dept.isEmpty()) && item.getDepartmentId() > 0) {
+                Category c0 = dm.getCategoryById(item.getDepartmentId());
+                if (c0 != null) dept = c0.getCategoryName();
+            }
+            if ((room == null || room.isEmpty()) && item.getRoomId() > 0) {
+                Category c1 = dm.getCategoryById(item.getRoomId());
+                if (c1 != null) room = c1.getCategoryName();
+            }
             if (item.getNursingGroupId() > 0) {
                 Category c = dm.getCategoryById(item.getNursingGroupId());
                 if (c != null) ngName = c.getCategoryName();
@@ -59,18 +71,34 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 Category c2 = dm.getCategoryById(item.getOtherId());
                 if (c2 != null) otherName = c2.getCategoryName();
             }
+            try {
+                String names = item.getGroupNamesText();
+                if (names != null && !names.isEmpty()) {
+                    String[] toks = names.split(",");
+                    for (String tk : toks) {
+                        if (tk == null || tk.trim().isEmpty()) continue;
+                        dynTokens.add(tk.trim());
+                    }
+                }
+            } catch (Exception ignored) {}
         } catch (Exception ignored) {}
         String line1 = "";
         if (dept != null && !dept.isEmpty()) line1 += "科室-" + dept;
-        if (ngName != null && !ngName.isEmpty()) {
-            if (!line1.isEmpty()) line1 += "  ";
-            line1 += "护理组-" + ngName;
-        }
+        if (ngName != null && !ngName.isEmpty()) { if (!line1.isEmpty()) line1 += "  "; line1 += "护理组-" + ngName; }
         String line2 = "";
         if (room != null && !room.isEmpty()) line2 += "病房-" + room;
-        if (otherName != null && !otherName.isEmpty()) {
-            if (!line2.isEmpty()) line2 += "  ";
-            line2 += "其他-" + otherName;
+        if (otherName != null && !otherName.isEmpty()) { if (!line2.isEmpty()) line2 += "  "; line2 += "其他-" + otherName; }
+        // 追加动态分组展示：前两个放在第一行，其余放第二行
+        int appended = 0;
+        for (String tk : dynTokens) {
+            if (appended < 2) {
+                if (!line1.isEmpty()) line1 += "  ";
+                line1 += tk;
+            } else {
+                if (!line2.isEmpty()) line2 += "  ";
+                line2 += tk;
+            }
+            appended++;
         }
         terminalKs.setText(line1);
         terminalBf.setText(line2);
@@ -100,11 +128,13 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
             } else if (isOnline) {
                 int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
-                float percent = (rssiRaw) * 100f / 138f;
-                int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+                int bars;
+                if (rssiRaw <= 65) bars = 4;
+                else if (rssiRaw <= 75) bars = 3;
+                else if (rssiRaw <= 85) bars = 2;
+                else if (rssiRaw <= 95) bars = 1;
+                else bars = 0;
                 if (signalView != null) {
-                    LogUtils.e("setSignalStrength===bars=" + bars+ "+=======" + item.getRssi() + "====percent=" + percent);
-
                     signalView.setVisibility(View.VISIBLE);
                     signalView.setSignalStrength(bars);
                 }
@@ -119,9 +149,12 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 tvStatusTitle.setText("正常取走");
             } else {
                 int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
-                float percent = (138 - rssiRaw) * 100f / 138f;
-                int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
-                LogUtils.e("setSignalStrength===bars=" + bars+ "+=======" + item.getRssi() + "====percent=" + percent);
+                int bars;
+                if (rssiRaw <= 65) bars = 4;
+                else if (rssiRaw <= 75) bars = 3;
+                else if (rssiRaw <= 85) bars = 2;
+                else if (rssiRaw <= 95) bars = 1;
+                else bars = 0;
                 if (signalView != null) {
                     signalView.setVisibility(View.VISIBLE);
                     signalView.setSignalStrength(bars);

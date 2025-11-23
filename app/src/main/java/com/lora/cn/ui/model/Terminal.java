@@ -24,6 +24,8 @@ public class Terminal {
     private long nursingGroupId;
     private long otherId;
     private String extension;
+    private String groupIdsText;
+    private String groupNamesText;
     private String deviceCode; // 新增设备CODE
     private boolean isFavorite;
     private int batteryLevel; // 电量百分比
@@ -214,6 +216,22 @@ public class Terminal {
 
     public void setExtension(String extension) {
         this.extension = extension;
+    }
+
+    public String getGroupIdsText() {
+        return groupIdsText;
+    }
+
+    public void setGroupIdsText(String groupIdsText) {
+        this.groupIdsText = groupIdsText;
+    }
+
+    public String getGroupNamesText() {
+        return groupNamesText;
+    }
+
+    public void setGroupNamesText(String groupNamesText) {
+        this.groupNamesText = groupNamesText;
     }
 
     public String getDeviceCode() {

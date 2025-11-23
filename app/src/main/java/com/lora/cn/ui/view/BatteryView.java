@@ -20,7 +20,8 @@ public class BatteryView extends View {
     private float terminalWidth; // 正极宽度
     private float terminalHeight; // 正极高度
     private float terminalGap; // 正极与主体间距
-    private float segmentSpacing; // 内部方格间距
+    private float segmentSpacingX; // 内部方格横向间距
+    private float segmentSpacingY; // 内部方格纵向边距
 
     private Paint outerPaint;
     private Paint innerPaint;
@@ -47,7 +48,8 @@ public class BatteryView extends View {
         terminalWidth = dpToPx(context, 2);
         terminalHeight = dpToPx(context, 3);
         terminalGap = dpToPx(context, 2);
-        segmentSpacing = dpToPx(context, 3.5f);
+        segmentSpacingX = dpToPx(context, 3.5f);
+        segmentSpacingY = dpToPx(context, 1.0f);
 
         // 外层电池油漆（透明背景，仅边框）
         outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -98,14 +100,14 @@ public class BatteryView extends View {
     }
 
     private void drawBatterySegments(Canvas canvas, RectF bodyRect) {
-        float segmentWidth = (bodyRect.width() - (segmentCount + 1) * segmentSpacing) / segmentCount;
-        float top = bodyRect.top + segmentSpacing;
-        float bottom = bodyRect.bottom - segmentSpacing;
+        float segmentWidth = (bodyRect.width() - (segmentCount + 1) * segmentSpacingX) / segmentCount;
+        float top = bodyRect.top + segmentSpacingY;
+        float bottom = bodyRect.bottom - segmentSpacingY;
         float segmentHeight = bottom - top;
 
         for (int i = 0; i < segmentCount; i++) {
             int segmentThreshold = (i + 1) * (100 / segmentCount);
-            float left = bodyRect.left + segmentSpacing + i * (segmentWidth + segmentSpacing);
+            float left = bodyRect.left + segmentSpacingX + i * (segmentWidth + segmentSpacingX);
             float right = left + segmentWidth;
             RectF segmentRect = new RectF(left, top, right, bottom);
 
@@ -120,7 +122,7 @@ public class BatteryView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int desiredWidth = (int) dpToPx(getContext(), 60);
-        int desiredHeight = (int) dpToPx(getContext(), 30);
+        int desiredHeight = (int) dpToPx(getContext(), 36);
 
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);

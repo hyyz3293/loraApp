@@ -84,6 +84,8 @@ public class TerminalDao {
             values.put(DatabaseHelper.COLUMN_TERMINAL_OTHER_ID, terminal.getOtherId());
         }
         values.put(DatabaseHelper.COLUMN_TERMINAL_EXTENSION, terminal.getExtension());
+        if (terminal.getGroupIdsText() != null) values.put(DatabaseHelper.COLUMN_TERMINAL_GROUP_IDS, terminal.getGroupIdsText());
+        if (terminal.getGroupNamesText() != null) values.put(DatabaseHelper.COLUMN_TERMINAL_GROUP_NAMES, terminal.getGroupNamesText());
         values.put(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
 
         return db.update(DatabaseHelper.TABLE_TERMINALS, values,

@@ -131,8 +131,21 @@ public class TerminalDetailFragment extends Fragment {
                 // 顶部基础信息
                 tvTitle.setText(!TextUtils.isEmpty(t.getTerminalName()) ? t.getTerminalName() : "-");
                 tvDeviceId.setText(!TextUtils.isEmpty(t.getTerminalId()) ? t.getTerminalId() : deviceId);
-                tvDepartment.setText(!TextUtils.isEmpty(t.getDepartment()) ? t.getDepartment() : "-");
-                tvLocation.setText(!TextUtils.isEmpty(t.getLocation()) ? t.getLocation() : "-");
+                String depText = t.getDepartment();
+                String locText = t.getLocation();
+                try {
+                    com.lora.cn.database.DatabaseManager dm2 = com.lora.cn.database.DatabaseManager.getInstance(requireContext());
+                    if ((depText == null || depText.isEmpty()) && t.getDepartmentId() > 0) {
+                        com.lora.cn.database.entity.Category cd = dm2.getCategoryById(t.getDepartmentId());
+                        if (cd != null) depText = cd.getCategoryName();
+                    }
+                    if ((locText == null || locText.isEmpty()) && t.getRoomId() > 0) {
+                        com.lora.cn.database.entity.Category cr = dm2.getCategoryById(t.getRoomId());
+                        if (cr != null) locText = cr.getCategoryName();
+                    }
+                } catch (Exception ignored) {}
+                tvDepartment.setText(!TextUtils.isEmpty(depText) ? depText : "-");
+                tvLocation.setText(!TextUtils.isEmpty(locText) ? locText : "-");
                 int rssiRawTop = Math.max(0, Math.min(138, t.getRssi()));
                 float percentTop = (138 - rssiRawTop) * 100f / 138f;
                 tvStatus.setText(String.format("%.0f%%", percentTop));
@@ -168,6 +181,17 @@ public class TerminalDetailFragment extends Fragment {
                     if (groupText.length() > 0) groupText.append(", ");
                     groupText.append("其他-").append(name);
                 }
+                try {
+                    String names = t.getGroupNamesText();
+                    if (names != null && !names.isEmpty()) {
+                        String[] toks = names.split(",");
+                        for (String tk : toks) {
+                            if (tk == null || tk.trim().isEmpty()) continue;
+                            if (groupText.length() > 0) groupText.append(", ");
+                            groupText.append(tk.trim());
+                        }
+                    }
+                } catch (Exception ignored) {}
                 if (terminal_detail_type != null) terminal_detail_type.setText(groupText.length() > 0 ? groupText.toString() : "-");
 
                 // 设备CODE：读取新字段deviceCode
@@ -206,10 +230,16 @@ public class TerminalDetailFragment extends Fragment {
 
                 if (signalView != null && t.getStatus() != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
                     int rssiRaw = Math.max(0, Math.min(138, t.getRssi()));
-                    float percent = (rssiRaw) * 100f / 138f;
-                    int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+                    int bars;
+                    if (rssiRaw <= 65) bars = 4;
+                    else if (rssiRaw <= 75) bars = 3;
+                    else if (rssiRaw <= 85) bars = 2;
+                    else if (rssiRaw <= 95) bars = 1;
+                    else bars = 0;
                     signalView.setSignalStrength(bars);
-                    if (tvStatus != null) tvStatus.setText("正常在线");
+                    int rev = 138 - rssiRaw;
+                    float percent = rev * 100f / 138f;
+                    if (tvStatus != null) tvStatus.setText(String.format("%.0f%%", percent));
                 }
             } else {
                 // 无记录时，回退为占位符

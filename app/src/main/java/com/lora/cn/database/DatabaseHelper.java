@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 18;
+    private static final int DATABASE_VERSION = 19;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -133,6 +133,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_NURSING_GROUP_ID = "nursing_group_id"; // 护理组分类ID
     public static final String COLUMN_TERMINAL_OTHER_ID = "other_id"; // 其他分类ID
     public static final String COLUMN_TERMINAL_EXTENSION = "extension"; // 扩展字段
+    public static final String COLUMN_TERMINAL_GROUP_IDS = "group_ids"; // 动态分组ID对列表: gid:cid,逗号分隔
+    public static final String COLUMN_TERMINAL_GROUP_NAMES = "group_names"; // 动态分组名称对列表: gname-cname,逗号分隔
     public static final String COLUMN_TERMINAL_IS_FAVORITE = "is_favorite"; // 收藏状态
     public static final String COLUMN_TERMINAL_FAVORITE_USER_ID = "favorite_user_id"; // 收藏用户ID
     public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
@@ -271,6 +273,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_TERMINAL_NURSING_GROUP_ID + " INTEGER, " +
         COLUMN_TERMINAL_OTHER_ID + " INTEGER, " +
         COLUMN_TERMINAL_EXTENSION + " TEXT, " +
+        COLUMN_TERMINAL_GROUP_IDS + " TEXT, " +
+        COLUMN_TERMINAL_GROUP_NAMES + " TEXT, " +
         COLUMN_TERMINAL_IS_FAVORITE + " INTEGER DEFAULT 0, " +
         COLUMN_TERMINAL_FAVORITE_USER_ID + " INTEGER DEFAULT 0, " +
         COLUMN_TERMINAL_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
@@ -503,6 +507,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 18) {
             try { db.execSQL(CREATE_TABLE_LOGS_UNBOUND); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 19) {
+            try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_GROUP_IDS + " TEXT"); } catch (Exception ignored) {}
+            try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_GROUP_NAMES + " TEXT"); } catch (Exception ignored) {}
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -1165,6 +1173,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_TERMINAL_RSSI, terminal.getRssi());
         values.put(COLUMN_TERMINAL_DEPARTMENT, terminal.getDepartment());
         values.put(COLUMN_TERMINAL_LOCATION, terminal.getLocation());
+        if (terminal.getDepartmentId() > 0) {
+            values.put(COLUMN_TERMINAL_DEPARTMENT_ID, terminal.getDepartmentId());
+        }
+        if (terminal.getRoomId() > 0) {
+            values.put(COLUMN_TERMINAL_ROOM_ID, terminal.getRoomId());
+        }
+        if (terminal.getNursingGroupId() > 0) {
+            values.put(COLUMN_TERMINAL_NURSING_GROUP_ID, terminal.getNursingGroupId());
+        }
+        if (terminal.getOtherId() > 0) {
+            values.put(COLUMN_TERMINAL_OTHER_ID, terminal.getOtherId());
+        }
+        values.put(COLUMN_TERMINAL_EXTENSION, terminal.getExtension());
+        if (terminal.getGroupIdsText() != null) values.put(COLUMN_TERMINAL_GROUP_IDS, terminal.getGroupIdsText());
+        if (terminal.getGroupNamesText() != null) values.put(COLUMN_TERMINAL_GROUP_NAMES, terminal.getGroupNamesText());
+        values.put(COLUMN_TERMINAL_IS_FAVORITE, terminal.isFavorite() ? 1 : 0);
+        values.put(COLUMN_TERMINAL_CREATE_TIME, System.currentTimeMillis());
+        values.put(COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
         
         long result = db.insert(TABLE_TERMINALS, null, values);
         return result;
@@ -1225,8 +1251,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setNursingGroupId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_NURSING_GROUP_ID)));
                 terminal.setOtherId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_OTHER_ID)));
                 
-                // 设置扩展字段
+                // 设置扩展与分组字段
                 terminal.setExtension(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_EXTENSION)));
+                int giIdx = cursor.getColumnIndex(COLUMN_TERMINAL_GROUP_IDS);
+                if (giIdx != -1) terminal.setGroupIdsText(cursor.getString(giIdx));
+                int gnIdx = cursor.getColumnIndex(COLUMN_TERMINAL_GROUP_NAMES);
+                if (gnIdx != -1) terminal.setGroupNamesText(cursor.getString(gnIdx));
                 
                 // 设置收藏状态
                 int fav = cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_IS_FAVORITE));
@@ -1349,29 +1379,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (frame != null) {
             // 事件优先级：低电量 > 丢失 > 开锁/上锁 > 打开/关闭 > 取走/放入 > 定期上报 > 护士站查询
             // 备注：statusCode 使用 LogStatus 枚举的 code，便于统一展示
-             if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 &&
-                     frame.stLayer2NotInPlace == 1 && frame.stLayer3NotInPlace == 1 &&
-                    frame.stLayer4NotInPlace == 1 && frame.stLayer5NotInPlace == 1)) {
+             if (frame.stPowerLockOn == 1 && (frame.stLayer1NotInPlace == 1 ||
+                     frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
+                    frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
                 // 非法移走 -> 设备丢失
                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
-            } else if (frame.evLowBattery == 1) {
+            } else if ((frame.stLayer1NotInPlace == 0 &&
+                     frame.stLayer2NotInPlace == 0 && frame.stLayer3NotInPlace == 0 &&
+                     frame.stLayer4NotInPlace == 0 && frame.stLayer5NotInPlace == 0)) {
+                 // 在线：电源锁关，且任一层板在位
+                 statusCode = com.lora.cn.ui.constants.LogStatus.ONLINE.code;
+             } else if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
+                     frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
+                     frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
+                 // 正常（取走）
+                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
+             } else if (frame.evLowBattery == 1) {
                  // 低电量报警
                  statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
-            } else if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 0 ||
-                    frame.stLayer2NotInPlace == 0 || frame.stLayer3NotInPlace == 0 ||
-                    frame.stLayer4NotInPlace == 0 || frame.stLayer5NotInPlace == 0)) {
-                // 在线：电源锁关，且任一层板在位
-                statusCode = com.lora.cn.ui.constants.LogStatus.ONLINE.code;
-             }else if (frame.stPowerLockOn == 1) {
+            }  else if (frame.stPowerLockOn == 1) {
                 // 开锁
                 statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
             } else if (frame.stPowerLockOn == 0) {
                 // 上锁
                 statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
-            } else if (frame.evManualTake == 1) {
-                // 设备打开（取走）
-                statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
-            } else if (frame.evManualPut == 1) {
+            }  else if (frame.evManualPut == 1) {
                 // 设备关闭（放入）
                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
             }  else  {
@@ -1396,24 +1428,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
         long result = db.insert(targetTable, null, values);
 
-        // 同步更新终端设备的电量、信号强度，并记扩展信息
+        // 同步更新终端设备的电量、信号强度，并依据上面得到的 statusCode 更新终端状态
         try {
             if (frame != null && deviceId != null) {
                 updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
-                boolean anyLayerNotInPlace = frame.stLayer1NotInPlace == 1 || frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 || frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1;
-                boolean allLayersNotInPlace = frame.stLayer1NotInPlace == 1 && frame.stLayer2NotInPlace == 1 && frame.stLayer3NotInPlace == 1 && frame.stLayer4NotInPlace == 1 && frame.stLayer5NotInPlace == 1;
-                boolean anyLayerInPlace = frame.stLayer1NotInPlace == 0 || frame.stLayer2NotInPlace == 0 || frame.stLayer3NotInPlace == 0 || frame.stLayer4NotInPlace == 0 || frame.stLayer5NotInPlace == 0;
-                if (frame.stPowerLockOn == 0 && allLayersNotInPlace) {
+                if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
                     int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
-                    android.util.Log.d("DatabaseHelper", "更新终端状态为异常丢失 deviceId=" + deviceId + ", rows=" + rows);
-                } else if (frame.stPowerLockOn == 1 && allLayersNotInPlace) {
+                    android.util.Log.d("DatabaseHelper", "按日志状态更新终端为异常取走 deviceId=" + deviceId + ", rows=" + rows);
+                } else if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code) {
                     int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
-                    android.util.Log.d("DatabaseHelper", "更新终端状态为正常取走 deviceId=" + deviceId + ", rows=" + rows);
-                } else if (frame.stPowerLockOn == 0 && anyLayerInPlace) {
+                    android.util.Log.d("DatabaseHelper", "按日志状态更新终端为正常取走 deviceId=" + deviceId + ", rows=" + rows);
+                } else if (statusCode == com.lora.cn.ui.constants.LogStatus.ONLINE.code) {
                     int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
-                    android.util.Log.d("DatabaseHelper", "更新终端状态为在线 deviceId=" + deviceId + ", rows=" + rows);
+                    android.util.Log.d("DatabaseHelper", "按日志状态更新终端为正常在线 deviceId=" + deviceId + ", rows=" + rows);
                 } else {
-                    android.util.Log.d("DatabaseHelper", "保持原状态 deviceId=" + deviceId);
+                    android.util.Log.d("DatabaseHelper", "日志状态不触发终端状态变更 deviceId=" + deviceId + ", statusCode=" + statusCode);
                 }
                 try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId)); } catch (Exception ignored) {}
             }
@@ -1464,12 +1493,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      * 将RSSI(0~138，代表-138~0dBm)映射为0~4根信号条
      */
     private int mapRssiToBars(int rssiRaw) {
-        int dbm = -Math.max(0, Math.min(138, rssiRaw));
-        if (dbm >= -70) return 4;       // 强
-        if (dbm >= -85) return 3;       // 较强
-        if (dbm >= -100) return 2;      // 一般
-        if (dbm >= -120) return 1;      // 较弱
-        return 0;                        // 很弱/无信号
+        int v = Math.max(0, Math.min(138, rssiRaw));
+        if (v <= 65) return 4;
+        if (v <= 75) return 3;
+        if (v <= 85) return 2;
+        if (v <= 95) return 1;
+        return 0;
     }
 
     public java.util.List<com.lora.cn.ui.model.LogInfo> getAllLogs() {
@@ -1764,8 +1793,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      */
     public int deleteTerminalByDeviceId(String deviceId) {
         SQLiteDatabase db = this.getWritableDatabase();
-        int result = db.delete(TABLE_TERMINALS, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{deviceId});
-        return result;
+        try {
+            int result = db.delete(TABLE_TERMINALS, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{deviceId});
+            if (result > 0) {
+                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("删除终端:" + deviceId)); } catch (Exception ignored) {}
+            }
+            return result;
+        } finally {
+            db.close();
+        }
     }
 
     /**

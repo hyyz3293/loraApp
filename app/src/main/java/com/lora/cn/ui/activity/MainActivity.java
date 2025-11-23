@@ -492,6 +492,7 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
         } catch (Exception ignored) {}
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("主页刷新:" + frame.deviceId)); } catch (Exception ignored) {}
         int statusCode = 0;
         try {
             java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(frame.deviceId);

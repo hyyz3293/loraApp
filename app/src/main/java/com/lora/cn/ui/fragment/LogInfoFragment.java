@@ -313,7 +313,7 @@ public class LogInfoFragment extends Fragment {
             boolean afterHandled = ht == null || at > ht;
             if (afterNormal && afterHandled) allowedIds.add(v.getId());
         }
-        logInfoAdapter.setAllowedHandleIds(allowedIds);
+        if (logInfoAdapter != null) logInfoAdapter.setAllowedHandleIds(allowedIds);
         java.util.Map<Long, String> handledLabels = new java.util.HashMap<>();
         try {
             com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
@@ -345,7 +345,7 @@ public class LogInfoFragment extends Fragment {
                 }
             }
         } catch (Exception ignored) {}
-        logInfoAdapter.setHandledSourceLabels(handledLabels);
+        if (logInfoAdapter != null) logInfoAdapter.setHandledSourceLabels(handledLabels);
         if (logInfoAdapter != null) logInfoAdapter.submitList(out);
     }
 
