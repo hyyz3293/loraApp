@@ -26,6 +26,7 @@ public class LogInfoFragment extends Fragment {
     private DatabaseHelper databaseHelper;
     private android.widget.Spinner spinnerLogType;
     private android.widget.Spinner spinnerPolice;
+    private android.widget.TextView btnExport;
     List<LogInfo> logList = new ArrayList<>();
     private android.view.View rlStart;
     private android.view.View rlEnd;
@@ -74,6 +75,8 @@ public class LogInfoFragment extends Fragment {
         tvEnd = view.findViewById(R.id.time_end_time_tv);
         spinnerLogType = view.findViewById(R.id.log_type);
         spinnerPolice = view.findViewById(R.id.spinner_police);
+        btnExport = view.findViewById(R.id.btn_export_log_excel);
+        if (btnExport != null) btnExport.setOnClickListener(v -> exportLogs());
         if (rlStart != null) rlStart.setOnClickListener(v -> showStartPicker());
         if (rlEnd != null) rlEnd.setOnClickListener(v -> showEndPicker());
         if (spinnerLogType != null) spinnerLogType.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
@@ -332,5 +335,52 @@ public class LogInfoFragment extends Fragment {
         } catch (Exception ignored) {}
         logInfoAdapter.setHandledSourceLabels(handledLabels);
         if (logInfoAdapter != null) logInfoAdapter.submitList(out);
+    }
+
+    private void exportLogs() {
+        try {
+            java.util.List<com.lora.cn.ui.model.LogInfo> all = databaseHelper.getAllLogs();
+            String NL = "\r\n";
+            StringBuilder sb = new StringBuilder();
+            sb.append("时间,状态,终端列表,终端ID,处理人,处理时间,操作").append(NL);
+            if (all != null) {
+                for (com.lora.cn.ui.model.LogInfo li : all) {
+                    String time = safe(li.getCreateTime());
+                    String status = com.lora.cn.ui.constants.LogStatus.toText(li.getStatusCode());
+                    String name = safe(li.getTerminalName());
+                    String id = safe(li.getTerminalId());
+                    String user = safe(li.getHandleUser());
+                    String htime = safe(li.getHandleTime());
+                    String op = safe(li.getAction());
+                    sb.append(escape(time)).append(',')
+                      .append(escape(status)).append(',')
+                      .append(escape(name)).append(',')
+                      .append(escape(id)).append(',')
+                      .append(escape(user)).append(',')
+                      .append(escape(htime)).append(',')
+                      .append(escape(op)).append(NL);
+                }
+            }
+            java.io.File dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+            java.io.File folder = new java.io.File(dir, "LoraAppLogs");
+            if (!folder.exists()) folder.mkdirs();
+            String name = "logs_export_" + System.currentTimeMillis() + ".csv";
+            java.io.File file = new java.io.File(folder, name);
+            java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
+            fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+            fos.write(sb.toString().getBytes("UTF-8"));
+            fos.flush(); fos.close();
+            android.widget.Toast.makeText(requireContext(), "导出成功: " + file.getAbsolutePath(), android.widget.Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            android.widget.Toast.makeText(requireContext(), "导出失败: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private static String safe(String s) { return s == null ? "" : s; }
+    private static String escape(String s) {
+        if (s == null) return "";
+        String t = s.replace("\"", "\"\"");
+        if (t.contains(",") || t.contains("\n") || t.contains("\r")) return '"' + t + '"';
+        return t;
     }
 }

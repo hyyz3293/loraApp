@@ -131,14 +131,15 @@
 
            <TextView
                android:id="@+id/log_operation"
-               android:text=""
-               android:gravity="center_vertical"
-               android:textColor="#666666"
-               android:textSize="13dp"
-               android:textStyle="bold"
+               android:layout_width="102dp"
+               android:layout_height="36dp"
                android:layout_marginRight="5dp"
-               android:layout_width="match_parent"
-               android:layout_height="wrap_content" />
+               android:background="@drawable/bg_btn_now"
+               android:gravity="center"
+               android:text=""
+               android:textColor="@color/white"
+               android:textSize="11dp"
+               android:textStyle="bold" />
 
        </LinearLayout>
 
