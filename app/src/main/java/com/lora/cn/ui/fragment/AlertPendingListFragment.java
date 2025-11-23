@@ -91,7 +91,9 @@ public class AlertPendingListFragment extends Fragment {
                     Long prev = lastNormalTime.get(key);
                     if (prev == null || t >= prev) lastNormalTime.put(key, t);
                 }
-                if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                String hu = li.getHandleUser();
+                String htStr = li.getHandleTime();
+                if ((hu != null && !hu.trim().isEmpty()) || (htStr != null && !htStr.trim().isEmpty())) {
                     long t = parseMillis(li.getCreateTime());
                     String key = li.getTerminalId();
                     Long prev = lastHandledTime.get(key);
@@ -108,23 +110,33 @@ public class AlertPendingListFragment extends Fragment {
             for (LogInfo li : pending) {
                 Long ht = lastHandledTime.get(li.getTerminalId());
                 long at = parseMillis(li.getCreateTime());
-                if (ht == null || at > ht) {
-                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                        com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
-                        if (t != null) {
-                            boolean isOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                            boolean isLowNow = t.getBatteryLevel() <= lowTh;
-                            if (!isOffline && isLowNow) filtered.add(li);
-                        }
-                    } else {
-                        filtered.add(li);
+                if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                    com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                    if (t != null) {
+                        boolean isOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                        boolean isLowNow = t.getBatteryLevel() <= lowTh;
+                        boolean afterHandled = ht == null || at > ht;
+                        if (!isOffline && isLowNow && afterHandled) filtered.add(li);
                     }
+                } else {
+                    if (ht == null || at > ht) filtered.add(li);
                 }
             }
             adapter.submitList(filtered);
-            java.util.Set<Long> ids = new java.util.HashSet<>();
-            for (LogInfo li : filtered) ids.add(li.getId());
-            adapter.setAllowedHandleIds(ids);
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.AlertPendingCountEvent(filtered.size())); } catch (Exception ignored) {}
+            java.util.Set<Long> allowedIds = new java.util.HashSet<>();
+            for (LogInfo li : filtered) {
+                int s = li.getStatusCode();
+                boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                if (!candidate) continue;
+                Long ht2 = lastHandledTime.get(li.getTerminalId());
+                long at2 = parseMillis(li.getCreateTime());
+                boolean canHandle = ht2 == null || at2 > ht2;
+                if (canHandle) allowedIds.add(li.getId());
+            }
+            adapter.setAllowedHandleIds(allowedIds);
         } catch (Exception e) {
             Toast.makeText(requireContext(), "加载报警列表失败", Toast.LENGTH_SHORT).show();
         }

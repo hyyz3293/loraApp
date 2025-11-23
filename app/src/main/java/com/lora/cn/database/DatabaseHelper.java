@@ -2022,12 +2022,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public int updateLogHandled(long logId, String handleUser, String handleTime, String handleRemark) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.HANDLED.code);
         values.put("handle_user", handleUser == null ? "" : handleUser);
         values.put("handle_time", handleTime == null ? "" : handleTime);
         values.put("handle_remark", handleRemark == null ? "" : handleRemark);
         try {
             int r = db.update(TABLE_LOGS, values, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(logId)});
+            if (r == 0) {
+                r = db.update(TABLE_LOGS_UNBOUND, values, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(logId)});
+            }
             try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("处理刷新:" + logId)); } catch (Exception ignored) {}
             return r;
         } finally {

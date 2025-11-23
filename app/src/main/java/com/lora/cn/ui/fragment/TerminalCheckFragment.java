@@ -99,8 +99,11 @@ public class TerminalCheckFragment extends Fragment {
             if (!hasPermission("clean_start_count")) {
                 addTerminal.setVisibility(android.view.View.GONE);
             }
-            if (!hasPermission("check_export")) {
+            boolean canExport = hasPermission("clean_export") || hasPermission("log_export") || isAdmin;
+            if (!canExport) {
                 btnExportExcel.setVisibility(android.view.View.GONE);
+            } else {
+                btnExportExcel.setVisibility(android.view.View.VISIBLE);
             }
         } catch (Exception ignored) {}
     }
