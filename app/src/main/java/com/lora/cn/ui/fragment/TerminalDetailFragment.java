@@ -224,7 +224,12 @@ public class TerminalDetailFragment extends Fragment {
                 } else if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE
                         || t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN
                         || t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
-                    if (terminal_detail_battery != null) terminal_detail_battery.setText(t.getBatteryLevel() + "%");
+                    int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                    boolean isLow = t.getBatteryLevel() <= lowTh;
+                    if (terminal_detail_battery != null) {
+                        terminal_detail_battery.setText(t.getBatteryLevel() + "%");
+                        terminal_detail_battery.setTextColor(isLow ? android.graphics.Color.parseColor("#FF9500") : android.graphics.Color.parseColor("#333333"));
+                    }
                     if (batteryView != null) {
                         batteryView.setVisibility(View.VISIBLE);
                         batteryView.setBatteryLevel(t.getBatteryLevel());

@@ -1484,9 +1484,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                      frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
                  // 正常（取走）
                  statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
-             } else if (frame.evLowBattery == 1) {
-                 // 低电量报警
-                 statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
             }  else if (frame.stPowerLockOn == 1) {
                 // 开锁
                 statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;

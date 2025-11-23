@@ -177,7 +177,8 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         // 电量使用BatteryView，背景透明、边框+四方格显示
         if (!isOffline) {
             int level = Math.max(0, Math.min(100, item.getBatteryLevel()));
-            boolean isLow = level <= 20;
+            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            boolean isLow = level <= lowTh;
             if (isLow) {
                 if (batteryView != null) batteryView.setVisibility(View.GONE);
                 if (ivBatteryIcon != null) {

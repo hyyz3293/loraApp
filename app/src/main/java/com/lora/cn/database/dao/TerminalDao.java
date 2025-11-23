@@ -186,7 +186,8 @@ public class TerminalDao {
             // 读取电量、电压、RSSI
             int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
             if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
-            terminal.setBatteryStatus(terminal.getBatteryLevel() <= 20 ? 0 : 1);
+            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            terminal.setBatteryStatus(terminal.getBatteryLevel() <= lowTh ? 0 : 1);
             int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
             if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
             int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
@@ -246,7 +247,8 @@ public class TerminalDao {
                 // 读取电量、电压、RSSI
                 int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
                 if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
-                terminal.setBatteryStatus(terminal.getBatteryLevel() <= 20 ? 0 : 1);
+                int lowTh2 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                terminal.setBatteryStatus(terminal.getBatteryLevel() <= lowTh2 ? 0 : 1);
                 int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
                 if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
                 int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
