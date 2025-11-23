@@ -1516,7 +1516,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         boolean exists = deviceId != null && isTerminalExists(deviceId);
         String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
-        long result = db.insert(targetTable, null, values);
+        long result = -1L;
+        boolean skipAlarmDuplicate = false;
+        if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
+            android.database.Cursor c = db.rawQuery(
+                    "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS +
+                            " IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + ") " +
+                            " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                    new String[]{deviceId != null ? deviceId : ""});
+            try {
+                if (c != null && c.moveToFirst()) {
+                    int lastSt = c.getInt(0);
+                    if (lastSt == statusCode) skipAlarmDuplicate = true;
+                }
+            } finally {
+                if (c != null) c.close();
+            }
+        }
+        if (!skipAlarmDuplicate) {
+            result = db.insert(targetTable, null, values);
+        }
 
         // 同步更新终端设备的电量、信号强度，并依据上面得到的 statusCode 更新终端状态
         try {
