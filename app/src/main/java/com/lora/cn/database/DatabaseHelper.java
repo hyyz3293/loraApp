@@ -1522,8 +1522,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
             android.database.Cursor c = db.rawQuery(
                     "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
-                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS +
-                            " IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + ") " +
+                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
                             " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
                     new String[]{deviceId != null ? deviceId : ""});
             try {
@@ -1555,7 +1554,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 } else {
                     android.util.Log.d("DatabaseHelper", "日志状态不触发终端状态变更 deviceId=" + deviceId + ", statusCode=" + statusCode);
                 }
-                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId)); } catch (Exception ignored) {}
+                try {
+                    org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId));
+                } catch (Exception ignored) {
+
+                }
                 int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                 String lbKey = "low_battery_flag_device_" + deviceId;
                 boolean flagged = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(lbKey, false);
