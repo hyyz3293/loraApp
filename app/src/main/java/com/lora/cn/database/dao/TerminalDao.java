@@ -184,6 +184,10 @@ public class TerminalDao {
             terminal.setNursingGroupId(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_NURSING_GROUP_ID)));
             terminal.setOtherId(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_OTHER_ID)));
             terminal.setExtension(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_EXTENSION)));
+            int giIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_IDS);
+            if (giIdx != -1) terminal.setGroupIdsText(cursor.getString(giIdx));
+            int gnIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_NAMES);
+            if (gnIdx != -1) terminal.setGroupNamesText(cursor.getString(gnIdx));
             int fav = cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE));
             int favUserId = 0;
             int favUserIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_FAVORITE_USER_ID);
@@ -239,6 +243,10 @@ public class TerminalDao {
                 terminal.setNursingGroupId(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_NURSING_GROUP_ID)));
                 terminal.setOtherId(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_OTHER_ID)));
                 terminal.setExtension(cursor.getString(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_EXTENSION)));
+                int giIdx2 = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_IDS);
+                if (giIdx2 != -1) terminal.setGroupIdsText(cursor.getString(giIdx2));
+                int gnIdx2 = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_NAMES);
+                if (gnIdx2 != -1) terminal.setGroupNamesText(cursor.getString(gnIdx2));
                 int fav2 = cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE));
                 int favUserId2 = 0;
                 int favUserIdx2 = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_FAVORITE_USER_ID);

@@ -101,6 +101,10 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             try {
                 long timeoutMs = getAutoReturnTimeoutMs();
+                if (timeoutMs <= 0) {
+                    autoReturnHandler.postDelayed(this, 1000);
+                    return;
+                }
                 if (autoReturnBusy) {
                     lastInteractionMs = System.currentTimeMillis();
                 }

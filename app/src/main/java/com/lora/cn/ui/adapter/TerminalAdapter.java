@@ -48,60 +48,70 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         if (title == null || title.isEmpty()) title = item.getTerminalName();
         if (title == null || title.isEmpty()) title = item.getTerminalId();
         terminalTitle.setText(title);
-        String dept = item.getDepartment();
-        String room = item.getLocation();
-        String ngName = null;
-        String otherName = null;
-        java.util.List<String> dynTokens = new java.util.ArrayList<>();
+        java.util.List<String> allTokens = new java.util.ArrayList<>();
         try {
             DatabaseManager dm = DatabaseManager.getInstance(holder.itemView.getContext());
-            if ((dept == null || dept.isEmpty()) && item.getDepartmentId() > 0) {
-                Category c0 = dm.getCategoryById(item.getDepartmentId());
-                if (c0 != null) dept = c0.getCategoryName();
-            }
-            if ((room == null || room.isEmpty()) && item.getRoomId() > 0) {
-                Category c1 = dm.getCategoryById(item.getRoomId());
-                if (c1 != null) room = c1.getCategoryName();
-            }
-            if (item.getNursingGroupId() > 0) {
-                Category c = dm.getCategoryById(item.getNursingGroupId());
-                if (c != null) ngName = c.getCategoryName();
-            }
-            if (item.getOtherId() > 0) {
-                Category c2 = dm.getCategoryById(item.getOtherId());
-                if (c2 != null) otherName = c2.getCategoryName();
-            }
-            try {
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            java.util.function.Consumer<Long> addByCategoryId = cid -> {
+                if (cid == null || cid <= 0) return;
+                Category c = dm.getCategoryById(cid);
+                if (c == null) return;
+                long gid = c.getGroupId();
+                String key = gid + ":" + cid;
+                if (seen.contains(key)) return;
+                com.lora.cn.database.entity.Group g = dm.getGroupById(gid);
+                String gname = g != null ? g.getGroupName() : String.valueOf(gid);
+                String cname = c.getCategoryName();
+                allTokens.add(gname + "-" + cname);
+                seen.add(key);
+            };
+            addByCategoryId.accept(item.getDepartmentId());
+            addByCategoryId.accept(item.getRoomId());
+            addByCategoryId.accept(item.getNursingGroupId());
+            addByCategoryId.accept(item.getOtherId());
+//            String ids = item.getGroupIdsText();
+//            if (ids != null && !ids.isEmpty()) {
+//                String[] toks = ids.split(",");
+//                for (String tk : toks) {
+//                    if (tk == null || tk.trim().isEmpty()) continue;
+//                    String[] pr = tk.trim().split(":");
+//                    if (pr.length == 2) {
+//                        long gid = 0L, cid = 0L;
+//                        try { gid = Long.parseLong(pr[0]); cid = Long.parseLong(pr[1]); } catch (Exception ignored) {}
+//                        String key = gid + ":" + cid;
+//                        if (cid > 0 && !seen.contains(key)) {
+//                            com.lora.cn.database.entity.Group g = dm.getGroupById(gid);
+//                            Category c = dm.getCategoryById(cid);
+//                            String gname = g != null ? g.getGroupName() : pr[0];
+//                            String cname = c != null ? c.getCategoryName() : pr[1];
+//                            allTokens.add(gname + "-" + cname);
+//                            seen.add(key);
+//                        }
+//                    }
+//                }
+//            }
+            if (allTokens.isEmpty()) {
                 String names = item.getGroupNamesText();
                 if (names != null && !names.isEmpty()) {
                     String[] toks = names.split(",");
                     for (String tk : toks) {
                         if (tk == null || tk.trim().isEmpty()) continue;
-                        dynTokens.add(tk.trim());
+                        allTokens.add(tk.trim());
                     }
                 }
-            } catch (Exception ignored) {}
-        } catch (Exception ignored) {}
-        String line1 = "";
-        if (dept != null && !dept.isEmpty()) line1 += "科室-" + dept;
-        if (ngName != null && !ngName.isEmpty()) { if (!line1.isEmpty()) line1 += "  "; line1 += "护理组-" + ngName; }
-        String line2 = "";
-        if (room != null && !room.isEmpty()) line2 += "病房-" + room;
-        if (otherName != null && !otherName.isEmpty()) { if (!line2.isEmpty()) line2 += "  "; line2 += "其他-" + otherName; }
-        // 追加动态分组展示：前两个放在第一行，其余放第二行
-        int appended = 0;
-        for (String tk : dynTokens) {
-            if (appended < 2) {
-                if (!line1.isEmpty()) line1 += "  ";
-                line1 += tk;
-            } else {
-                if (!line2.isEmpty()) line2 += "  ";
-                line2 += tk;
             }
-            appended++;
+        } catch (Exception ignored) {}
+        StringBuilder l1 = new StringBuilder();
+        StringBuilder l2 = new StringBuilder();
+        for (int idx = 0; idx < allTokens.size(); idx++) {
+            String tk = allTokens.get(idx);
+            if (idx % 2 == 0) { if (l1.length() > 0) l1.append("  "); l1.append(tk); }
+            else { if (l2.length() > 0) l2.append("  "); l2.append(tk); }
         }
-        terminalKs.setText(line1);
-        terminalBf.setText(line2);
+        terminalKs.setSingleLine(false); terminalKs.setEllipsize(null); terminalKs.setMaxLines(10);
+        terminalBf.setSingleLine(false); terminalBf.setEllipsize(null); terminalBf.setMaxLines(10);
+        terminalKs.setText(l1.toString());
+        terminalBf.setText(l2.toString());
 
         // 信号强度使用SignalStrengthView，按-138~0对应138~0反向计算百分比
         boolean isOffline = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE == item.getStatus();
@@ -127,7 +137,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 }
                 tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
             } else if (isOnline) {
-                int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
+                int rssiRaw = Math.max(0, Math.min(138,138 - item.getRssi()));
                 int bars;
                 if (rssiRaw <= 65) bars = 4;
                 else if (rssiRaw <= 75) bars = 3;

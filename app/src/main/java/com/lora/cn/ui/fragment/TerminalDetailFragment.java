@@ -146,7 +146,7 @@ public class TerminalDetailFragment extends Fragment {
                 } catch (Exception ignored) {}
                 tvDepartment.setText(!TextUtils.isEmpty(depText) ? depText : "-");
                 tvLocation.setText(!TextUtils.isEmpty(locText) ? locText : "-");
-                int rssiRawTop = Math.max(0, Math.min(138, t.getRssi()));
+                int rssiRawTop = Math.max(0, Math.min(138, 138 -t.getRssi()));
                 float percentTop = (138 - rssiRawTop) * 100f / 138f;
                 tvStatus.setText(String.format("%.0f%%", percentTop));
                 if (t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
@@ -157,42 +157,58 @@ public class TerminalDetailFragment extends Fragment {
                 // 分组展示：将选择的分组与分类名用“-”连接，不同分组用“，”隔开
                 StringBuilder groupText = new StringBuilder();
                 com.lora.cn.database.DatabaseManager dm = com.lora.cn.database.DatabaseManager.getInstance(requireContext());
-                if (t.getDepartmentId() > 0) {
-                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getDepartmentId());
-                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getDepartmentId());
+                java.util.function.Consumer<Long> addByCategoryId = cid -> {
+                    if (cid == null || cid <= 0) return;
+                    com.lora.cn.database.entity.Category c = dm.getCategoryById(cid);
+                    if (c == null) return;
+                    long gid = c.getGroupId();
+                    com.lora.cn.database.entity.Group g = dm.getGroupById(gid);
+                    String gname = g != null ? g.getGroupName() : String.valueOf(gid);
+                    String cname = c.getCategoryName();
                     if (groupText.length() > 0) groupText.append(", ");
-                    groupText.append("科室-").append(name);
-                }
-                if (t.getRoomId() > 0) {
-                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getRoomId());
-                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getRoomId());
-                    if (groupText.length() > 0) groupText.append(", ");
-                    groupText.append("病房-").append(name);
-                }
-                if (t.getNursingGroupId() > 0) {
-                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getNursingGroupId());
-                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getNursingGroupId());
-                    if (groupText.length() > 0) groupText.append(", ");
-                    groupText.append("护理组-").append(name);
-                }
-                if (t.getOtherId() > 0) {
-                    com.lora.cn.database.entity.Category c = dm.getCategoryById(t.getOtherId());
-                    String name = c != null ? c.getCategoryName() : String.valueOf(t.getOtherId());
-                    if (groupText.length() > 0) groupText.append(", ");
-                    groupText.append("其他-").append(name);
-                }
+                    groupText.append(gname).append("-").append(cname);
+                };
+                addByCategoryId.accept(t.getDepartmentId());
+                addByCategoryId.accept(t.getRoomId());
+                addByCategoryId.accept(t.getNursingGroupId());
+                addByCategoryId.accept(t.getOtherId());
                 try {
-                    String names = t.getGroupNamesText();
-                    if (names != null && !names.isEmpty()) {
-                        String[] toks = names.split(",");
+                    String ids = t.getGroupIdsText();
+                    if (ids != null && !ids.isEmpty()) {
+                        String[] toks = ids.split(",");
                         for (String tk : toks) {
                             if (tk == null || tk.trim().isEmpty()) continue;
-                            if (groupText.length() > 0) groupText.append(", ");
-                            groupText.append(tk.trim());
+                            String[] pr = tk.trim().split(":");
+                            if (pr.length == 2) {
+                                long gid = 0L, cid = 0L;
+                                try { gid = Long.parseLong(pr[0]); cid = Long.parseLong(pr[1]); } catch (Exception ignored) {}
+                                com.lora.cn.database.entity.Group g = dm.getGroupById(gid);
+                                com.lora.cn.database.entity.Category c = dm.getCategoryById(cid);
+                                String gname = g != null ? g.getGroupName() : pr[0];
+                                String cname = c != null ? c.getCategoryName() : pr[1];
+                                if (groupText.length() > 0) groupText.append(", ");
+                                groupText.append(gname).append("-").append(cname);
+                            }
+                        }
+                    }
+                    if (groupText.length() == 0) {
+                        String names = t.getGroupNamesText();
+                        if (names != null && !names.isEmpty()) {
+                            String[] toks = names.split(",");
+                            for (String tk : toks) {
+                                if (tk == null || tk.trim().isEmpty()) continue;
+                                if (groupText.length() > 0) groupText.append(", ");
+                                groupText.append(tk.trim());
+                            }
                         }
                     }
                 } catch (Exception ignored) {}
-                if (terminal_detail_type != null) terminal_detail_type.setText(groupText.length() > 0 ? groupText.toString() : "-");
+                if (terminal_detail_type != null) {
+                    terminal_detail_type.setSingleLine(false);
+                    terminal_detail_type.setEllipsize(null);
+                    terminal_detail_type.setMaxLines(20);
+                    terminal_detail_type.setText(t.getGroupNamesText().length() > 0 ? t.getGroupNamesText().toString() : "-");
+                }
 
                 // 设备CODE：读取新字段deviceCode
                 String code = t.getDeviceCode();
@@ -229,7 +245,7 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
 
                 if (signalView != null && t.getStatus() != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    int rssiRaw = Math.max(0, Math.min(138, t.getRssi()));
+                    int rssiRaw = Math.max(0, Math.min(138, 138 - t.getRssi()));
                     int bars;
                     if (rssiRaw <= 65) bars = 4;
                     else if (rssiRaw <= 75) bars = 3;

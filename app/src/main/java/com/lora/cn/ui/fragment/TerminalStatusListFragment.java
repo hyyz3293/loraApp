@@ -287,6 +287,9 @@ public class TerminalStatusListFragment extends Fragment {
             displayTerminal.setBatteryLevel(dbTerminal.getBatteryLevel());
             displayTerminal.setBatteryText(dbTerminal.getBatteryLevel() + "%");
             displayTerminal.setImportant(dbTerminal.isFavorite());
+            displayTerminal.setGroupIdsText(dbTerminal.getGroupIdsText());
+            displayTerminal.setGroupNamesText(dbTerminal.getGroupNamesText());
+
             displayTerminals.add(displayTerminal);
         }
         return displayTerminals;

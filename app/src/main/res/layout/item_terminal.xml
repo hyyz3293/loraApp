@@ -58,11 +58,12 @@
                 android:id="@+id/terminal_ks"
                 android:textColor="#4F627D"
                 android:textSize="12dp"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
             <TextView
                 android:id="@+id/terminal_bf"
+                android:visibility="gone"
                 android:textColor="#4F627D"
                 android:textSize="12dp"
                 android:layout_width="wrap_content"

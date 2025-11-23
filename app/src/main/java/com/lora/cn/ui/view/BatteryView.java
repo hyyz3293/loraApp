@@ -21,7 +21,8 @@ public class BatteryView extends View {
     private float terminalHeight; // 正极高度
     private float terminalGap; // 正极与主体间距
     private float segmentSpacingX; // 内部方格横向间距
-    private float segmentSpacingY; // 内部方格纵向边距
+    private float segmentTopMargin; // 内部方块距顶部边距
+    private float segmentBottomMargin; // 内部方块距底部边距
 
     private Paint outerPaint;
     private Paint innerPaint;
@@ -49,12 +50,13 @@ public class BatteryView extends View {
         terminalHeight = dpToPx(context, 3);
         terminalGap = dpToPx(context, 2);
         segmentSpacingX = dpToPx(context, 3.5f);
-        segmentSpacingY = dpToPx(context, 1.0f);
+        segmentTopMargin = dpToPx(context, 2.0f);
+        segmentBottomMargin = dpToPx(context, 1.0f);
 
         // 外层电池油漆（透明背景，仅边框）
         outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         outerPaint.setStyle(Paint.Style.STROKE);
-        outerPaint.setStrokeWidth(dpToPx(context, 2f));
+        outerPaint.setStrokeWidth(dpToPx(context, 3f));
 
         // 内部电量油漆
         innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -101,8 +103,9 @@ public class BatteryView extends View {
 
     private void drawBatterySegments(Canvas canvas, RectF bodyRect) {
         float segmentWidth = (bodyRect.width() - (segmentCount + 1) * segmentSpacingX) / segmentCount;
-        float top = bodyRect.top + segmentSpacingY;
-        float bottom = bodyRect.bottom - segmentSpacingY;
+        float strokeInset = outerPaint.getStrokeWidth() / 2f;
+        float top = bodyRect.top + strokeInset + segmentTopMargin;
+        float bottom = bodyRect.bottom - strokeInset - segmentBottomMargin;
         float segmentHeight = bottom - top;
 
         for (int i = 0; i < segmentCount; i++) {

@@ -117,17 +117,11 @@ public class DialogUtils {
             }
             
             try {
-                int number = Integer.parseInt(inputValue);
-                if (number >= 0 && number > 100) {
-                    Toast.makeText(context, "请输入0-100之间的数字", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                
+                Integer.parseInt(inputValue);
                 dialog.dismiss();
                 if (listener != null) {
                     listener.onConfirm(inputValue);
                 }
-                
             } catch (NumberFormatException e) {
                 Toast.makeText(context, "请输入有效数字", Toast.LENGTH_SHORT).show();
             }

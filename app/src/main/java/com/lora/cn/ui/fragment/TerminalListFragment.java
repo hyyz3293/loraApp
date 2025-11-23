@@ -897,6 +897,9 @@ public class TerminalListFragment extends Fragment {
             }
             displayTerminal.setRssi(dbTerminal.getRssi());
 
+            displayTerminal.setGroupIdsText(dbTerminal.getGroupIdsText());
+            displayTerminal.setGroupNamesText(dbTerminal.getGroupNamesText());
+
             displayTerminal.setDepartment(dept);
             displayTerminal.setLocation(room);
             displayTerminal.setStatus(dbTerminal.getStatus());

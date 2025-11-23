@@ -106,13 +106,23 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
 
         numberTitle.setText(item.getTitle());
         
-        // 设置当前数值
-        String currentNum = "2"; // 默认值
-        if (item.getValue() != null && !item.getValue().isEmpty()) {
-            currentNum = item.getValue();
+        // 设置当前数值（从SP读取为准）
+        String currentNum = "";
+        if (item.getIndex() == 3) {
+            int cc = com.blankj.utilcode.util.SPUtils.getInstance().getInt("terminal_check_count", 2);
+            currentNum = String.valueOf(cc);
+        } else if (item.getIndex() == 4) {
+            int lb = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            currentNum = String.valueOf(lb);
+        } else if (item.getIndex() == 5) {
+            long sec = com.blankj.utilcode.util.SPUtils.getInstance().getLong("home_auto_return_timeout_sec", 60);
+            currentNum = String.valueOf(sec);
+        } else {
+            currentNum = item.getValue() != null ? item.getValue() : "";
         }
+        item.setValue(currentNum);
         if (item.getIndex() == 4) {
-            numberValue.setText(currentNum);
+            numberValue.setText(currentNum + "%");
         } else {
             numberValue.setText(currentNum);
         }
@@ -151,16 +161,23 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                     unit,
                     newValue -> {
                         String out = newValue;
-                        if (item.getIndex() == 4) {
+                        if (item.getIndex() == 3) {
                             try {
                                 int n = Integer.parseInt(newValue);
-                                n = Math.max(0, Math.min(100, n));
+                                if (n < 1) n = 1;
                                 out = String.valueOf(n);
+                                com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_check_count", n);
+                            } catch (Exception ignored) {}
+                        } else if (item.getIndex() == 4) {
+                            try {
+                                int n = Integer.parseInt(newValue);
+                                out = String.valueOf(n);
+                                com.blankj.utilcode.util.SPUtils.getInstance().put("low_battery_threshold_percent", n);
                             } catch (Exception ignored) {}
                         } else if (item.getIndex() == 5) {
                             try {
                                 long n = Long.parseLong(newValue);
-                                if (n <= 0) n = 60;
+                                if (n < 0) n = 0;
                                 out = String.valueOf(n);
                                 com.blankj.utilcode.util.SPUtils.getInstance().put("home_auto_return_timeout_sec", n);
                             } catch (Exception ignored) {}
