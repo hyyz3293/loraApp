@@ -138,7 +138,7 @@ public class LogDetailInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHol
 
         if ("异常取走".equals(status) || status.contains("异常取走") ) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_red);
-            textColor = Color.parseColor("#666666");
+            textColor = Color.parseColor("#D30000");
         } else if ("设备低电量".equals(status) || status.contains("设备低电量")) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_orange);
             textColor = Color.parseColor("#FF9F0F");

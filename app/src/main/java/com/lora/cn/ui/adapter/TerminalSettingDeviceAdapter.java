@@ -157,6 +157,13 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                                 n = Math.max(0, Math.min(100, n));
                                 out = String.valueOf(n);
                             } catch (Exception ignored) {}
+                        } else if (item.getIndex() == 5) {
+                            try {
+                                long n = Long.parseLong(newValue);
+                                if (n <= 0) n = 60;
+                                out = String.valueOf(n);
+                                com.blankj.utilcode.util.SPUtils.getInstance().put("home_auto_return_timeout_sec", n);
+                            } catch (Exception ignored) {}
                         }
                         item.setValue(out);
                         if (item.getIndex() == 4) {

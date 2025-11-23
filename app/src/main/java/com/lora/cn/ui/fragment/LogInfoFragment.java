@@ -340,9 +340,12 @@ public class LogInfoFragment extends Fragment {
     private void exportLogs() {
         try {
             java.util.List<com.lora.cn.ui.model.LogInfo> all = databaseHelper.getAllLogs();
-            String NL = "\r\n";
             StringBuilder sb = new StringBuilder();
-            sb.append("时间,状态,终端列表,终端ID,处理人,处理时间,操作").append(NL);
+            sb.append("<html><head><meta charset=\"UTF-8\"></head><body>");
+            sb.append("<table border=\"1\" cellspacing=\"0\" cellpadding=\"4\">");
+            sb.append("<tr>")
+              .append("<th>时间</th><th>状态</th><th>终端列表</th><th>终端ID</th><th>处理人</th><th>处理时间</th><th>操作</th>")
+              .append("</tr>");
             if (all != null) {
                 for (com.lora.cn.ui.model.LogInfo li : all) {
                     String time = safe(li.getCreateTime());
@@ -352,22 +355,24 @@ public class LogInfoFragment extends Fragment {
                     String user = safe(li.getHandleUser());
                     String htime = safe(li.getHandleTime());
                     String op = safe(li.getAction());
-                    sb.append(escape(time)).append(',')
-                      .append(escape(status)).append(',')
-                      .append(escape(name)).append(',')
-                      .append(escape(id)).append(',')
-                      .append(escape(user)).append(',')
-                      .append(escape(htime)).append(',')
-                      .append(escape(op)).append(NL);
+                    sb.append("<tr>")
+                      .append("<td>").append(escape(time)).append("</td>")
+                      .append("<td>").append(escape(status)).append("</td>")
+                      .append("<td>").append(escape(name)).append("</td>")
+                      .append("<td>").append(escape(id)).append("</td>")
+                      .append("<td>").append(escape(user)).append("</td>")
+                      .append("<td>").append(escape(htime)).append("</td>")
+                      .append("<td>").append(escape(op)).append("</td>")
+                      .append("</tr>");
                 }
             }
+            sb.append("</table></body></html>");
             java.io.File dir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
             java.io.File folder = new java.io.File(dir, "LoraAppLogs");
             if (!folder.exists()) folder.mkdirs();
-            String name = "logs_export_" + System.currentTimeMillis() + ".csv";
+            String name = "logs_export_" + System.currentTimeMillis() + ".xls";
             java.io.File file = new java.io.File(folder, name);
             java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
-            fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
             fos.write(sb.toString().getBytes("UTF-8"));
             fos.flush(); fos.close();
             android.widget.Toast.makeText(requireContext(), "导出成功: " + file.getAbsolutePath(), android.widget.Toast.LENGTH_LONG).show();

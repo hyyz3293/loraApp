@@ -109,7 +109,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                     signalView.setSignalStrength(bars);
                 }
                 if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
-                tvStatusTitle.setText(String.format("%.0f%%", percent));
+                tvStatusTitle.setText("正常在线");
             } else if (isNormalTaken) {
                 if (signalView != null) signalView.setVisibility(View.GONE);
                 if (ivStatusIcon != null) {
@@ -127,7 +127,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                     signalView.setSignalStrength(bars);
                 }
                 if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
-                tvStatusTitle.setText(String.format("%.0f%%", percent));
+                tvStatusTitle.setText("正常在线");
             }
         }
 

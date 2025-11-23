@@ -209,7 +209,7 @@ public class TerminalDetailFragment extends Fragment {
                     float percent = (rssiRaw) * 100f / 138f;
                     int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
                     signalView.setSignalStrength(bars);
-                    if (tvStatus != null) tvStatus.setText(String.format("%.0f%%", percent));
+                    if (tvStatus != null) tvStatus.setText("正常在线");
                 }
             } else {
                 // 无记录时，回退为占位符

@@ -314,6 +314,7 @@ public class TerminalCheckFragment extends Fragment {
      */
     private void startTerminalCheck() {
         isChecking = true;
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(true)); } catch (Exception ignored) {}
         addTerminal.setText("清点中...");
         addTerminal.setEnabled(false);
 
@@ -348,6 +349,7 @@ public class TerminalCheckFragment extends Fragment {
                     } else {
                         com.lora.cn.utils.DialogUtils.dismissCountingProgress(cp);
                         isChecking = false;
+                        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
                         addTerminal.setText("开始清点");
                         addTerminal.setEnabled(true);
                         if (!isAdmin) updateRemainingCount(remainingCount - 1);
@@ -358,6 +360,7 @@ public class TerminalCheckFragment extends Fragment {
                 } catch (Exception e) {
                     try { com.lora.cn.utils.DialogUtils.dismissCountingProgress(cp); } catch (Exception ignored) {}
                     isChecking = false;
+                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
                     addTerminal.setText("开始清点");
                     addTerminal.setEnabled(true);
                 }
@@ -404,11 +407,12 @@ public class TerminalCheckFragment extends Fragment {
     
     private void exportExcel() {
         try {
-            String NL = "\r\n";
             StringBuilder sbStatus = new StringBuilder();
             StringBuilder sbBattery = new StringBuilder();
-            sbStatus.append("分类,正常在线,设备离线,正常取走,异常取走").append(NL);
-            sbBattery.append("分类,电量正常,低电量,离线").append(NL);
+            sbStatus.append("<html><head><meta charset=\"UTF-8\"></head><body><table border=\"1\" cellspacing=\"0\" cellpadding=\"4\">")
+                    .append("<tr><th>分类</th><th>正常在线</th><th>设备离线</th><th>正常取走</th><th>异常取走</th></tr>");
+            sbBattery.append("<html><head><meta charset=\"UTF-8\"></head><body><table border=\"1\" cellspacing=\"0\" cellpadding=\"4\">")
+                    .append("<tr><th>分类</th><th>电量正常</th><th>低电量</th><th>设备离线</th></tr>");
             for (com.lora.cn.ui.model.TerminalChartData d : chartDataList) {
                 String label = d.getOnlineTitle();
                 java.util.Map<String, Integer> online = new java.util.HashMap<>();
@@ -434,32 +438,31 @@ public class TerminalCheckFragment extends Fragment {
                 int bn = battery.getOrDefault("电量正常", 0);
                 int bl = battery.getOrDefault("低电量", 0);
                 int boff = battery.getOrDefault("设备离线", 0);
-                sbStatus.append(label).append(',')
-                        .append(on).append(',')
-                        .append(off).append(',')
-                        .append(take).append(',')
+                sbStatus.append("<tr><td>").append(label).append("</td><td>")
+                        .append(on).append("</td><td>")
+                        .append(off).append("</td><td>")
+                        .append(take).append("</td><td>")
                         .append(loss)
-                        .append(NL);
-                sbBattery.append(label).append(',')
-                        .append(bn).append(',')
-                        .append(bl).append(',')
+                        .append("</td></tr>");
+                sbBattery.append("<tr><td>").append(label).append("</td><td>")
+                        .append(bn).append("</td><td>")
+                        .append(bl).append("</td><td>")
                         .append(boff)
-                        .append(NL);
+                        .append("</td></tr>");
             }
-
+            sbStatus.append("</table></body></html>");
+            sbBattery.append("</table></body></html>");
             java.io.File dir = requireContext().getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
             if (dir == null) dir = requireContext().getExternalFilesDir(null);
             if (dir == null) dir = new java.io.File(requireContext().getFilesDir(), "exports");
             if (!dir.exists()) dir.mkdirs();
             long ts = System.currentTimeMillis();
-            java.io.File fileStatus = new java.io.File(dir, "terminal_check_status_" + ts + ".csv");
-            java.io.File fileBattery = new java.io.File(dir, "terminal_check_battery_" + ts + ".csv");
+            java.io.File fileStatus = new java.io.File(dir, "terminal_check_status_" + ts + ".xls");
+            java.io.File fileBattery = new java.io.File(dir, "terminal_check_battery_" + ts + ".xls");
             java.io.FileOutputStream fos1 = new java.io.FileOutputStream(fileStatus);
-            fos1.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
             fos1.write(sbStatus.toString().getBytes("UTF-8"));
             fos1.flush(); fos1.close();
             java.io.FileOutputStream fos2 = new java.io.FileOutputStream(fileBattery);
-            fos2.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
             fos2.write(sbBattery.toString().getBytes("UTF-8"));
             fos2.flush(); fos2.close();
             Toast.makeText(getContext(), "导出成功: \n" + fileStatus.getAbsolutePath() + "\n" + fileBattery.getAbsolutePath(), Toast.LENGTH_LONG).show();
