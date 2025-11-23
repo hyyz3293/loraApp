@@ -56,7 +56,8 @@ public class LogDetailInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHol
             setTextOrPlaceholder(logCompleteTime, item.getHandleTime());
         } else {
             setTextOrPlaceholder(logComplete, item.getOperator());
-            setTextOrPlaceholder(logCompleteTime, item.getOperationTime());
+            logCompleteTime.setText("");
+            logCompleteTime.setBackground(null);
         }
 
         String act = item.getAction();

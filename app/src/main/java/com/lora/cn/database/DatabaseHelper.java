@@ -306,7 +306,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     
     // 创建日志表的SQL语句
     private static final String CREATE_TABLE_LOGS = 
-        "CREATE TABLE " + TABLE_LOGS + " (" +
+        "CREATE TABLE IF NOT EXISTS " + TABLE_LOGS + " (" +
         COLUMN_LOG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
         COLUMN_LOG_TERMINAL_ID + " TEXT NOT NULL, " +
         COLUMN_LOG_TERMINAL_NAME + " TEXT NOT NULL, " +
@@ -323,7 +323,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     // 创建未绑定终端的日志表（字段与日志表一致）
     private static final String CREATE_TABLE_LOGS_UNBOUND =
-        "CREATE TABLE " + TABLE_LOGS_UNBOUND + " (" +
+        "CREATE TABLE IF NOT EXISTS " + TABLE_LOGS_UNBOUND + " (" +
         COLUMN_LOG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
         COLUMN_LOG_TERMINAL_ID + " TEXT NOT NULL, " +
         COLUMN_LOG_TERMINAL_NAME + " TEXT NOT NULL, " +
@@ -394,8 +394,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_LOGS_UNBOUND);
         // 创建用户收藏关系表
         db.execSQL(CREATE_TABLE_USER_FAVORITES);
-        // 创建未绑定终端日志表
-        db.execSQL(CREATE_TABLE_LOGS_UNBOUND);
         
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
@@ -557,7 +555,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new String[]{String.valueOf(userId), deviceId});
         boolean res = c.moveToFirst();
         c.close();
-        db.close();
         return res;
     }
 
@@ -574,7 +571,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.delete(TABLE_USER_FAVORITES, COLUMN_UF_USER_ID + "=? AND " + COLUMN_UF_DEVICE_ID + "=?",
                     new String[]{String.valueOf(userId), deviceId});
         }
-        db.close();
     }
     
     /**
@@ -782,7 +778,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 }
             }
             c.close();
-            db.close();
         } catch (Exception ignored) {}
     }
 
@@ -805,7 +800,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 android.util.Log.d("DatabaseHelper", "默认用户查询结果: 未找到admin账号");
             }
             uc.close();
-            db.close();
         } catch (Exception e) {
             android.util.Log.e("DatabaseHelper", "debugLogAdminRoleAndUser异常: " + e.getMessage());
         }
@@ -1308,14 +1302,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 if (gnIdx != -1) terminal.setGroupNamesText(cursor.getString(gnIdx));
                 
                 // 设置收藏状态
-                int fav = cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_IS_FAVORITE));
-                int favUserId = 0;
-                int colIdxFavUser = cursor.getColumnIndex(COLUMN_TERMINAL_FAVORITE_USER_ID);
-                if (colIdxFavUser != -1) {
-                    favUserId = cursor.getInt(colIdxFavUser);
-                }
                 long currentUserId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                terminal.setFavorite(fav == 1 && favUserId == (int) currentUserId);
+                try { terminal.setFavorite(isFavoriteForUser(currentUserId, terminal.getTerminalId())); } catch (Exception ignored) {}
                 
                 // 设置时间戳
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
@@ -1352,7 +1340,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         boolean exists = (deviceId != null && isTerminalExists(deviceId)) || (terminalId != null && isTerminalExists(terminalId));
         String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
         long result = db.insert(targetTable, null, values);
-        db.close();
         return result;
     }
     
@@ -1378,7 +1365,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 || (logInfo.getTerminalId() != null && isTerminalExists(logInfo.getTerminalId()));
         String targetTable2 = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
         long result = db.insert(targetTable2, null, values);
-        db.close();
         return result;
     }
 
@@ -1500,7 +1486,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             android.util.Log.e("DatabaseHelper", "更新终端电量/信号/状态失败", e);
         }
 
-        db.close();
         return result;
     }
 
@@ -1518,7 +1503,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             int rows = db.update(TABLE_TERMINALS, values, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{deviceId});
             return rows > 0;
         } finally {
-            db.close();
         }
     }
 
@@ -1535,7 +1519,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     COLUMN_TERMINAL_DEVICE_ID + "=?",
                     new String[]{deviceId});
         } finally {
-            db.close();
         }
     }
 
@@ -1580,7 +1563,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             logs.add(log);
         }
         cursor.close();
-        db.close();
         return logs;
     }
 
@@ -1615,7 +1597,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             logs.add(log);
         }
         cursor.close();
-        db.close();
         return logs;
     }
 
@@ -1646,7 +1627,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             logs.add(log);
         }
         cursor.close();
-        db.close();
         return logs;
     }
 
@@ -1664,7 +1644,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             if (c2.moveToFirst()) total += c2.getInt(0);
             c2.close();
         }
-        db.close();
         return total;
     }
 
@@ -1705,7 +1684,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             out.add(log);
         }
         cursor.close();
-        db.close();
         return out;
     }
 
@@ -1758,7 +1736,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             logs.add(log);
         }
         cursor.close();
-        db.close();
         return logs;
     }
     
@@ -1769,7 +1746,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.moveToFirst();
         int count = cursor.getInt(0);
         cursor.close();
-        db.close();
         
         // 如果日志表为空，则添加示例数据
         if (count == 0) {
@@ -1793,7 +1769,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String whereClause = COLUMN_LOG_DEVICE_ID + " LIKE 'DEV00%' OR " + COLUMN_LOG_OPERATOR + " IN (?,?,?,?,?,?,?,?)";
         String[] whereArgs = new String[]{"张三","李四","王五","赵六","孙七","周八","吴九","郑十"};
         int deleted = db.delete(TABLE_LOGS, whereClause, whereArgs);
-        db.close();
         return deleted;
     }
 
@@ -1929,7 +1904,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
             return result;
         } finally {
-            db.close();
         }
     }
 
@@ -1948,7 +1922,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("处理刷新:" + logId)); } catch (Exception ignored) {}
             return r;
         } finally {
-            db.close();
         }
     }
 }

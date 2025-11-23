@@ -103,17 +103,19 @@ public class BatteryView extends View {
 
     private void drawBatterySegments(Canvas canvas, RectF bodyRect) {
         float strokeInset = outerPaint.getStrokeWidth() / 2f;
-        float dynSpacingX = Math.max(dpToPx(getContext(), 1f), bodyRect.width() * 0.04f);
         float dynTopMargin = Math.max(dpToPx(getContext(), 1.0f), bodyRect.height() * 0.08f);
         float dynBottomMargin = Math.max(dpToPx(getContext(), 0.8f), bodyRect.height() * 0.06f);
-        float usableWidth = bodyRect.width() - 2f * strokeInset - (segmentCount + 1) * dynSpacingX;
-        float segmentWidth = Math.max(dpToPx(getContext(), 6f), usableWidth / segmentCount);
+        float innerWidth = bodyRect.width() - 2f * strokeInset;
+        float spacing = Math.max(dpToPx(getContext(), 2f), innerWidth * 0.02f);
+        float segmentWidth = (innerWidth - (segmentCount + 1) * spacing) / segmentCount;
+        if (segmentWidth < dpToPx(getContext(), 3f)) segmentWidth = dpToPx(getContext(), 3f);
+        if (segmentWidth > dpToPx(getContext(), 10f)) segmentWidth = dpToPx(getContext(), 10f);
         float top = bodyRect.top + strokeInset + dynTopMargin;
         float bottom = bodyRect.bottom - strokeInset - dynBottomMargin;
 
         for (int i = 0; i < segmentCount; i++) {
             int segmentThreshold = (i + 1) * (100 / segmentCount);
-            float left = bodyRect.left + strokeInset + dynSpacingX + i * (segmentWidth + dynSpacingX);
+            float left = bodyRect.left + strokeInset + spacing + i * (segmentWidth + spacing);
             float right = left + segmentWidth;
             RectF segmentRect = new RectF(left, top, right, bottom);
             if (batteryLevel >= segmentThreshold) {

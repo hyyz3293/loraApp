@@ -214,8 +214,8 @@ public class AddDeviceFragment extends Fragment {
             departmentNames.add(category.getCategoryName());
         }
         ArrayAdapter<String> departmentAdapter = new ArrayAdapter<>(requireContext(), 
-                android.R.layout.simple_spinner_item, departmentNames);
-        departmentAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.layout.spinner_item_12dp, departmentNames);
+        departmentAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
         spinnerDepartment.setAdapter(departmentAdapter);
         
         // 病房号Spinner
@@ -225,8 +225,8 @@ public class AddDeviceFragment extends Fragment {
             roomNames.add(category.getCategoryName());
         }
         ArrayAdapter<String> roomAdapter = new ArrayAdapter<>(requireContext(), 
-                android.R.layout.simple_spinner_item, roomNames);
-        roomAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.layout.spinner_item_12dp, roomNames);
+        roomAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
         spinnerRoom.setAdapter(roomAdapter);
         
         // 护理组Spinner
@@ -236,8 +236,8 @@ public class AddDeviceFragment extends Fragment {
             nursingGroupNames.add(category.getCategoryName());
         }
         ArrayAdapter<String> nursingGroupAdapter = new ArrayAdapter<>(requireContext(), 
-                android.R.layout.simple_spinner_item, nursingGroupNames);
-        nursingGroupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.layout.spinner_item_12dp, nursingGroupNames);
+        nursingGroupAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
         spinnerNursingGroup.setAdapter(nursingGroupAdapter);
         
         // 其他分类Spinner
@@ -247,8 +247,8 @@ public class AddDeviceFragment extends Fragment {
             otherNames.add(category.getCategoryName());
         }
         ArrayAdapter<String> otherAdapter = new ArrayAdapter<>(requireContext(), 
-                android.R.layout.simple_spinner_item, otherNames);
-        otherAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                R.layout.spinner_item_12dp, otherNames);
+        otherAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
         spinnerOther.setAdapter(otherAdapter);
     }
 

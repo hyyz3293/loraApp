@@ -160,13 +160,25 @@
                 android:layout_height="wrap_content" >
 
                 <TextView
-                    android:id="@+id/btn_export_log_excel"
-                    android:layout_toLeftOf="@+id/add_terminal"
+                    android:id="@+id/btn_reset_filters"
                     android:paddingLeft="17dp"
                     android:paddingRight="17dp"
                     android:gravity="center"
                     android:background="@drawable/bg_btn_4"
                     android:layout_marginRight="10dp"
+                    android:layout_centerVertical="true"
+                    android:text="重置"
+                    android:textColor="#383B40"
+                    android:textSize="14dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp" />
+
+                <TextView
+                    android:id="@+id/btn_export_log_excel"
+                    android:paddingLeft="17dp"
+                    android:paddingRight="17dp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_btn_4"
                     android:layout_centerVertical="true"
                     android:text="导出"
                     android:textColor="#383B40"
@@ -273,10 +285,25 @@
             android:layout_width="match_parent"
             android:layout_height="0.5dp" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/terminal_log_recycle"
+        <com.scwang.smart.refresh.layout.SmartRefreshLayout
+            android:id="@+id/refreshLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent">
+
+            <com.scwang.smart.refresh.header.ClassicsHeader
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/terminal_log_recycle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <com.scwang.smart.refresh.footer.ClassicsFooter
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </com.scwang.smart.refresh.layout.SmartRefreshLayout>
 
     </LinearLayout>
 

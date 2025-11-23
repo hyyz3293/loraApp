@@ -174,12 +174,8 @@ public class TerminalDao {
             if (giIdx != -1) terminal.setGroupIdsText(cursor.getString(giIdx));
             int gnIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_GROUP_NAMES);
             if (gnIdx != -1) terminal.setGroupNamesText(cursor.getString(gnIdx));
-            int fav = cursor.getInt(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_IS_FAVORITE));
-            int favUserId = 0;
-            int favUserIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_FAVORITE_USER_ID);
-            if (favUserIdx != -1) favUserId = cursor.getInt(favUserIdx);
             long currentUserId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-            terminal.setFavorite(fav == 1 && favUserId == (int) currentUserId);
+            try { terminal.setFavorite(dbHelper.isFavoriteForUser(currentUserId, terminal.getTerminalId())); } catch (Exception ignored) {}
             terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_CREATE_TIME)));
             terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_UPDATE_TIME)));
             // 读取电量、电压、RSSI

@@ -127,7 +127,11 @@ public class DialogUtils {
             }
         });
         
-        // 显示对话框
+        // 显示对话框并通知忙碌状态
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(true)); } catch (Exception ignored) {}
+        dialog.setOnDismissListener(d -> {
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
+        });
         dialog.show();
     }
 
@@ -222,7 +226,11 @@ public class DialogUtils {
             }
         });
 
-        // 显示对话框
+        // 显示对话框并通知忙碌状态
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(true)); } catch (Exception ignored) {}
+        dialog.setOnDismissListener(d -> {
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
+        });
         dialog.show();
     }
 
@@ -475,6 +483,10 @@ public class DialogUtils {
         int p = Math.max(0, Math.min(100, initialPercent));
         tvPercent.setText(p + "%");
         bar.setProgress(p);
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(true)); } catch (Exception ignored) {}
+        dialog.setOnDismissListener(d -> {
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
+        });
         dialog.show();
         return new CountingProgress(dialog, tvTitle, tvPercent, bar);
     }
@@ -489,6 +501,7 @@ public class DialogUtils {
     public static void dismissCountingProgress(CountingProgress cp) {
         if (cp == null) return;
         try { cp.dialog.dismiss(); } catch (Exception ignored) {}
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
     }
 
     /**
@@ -535,6 +548,10 @@ public class DialogUtils {
             if (onConfirm != null) onConfirm.onConfirm(remark);
         });
 
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(true)); } catch (Exception ignored) {}
+        dialog.setOnDismissListener(d -> {
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
+        });
         dialog.show();
     }
 

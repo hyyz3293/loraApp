@@ -117,6 +117,13 @@ public class TerminalCheckFragment extends Fragment {
         
         // 初始化图表适配器数据
         initChartAdapterData();
+
+        // 默认不清点，恢复按钮状态
+        isChecking = false;
+        if (addTerminal != null) {
+            addTerminal.setText("开始清点");
+            addTerminal.setEnabled(true);
+        }
     }
     
     private void initListeners() {

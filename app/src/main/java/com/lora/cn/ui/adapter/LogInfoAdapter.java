@@ -56,7 +56,8 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
             setTextOrPlaceholder(logCompleteTime, item.getHandleTime());
         } else {
             setTextOrPlaceholder(logComplete, item.getOperator());
-            setTextOrPlaceholder(logCompleteTime, item.getOperationTime());
+            logCompleteTime.setText("");
+            logCompleteTime.setBackground(null);
         }
 
         // 只有下行数据展示操作，其它情况不展示

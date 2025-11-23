@@ -778,7 +778,7 @@ public class MainActivity extends AppCompatActivity {
                     item.name = t.getTerminalName();
                     item.code = devId;
                     item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    alertQueue.addLast(item);
+                    if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
                     lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
                     pendingAlertCount = alertQueue.size();
                     if (newly) { startAlertRinging30s(); queuedAny = true; }
@@ -789,7 +789,7 @@ public class MainActivity extends AppCompatActivity {
                     item.name = t.getTerminalName();
                     item.code = devId;
                     item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    alertQueue.addLast(item);
+                    if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
                     lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
                     pendingAlertCount = alertQueue.size();
                     if (newly) { startAlertRinging30s(); queuedAny = true; }
@@ -800,7 +800,7 @@ public class MainActivity extends AppCompatActivity {
                     item.name = t.getTerminalName();
                     item.code = devId;
                     item.time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    alertQueue.addLast(item);
+                    if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
                     lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
                     pendingAlertCount = alertQueue.size();
                     if (newly) { startAlertRinging30s(); queuedAny = true; }
@@ -864,7 +864,7 @@ public class MainActivity extends AppCompatActivity {
             ringStopRunnable = new java.lang.Runnable() {
                 @Override public void run() { stopAlertRinging(); }
             };
-            ringHandler.postDelayed(ringStopRunnable, 30000);
+            ringHandler.postDelayed(ringStopRunnable, 10000);
         } catch (Exception ignored) {}
     }
     private void stopAlertRinging() {

@@ -252,8 +252,8 @@ public class UserManagementFragment extends Fragment {
             for (Role role : roles) {
                 roleNames.add(role.getRoleName());
             }
-            ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, roleNames);
-            roleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, roleNames);
+            roleAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
             spinnerRole.setAdapter(roleAdapter);
             spinnerRole.setTag(roles);
             
@@ -263,8 +263,8 @@ public class UserManagementFragment extends Fragment {
             for (Position position : positions) {
                 positionNames.add(position.getPositionName());
             }
-            ArrayAdapter<String> positionAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, positionNames);
-            positionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            ArrayAdapter<String> positionAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, positionNames);
+            positionAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
             spinnerPosition.setAdapter(positionAdapter);
             spinnerPosition.setTag(positions);
             
@@ -276,8 +276,8 @@ public class UserManagementFragment extends Fragment {
             for (Department department : departments) {
                 departmentNames.add(department.getDepartmentName());
             }
-            ArrayAdapter<String> departmentAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, departmentNames);
-            departmentAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            ArrayAdapter<String> departmentAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, departmentNames);
+            departmentAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
             spinnerDepartment.setAdapter(departmentAdapter);
             spinnerDepartment.setTag(departments);
             if (!departments.isEmpty()) {
