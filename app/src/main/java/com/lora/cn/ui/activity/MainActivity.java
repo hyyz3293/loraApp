@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
         alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
         alertEvaluateHandler.postDelayed(alertEvaluateRunnable, 1000);
 
-        LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("a528e2000100012509000119001820250926083856000000080000007e0171635e0000000000915a");
+        LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("A528E2000100032509000100001820250926080808000000080000007E017261740000000000CF5A");
 
         Log.d(TAG, " ================ 1111: " + new Gson().toJson(frameData));
 

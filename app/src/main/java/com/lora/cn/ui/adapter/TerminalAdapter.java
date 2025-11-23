@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.chad.library.adapter4.viewholder.QuickViewHolder;
 import com.lora.cn.R;
@@ -102,6 +103,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 float percent = (138 - rssiRaw) * 100f / 138f;
                 int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
                 if (signalView != null) {
+                    LogUtils.e("setSignalStrength===" + bars+ "+=======" + item.getRssi());
                     signalView.setVisibility(View.VISIBLE);
                     signalView.setSignalStrength(bars);
                 }
@@ -115,14 +117,15 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 }
                 tvStatusTitle.setText("正常取走");
             } else {
-                int bars = Math.max(0, Math.min(4, item.getSignalStrength()));
+                int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
+                float percent = (138 - rssiRaw) * 100f / 138f;
+                int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
+                LogUtils.e("setSignalStrength===" + bars);
                 if (signalView != null) {
                     signalView.setVisibility(View.VISIBLE);
                     signalView.setSignalStrength(bars);
                 }
                 if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
-                int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
-                float percent = (138 - rssiRaw) * 100f / 138f;
                 tvStatusTitle.setText(String.format("%.0f%%", percent));
             }
         }

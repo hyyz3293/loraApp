@@ -203,8 +203,11 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_id != null) terminal_detail_id.setText(t.getTerminalId());
 
                 if (signalView != null && t.getStatus() != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    int bars = Math.max(0, Math.min(4, t.getSignalStrength()));
+                    int rssiRaw = Math.max(0, Math.min(138, t.getRssi()));
+                    float percent = (138 - rssiRaw) * 100f / 138f;
+                    int bars = Math.max(0, Math.min(4, Math.round(percent * 4f / 100f)));
                     signalView.setSignalStrength(bars);
+                    if (tvStatus != null) tvStatus.setText(String.format("%.0f%%", percent));
                 }
             } else {
                 // 无记录时，回退为占位符
