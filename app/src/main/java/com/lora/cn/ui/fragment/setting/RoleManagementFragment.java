@@ -44,6 +44,7 @@ public class RoleManagementFragment extends Fragment {
 
     private DatabaseManager databaseManager;
     private List<Role> allRoles;
+    private long currentUserRoleId = -1;
 
     @Nullable
     @Override
@@ -64,6 +65,11 @@ public class RoleManagementFragment extends Fragment {
         btnBack = view.findViewById(R.id.back);
         databaseManager = DatabaseManager.getInstance(requireContext());
         allRoles = new ArrayList<>();
+        long userId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            com.lora.cn.database.entity.User user = databaseManager.getUserById(userId);
+            if (user != null) currentUserRoleId = user.getRoleId();
+        }
     }
 
     private void setupRecyclerView() {
@@ -81,26 +87,32 @@ public class RoleManagementFragment extends Fragment {
         });
         
         // 新增按钮
-        btnAddRole.setOnClickListener(v -> showAddRoleDialogNew());
+        btnAddRole.setOnClickListener(v -> {
+            if (hasPermission("role_add")) showAddRoleDialogNew();
+            else android.widget.Toast.makeText(requireContext(), "您没有新增角色的权限", android.widget.Toast.LENGTH_SHORT).show();
+        });
 
         // 设置适配器点击监听器
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_edit, (baseQuickAdapter, view, i) -> {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
-                showEditRoleDialogNew(role);
+                if (hasPermission("role_edit")) showEditRoleDialogNew(role);
+                else android.widget.Toast.makeText(requireContext(), "您没有编辑角色的权限", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
         
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_delete, (baseQuickAdapter, view, i) -> {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
-                showDeleteConfirmDialog(role);
+                if (hasPermission("role_delete")) showDeleteConfirmDialog(role);
+                else android.widget.Toast.makeText(requireContext(), "您没有删除角色的权限", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
         
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_permissions, (baseQuickAdapter, view, i) -> {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
+                if (!hasPermission("role_edit")) { android.widget.Toast.makeText(requireContext(), "您没有编辑角色权限的权限", android.widget.Toast.LENGTH_SHORT).show(); return; }
                 List<Permission> allPermissions = databaseManager.getPermissionTree();
 
                 // 获取角色当前权限
@@ -532,4 +544,9 @@ public class RoleManagementFragment extends Fragment {
     public static RoleManagementFragment newInstance() {
         return new RoleManagementFragment();
     }
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId <= 0) return false;
+        return databaseManager.hasPermission((int) currentUserRoleId, permissionCode);
+    }
+
 }

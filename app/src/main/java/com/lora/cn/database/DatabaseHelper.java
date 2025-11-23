@@ -1425,7 +1425,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private boolean isLoggableAction(String action) {
         if (action == null) return false;
         String a = action.trim();
-        return a.startsWith("接收上行数据") || a.startsWith("发送下行数据") || a.contains("功能码=");
+        return a.startsWith("接收上行数据") || a.startsWith("发送下行数据") || a.contains("功能码=")
+                || a.startsWith("设置") || a.contains("设置") || a.startsWith("终端清点");
     }
 
     /**

@@ -36,6 +36,7 @@ public class PositionManagementFragment extends Fragment {
     private TextView btnAddPosition;
     private TextView btnBack;
     private DatabaseManager databaseManager;
+    private long currentUserRoleId = -1;
 
     @Nullable
     @Override
@@ -60,6 +61,13 @@ public class PositionManagementFragment extends Fragment {
         
         // 初始化数据库管理器
         databaseManager = DatabaseManager.getInstance(requireContext());
+        long userId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            com.lora.cn.database.entity.User user = databaseManager.getUserById(userId);
+            if (user != null) {
+                currentUserRoleId = user.getRoleId();
+            }
+        }
     }
     
     private void setupRecyclerView() {
@@ -77,7 +85,10 @@ public class PositionManagementFragment extends Fragment {
         });
         
         // 新增按钮
-        btnAddPosition.setOnClickListener(v -> showAddPositionDialog());
+        btnAddPosition.setOnClickListener(v -> {
+            if (hasPermission("position_add")) showAddPositionDialog();
+            else android.widget.Toast.makeText(requireContext(), "您没有新增职位的权限", android.widget.Toast.LENGTH_SHORT).show();
+        });
         
         // 设置适配器点击监听器
         positionAdapter.addOnItemChildClickListener(R.id.tv_position_fz, (baseQuickAdapter, view, i) -> {
@@ -90,22 +101,26 @@ public class PositionManagementFragment extends Fragment {
         positionAdapter.addOnItemChildClickListener(R.id.tv_position_edit, (baseQuickAdapter, view, i) -> {
             Position position = baseQuickAdapter.getItem(i);
             if (position != null) {
-                showEditPositionDialog(position);
+                if (hasPermission("position_edit")) showEditPositionDialog(position);
+                else android.widget.Toast.makeText(requireContext(), "您没有编辑职位的权限", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
         
         positionAdapter.addOnItemChildClickListener(R.id.tv_position_delete, (baseQuickAdapter, view, i) -> {
             Position position = baseQuickAdapter.getItem(i);
             if (position != null) {
-                showDeleteConfirmDialog(position);
+                if (hasPermission("position_delete")) showDeleteConfirmDialog(position);
+                else android.widget.Toast.makeText(requireContext(), "您没有删除职位的权限", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
         
         positionAdapter.addOnItemChildClickListener(R.id.switch_position_status, (baseQuickAdapter, view, i) -> {
             Position position = baseQuickAdapter.getItem(i);
             if (position != null) {
-                SwitchCompat switchStatus = (SwitchCompat) view;
-                togglePositionStatus(position, switchStatus.isChecked());
+                if (hasPermission("position_edit")) {
+                    SwitchCompat switchStatus = (SwitchCompat) view;
+                    togglePositionStatus(position, switchStatus.isChecked());
+                } else android.widget.Toast.makeText(requireContext(), "您没有修改职位状态的权限", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -363,4 +378,9 @@ public class PositionManagementFragment extends Fragment {
     public static PositionManagementFragment newInstance() {
         return new PositionManagementFragment();
     }
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId <= 0) return false;
+        return databaseManager.hasPermission((int) currentUserRoleId, permissionCode);
+    }
+
 }

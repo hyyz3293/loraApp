@@ -45,6 +45,7 @@ public class UserManagementFragment extends Fragment {
 
     private DatabaseManager databaseManager;
     private List<User> allUsers;
+    private long currentUserRoleId = -1;
 
     @Nullable
     @Override
@@ -65,6 +66,13 @@ public class UserManagementFragment extends Fragment {
         btnBack = view.findViewById(R.id.back);
         databaseManager = DatabaseManager.getInstance(requireContext());
         allUsers = new ArrayList<>();
+        try {
+            long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+            if (uid != -1) {
+                User cur = databaseManager.getUserById(uid);
+                if (cur != null) currentUserRoleId = cur.getRoleId();
+            }
+        } catch (Exception ignored) {}
     }
 
     private void setupRecyclerView() {
@@ -82,27 +90,33 @@ public class UserManagementFragment extends Fragment {
         });
         
         // 新增用户按钮
-        btnAddUser.setOnClickListener(v -> showAddUserDialog());
+        btnAddUser.setOnClickListener(v -> {
+            if (hasPermission("user_add")) showAddUserDialog();
+            else Toast.makeText(requireContext(), "您没有新增用户的权限", Toast.LENGTH_SHORT).show();
+        });
 
         // 设置适配器点击监听器
         userAdapter.addOnItemChildClickListener(R.id.tv_user_reset_password, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
-                showResetPasswordDialog(user);
+                if (hasPermission("user_reset_password")) showResetPasswordDialog(user);
+                else Toast.makeText(requireContext(), "您没有重置密码的权限", Toast.LENGTH_SHORT).show();
             }
         });
         
         userAdapter.addOnItemChildClickListener(R.id.tv_user_edit, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
-                showEditUserDialog(user);
+                if (hasPermission("user_edit")) showEditUserDialog(user);
+                else Toast.makeText(requireContext(), "您没有编辑用户的权限", Toast.LENGTH_SHORT).show();
             }
         });
         
         userAdapter.addOnItemChildClickListener(R.id.tv_user_delete, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
-                showDeleteConfirmDialog(user);
+                if (hasPermission("user_delete")) showDeleteConfirmDialog(user);
+                else Toast.makeText(requireContext(), "您没有删除用户的权限", Toast.LENGTH_SHORT).show();
             }
         });
         
@@ -110,10 +124,17 @@ public class UserManagementFragment extends Fragment {
         userAdapter.addOnItemChildClickListener(R.id.switch_user_status, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
-                SwitchCompat switchCompat = (SwitchCompat) view;
-                toggleUserStatus(user, switchCompat.isChecked());
+                if (hasPermission("user_disable")) {
+                    SwitchCompat switchCompat = (SwitchCompat) view;
+                    toggleUserStatus(user, switchCompat.isChecked());
+                } else Toast.makeText(requireContext(), "您没有启用/禁用的权限", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private boolean hasPermission(String code) {
+        if (currentUserRoleId <= 0) return false;
+        return databaseManager.hasPermission((int) currentUserRoleId, code);
     }
     
     private void loadUsers() {

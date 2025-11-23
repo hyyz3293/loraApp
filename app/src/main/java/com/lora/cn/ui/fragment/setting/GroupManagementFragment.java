@@ -106,8 +106,7 @@ public class GroupManagementFragment extends Fragment  {
         
         // 新增按钮
         btnAdd.setOnClickListener(v -> {
-            // 统一使用“setting”模块权限，避免使用未配置的group_*权限码
-            if (hasPermission("setting")) {
+            if (hasPermission("group_add")) {
                 showAddGroupDialog();
             } else {
                 Toast.makeText(requireContext(), "您没有新增分组的权限", Toast.LENGTH_SHORT).show();
@@ -135,13 +134,17 @@ public class GroupManagementFragment extends Fragment  {
         groupAdapter.addOnItemChildClickListener(R.id.tv_group_fz, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
-                onItemClickItem(allGroups.get(i));
+                if (hasPermission("category_management")) {
+                    onItemClickItem(allGroups.get(i));
+                } else {
+                    Toast.makeText(requireContext(), "您没有分类管理的权限", Toast.LENGTH_SHORT).show();
+                }
             }
         });
         groupAdapter.addOnItemChildClickListener(R.id.tv_group_edit, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
-                if (hasPermission("setting")) {
+                if (hasPermission("group_edit")) {
                     onEditClick(allGroups.get(i));
                 } else {
                     Toast.makeText(requireContext(), "您没有编辑分组的权限", Toast.LENGTH_SHORT).show();
@@ -151,7 +154,7 @@ public class GroupManagementFragment extends Fragment  {
         groupAdapter.addOnItemChildClickListener(R.id.tv_group_delete, new BaseQuickAdapter.OnItemChildClickListener<Group>() {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Group, ?> baseQuickAdapter, @NonNull View view, int i) {
-                if (hasPermission("setting")) {
+                if (hasPermission("group_delete")) {
                     onDeleteClick(allGroups.get(i));
                 } else {
                     Toast.makeText(requireContext(), "您没有删除分组的权限", Toast.LENGTH_SHORT).show();

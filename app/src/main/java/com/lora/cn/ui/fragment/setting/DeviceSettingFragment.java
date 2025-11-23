@@ -86,14 +86,26 @@ public class DeviceSettingFragment extends Fragment {
     }
 
     private void initSettingData() {
-        // 创建设置项数据
+        // 创建设置项数据（按权限动态添加）
         List<SettingItem> settingList = new ArrayList<>();
-        settingList.add(new SettingItem("音量设置", 1, 0));
-        settingList.add(new SettingItem( "WiFIi连接", 0, 1));
-        settingList.add(new SettingItem( "IP配置", 0, 2));
-        settingList.add(new SettingItem(  "清点次数(非管理员角色)", 2, 3));
-        settingList.add(new SettingItem( "低电量报警值", 2, 4, "20%"));
-        settingList.add(new SettingItem( "返回首页时间", 2, 5, "60"));
+        if (hasPermission("setting_sound")) {
+            settingList.add(new SettingItem("音量设置", 1, 0));
+        }
+        if (hasPermission("setting_wifi")) {
+            settingList.add(new SettingItem("WiFIi连接", 0, 1));
+        }
+        if (hasPermission("setting_ip")) {
+            settingList.add(new SettingItem("IP配置", 0, 2));
+        }
+        if (hasPermission("setting_count")) {
+            settingList.add(new SettingItem("清点次数(非管理员角色)", 2, 3));
+        }
+        if (hasPermission("setting_low_battery")) {
+            settingList.add(new SettingItem("低电量报警值", 2, 4, "20%"));
+        }
+        if (hasPermission("setting_home_return")) {
+            settingList.add(new SettingItem("返回首页时间", 2, 5, "60"));
+        }
 
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
@@ -102,15 +114,23 @@ public class DeviceSettingFragment extends Fragment {
         terminalSettingAdapter = new TerminalSettingDeviceAdapter();
         terminalSettingRecycle.setAdapter(terminalSettingAdapter);
 
-        // 设置点击事件监听器
+        // 设置点击事件监听器（按索引校验具体权限）
         terminalSettingAdapter.setOnItemClickListener((adapter, view, position) -> {
             SettingItem settingItem = settingList.get(position);
-            if (settingItem.getViewType() == 0 || settingItem.getIndex() < 3) {
-                if (hasPermission("setting_device")) {
-                    onSettingClick(position, settingItem);
-                } else {
-                    Toast.makeText(requireContext(), "您没有修改设备设置的权限", Toast.LENGTH_SHORT).show();
-                }
+            int idx = settingItem.getIndex();
+            String permCode = null;
+            switch (idx) {
+                case 0: permCode = "setting_sound"; break;
+                case 1: permCode = "setting_wifi"; break;
+                case 2: permCode = "setting_ip"; break;
+                case 3: permCode = "setting_count"; break;
+                case 4: permCode = "setting_low_battery"; break;
+                case 5: permCode = "setting_home_return"; break;
+            }
+            if (permCode != null && hasPermission(permCode)) {
+                onSettingClick(idx, settingItem);
+            } else {
+                Toast.makeText(requireContext(), "您没有该设置项的权限", Toast.LENGTH_SHORT).show();
             }
         });
 

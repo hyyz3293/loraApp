@@ -94,8 +94,8 @@ public class DepartmentManagementFragment extends Fragment {
             }
         });
         
-        // 新增按钮 - 检查权限（统一使用设置模块权限）
-        if (hasPermission("setting")) {
+        // 新增按钮 - 检查权限
+        if (hasPermission("department_add")) {
             btnAdd.setOnClickListener(v -> showAddDepartmentDialog());
         } else {
             btnAdd.setVisibility(View.GONE);
@@ -106,7 +106,7 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department dept = baseQuickAdapter.getItem(i);
-                if (dept != null && hasPermission("setting")) {
+                if (dept != null && hasPermission("department_edit")) {
                     showEditDepartmentDialog(dept);
                 } else {
                     Toast.makeText(requireContext(), "您没有编辑科室的权限", Toast.LENGTH_SHORT).show();
@@ -118,7 +118,7 @@ public class DepartmentManagementFragment extends Fragment {
             @Override
             public void onItemClick(@NonNull BaseQuickAdapter<Department, ?> baseQuickAdapter, @NonNull View view, int i) {
                 Department dept = baseQuickAdapter.getItem(i);
-                if (dept != null && hasPermission("setting")) {
+                if (dept != null && hasPermission("department_delete")) {
                     deleteDepartment(dept);
                 } else {
                     Toast.makeText(requireContext(), "您没有删除科室的权限", Toast.LENGTH_SHORT).show();

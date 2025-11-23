@@ -93,6 +93,16 @@ public class TerminalCheckFragment extends Fragment {
         
         // 初始化RecyclerView
         initRecyclerView();
+
+        // 根据权限控制按钮可见性
+        try {
+            if (!hasPermission("clean_start_count")) {
+                addTerminal.setVisibility(android.view.View.GONE);
+            }
+            if (!hasPermission("check_export")) {
+                btnExportExcel.setVisibility(android.view.View.GONE);
+            }
+        } catch (Exception ignored) {}
     }
     
     private void initRecyclerView() {

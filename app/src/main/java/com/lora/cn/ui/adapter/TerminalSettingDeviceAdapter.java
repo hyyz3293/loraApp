@@ -167,12 +167,38 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                                 if (n < 1) n = 1;
                                 out = String.valueOf(n);
                                 com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_check_count", n);
+                                try {
+                                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(v.getContext());
+                                    com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+                                    li.setTerminalId("SYS");
+                                    li.setTerminalName("系统设置");
+                                    li.setDeviceId("SYS");
+                                    li.setStatusCode(0);
+                                    li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
+                                    li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                                    li.setAction("设置: 清点次数=" + out);
+                                    li.setCreateTime(li.getOperationTime());
+                                    db.addLog(li);
+                                } catch (Exception ignored) {}
                             } catch (Exception ignored) {}
                         } else if (item.getIndex() == 4) {
                             try {
                                 int n = Integer.parseInt(newValue);
                                 out = String.valueOf(n);
                                 com.blankj.utilcode.util.SPUtils.getInstance().put("low_battery_threshold_percent", n);
+                                try {
+                                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(v.getContext());
+                                    com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+                                    li.setTerminalId("SYS");
+                                    li.setTerminalName("系统设置");
+                                    li.setDeviceId("SYS");
+                                    li.setStatusCode(0);
+                                    li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
+                                    li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                                    li.setAction("设置: 低电量报警值=" + out + "%");
+                                    li.setCreateTime(li.getOperationTime());
+                                    db.addLog(li);
+                                } catch (Exception ignored) {}
                             } catch (Exception ignored) {}
                         } else if (item.getIndex() == 5) {
                             try {
@@ -180,6 +206,19 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                                 if (n < 0) n = 0;
                                 out = String.valueOf(n);
                                 com.blankj.utilcode.util.SPUtils.getInstance().put("home_auto_return_timeout_sec", n);
+                                try {
+                                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(v.getContext());
+                                    com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+                                    li.setTerminalId("SYS");
+                                    li.setTerminalName("系统设置");
+                                    li.setDeviceId("SYS");
+                                    li.setStatusCode(0);
+                                    li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
+                                    li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                                    li.setAction("设置: 回到首页时间=" + out + "秒");
+                                    li.setCreateTime(li.getOperationTime());
+                                    db.addLog(li);
+                                } catch (Exception ignored) {}
                             } catch (Exception ignored) {}
                         }
                         item.setValue(out);
