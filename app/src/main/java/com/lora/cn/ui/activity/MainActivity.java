@@ -676,7 +676,10 @@ public class MainActivity extends AppCompatActivity {
                     String dev = li.getTerminalId();
                     int s = li.getStatusCode();
                     long t = parseMillis(li.getCreateTime());
-                    if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+                    String hu = li.getHandleUser();
+                    String htStr = li.getHandleTime();
+                    boolean isHandled = (hu != null && hu.trim().length() > 0) || (htStr != null && htStr.trim().length() > 0);
+                    if (isHandled) {
                         Long prev = lastHandledTime.get(dev);
                         if (prev == null || t >= prev) lastHandledTime.put(dev, t);
                         continue;

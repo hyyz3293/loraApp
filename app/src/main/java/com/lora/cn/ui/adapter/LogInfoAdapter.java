@@ -39,10 +39,6 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         setTextOrPlaceholder(logTime, item.getCreateTime());
 
         String displayStatus = com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode());
-        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
-            String src = handledSourceLabels.get(item.getId());
-            if (src != null && src.length() > 0) displayStatus = src;
-        }
         setStatusWithDot(logStatus, displayStatus);
 
         // 设置名称字段 - 使用终端名称
@@ -51,7 +47,9 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         // 设置ID字段 - 使用设备ID
         setTextOrPlaceholder(logId, item.getDeviceId());
 
-        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+        boolean isHandled = (item.getHandleUser() != null && item.getHandleUser().trim().length() > 0)
+                || (item.getHandleTime() != null && item.getHandleTime().trim().length() > 0);
+        if (isHandled) {
             setTextOrPlaceholder(logComplete, item.getHandleUser());
             setTextOrPlaceholder(logCompleteTime, item.getHandleTime());
         } else {
@@ -70,7 +68,7 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
         boolean isLatestAllowed = allowedHandleIds.contains(item.getId());
-        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+        if (isHandled) {
             logOperation.setText("查看备注");
             logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
             logOperation.setTextColor(android.graphics.Color.parseColor("#383B40"));

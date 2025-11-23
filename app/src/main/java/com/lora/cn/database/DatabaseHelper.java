@@ -1828,10 +1828,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } else if (typeSel == 3) {
             conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.HANDLED.code);
         }
-        if (policeSel == 1) {
-            conds.add("(handle_user IS NOT NULL AND TRIM(handle_user) <> '')");
-        } else if (policeSel == 2) {
-            conds.add("(handle_user IS NULL OR TRIM(handle_user) = '')");
+        if (policeSel == 1 || policeSel == 2) {
+            conds.add(COLUMN_LOG_STATUS + " IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + ")");
+            if (policeSel == 1) {
+                conds.add("(handle_user IS NOT NULL AND TRIM(handle_user) <> '')");
+            } else {
+                conds.add("(handle_user IS NULL OR TRIM(handle_user) = '')");
+            }
         }
         if (conds.isEmpty()) return "";
         return " WHERE " + android.text.TextUtils.join(" AND ", conds);
