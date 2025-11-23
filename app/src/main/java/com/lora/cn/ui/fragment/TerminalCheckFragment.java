@@ -153,31 +153,18 @@ public class TerminalCheckFragment extends Fragment {
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 int sc = t.getStatus();
                 String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc);
-                if ("在线".equals(st)) {
+                if ("正常在线".equals(st)) {
                     online++;
+                } else if ("正常取走".equals(st)) {
+                    manualTake++;
                 } else if ("异常取走".equals(st)) {
                     abnormal++;
                 } else {
                     offline++;
                 }
-                if (!"离线".equals(st)) {
+                if (!"设备离线".equals(st)) {
                     int bl = t.getBatteryLevel();
                     if (bl <= 20) batteryLow++; else batteryNormal++;
-                }
-
-                // 解析最近一条上行，统计“正常取走”
-                List<com.lora.cn.ui.model.LogInfo> logs = dbHelper.getLogsByTerminalId(t.getTerminalId());
-                String hex = null;
-                for (com.lora.cn.ui.model.LogInfo li : logs) {
-                    String action = li.getAction();
-                    if (action != null && action.startsWith("接收上行数据:")) {
-                        int idx = action.indexOf(":");
-                        if (idx != -1 && idx + 1 < action.length()) { hex = action.substring(idx + 1).trim(); break; }
-                    }
-                }
-                if (hex != null) {
-                    com.lora.cn.utils.LoRaFrameParser.ParsedFrame pf = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
-                    if (pf != null && pf.evManualTake == 1) manualTake++;
                 }
             }
             int totalStatus = Math.max(1, online + offline + abnormal + manualTake);
@@ -195,7 +182,7 @@ public class TerminalCheckFragment extends Fragment {
 
             List<PieChartView.PieData> batteryData = new ArrayList<>();
             if (batteryNormal > 0)
-                batteryData.add(new PieChartView.PieData("正常电量", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, Color.parseColor("#39E56D")));
+                batteryData.add(new PieChartView.PieData("电量正常", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, Color.parseColor("#39E56D")));
             if (batteryLow > 0)
                 batteryData.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, Color.parseColor("#FF9500")));
             if (offline > 0)
@@ -216,11 +203,24 @@ public class TerminalCheckFragment extends Fragment {
             List<com.lora.cn.ui.model.TerminalChartData> list = new java.util.ArrayList<>();
 
             // 动态获取所有分组与分类
-            java.util.List<com.lora.cn.database.entity.Group> groups = DatabaseManager.getInstance(getContext()).getAllGroups();
+            DatabaseManager dm = DatabaseManager.getInstance(getContext());
+            java.util.List<com.lora.cn.database.entity.Group> groups = dm.getAllGroups();
             if (groups == null) groups = new java.util.ArrayList<>();
+            long depGroupId = 0L, roomGroupId = 0L, nursingGroupId = 0L, otherGroupId = 0L;
+            try {
+                com.lora.cn.database.entity.Group gDep = dm.getGroupByName("科室");
+                com.lora.cn.database.entity.Group gRoom = dm.getGroupByName("病房号");
+                com.lora.cn.database.entity.Group gNur = dm.getGroupByName("护理组");
+                com.lora.cn.database.entity.Group gOth = dm.getGroupByName("其他分类");
+                if (gDep != null) depGroupId = gDep.getGroupId();
+                if (gRoom != null) roomGroupId = gRoom.getGroupId();
+                if (gNur != null) nursingGroupId = gNur.getGroupId();
+                if (gOth != null) otherGroupId = gOth.getGroupId();
+            } catch (Exception ignored) {}
             for (com.lora.cn.database.entity.Group g : groups) {
-                int gid = (int) g.getGroupId();
-                String prefix = (g.getGroupName() != null ? g.getGroupName() : "分组") + "-";
+                long gid = g.getGroupId();
+                String gname = g.getGroupName() != null ? g.getGroupName() : "分组";
+                String prefix = gname + "-";
                 java.util.List<com.lora.cn.database.entity.Category> cats = DatabaseManager.getInstance(getContext()).getCategoriesByGroupId(gid);
                 if (cats == null) continue;
                 for (com.lora.cn.database.entity.Category c : cats) {
@@ -230,15 +230,30 @@ public class TerminalCheckFragment extends Fragment {
                     int onlineCount = 0, offlineCount = 0;
 
                     for (com.lora.cn.ui.model.Terminal t : terminals) {
-                        // 动态匹配：优先按分类ID匹配；未设置ID时回退按名称匹配
-                        boolean match = (t.getDepartmentId() == c.getCategoryId())
-                                || (t.getRoomId() == c.getCategoryId())
-                                || (t.getNursingGroupId() == c.getCategoryId())
-                                || (t.getOtherId() == c.getCategoryId());
-                        if (!match) {
-                            String cname = c.getCategoryName();
-                            match = (cname != null && cname.equals(t.getDepartment()))
-                                    || (cname != null && cname.equals(t.getLocation()));
+                        boolean match;
+                        if (gid == depGroupId && depGroupId > 0L) {
+                            match = (t.getDepartmentId() == (int) c.getCategoryId());
+                        } else if (gid == roomGroupId && roomGroupId > 0L) {
+                            match = (t.getRoomId() == (int) c.getCategoryId());
+                        } else if (gid == nursingGroupId && nursingGroupId > 0L) {
+                            match = (t.getNursingGroupId() == (int) c.getCategoryId());
+                        } else if (gid == otherGroupId && otherGroupId > 0L) {
+                            match = (t.getOtherId() == (int) c.getCategoryId());
+                        } else {
+                            long val = 0L;
+                            try {
+                                String ext = t.getExtension();
+                                if (ext != null && !ext.isEmpty()) {
+                                    org.json.JSONObject obj = new org.json.JSONObject(ext);
+                                    if (obj.has("extra_groups")) {
+                                        org.json.JSONObject ex = obj.getJSONObject("extra_groups");
+                                        if (ex.has(String.valueOf(gid))) {
+                                            val = ex.optLong(String.valueOf(gid), 0L);
+                                        }
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                            match = (val == c.getCategoryId());
                         }
                         if (!match) continue;
 
@@ -246,24 +261,9 @@ public class TerminalCheckFragment extends Fragment {
                         String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc2);
                         if ("正常在线".equals(st)) { onlineCount++; }
                         else if ("设备离线".equals(st)) { offlineCount++; batteryOffline++; }
+                        else if ("正常取走".equals(st)) { manualTake++; }
+                        else if ("异常取走".equals(st)) { illegalLoss++; }
                         else { int bl = t.getBatteryLevel(); if (bl <= 20) batteryLow++; else batteryNormal++; }
-
-                        List<com.lora.cn.ui.model.LogInfo> logs = dbHelper.getLogsByTerminalId(t.getTerminalId());
-                        String hex = null;
-                        for (com.lora.cn.ui.model.LogInfo li : logs) {
-                            String action = li.getAction();
-                            if (action != null && action.startsWith("接收上行数据:")) {
-                                int idx = action.indexOf(":");
-                                if (idx != -1 && idx + 1 < action.length()) { hex = action.substring(idx + 1).trim(); break; }
-                            }
-                        }
-                        if (hex != null) {
-                            com.lora.cn.utils.LoRaFrameParser.ParsedFrame pf = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
-                            if (pf != null) {
-                                if (pf.evManualTake == 1) manualTake++;
-                                if (pf.evIllegalRemoval == 1) illegalLoss++;
-                            }
-                        }
                     }
 
                     com.lora.cn.ui.model.TerminalChartData data = new com.lora.cn.ui.model.TerminalChartData();
@@ -404,6 +404,8 @@ public class TerminalCheckFragment extends Fragment {
         // 刷新图表适配器数据
         initChartAdapterData();
     }
+
+    
     
     private void exportExcel() {
         try {

@@ -166,7 +166,7 @@ public class DeviceListFragment extends Fragment {
         try {
             DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
             // 从本地日志库中提取最近上行的设备，作为“附近终端”来源
-            List<LogInfo> logs = dbHelper.getAllLogs();
+            List<LogInfo> logs = dbHelper.getAllUnboundLogs();
             // 清理已添加到终端表的设备，不再展示在发现列表中
             if (allTerminals != null && !allTerminals.isEmpty()) {
                 java.util.Iterator<com.lora.cn.database.entity.Terminal> it = allTerminals.iterator();

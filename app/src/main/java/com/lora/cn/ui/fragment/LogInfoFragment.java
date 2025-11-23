@@ -87,6 +87,12 @@ public class LogInfoFragment extends Fragment {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View v, int pos, long id) { applyTimeFilter(); }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
+        try {
+            if (spinnerLogType != null) spinnerLogType.setSelection(0, false);
+            if (spinnerPolice != null) spinnerPolice.setSelection(0, false);
+            selectedStartTime = "";
+            selectedEndTime = "";
+        } catch (Exception ignored) {}
         if (rlStart != null) rlStart.setOnLongClickListener(v -> {
             selectedStartTime = "";
             if (tvStart != null) tvStart.setText("开始时间");
@@ -102,36 +108,41 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void initLogData() {
-        // 先清理示例日志，避免展示假数据
-        databaseHelper.cleanSampleLogData();
-        
-        // 从数据库获取真实日志数据（仅展示已添加终端的日志）
-        logList = databaseHelper.getAllLogsBoundToTerminals();
-        baseLogs.clear();
-        if (logList != null) {
-            for (LogInfo li : logList) {
-                String act = li != null ? li.getAction() : null;
-                if (act != null && (act.startsWith("接收上行数据") || act.startsWith("发送下行数据") || act.contains("功能码=") || act.contains("下行"))) {
-                    baseLogs.add(li);
+        new Thread(() -> {
+            java.util.List<LogInfo> all = new java.util.ArrayList<>();
+            try {
+                java.util.List<LogInfo> a = databaseHelper.getAllLogs();
+                java.util.List<LogInfo> b = databaseHelper.getAllUnboundLogs();
+                if (a != null) all.addAll(a);
+                if (b != null) all.addAll(b);
+            } catch (Exception ignored) {}
+            java.util.Collections.sort(all, (o1, o2) -> {
+                long t1 = parseMillis(o1 != null ? o1.getCreateTime() : null);
+                long t2 = parseMillis(o2 != null ? o2.getCreateTime() : null);
+                return Long.compare(t2, t1);
+            });
+            if (getActivity() == null) return;
+            getActivity().runOnUiThread(() -> {
+                logList = all;
+                baseLogs.clear();
+                if (logList != null) baseLogs.addAll(logList);
+                if (logInfoAdapter == null) {
+                    logInfoAdapter = new LogInfoAdapter();
+                    logInfoAdapter.setOnHandleClickListener(item -> showHandleDialogForLog(item));
+                    recyclerView.setAdapter(logInfoAdapter);
+                    logInfoAdapter.setOnItemClickListener((adapter, view, position) -> {
+                        LogInfo log = logList.get(position);
+                    });
                 }
-            }
-        }
-        logInfoAdapter = new LogInfoAdapter();
-        logInfoAdapter.setOnHandleClickListener(item -> showHandleDialogForLog(item));
-        recyclerView.setAdapter(logInfoAdapter);
-        applyTimeFilter();
-        try {
-            android.app.Activity a = getActivity();
-            if (a instanceof com.lora.cn.ui.activity.MainActivity) {
-                ((com.lora.cn.ui.activity.MainActivity) a).updatePendingBadge();
-            }
-        } catch (Exception ignored) {}
-        
-        // 设置点击事件
-        logInfoAdapter.setOnItemClickListener((adapter, view, position) -> {
-            LogInfo log = logList.get(position);
-            // 处理日志项点击事件
-        });
+                applyTimeFilter();
+                try {
+                    android.app.Activity a = getActivity();
+                    if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                        ((com.lora.cn.ui.activity.MainActivity) a).updatePendingBadge();
+                    }
+                } catch (Exception ignored) {}
+            });
+        }).start();
     }
 
     private void showHandleDialogForLog(LogInfo item) {
@@ -239,6 +250,7 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void applyTimeFilter() {
+        if (logInfoAdapter == null) return;
         List<LogInfo> src = baseLogs != null ? baseLogs : new java.util.ArrayList<>();
         List<LogInfo> out = new java.util.ArrayList<>();
         long startMs = parseMillis(selectedStartTime);

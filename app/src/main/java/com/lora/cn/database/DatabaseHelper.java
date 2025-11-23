@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 17;
+    private static final int DATABASE_VERSION = 18;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -103,6 +103,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     
     // 日志表
     public static final String TABLE_LOGS = "logs";
+    // 未绑定终端的日志表
+    public static final String TABLE_LOGS_UNBOUND = "logs_unbound";
     public static final String COLUMN_LOG_ID = "log_id";
     public static final String COLUMN_LOG_TERMINAL_ID = "terminal_id";
     public static final String COLUMN_LOG_TERMINAL_NAME = "terminal_name";
@@ -299,6 +301,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         "handle_time TEXT, " +
         "handle_remark TEXT" +
         ")";
+
+    // 创建未绑定终端的日志表（字段与日志表一致）
+    private static final String CREATE_TABLE_LOGS_UNBOUND =
+        "CREATE TABLE " + TABLE_LOGS_UNBOUND + " (" +
+        COLUMN_LOG_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_LOG_TERMINAL_ID + " TEXT NOT NULL, " +
+        COLUMN_LOG_TERMINAL_NAME + " TEXT NOT NULL, " +
+        COLUMN_LOG_DEVICE_ID + " TEXT NOT NULL, " +
+        COLUMN_LOG_STATUS + " INTEGER NOT NULL, " +
+        COLUMN_LOG_OPERATOR + " TEXT, " +
+        COLUMN_LOG_OPERATION_TIME + " TEXT, " +
+        COLUMN_LOG_ACTION + " TEXT NOT NULL, " +
+        COLUMN_LOG_CREATE_TIME + " DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+        "handle_user TEXT, " +
+        "handle_time TEXT, " +
+        "handle_remark TEXT" +
+        ")";
     
     // 创建索引的SQL语句
     private static final String CREATE_INDEX_CATEGORIES_GROUP_ID = 
@@ -352,6 +371,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 创建日志表
         db.execSQL(CREATE_TABLE_LOGS);
+        // 创建未绑定终端日志表
+        db.execSQL(CREATE_TABLE_LOGS_UNBOUND);
         
         // 创建索引
         db.execSQL(CREATE_INDEX_CATEGORIES_GROUP_ID);
@@ -479,6 +500,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 17) {
             try { db.execSQL("DROP TABLE IF EXISTS " + TABLE_LOGS); } catch (Exception ignored) {}
             db.execSQL(CREATE_TABLE_LOGS);
+        }
+        if (oldVersion < 18) {
+            try { db.execSQL(CREATE_TABLE_LOGS_UNBOUND); } catch (Exception ignored) {}
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -883,7 +907,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('terminal_mark', '标记', 'terminal', '标记终端状态', 1, 8, 2, 3)");
+                ") VALUES ('terminal_mark', '收藏', 'terminal', '收藏终端状态', 1, 8, 2, 3)");
 
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
@@ -961,6 +985,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('setting_count', '清点次数', '设置相关', '清点次数设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 4)");
 
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('setting_low_battery', '低电量报警值', '设置相关', '低电量阈值设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 5)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('setting_home_return', '返回首页时间', '设置相关', '自动返回首页时间设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 6)");
+
         // Level 1 - 角色管理的子权限
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
@@ -1032,6 +1070,62 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('user_reset_password', '重置密码', 'user', '重置用户密码', 1, 6, 1, 4)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('department_management', '科室管理', 'setting', '科室管理模块', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting' LIMIT 1), 1, 7)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('department_add', '新增', 'setting', '新增科室', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='department_management' LIMIT 1), 2, 1)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('department_edit', '编辑', 'setting', '编辑科室', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='department_management' LIMIT 1), 2, 2)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('department_delete', '删除', 'setting', '删除科室', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='department_management' LIMIT 1), 2, 3)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('position_management', '职位管理', 'setting', '职位管理模块', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting' LIMIT 1), 1, 8)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('position_add', '新增', 'setting', '新增职位', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='position_management' LIMIT 1), 2, 1)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('position_edit', '编辑', 'setting', '编辑职位', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='position_management' LIMIT 1), 2, 2)");
+
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('position_delete', '删除', 'setting', '删除职位', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='position_management' LIMIT 1), 2, 3)");
     }
     
     // 终端相关的数据库操作方法
@@ -1176,7 +1270,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_OPERATOR, operator == null ? "" : operator);
         values.put(COLUMN_LOG_OPERATION_TIME, operationTime == null ? "" : operationTime);
         values.put(COLUMN_LOG_ACTION, action);
-        long result = db.insert(TABLE_LOGS, null, values);
+        boolean exists = (deviceId != null && isTerminalExists(deviceId)) || (terminalId != null && isTerminalExists(terminalId));
+        String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
+        long result = db.insert(targetTable, null, values);
         db.close();
         return result;
     }
@@ -1199,7 +1295,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("handle_user", logInfo.getHandleUser());
         values.put("handle_time", logInfo.getHandleTime());
         values.put("handle_remark", logInfo.getHandleRemark());
-        long result = db.insert(TABLE_LOGS, null, values);
+        boolean exists = (logInfo.getDeviceId() != null && isTerminalExists(logInfo.getDeviceId()))
+                || (logInfo.getTerminalId() != null && isTerminalExists(logInfo.getTerminalId()));
+        String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
+        long result = db.insert(targetTable, null, values);
         db.close();
         return result;
     }
@@ -1282,19 +1381,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         // 构造动作描述
-        if (frame != null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("功能码=").append(frame.functionCode)
-              .append(", 流水号=").append(frame.sequenceNumber)
-              .append(", 电量=").append(frame.batteryLevel).append("%")
-              .append(", RSSI=").append(frame.rssi)
-              .append(", 事件=").append(com.lora.cn.utils.LoRaFrameParser.getDeviceEventDescription(frame.deviceEvent));
-            action = sb.toString();
-            String statusText = com.lora.cn.ui.constants.LogStatus.toText(statusCode);
-            android.util.Log.i("DatabaseHelper", "上行事件映射状态=" + statusText + ", deviceId=" + deviceId);
-        } else {
-            action = "接收上行数据: " + hex;
-        }
+        // 为保证发现页面解析hex，这里统一保留原始hex
+        action = "接收上行数据: " + hex;
 
         values.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
         values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
@@ -1304,7 +1392,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_OPERATION_TIME, "");
         values.put(COLUMN_LOG_ACTION, action);
 
-        long result = db.insert(TABLE_LOGS, null, values);
+        boolean exists = deviceId != null && isTerminalExists(deviceId);
+        String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
+        long result = db.insert(targetTable, null, values);
 
         // 同步更新终端设备的电量、信号强度，并记扩展信息
         try {
@@ -1424,6 +1514,37 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String query = "SELECT * FROM " + TABLE_LOGS + " WHERE EXISTS (" +
                 "SELECT 1 FROM " + TABLE_TERMINALS + " t WHERE t." + COLUMN_TERMINAL_DEVICE_ID + " = " + TABLE_LOGS + "." + COLUMN_LOG_TERMINAL_ID +
                 ") ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC";
+        android.database.Cursor cursor = db.rawQuery(query, null);
+        while (cursor.moveToNext()) {
+            com.lora.cn.ui.model.LogInfo log = new com.lora.cn.ui.model.LogInfo();
+            log.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_LOG_ID)));
+            log.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_ID)));
+            log.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_NAME)));
+            log.setDeviceId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_DEVICE_ID)));
+            int st = cursor.getInt(cursor.getColumnIndex(COLUMN_LOG_STATUS));
+            log.setStatusCode(st);
+            log.setOperator(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATOR)));
+            log.setOperationTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATION_TIME)));
+            log.setAction(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_ACTION)));
+            log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_CREATE_TIME)));
+            int hUserIdx = cursor.getColumnIndex("handle_user");
+            int hTimeIdx = cursor.getColumnIndex("handle_time");
+            int hRemarkIdx = cursor.getColumnIndex("handle_remark");
+            if (hUserIdx != -1) log.setHandleUser(cursor.getString(hUserIdx));
+            if (hTimeIdx != -1) log.setHandleTime(cursor.getString(hTimeIdx));
+            if (hRemarkIdx != -1) log.setHandleRemark(cursor.getString(hRemarkIdx));
+            logs.add(log);
+        }
+        cursor.close();
+        db.close();
+        return logs;
+    }
+
+    /** 获取未绑定到终端的日志 */
+    public java.util.List<com.lora.cn.ui.model.LogInfo> getAllUnboundLogs() {
+        java.util.List<com.lora.cn.ui.model.LogInfo> logs = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + TABLE_LOGS_UNBOUND + " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC";
         android.database.Cursor cursor = db.rawQuery(query, null);
         while (cursor.moveToNext()) {
             com.lora.cn.ui.model.LogInfo log = new com.lora.cn.ui.model.LogInfo();

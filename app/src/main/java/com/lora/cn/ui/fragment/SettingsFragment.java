@@ -159,12 +159,12 @@ public class SettingsFragment extends Fragment {
                 }
                 break;
             case "科室管理":
-                if (hasPermission("setting")) {
+                if (hasPermission("department_management")) {
                     targetFragment = DepartmentManagementFragment.newInstance();
                 }
                 break;
             case "职位管理":
-                if (hasPermission("setting")) {
+                if (hasPermission("position_management")) {
                     targetFragment = PositionManagementFragment.newInstance();
                 }
                 break;
