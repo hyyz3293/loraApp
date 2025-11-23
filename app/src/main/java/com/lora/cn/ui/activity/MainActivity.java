@@ -64,32 +64,32 @@ public class MainActivity extends AppCompatActivity {
     // 全局 MQTT 客户端（MainActivity 启动并维持）
     private MqttPacketsClient mqttClient;
     private DatabaseHelper databaseHelper;
-    private static final long TEST_INTERVAL = 30 * 1000; // 30秒
+    private static final long TEST_INTERVAL = 10 * 1000; // 30秒
     private android.content.BroadcastReceiver brokerReadyReceiver;
-//    private android.os.Handler testUplinkHandler;
-//    private final Runnable testUplinkRunnable = new Runnable() {
-//        @Override
-//        public void run() {
-//            try {
-//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-//                String time = sdf.format(new Date());
-//                String hex = generateTestUplinkHex();
-//
-//                long result = databaseHelper.addUplinkLog(time, hex);
-//                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
-//
-//                UplinkDataEvent event = new UplinkDataEvent(time, hex);
-//                EventBus.getDefault().post(event);
-//                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
-//            } catch (Exception e) {
-//                Log.e(TAG, "自动测试上行失败", e);
-//            } finally {
-//                if (testUplinkHandler != null) {
-//                    testUplinkHandler.postDelayed(this, TEST_INTERVAL);
-//                }
-//            }
-//        }
-//    };
+    private android.os.Handler testUplinkHandler;
+    private final Runnable testUplinkRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                String time = sdf.format(new Date());
+                String hex = generateTestUplinkHex();
+
+                long result = databaseHelper.addUplinkLog(time, hex);
+                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
+
+                UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                EventBus.getDefault().post(event);
+                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
+            } catch (Exception e) {
+                Log.e(TAG, "自动测试上行失败", e);
+            } finally {
+                if (testUplinkHandler != null) {
+                    testUplinkHandler.postDelayed(this, TEST_INTERVAL);
+                }
+            }
+        }
+    };
 
     // 自动返回首页计时
     private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -144,6 +144,10 @@ public class MainActivity extends AppCompatActivity {
         // 初始化数据库助手
         databaseHelper = DatabaseHelper.getInstance(this);
         try {
+            com.lora.cn.utils.LogUtils.init(getApplicationContext());
+            com.lora.cn.utils.CrashLogger.install(getApplicationContext());
+        } catch (Exception ignored) {}
+        try {
             databaseHelper.ensureDefaultAdminRoleAssigned();
             databaseHelper.debugLogAdminRoleAndUser();
         } catch (Exception e) {
@@ -190,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-        //startTestTimer();
+        startTestTimer();
         // 启动全局MQTT日志监听（优先连接本地Broker）
         startGlobalMqttLogging();
 
@@ -243,18 +247,18 @@ public class MainActivity extends AppCompatActivity {
         try { updatePendingBadge(); } catch (Exception ignored) {}
     }
 
-//    private void startTestTimer() {
-//        try {
-//            if (testUplinkHandler == null) {
-//                testUplinkHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-//            }
-//            testUplinkHandler.removeCallbacks(testUplinkRunnable);
-//            testUplinkHandler.post(testUplinkRunnable);
-//            Log.d(TAG, "自动测试上行计时器已启动，间隔: " + TEST_INTERVAL + "ms");
-//        } catch (Exception e) {
-//            Log.e(TAG, "启动自动测试上行计时器失败", e);
-//        }
-//    }
+    private void startTestTimer() {
+        try {
+            if (testUplinkHandler == null) {
+                testUplinkHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            }
+            testUplinkHandler.removeCallbacks(testUplinkRunnable);
+            testUplinkHandler.post(testUplinkRunnable);
+            Log.d(TAG, "自动测试上行计时器已启动，间隔: " + TEST_INTERVAL + "ms");
+        } catch (Exception e) {
+            Log.e(TAG, "启动自动测试上行计时器失败", e);
+        }
+    }
 
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
@@ -1065,10 +1069,10 @@ public class MainActivity extends AppCompatActivity {
                 brokerReadyReceiver = null;
             }
             autoReturnHandler.removeCallbacks(autoReturnRunnable);
-//            if (testUplinkHandler != null) {
-//                testUplinkHandler.removeCallbacks(testUplinkRunnable);
-//                testUplinkHandler = null;
-//            }
+            if (testUplinkHandler != null) {
+                testUplinkHandler.removeCallbacks(testUplinkRunnable);
+                testUplinkHandler = null;
+            }
             if (alertEvaluateHandler != null) {
                 alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
                 alertEvaluateHandler = null;

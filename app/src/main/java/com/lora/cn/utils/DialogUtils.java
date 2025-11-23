@@ -470,7 +470,7 @@ public class DialogUtils {
             window.setLayout(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
             android.view.WindowManager.LayoutParams lp = window.getAttributes();
             lp.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.6);
-            lp.height = (int) (context.getResources().getDisplayMetrics().heightPixels * 0.2);
+            lp.height = (int) (context.getResources().getDisplayMetrics().heightPixels * 0.4);
             lp.gravity = android.view.Gravity.CENTER;
             window.setAttributes(lp);
         }

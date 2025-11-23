@@ -260,6 +260,7 @@ public class AddDeviceFragment extends Fragment {
                 llDynamicGroups.setVisibility(View.GONE);
                 return;
             }
+            LogUtils.e("========" + new Gson().toJson(groups));
             llDynamicGroups.setVisibility(View.VISIBLE);
             androidx.recyclerview.widget.LinearLayoutManager lm = new androidx.recyclerview.widget.LinearLayoutManager(requireContext());
             llDynamicGroups.setLayoutManager(lm);
