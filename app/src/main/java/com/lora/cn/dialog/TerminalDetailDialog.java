@@ -152,7 +152,7 @@ public class TerminalDetailDialog extends Dialog {
         tvSignal.setText(String.valueOf(info.signalStrength));
         tvBattery.setText(info.batteryLevel + "%");
         pbBattery.setProgress(info.batteryLevel);
-        tvStatus.setText(info.status == 1 ? "在线" : (info.status == 0 ? "离线" : "异常"));
+        tvStatus.setText(info.status == 1 ? "正常在线" : (info.status == 0 ? "设备离线" : "异常取走"));
         tvTime.setText(formatTime(info.timestamp));
         tvPayload.setText(info.payloadHex != null ? info.payloadHex : "");
         

@@ -87,7 +87,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
             }
             if (batteryView != null) batteryView.setVisibility(View.GONE);
             if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
-            tvStatusTitle.setText("离线");
+            tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE);
             tvBatteryTitle.setText("");
         } else {
             if (isAbnormal) {
@@ -96,7 +96,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                     ivStatusIcon.setVisibility(View.VISIBLE);
                     ivStatusIcon.setImageResource(R.mipmap.ic_ds);
                 }
-                tvStatusTitle.setText("异常丢失");
+                tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
             } else if (isOnline) {
                 int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
                 float percent = (138 - rssiRaw) * 100f / 138f;
@@ -106,7 +106,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                     signalView.setSignalStrength(bars);
                 }
                 if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
-                tvStatusTitle.setText("在线");
+                tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
             } else if (isNormalTaken) {
                 if (signalView != null) signalView.setVisibility(View.GONE);
                 if (ivStatusIcon != null) {

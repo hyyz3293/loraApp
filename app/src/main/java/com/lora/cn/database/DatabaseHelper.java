@@ -257,7 +257,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_TERMINAL_DEVICE_ID + " TEXT NOT NULL UNIQUE, " +
         COLUMN_TERMINAL_DEVICE_CODE + " TEXT, " +
         COLUMN_TERMINAL_NAME + " TEXT NOT NULL, " +
-        COLUMN_TERMINAL_STATUS + " TEXT DEFAULT '在线', " +
+        COLUMN_TERMINAL_STATUS + " TEXT DEFAULT '正常在线', " +
         COLUMN_TERMINAL_SIGNAL_STRENGTH + " INTEGER DEFAULT 0, " +
         COLUMN_TERMINAL_BATTERY_LEVEL + " INTEGER DEFAULT 100, " +
         COLUMN_TERMINAL_BATTERY_VOLTAGE + " INTEGER DEFAULT 0, " +
@@ -1494,16 +1494,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 如果日志表为空，则添加示例数据
         if (count == 0) {
-            addLog("1", "终端设备001", "DEV001", "在线", "张三", "2024-01-15 10:35:00", "数据上传");
+            addLog("1", "终端设备001", "DEV001", "正常在线", "张三", "2024-01-15 10:35:00", "数据上传");
             addLog("2", "终端设备002", "DEV002", "低电量", "李四", "", "电量检测");
-            addLog("3", "终端设备003", "DEV003", "设备丢失", "王五", "", "设备检查");
-            addLog("4", "终端设备004", "DEV004", "在线", "赵六", "2024-01-15 07:20:00", "状态更新");
+            addLog("3", "终端设备003", "DEV003", "异常取走", "王五", "", "设备检查");
+            addLog("4", "终端设备004", "DEV004", "正常在线", "赵六", "2024-01-15 07:20:00", "状态更新");
             addLog("5", "终端设备005", "DEV005", "异常丢失", "孙七", "", "异常处理");
             addLog("1", "终端设备001", "DEV001", "离线", "张三", "2024-01-15 11:00:00", "设备维护");
-            addLog("6", "终端设备006", "DEV006", "在线", "周八", "2024-01-15 08:15:30", "定期检查");
+            addLog("6", "终端设备006", "DEV006", "正常在线", "周八", "2024-01-15 08:15:30", "定期检查");
             addLog("7", "终端设备007", "DEV007", "低电量", "吴九", "", "电池更换");
-            addLog("2", "终端设备002", "DEV002", "在线", "李四", "2024-01-15 12:30:45", "电量恢复");
-            addLog("8", "终端设备008", "DEV008", "设备丢失", "郑十", "", "紧急查找");
+            addLog("2", "终端设备002", "DEV002", "正常在线", "李四", "2024-01-15 12:30:45", "电量恢复");
+            addLog("8", "终端设备008", "DEV008", "异常取走", "郑十", "", "紧急查找");
         }
     }
 

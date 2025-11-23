@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-        startTestTimer();
+        //stTimer();
         // 启动全局MQTT日志监听（优先连接本地Broker）
         startGlobalMqttLogging();
 
@@ -423,8 +423,8 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         if (finalTarget.logId > 0) databaseHelper.updateLogHandled(finalTarget.logId, user, time, remark);
                         int mask = 0;
-                        if ("设备丢失".equals(finalTarget.title)) mask |= 0x00000001;
-                        if ("低电量报警".equals(finalTarget.title)) mask |= 0x00000002;
+                        if ("异常取走".equals(finalTarget.title)) mask |= 0x00000001;
+                        if ("设备低电量".equals(finalTarget.title)) mask |= 0x00000002;
                         if (mask != 0) {
                             try { sendHandleDownlink(devHex, mask); } catch (Exception ignored) {}
                         }
@@ -475,6 +475,11 @@ public class MainActivity extends AppCompatActivity {
         LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
         if (frame == null) return;
         if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
+        try {
+            if (!databaseHelper.isTerminalExists(frame.deviceId)) {
+                return;
+            }
+        } catch (Exception ignored) {}
         int statusCode = 0;
         try {
             java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(frame.deviceId);
@@ -484,7 +489,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
         if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
             String devId = frame.deviceId;
-            String msg = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "设备丢失" : "低电量报警";
+            String msg = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "异常取走" : "设备低电量";
             Integer last = lastAlertTypes.get(devId);
             if (last == null || last != statusCode) {
                 AlertItem item = buildAlertItem(frame, msg);
@@ -504,7 +509,7 @@ public class MainActivity extends AppCompatActivity {
                 java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
                 for (AlertItem ai : alertQueue) {
                     boolean sameDev = devId.equalsIgnoreCase(ai.code);
-                    boolean abnormal = "设备丢失".equals(ai.title) || "低电量报警".equals(ai.title) || "设备离线".equals(ai.title);
+                    boolean abnormal = "异常取走".equals(ai.title) || "设备低电量".equals(ai.title) || "设备离线".equals(ai.title);
                     if (!(sameDev && abnormal)) newQueue.addLast(ai);
                 }
                 alertQueue.clear();
@@ -572,7 +577,7 @@ public class MainActivity extends AppCompatActivity {
             java.util.Set<String> distinct = new java.util.HashSet<>();
             for (AlertItem ai : alertQueue) {
                 if (ai == null) continue;
-                if ("设备丢失".equals(ai.title) || "低电量报警".equals(ai.title) || "设备离线".equals(ai.title)) {
+                if ("异常取走".equals(ai.title) || "设备低电量".equals(ai.title) || "设备离线".equals(ai.title)) {
                     distinct.add((ai.code == null ? "" : ai.code) + ":" + ai.title);
                 }
             }
@@ -594,7 +599,7 @@ public class MainActivity extends AppCompatActivity {
             java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
             for (AlertItem ai : alertQueue) {
                 boolean sameDev = devId != null && devId.equalsIgnoreCase(ai.code);
-                boolean abnormal = "设备丢失".equals(ai.title) || "低电量报警".equals(ai.title) || "设备离线".equals(ai.title);
+                boolean abnormal = "异常取走".equals(ai.title) || "设备低电量".equals(ai.title) || "设备离线".equals(ai.title);
                 if (!(sameDev && abnormal)) newQueue.addLast(ai);
             }
             alertQueue.clear();
@@ -984,6 +989,8 @@ public class MainActivity extends AppCompatActivity {
                                     Log.d(TAG, "==>>stLayer3NotInPlace>: " + frameData.stLayer3NotInPlace);
                                     Log.d(TAG, "==>>stLayer4NotInPlace>: " + frameData.stLayer4NotInPlace);
                                     Log.d(TAG, "==>>stLayer5NotInPlace>: " + frameData.stLayer5NotInPlace);
+
+                                    Log.d(TAG, "==>>frameData=====>: " + new Gson().toJson(frameData));
 
 //                                    D  上行数据存储到上行日志表，结果: 25
 //                                    2025-11-15 21:25:18.642  4652-4652  MainActivity            com.lora.cn                          D  上行数据存储到日志信息表，结果: 26

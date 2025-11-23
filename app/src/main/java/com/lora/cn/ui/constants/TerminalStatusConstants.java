@@ -8,11 +8,11 @@ import java.util.List;
 
 public class TerminalStatusConstants {
     public static final String STATUS_IMPORTANT = "重点关注";
-    public static final String STATUS_ONLINE = "在线";
+    public static final String STATUS_ONLINE = "正常在线";
     public static final String STATUS_NORMAL_TAKEN = "正常取走";
     public static final String STATUS_ABNORMAL_LOST = "异常取走";
     public static final String STATUS_LOW_BATTERY = "设备低电量";
-    public static final String STATUS_OFFLINE = "离线";
+    public static final String STATUS_OFFLINE = "设备离线";
 
     public static final int CODE_OFFLINE = 0;
     public static final int CODE_ONLINE = 1;

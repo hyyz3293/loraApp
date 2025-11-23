@@ -92,10 +92,10 @@ public class TerminalLogAdapter extends BaseQuickAdapter<TerminalLog, QuickViewH
         Drawable dotDrawable = null;
         int textColor = Color.parseColor("#666666"); // 默认颜色
         
-        if ("设备丢失".equals(status) || "异常丢失".equals(status)) {
+        if ("异常取走".equals(status)) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_red);
             textColor = Color.parseColor("#D30000");
-        } else if ("低电量报警".equals(status) || "低电量".equals(status)) {
+        } else if ("设备低电量".equals(status) || "低电量".equals(status)) {
             dotDrawable = ContextCompat.getDrawable(textView.getContext(), R.drawable.dot_orange);
             textColor = Color.parseColor("#FF9F0F");
         }

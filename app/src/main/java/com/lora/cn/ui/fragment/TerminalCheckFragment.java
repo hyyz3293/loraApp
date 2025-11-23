@@ -184,13 +184,13 @@ public class TerminalCheckFragment extends Fragment {
             int totalBattery = Math.max(1, batteryNormal + batteryLow + offline);
             List<PieChartView.PieData> onlineData = new ArrayList<>();
             if (online > 0)
-                onlineData.add(new PieChartView.PieData("在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
+                onlineData.add(new PieChartView.PieData("正常在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
             if (manualTake > 0)
                 onlineData.add(new PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalStatus, Color.parseColor("#5D75F7")));
             if (abnormal > 0)
-                onlineData.add(new PieChartView.PieData("异常", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
+                onlineData.add(new PieChartView.PieData("异常取走", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
             if (offline > 0)
-                onlineData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalStatus, Color.parseColor("#CECECE")));
+                onlineData.add(new PieChartView.PieData("设备离线", String.valueOf(offline), (offline * 100f) / totalStatus, Color.parseColor("#CECECE")));
             pieChartOnline.setData(onlineData);
 
             List<PieChartView.PieData> batteryData = new ArrayList<>();
@@ -199,7 +199,7 @@ public class TerminalCheckFragment extends Fragment {
             if (batteryLow > 0)
                 batteryData.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, Color.parseColor("#FF9500")));
             if (offline > 0)
-                batteryData.add(new PieChartView.PieData("离线", String.valueOf(offline), (offline * 100f) / totalBattery, Color.parseColor("#CECECE")));
+                batteryData.add(new PieChartView.PieData("设备离线", String.valueOf(offline), (offline * 100f) / totalBattery, Color.parseColor("#CECECE")));
             pieChartBattery.setData(batteryData);
         } catch (Exception e) {
             Log.e("TerminalCheckFragment", "初始化饼图真实数据失败: " + e.getMessage());
@@ -244,8 +244,8 @@ public class TerminalCheckFragment extends Fragment {
 
                         int sc2 = t.getStatus();
                         String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc2);
-                        if ("在线".equals(st)) { onlineCount++; }
-                        else if ("离线".equals(st)) { offlineCount++; batteryOffline++; }
+                        if ("正常在线".equals(st)) { onlineCount++; }
+                        else if ("设备离线".equals(st)) { offlineCount++; batteryOffline++; }
                         else { int bl = t.getBatteryLevel(); if (bl <= 20) batteryLow++; else batteryNormal++; }
 
                         List<com.lora.cn.ui.model.LogInfo> logs = dbHelper.getLogsByTerminalId(t.getTerminalId());
@@ -272,30 +272,30 @@ public class TerminalCheckFragment extends Fragment {
 
                     int totalLeft = Math.max(1, onlineCount + offlineCount + manualTake + illegalLoss);
                     java.util.List<com.lora.cn.ui.view.PieChartView.PieData> onlinePie = new java.util.ArrayList<>();
-                    if (onlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("在线", String.valueOf(onlineCount), (onlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#39E56D")));
-                    if (offlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("离线", String.valueOf(offlineCount), (offlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#CECECE")));
+                    if (onlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("正常在线", String.valueOf(onlineCount), (onlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#39E56D")));
+                    if (offlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("设备离线", String.valueOf(offlineCount), (offlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#CECECE")));
                     if (manualTake > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalLeft, android.graphics.Color.parseColor("#5D75F7")));
-                    if (illegalLoss > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("异常丢失", String.valueOf(illegalLoss), (illegalLoss * 100f) / totalLeft, android.graphics.Color.parseColor("#D00000")));
+                    if (illegalLoss > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("异常取走", String.valueOf(illegalLoss), (illegalLoss * 100f) / totalLeft, android.graphics.Color.parseColor("#D00000")));
                     data.setOnlinePieData(onlinePie);
 
                     int totalBattery = Math.max(1, batteryNormal + batteryLow + batteryOffline);
                     java.util.List<com.lora.cn.ui.view.PieChartView.PieData> batteryPie = new java.util.ArrayList<>();
                     if (batteryNormal > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("电量正常", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, android.graphics.Color.parseColor("#39E56D")));
                     if (batteryLow > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, android.graphics.Color.parseColor("#FF9500")));
-                    if (batteryOffline > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("离线", String.valueOf(batteryOffline), (batteryOffline * 100f) / totalBattery, android.graphics.Color.parseColor("#CECECE")));
+                    if (batteryOffline > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("设备离线", String.valueOf(batteryOffline), (batteryOffline * 100f) / totalBattery, android.graphics.Color.parseColor("#CECECE")));
                     data.setBatteryPieData(batteryPie);
 
                     java.util.List<com.lora.cn.ui.model.ChartItem> onlineItems = new java.util.ArrayList<>();
-                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "在线", onlineCount + "台"));
-                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "离线", offlineCount + "台"));
+                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "正常在线", onlineCount + "台"));
+                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "设备离线", offlineCount + "台"));
                     onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#5D75F7"), "正常取走", manualTake + "台"));
-                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#D00000"), "异常丢失", illegalLoss + "台"));
+                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#D00000"), "异常取走", illegalLoss + "台"));
                     data.setOnlineChartItems(onlineItems);
 
                     java.util.List<com.lora.cn.ui.model.ChartItem> batteryItems = new java.util.ArrayList<>();
                     batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "电量正常", batteryNormal + "台"));
                     batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#FF9500"), "低电量", batteryLow + "台"));
-                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "离线", batteryOffline + "台"));
+                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "设备离线", batteryOffline + "台"));
                     data.setBatteryChartItems(batteryItems);
 
                     list.add(data);
@@ -407,7 +407,7 @@ public class TerminalCheckFragment extends Fragment {
             String NL = "\r\n";
             StringBuilder sbStatus = new StringBuilder();
             StringBuilder sbBattery = new StringBuilder();
-            sbStatus.append("分类,在线,离线,正常取走,异常丢失").append(NL);
+            sbStatus.append("分类,正常在线,设备离线,正常取走,异常取走").append(NL);
             sbBattery.append("分类,电量正常,低电量,离线").append(NL);
             for (com.lora.cn.ui.model.TerminalChartData d : chartDataList) {
                 String label = d.getOnlineTitle();
@@ -427,13 +427,13 @@ public class TerminalCheckFragment extends Fragment {
                     int n = num.isEmpty() ? 0 : Integer.parseInt(num);
                     battery.put(k, n);
                 }
-                int on = online.getOrDefault("在线", 0);
-                int off = online.getOrDefault("离线", 0);
+                int on = online.getOrDefault("正常在线", 0);
+                int off = online.getOrDefault("设备离线", 0);
                 int take = online.getOrDefault("正常取走", 0);
-                int loss = online.getOrDefault("异常丢失", 0);
+                int loss = online.getOrDefault("异常取走", 0);
                 int bn = battery.getOrDefault("电量正常", 0);
                 int bl = battery.getOrDefault("低电量", 0);
-                int boff = battery.getOrDefault("离线", 0);
+                int boff = battery.getOrDefault("设备离线", 0);
                 sbStatus.append(label).append(',')
                         .append(on).append(',')
                         .append(off).append(',')

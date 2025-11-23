@@ -49,7 +49,7 @@ public class Terminal {
     public Terminal(String deviceId, String deviceName) {
         this.deviceId = deviceId;
         this.deviceName = deviceName;
-        this.status = "在线";
+        this.status = "正常在线";
         this.signalStrength = 0;
         this.createTime = new Date();
         this.updateTime = new Date();

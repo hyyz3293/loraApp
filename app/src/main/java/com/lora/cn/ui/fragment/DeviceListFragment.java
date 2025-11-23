@@ -206,7 +206,7 @@ public class DeviceListFragment extends Fragment {
                     boolean anyLayerInPlace = pf.stLayer1NotInPlace == 0 || pf.stLayer2NotInPlace == 0 || pf.stLayer3NotInPlace == 0 || pf.stLayer4NotInPlace == 0 || pf.stLayer5NotInPlace == 0;
                     boolean isOnline = (pf.stPowerLockOn == 0 && anyLayerInPlace);
                     boolean isAbnormal = (pf.stPowerLockOn == 0) && (pf.stLayer1NotInPlace == 1 || pf.stLayer2NotInPlace == 1 || pf.stLayer3NotInPlace == 1 || pf.stLayer4NotInPlace == 1 || pf.stLayer5NotInPlace == 1);
-                    discoveredTerminal.setStatus(isAbnormal ? "异常" : (isOnline ? "在线" : ""));
+                    discoveredTerminal.setStatus(isAbnormal ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST : (isOnline ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE : com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE));
                     // 同步展示关键指标（电量、电压、RSSI）
                     discoveredTerminal.setBatteryLevel(pf.batteryLevel);
                     discoveredTerminal.setBatteryVoltage(pf.batteryVoltage);
