@@ -27,6 +27,7 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
     private List<Permission> displayPermissions; // 显示的权限列表（按层级排序）
     private List<Permission> allPermissions; // 所有权限列表
     private Map<Long, List<Permission>> childrenMap; // 父权限ID -> 子权限列表
+    private Map<Long, Permission> permissionById; // 权限ID -> 权限对象（含父ID）
     private Set<Long> selectedPermissionIds;
     private Set<Long> expandedPermissionIds; // 展开的权限ID
 
@@ -36,6 +37,7 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         this.childrenMap = new HashMap<>();
         this.selectedPermissionIds = new HashSet<>();
         this.expandedPermissionIds = new HashSet<>();
+        this.permissionById = new HashMap<>();
     }
 
     public void setPermissions(List<Permission> allPermissions) {
@@ -47,6 +49,8 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         
         // 构建父子关系映射
         buildChildrenMapFromTree(allPermissions);
+        // 构建权限索引（用于自底向上选中父节点）
+        buildPermissionIndexFromTree(allPermissions);
         
         // 默认展开所有根权限，让用户能看到完整的权限树结构
         expandedPermissionIds.clear();
@@ -74,6 +78,22 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         for (Long parentId : childrenMap.keySet()) {
             List<Permission> children = childrenMap.get(parentId);
             android.util.Log.e("TreeAdapter", "Parent ID: " + parentId + ", Children count: " + (children != null ? children.size() : 0));
+        }
+    }
+
+    private void buildPermissionIndexFromTree(List<Permission> treePermissions) {
+        permissionById.clear();
+        buildPermissionIndexRecursive(treePermissions);
+    }
+
+    private void buildPermissionIndexRecursive(List<Permission> permissions) {
+        for (Permission p : permissions) {
+            if (p == null) continue;
+            permissionById.put(p.getPermissionId(), p);
+            List<Permission> children = p.getChildList();
+            if (children != null && !children.isEmpty()) {
+                buildPermissionIndexRecursive(children);
+            }
         }
     }
     
@@ -147,11 +167,14 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         this.selectedPermissionIds.clear();
         if (selectedIds != null) {
             this.selectedPermissionIds.addAll(selectedIds);
+            ensureAncestorsSelected();
         }
         notifyDataSetChanged();
     }
 
     public List<Long> getSelectedPermissionIds() {
+        // 返回前确保包含所有祖先
+        ensureAncestorsSelected();
         return new ArrayList<>(selectedPermissionIds);
     }
 
@@ -161,6 +184,21 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_tree_permission_checkbox, parent, false);
         return new ViewHolder(view);
+    }
+
+    private void ensureAncestorsSelected() {
+        if (permissionById == null || permissionById.isEmpty()) return;
+        java.util.Set<Long> extra = new java.util.HashSet<>();
+        for (Long id : new java.util.ArrayList<>(selectedPermissionIds)) {
+            Permission current = permissionById.get(id);
+            while (current != null) {
+                Long parentId = current.getParentId();
+                if (parentId == null || parentId == 0) break;
+                extra.add(parentId);
+                current = permissionById.get(parentId);
+            }
+        }
+        selectedPermissionIds.addAll(extra);
     }
 
     @Override
@@ -262,6 +300,8 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
                     selectedPermissionIds.add(permission.getPermissionId());
                     // 选中父权限时，自动选中所有子权限
                     selectAllChildren(permission.getPermissionId());
+                    // 选中子权限时，自动选中所有祖先（父/祖父...）
+                    selectAncestors(permission.getPermissionId());
                 } else {
                     selectedPermissionIds.remove(permission.getPermissionId());
                     // 取消选中父权限时，自动取消选中所有子权限
@@ -289,6 +329,16 @@ public class TreePermissionCheckboxAdapter extends RecyclerView.Adapter<TreePerm
                     selectedPermissionIds.remove(child.getPermissionId());
                     deselectAllChildren(child.getPermissionId()); // 递归取消选中子权限
                 }
+            }
+        }
+
+        private void selectAncestors(Long permissionId) {
+            Permission current = permissionById.get(permissionId);
+            while (current != null) {
+                Long parentId = current.getParentId();
+                if (parentId == null || parentId == 0) break;
+                selectedPermissionIds.add(parentId);
+                current = permissionById.get(parentId);
             }
         }
     }

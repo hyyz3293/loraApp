@@ -34,7 +34,7 @@
 
             <LinearLayout
                 android:background="@drawable/spinner_background"
-                android:layout_width="102dp"
+                android:layout_width="82dp"
                 android:layout_height="48dp" >
 
                 <Spinner
@@ -57,7 +57,7 @@
 
             <LinearLayout
                 android:background="@drawable/spinner_background"
-                android:layout_width="102dp"
+                android:layout_width="82dp"
                 android:layout_height="48dp" >
 
                 <Spinner

@@ -84,7 +84,7 @@ public class SettingsFragment extends Fragment {
 //            // 新增 MQTT 设置入口（同属网络配置权限）
 //            settingList.add(new SettingItem(R.mipmap.ic_setting1, "MQTT设置"));
 //        }
-        if (hasPermission("setting")) {
+        if (hasPermission("group_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
         }
         if (hasPermission("role_management")) {
@@ -144,7 +144,7 @@ public class SettingsFragment extends Fragment {
                 }
                 break;
             case "分组管理":
-                if (hasPermission("setting")) {
+                if (hasPermission("group_management")) {
                     targetFragment = GroupManagementFragment.newInstance();
                 }
                 break;
