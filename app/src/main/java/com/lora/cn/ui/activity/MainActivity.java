@@ -842,13 +842,15 @@ public class MainActivity extends AppCompatActivity {
                     String key = devId + ":异常取走";
                     Long prev = lastAlertLogIds.get(key);
                     if (latestId > 0 && (prev == null || prev != latestId)) {
-                        AlertItem item = new AlertItem(); item.title = "异常取走"; item.name = t.getTerminalName(); item.code = devId; item.time = latestTime != null ? latestTime : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                        if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
+                        if (newly) {
+                            AlertItem item = new AlertItem(); item.title = "异常取走"; item.name = t.getTerminalName(); item.code = devId; item.time = latestTime != null ? latestTime : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                            if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
+                            pendingAlertCount = alertQueue.size();
+                            startAlertRinging30s(); queuedAny = true;
+                        }
                         lastAlertLogIds.put(key, latestId);
                         lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
-                        pendingAlertCount = alertQueue.size();
                         try { if (newly) databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST); } catch (Exception ignored) {}
-                        if (newly) { startAlertRinging30s(); queuedAny = true; }
                     }
                 } else if (isOffline) {
                     boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
