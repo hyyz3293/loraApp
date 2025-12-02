@@ -113,10 +113,9 @@ public class AlertPendingListFragment extends Fragment {
                 if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                     com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                     if (t != null) {
-                        boolean isOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
                         boolean isLowNow = t.getBatteryLevel() <= lowTh;
                         boolean afterHandled = ht == null || at > ht;
-                        if (!isOffline && isLowNow && afterHandled) filtered.add(li);
+                        if (isLowNow && afterHandled) filtered.add(li);
                     }
                 } else {
                     if (ht == null || at > ht) filtered.add(li);

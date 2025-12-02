@@ -514,6 +514,9 @@ public class MainActivity extends AppCompatActivity {
                 statusCode = logs.get(0).getStatusCode();
             }
         } catch (Exception ignored) {}
+        int lowThEvt = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+        boolean isLowEvt = frame.batteryLevel <= lowThEvt;
+        if (isLowEvt) statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
         if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
             String devId = frame.deviceId;
             String msg = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "异常取走" : "设备低电量";
@@ -535,7 +538,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 updatePendingBadge();
-                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
             }
         } else {
@@ -577,8 +579,8 @@ public class MainActivity extends AppCompatActivity {
         String key = (currentAlert.code == null ? "" : currentAlert.code) + ":" + (currentAlert.title == null ? "" : currentAlert.title);
         if (lastShownKey != null && lastShownKey.equals(key)) {
             updatePendingBadge();
-            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-            if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
+            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+            if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
             return;
         }
         if (tvErrorTitle != null) tvErrorTitle.setText(currentAlert.title);
@@ -708,8 +710,7 @@ public class MainActivity extends AppCompatActivity {
                     if (v.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                         com.lora.cn.ui.model.Terminal tt = termMap.get(dev);
                         if (tt == null) continue;
-                        boolean isOffline = tt.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                        boolean isLowNow = !isOffline && tt.getBatteryLevel() <= lowTh;
+                        boolean isLowNow = tt.getBatteryLevel() <= lowTh;
                         if (!isLowNow) continue;
                     }
                     c++;
@@ -829,7 +830,7 @@ public class MainActivity extends AppCompatActivity {
                 boolean isOffline = status == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
                 boolean isAbnormal = status == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
                 int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                boolean isLow = !isOffline && t.getBatteryLevel() <= lowTh;
+                boolean isLow = t.getBatteryLevel() <= lowTh;
                 if (isAbnormal) {
                     boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
                     java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(devId);
@@ -854,6 +855,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else if (isOffline) {
                     boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                    if (newly) {
+                        try {
+                            long nid = databaseHelper.addOfflineLog(devId, t.getTerminalName());
+                            if (nid > 0) {
+                                String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                                String key = devId + ":设备离线";
+                                lastAlertLogIds.put(key, nid);
+                            }
+                        } catch (Exception ignored) {}
+                    }
                     java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(devId);
                     long latestId = -1L; String latestTime = null;
                     if (logs != null) {
@@ -864,16 +875,28 @@ public class MainActivity extends AppCompatActivity {
                     String key = devId + ":设备离线";
                     Long prev = lastAlertLogIds.get(key);
                     if (latestId > 0 && (prev == null || prev != latestId)) {
-                        AlertItem item = new AlertItem(); item.title = "设备离线"; item.name = t.getTerminalName(); item.code = devId; item.time = latestTime != null ? latestTime : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                        if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
+                        if (newly) {
+                            AlertItem item = new AlertItem(); item.title = "设备离线"; item.name = t.getTerminalName(); item.code = devId; item.time = latestTime != null ? latestTime : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                            if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
+                            pendingAlertCount = alertQueue.size();
+                            startAlertRinging30s(); queuedAny = true;
+                        }
                         lastAlertLogIds.put(key, latestId);
                         lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
-                        pendingAlertCount = alertQueue.size();
                         try { if (newly) databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE); } catch (Exception ignored) {}
-                        if (newly) { startAlertRinging30s(); queuedAny = true; }
                     }
-                } else if (isLow) {
+                }
+                if (isLow) {
                     boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
+                    if (newly) {
+                        try {
+                            long nid = databaseHelper.addLowBatteryLog(devId, t.getTerminalName());
+                            if (nid > 0) {
+                                String keyIns = devId + ":设备低电量";
+                                lastAlertLogIds.put(keyIns, nid);
+                            }
+                        } catch (Exception ignored) {}
+                    }
                     java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(devId);
                     long latestId = -1L; String latestTime = null;
                     if (logs != null) {
@@ -891,14 +914,14 @@ public class MainActivity extends AppCompatActivity {
                         pendingAlertCount = alertQueue.size();
                         if (newly) { startAlertRinging30s(); queuedAny = true; }
                     }
-                } else {
+                }
+                if (!isAbnormal && !isOffline && !isLow) {
                     lastAlertTypes.remove(devId);
                 }
             }
             if (queuedAny) {
                 showLatestPending();
             } else {
-                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(!alertQueue.isEmpty() ? View.VISIBLE : View.GONE);
             }
             updatePendingBadge();

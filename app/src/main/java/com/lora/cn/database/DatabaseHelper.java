@@ -1517,24 +1517,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         boolean exists = deviceId != null && isTerminalExists(deviceId);
         String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
         long result = -1L;
-        boolean skipAlarmDuplicate = false;
-        if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
-            android.database.Cursor c = db.rawQuery(
-                    "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
-                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
-                            " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
-                    new String[]{deviceId != null ? deviceId : ""});
-            try {
-                if (c != null && c.moveToFirst()) {
-                    int lastSt = c.getInt(0);
-                    if (lastSt == statusCode) skipAlarmDuplicate = true;
-                }
-            } finally {
-                if (c != null) c.close();
+        boolean skipBySameStatus = false;
+        android.database.Cursor c = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                new String[]{deviceId != null ? deviceId : ""});
+        try {
+            if (c != null && c.moveToFirst()) {
+                int lastSt = c.getInt(0);
+                if (lastSt == statusCode) skipBySameStatus = true;
             }
+        } finally {
+            if (c != null) c.close();
         }
-        if (!skipAlarmDuplicate) {
+        if (!skipBySameStatus) {
             result = db.insert(targetTable, null, values);
         }
 
@@ -1620,6 +1617,72 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     new String[]{deviceId});
         } finally {
         }
+    }
+
+    /**
+     * 插入一条“设备离线”日志；仅跳过连续离线的重复。
+     */
+    public long addOfflineLog(String deviceId, String terminalName) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        boolean exists = deviceId != null && isTerminalExists(deviceId);
+        if (!exists) return -1L;
+        String targetTable = TABLE_LOGS;
+        android.database.Cursor c = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                new String[]{deviceId != null ? deviceId : ""});
+        try {
+            if (c != null && c.moveToFirst()) {
+                int lastSt = c.getInt(0);
+                if (lastSt == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) return -1L;
+            }
+        } finally {
+            if (c != null) c.close();
+        }
+
+        String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        ContentValues v = new ContentValues();
+        v.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+        v.put(COLUMN_LOG_TERMINAL_NAME, terminalName != null ? terminalName : "");
+        v.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+        v.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
+        v.put(COLUMN_LOG_OPERATOR, "");
+        v.put(COLUMN_LOG_OPERATION_TIME, nowStr);
+        v.put(COLUMN_LOG_ACTION, "设备离线");
+        v.put(COLUMN_LOG_CREATE_TIME, nowStr);
+        return db.insert(targetTable, null, v);
+    }
+
+    public long addLowBatteryLog(String deviceId, String terminalName) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        boolean exists = deviceId != null && isTerminalExists(deviceId);
+        if (!exists) return -1L;
+        String targetTable = TABLE_LOGS;
+        android.database.Cursor c = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                new String[]{deviceId != null ? deviceId : ""});
+        try {
+            if (c != null && c.moveToFirst()) {
+                int lastSt = c.getInt(0);
+                if (lastSt == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) return -1L;
+            }
+        } finally {
+            if (c != null) c.close();
+        }
+        String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        ContentValues v = new ContentValues();
+        v.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+        v.put(COLUMN_LOG_TERMINAL_NAME, terminalName != null ? terminalName : "");
+        v.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+        v.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
+        v.put(COLUMN_LOG_OPERATOR, "");
+        v.put(COLUMN_LOG_OPERATION_TIME, nowStr);
+        v.put(COLUMN_LOG_ACTION, "设备低电量");
+        v.put(COLUMN_LOG_CREATE_TIME, nowStr);
+        return db.insert(targetTable, null, v);
     }
 
     /**
