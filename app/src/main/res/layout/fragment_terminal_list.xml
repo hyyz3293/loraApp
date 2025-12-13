@@ -145,6 +145,21 @@
                     android:layout_width="wrap_content"
                     android:layout_height="32dp" />
 
+                <TextView
+                    android:id="@+id/btn_refresh"
+                    android:paddingLeft="17dp"
+                    android:paddingRight="17dp"
+                    android:gravity="center"
+                    android:background="@drawable/bg_btn_4"
+                    android:layout_toLeftOf="@id/add_terminal"
+                    android:layout_centerVertical="true"
+                    android:layout_marginRight="12dp"
+                    android:text="刷新"
+                    android:textColor="#383B40"
+                    android:textSize="16dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp" />
+
 </RelativeLayout>
 
     <!-- 右下角报警浮层 -->
@@ -207,19 +222,21 @@
 
 </LinearLayout>
 
-        <RelativeLayout
+        <com.scwang.smart.refresh.layout.SmartRefreshLayout
+            android:id="@+id/refreshLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" >
+            android:layout_height="match_parent">
 
+            <com.scwang.smart.refresh.header.ClassicsHeader
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/terminal_recycle"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
 
-            
-
-        </RelativeLayout>
+        </com.scwang.smart.refresh.layout.SmartRefreshLayout>
 
     </LinearLayout>
 

@@ -348,8 +348,8 @@ public class MainActivity extends AppCompatActivity {
     private void initMenuTabs() {
         menuTabs = new ArrayList<>();
         menuTabs.add(new MenuTab("终端列表", 0));
-        menuTabs.add(new MenuTab("日志信息", 1));
-        menuTabs.add(new MenuTab("清点终端", 2));
+        menuTabs.add(new MenuTab("清点终端", 1));
+        menuTabs.add(new MenuTab("日志信息", 2));
         menuTabs.add(new MenuTab("设置", 3));
         //menuTabs.add(new MenuTab("报警处理", -1));
         
@@ -438,7 +438,7 @@ public class MainActivity extends AppCompatActivity {
             String devHex = target.code != null ? target.code : "";
             String title = "确认处理";
             AlertItem finalTarget = target;
-            com.lora.cn.utils.DialogUtils.showRemarkDialog(this, title, "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
+            com.lora.cn.utils.DialogUtils.showRemarkDialog(this, title, "已处理", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
                 @Override
                 public void onConfirm(String remark) {
                     String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
@@ -1243,21 +1243,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 提供下行发送（方式1：通用主题，devEUI在消息体中）
-     */
-    public void sendDownlinkSimple(String devEui, String payloadHex, int fport, boolean confirmed) {
-        try {
-            if (mqttClient == null) {
-                mqttClient = new MqttPacketsClient();
-                Log.w(TAG, "MQTT客户端未初始化，已创建实例但未连接");
-            }
-            mqttClient.publishDownlinkSimple("/milesight/downlink", devEui, payloadHex, fport, confirmed);
-            Log.i(TAG, "DOWNLINK(simple) devEUI=" + devEui + " fport=" + fport + " hex=" + payloadHex + " confirmed=" + confirmed);
-        } catch (Exception e) {
-            Log.e(TAG, "下行发送失败(simple)：" + e.getMessage());
-        }
-    }
+//    /**
+//     * 提供下行发送（方式1：通用主题，devEUI在消息体中）
+//     */
+//    public void sendDownlinkSimple(String devEui, String payloadHex, int fport, boolean confirmed) {
+//        try {
+//            if (mqttClient == null) {
+//                mqttClient = new MqttPacketsClient();
+//                Log.w(TAG, "MQTT客户端未初始化，已创建实例但未连接");
+//            }
+//            mqttClient.publishDownlinkSimple("/milesight/downlink", devEui, payloadHex, fport, confirmed);
+//            Log.i(TAG, "DOWNLINK(simple) devEUI=" + devEui + " fport=" + fport + " hex=" + payloadHex + " confirmed=" + confirmed);
+//        } catch (Exception e) {
+//            Log.e(TAG, "下行发送失败(simple)：" + e.getMessage());
+//        }
+//    }
 
 //    /**
 //     * 提供下行发送（方式2：按设备主题，devEUI在主题路径中）
@@ -1472,14 +1472,14 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
     showAddDeviceFragment(uiTerminal);
 }
 
-public void sendHandleDownlink(String devHex, int mask) {
-    try {
-        if (mqttClient != null) {
-            com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqttClient);
-            helper.sendDownlink8001Config(devHex, mask);
+    public void sendHandleDownlink(String devHex, int mask) {
+        try {
+            if (mqttClient != null) {
+                com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqttClient);
+                helper.sendDownlink8001Config(devHex, mask);
+            }
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "下发处理下行失败 devEUI=" + devHex + ", mask=" + mask, e);
         }
-    } catch (Exception e) {
-        android.util.Log.e(TAG, "下发处理下行失败 devEUI=" + devHex + ", mask=" + mask, e);
     }
-}
 }

@@ -23,9 +23,9 @@ public class MainPagerAdapter extends FragmentStateAdapter {
             case 0:
                 return new TerminalListFragment();
             case 1:
-                return new LogInfoFragment();
-            case 2:
                 return new TerminalCheckFragment();
+            case 2:
+                return new LogInfoFragment();
             case 3:
                 return new SettingsFragment();
             default:

@@ -293,7 +293,7 @@ public class LogInfoFragment extends Fragment {
 
     private void showHandleDialogForLog(LogInfo item) {
         if (item == null) return;
-        com.lora.cn.utils.DialogUtils.showRemarkDialog(requireContext(), "确认处理", "", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
+        com.lora.cn.utils.DialogUtils.showRemarkDialog(requireContext(), "确认处理", "已处理", new com.lora.cn.utils.DialogUtils.OnConfirmListener() {
             @Override
             public void onConfirm(String remark) {
                 String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");

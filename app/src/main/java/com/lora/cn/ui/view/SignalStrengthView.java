@@ -11,7 +11,7 @@ import android.view.View;
 
 public class SignalStrengthView extends View {
 
-    private int signalColor = Color.parseColor("#5B8CFF");
+    private int signalColor = Color.parseColor("#3AFCB8");
     private int emptyColor = Color.parseColor("#D8D8D8");
     private int barCount = 4;
     private float barSpacing;
