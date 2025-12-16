@@ -9,6 +9,7 @@ import com.lora.cn.ui.fragment.TerminalListFragment;
 import com.lora.cn.ui.fragment.LogInfoFragment;
 import com.lora.cn.ui.fragment.TerminalCheckFragment;
 import com.lora.cn.ui.fragment.SettingsFragment;
+import com.lora.cn.ui.fragment.DownlinkTestFragment;
 
 public class MainPagerAdapter extends FragmentStateAdapter {
 
@@ -28,6 +29,8 @@ public class MainPagerAdapter extends FragmentStateAdapter {
                 return new LogInfoFragment();
             case 3:
                 return new SettingsFragment();
+            case 4:
+                return new DownlinkTestFragment();
             default:
                 return new TerminalListFragment();
         }
@@ -35,6 +38,6 @@ public class MainPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 4; // 4个标签页
+        return 5;
     }
 }

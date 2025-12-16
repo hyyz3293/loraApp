@@ -38,4 +38,19 @@
         <item>未处理</item>
     </string-array>
 
+    <string-array name="ack_result_options">
+        <item>0</item>
+        <item>1</item>
+    </string-array>
+    <string-array name="query_op_options">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+    <string-array name="register_result_options">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
 </resources>

@@ -61,7 +61,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean isUserInfoVisible = false;
     private boolean isDeviceListVisible = false;
 
-    // 全局 MQTT 客户端（MainActivity 启动并维持）
     private MqttPacketsClient mqttClient;
     private DatabaseHelper databaseHelper;
     private static final long TEST_INTERVAL = 10 * 1000; // 30秒
@@ -205,8 +204,6 @@ public class MainActivity extends AppCompatActivity {
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
         //stTimer();
-        // 启动全局MQTT日志监听（优先连接本地Broker）
-        startGlobalMqttLogging();
 
         // 启动自动返回首页的周期检查
         autoReturnHandler.removeCallbacks(autoReturnRunnable);
@@ -225,9 +222,13 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, " ================ 1111: " + new Gson().toJson(frameData));
 
-
-
+        
+        
     } 
+
+    public MqttPacketsClient getMqttClient() {
+        return mqttClient;
+    }
 
     @Override
     protected void onStart() {
@@ -351,6 +352,7 @@ public class MainActivity extends AppCompatActivity {
         menuTabs.add(new MenuTab("清点终端", 1));
         menuTabs.add(new MenuTab("日志信息", 2));
         menuTabs.add(new MenuTab("设置", 3));
+        menuTabs.add(new MenuTab("下行测试", 4));
         //menuTabs.add(new MenuTab("报警处理", -1));
         
         // 设置RecyclerView

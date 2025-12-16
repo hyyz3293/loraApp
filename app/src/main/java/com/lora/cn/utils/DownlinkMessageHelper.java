@@ -61,7 +61,9 @@ public class DownlinkMessageHelper {
                 cartId,
                 registerResult,
                 clearMask,
-                reportIntervalMin
+                reportIntervalMin,
+                0,
+                null
             );
             
             // 转换为HEX字符串
@@ -124,15 +126,45 @@ public class DownlinkMessageHelper {
     public void sendAckDownlink(String deviceIdHex, int ackResult) {
         sendDownlink8001(
             deviceIdHex,
-            ackResult,      // 应答结果
-            0,              // 无查询操作
-            0,              // 默认科室ID
-            0,              // 默认台车ID
-            0,              // 默认登记结果
-            0,              // 无清除操作
-            30,             // 默认30分钟上报间隔
-            true            // 需要确认
+            ackResult,
+            0,
+            0,
+            0,
+            0,
+            0,
+            60,
+            true
         );
+    }
+    public void sendAckDownlink(String deviceIdHex, int ackResult, int alarmCount, int[] alarmMinutes) {
+        try {
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                ackResult,
+                0,
+                0,
+                0,
+                0,
+                0,
+                30,
+                alarmCount,
+                alarmMinutes
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            Log.i(TAG, "准备下发ACK: devEUI=" + deviceIdHex + ", ack=" + ackResult + ", alarms=" + alarmCount + ", payloadHexLen=" + payloadHex.length());
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true
+            );
+            Log.i(TAG, "ACK下发已调用publish: devEUI=" + deviceIdHex);
+        } catch (Exception e) {
+            Log.e(TAG, "ACK下发失败: devEUI=" + deviceIdHex + ", err=" + e.getMessage(), e);
+        }
     }
     
     /**
@@ -143,15 +175,45 @@ public class DownlinkMessageHelper {
     public void sendQueryStatusDownlink(String deviceIdHex) {
         sendDownlink8001(
             deviceIdHex,
-            0,              // 成功应答
-            1,              // 查询状态操作
-            0,              // 默认科室ID
-            0,              // 默认台车ID
-            0,              // 默认登记结果
-            0,              // 无清除操作
-            30,             // 默认30分钟上报间隔
-            true            // 需要确认
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            60,
+            true
         );
+    }
+    public void sendQueryStatusDownlink(String deviceIdHex, int alarmCount, int[] alarmMinutes) {
+        try {
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                30,
+                alarmCount,
+                alarmMinutes
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            Log.i(TAG, "准备下发查询: devEUI=" + deviceIdHex + ", alarms=" + alarmCount + ", payloadHexLen=" + payloadHex.length());
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true
+            );
+            Log.i(TAG, "查询下发已调用publish: devEUI=" + deviceIdHex);
+        } catch (Exception e) {
+            Log.e(TAG, "查询下发失败: devEUI=" + deviceIdHex + ", err=" + e.getMessage(), e);
+        }
     }
     
     /**
@@ -168,15 +230,50 @@ public class DownlinkMessageHelper {
                                   int reportIntervalMin) {
         sendDownlink8001(
             deviceIdHex,
-            0,              // 成功应答
-            2,              // 配置操作
-            departmentId,   // 指定科室ID
-            cartId,         // 指定台车ID
-            1,              // 已登记
-            0,              // 无清除操作
-            reportIntervalMin, // 指定上报间隔
-            true            // 需要确认
+            1,
+            0,
+            departmentId,
+            cartId,
+            2,
+            0,
+            reportIntervalMin,
+            true
         );
+    }
+    public void sendConfigDownlink(String deviceIdHex,
+                                   int departmentId,
+                                   int cartId,
+                                   int reportIntervalMin,
+                                   int alarmCount,
+                                   int[] alarmMinutes) {
+        try {
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                0,
+                0,
+                departmentId,
+                cartId,
+                2,
+                0,
+                reportIntervalMin,
+                alarmCount,
+                alarmMinutes
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            Log.i(TAG, "准备下发配置: devEUI=" + deviceIdHex + ", dep=" + departmentId + ", cart=" + cartId + ", interval=" + reportIntervalMin + ", alarms=" + alarmCount + ", payloadHexLen=" + payloadHex.length());
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true
+            );
+            Log.i(TAG, "配置下发已调用publish: devEUI=" + deviceIdHex);
+        } catch (Exception e) {
+            Log.e(TAG, "配置下发失败: devEUI=" + deviceIdHex + ", err=" + e.getMessage(), e);
+        }
     }
     
     /**
@@ -188,15 +285,45 @@ public class DownlinkMessageHelper {
     public void sendClearDataDownlink(String deviceIdHex, int clearMask) {
         sendDownlink8001(
             deviceIdHex,
-            0,              // 成功应答
-            3,              // 清除操作
-            0,              // 默认科室ID
-            0,              // 默认台车ID
-            0,              // 默认登记结果
-            clearMask,      // 指定清除掩码
-            30,             // 默认30分钟上报间隔
-            true            // 需要确认
+            1,
+            0,
+            0,
+            0,
+            0,
+            clearMask,
+            60,
+            true
         );
+    }
+    public void sendClearDataDownlink(String deviceIdHex, int clearMask, int alarmCount, int[] alarmMinutes) {
+        try {
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                0,
+                0,
+                0,
+                0,
+                0,
+                clearMask,
+                60,
+                alarmCount,
+                alarmMinutes
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            Log.i(TAG, "准备下发清除: devEUI=" + deviceIdHex + ", clearMask=0x" + Integer.toHexString(clearMask) + ", alarms=" + alarmCount + ", payloadHexLen=" + payloadHex.length());
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true
+            );
+            Log.i(TAG, "清除下发已调用publish: devEUI=" + deviceIdHex);
+        } catch (Exception e) {
+            Log.e(TAG, "清除下发失败: devEUI=" + deviceIdHex + ", err=" + e.getMessage(), e);
+        }
     }
 
     public String buildDownlink8001Hex(String deviceIdHex, int clearMask, int intervalMin) {
@@ -210,7 +337,9 @@ public class DownlinkMessageHelper {
                 0,
                 0,
                 clearMask,
-                intervalMin);
+                intervalMin,
+                0,
+                null);
         return LoRaProtocolParser.bytesToHex(frame);
     }
 
@@ -225,7 +354,9 @@ public class DownlinkMessageHelper {
                 0,
                 0,
                 clearMask,
-                5);
+                5,
+                0,
+                null);
         String payloadHex = LoRaProtocolParser.bytesToHex(frame);
         mqttClient.publishDownlinkByDevEuiTopic(
                 DOWNLINK_TOPIC_BASE,
@@ -234,5 +365,37 @@ public class DownlinkMessageHelper {
                 DEFAULT_FPORT,
                 true);
         Log.i(TAG, "下发8001配置: devEUI=" + deviceIdHex + ", clearMask=" + clearMask + ", interval=5, payload=" + payloadHex);
+    }
+
+    public void sendRawHexDownlink(String deviceIdHex, String payloadHex) {
+        if (mqttClient == null) {
+            Log.e(TAG, "MQTT客户端未初始化");
+            return;
+        }
+        if (payloadHex == null) {
+            Log.e(TAG, "原始HEX为空");
+            return;
+        }
+        String clean = payloadHex.replaceAll("\\s+", "");
+        if (clean.isEmpty()) {
+            Log.e(TAG, "原始HEX为空字符串");
+            return;
+        }
+        if (clean.length() % 2 != 0) {
+            Log.e(TAG, "原始HEX长度不是偶数: " + clean.length());
+            return;
+        }
+        if (!clean.matches("(?i)[0-9a-f]+")) {
+            Log.e(TAG, "原始HEX包含非法字符: " + clean);
+            return;
+        }
+        Log.i(TAG, "准备发送原始HEX下行: devEUI=" + deviceIdHex + ", payloadHexLen=" + clean.length());
+        mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                clean,
+                DEFAULT_FPORT,
+                true);
+        Log.i(TAG, "原始HEX下行已调用publish: devEUI=" + deviceIdHex);
     }
 }

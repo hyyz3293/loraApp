@@ -411,7 +411,7 @@ public class TerminalDetailDialog extends Dialog {
             int registerResult = 1;
             int clearMask = 0;
             int reportIntervalMin = 5;
-            byte[] frame = LoRaProtocolParser.buildDownlink8001(devEui, seq, nowUtc, ackResult, queryOp, departmentId, cartId, registerResult, clearMask, reportIntervalMin);
+            byte[] frame = LoRaProtocolParser.buildDownlink8001(devEui, seq, nowUtc, ackResult, queryOp, departmentId, cartId, registerResult, clearMask, reportIntervalMin, 0, null);
             String hex = bytesToHexCompact(frame);
 
             if (mqttClient == null) {

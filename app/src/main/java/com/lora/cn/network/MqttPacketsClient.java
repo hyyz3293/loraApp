@@ -48,6 +48,7 @@ public class MqttPacketsClient {
     private GatewayPacketsClient.PacketsListener listener;
     private android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private int subscribeRetry = 0;
+    private final java.util.LinkedList<Runnable> pendingPublishes = new java.util.LinkedList<>();
 
     /**
      * 连接并订阅主题。
@@ -77,6 +78,7 @@ public class MqttPacketsClient {
             MqttConnectOptions opts = new MqttConnectOptions();
             opts.setAutomaticReconnect(true);
             opts.setCleanSession(true);
+            opts.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
             if (username != null && !username.isEmpty()) opts.setUserName(username);
             if (password != null && !password.isEmpty()) opts.setPassword(password.toCharArray());
 
@@ -112,22 +114,40 @@ public class MqttPacketsClient {
             });
 
             if (listener != null) listener.onStatus("MQTT连接：" + brokerUrl);
+            android.util.Log.i(TAG, "准备连接MQTT: url=" + brokerUrl + ", clientId=" + clientId + ", mqttVersion=3.1.1, topicFilter=" + topicFilter);
             client.connect(opts, null, new IMqttActionListener() {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
                         if (listener != null) listener.onStatus("MQTT连接成功，订阅：" + topicFilter);
                         subscribeRetry = 0;
                         scheduleSubscribe(topicFilter);
+                        android.util.Log.i(TAG, "MQTT连接成功: url=" + brokerUrl + ", clientId=" + clientId);
+                        flushPendingIfConnected();
                     }
 
                     @Override
                     public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
                         if (listener != null) listener.onError("MQTT连接失败：" + (exception == null ? "" : exception.getMessage()));
+                        android.util.Log.e(TAG, "MQTT连接失败: url=" + brokerUrl + ", clientId=" + clientId + ", err=" + (exception == null ? "" : exception.getMessage()), exception);
                     }
                 });
         } catch (Exception e) {
             if (listener != null) listener.onError("MQTT初始化异常：" + e.getMessage());
+            android.util.Log.e(TAG, "MQTT初始化异常: " + e.getMessage(), e);
         }
+    }
+
+    private void flushPendingIfConnected() {
+        try {
+            if (client != null && client.isConnected()) {
+                while (!pendingPublishes.isEmpty()) {
+                    Runnable r = pendingPublishes.poll();
+                    if (r != null) {
+                        try { r.run(); } catch (Exception ignore) {}
+                    }
+                }
+            }
+        } catch (Exception ignore) {}
     }
 
     private void scheduleSubscribe(String topicFilter) {
@@ -349,7 +369,11 @@ public class MqttPacketsClient {
                                       boolean confirmed) {
         try {
             if (client == null || !client.isConnected()) {
-                if (listener != null) listener.onError("MQTT未连接，无法下发");
+                pendingPublishes.add(() -> {
+                    publishDownlinkSimple(topicBase, devEui, payloadHex, fport, confirmed);
+                });
+                if (listener != null) listener.onStatus("MQTT未连接，已加入下发队列：" + devEui);
+                android.util.Log.w(TAG, "MQTT未连接，加入队列等待连接: topicBase=" + topicBase + ", devEUI=" + devEui + ", queueSize=" + pendingPublishes.size());
                 return;
             }
             String b64 = hexToBase64(payloadHex);
@@ -361,10 +385,12 @@ public class MqttPacketsClient {
             msg.setRetained(false);
             client.publish(topicBase, msg);
             if (listener != null) listener.onStatus("下发到主题：" + topicBase + " devEUI=" + devEui);
+            android.util.Log.i(TAG, "已发布下行(simple): topic=" + topicBase + ", devEUI=" + devEui + ", fport=" + fport + ", confirmed=" + confirmed + ", payloadHexLen=" + (payloadHex == null ? 0 : payloadHex.length()) + ", base64Len=" + b64.length() + ", hex=" + payloadHex + ", json=" + json);
         } catch (org.eclipse.paho.client.mqttv3.MqttException e) {
             if (listener != null) listener.onError("下发失败：" + e.getMessage());
+            android.util.Log.e(TAG, "下发失败(simple): topic=" + topicBase + ", devEUI=" + devEui + ", err=" + e.getMessage(), e);
         }
-    }
+        }
 
     /**
      * 发布下行到按设备主题（方式2：devEUI在主题路径中）。
@@ -378,7 +404,11 @@ public class MqttPacketsClient {
                                              boolean confirmed) {
         try {
             if (client == null || !client.isConnected()) {
-                if (listener != null) listener.onError("MQTT未连接，无法下发");
+                pendingPublishes.add(() -> {
+                    publishDownlinkByDevEuiTopic(topicBase, devEui, payloadHex, fport, confirmed);
+                });
+                if (listener != null) listener.onStatus("MQTT未连接，已加入下发队列：" + devEui);
+                android.util.Log.w(TAG, "MQTT未连接，加入队列等待连接(by-topic): base=" + topicBase + ", devEUI=" + devEui + ", queueSize=" + pendingPublishes.size());
                 return;
             }
             String b64 = hexToBase64(payloadHex);
@@ -391,10 +421,12 @@ public class MqttPacketsClient {
             msg.setRetained(false);
             client.publish(topic, msg);
             if (listener != null) listener.onStatus("下发到主题：" + topic);
+            android.util.Log.i(TAG, "已发布下行(by-topic): topic=" + topic + ", devEUI=" + devEui + ", fport=" + fport + ", confirmed=" + confirmed + ", payloadHexLen=" + (payloadHex == null ? 0 : payloadHex.length()) + ", base64Len=" + b64.length() + ", hex=" + payloadHex + ", json=" + json);
         } catch (org.eclipse.paho.client.mqttv3.MqttException e) {
             if (listener != null) listener.onError("下发失败：" + e.getMessage());
+            android.util.Log.e(TAG, "下发失败(by-topic): base=" + topicBase + ", devEUI=" + devEui + ", err=" + e.getMessage(), e);
         }
-    }
+        }
 
     // 将HEX转换为Base64（Milesight下发要求data为Base64）
     private String hexToBase64(String hex) {
@@ -405,7 +437,7 @@ public class MqttPacketsClient {
 
     private byte[] hexToBytes(String hex) {
         if (hex == null) return null;
-        String clean = hex.trim();
+        String clean = hex.replaceAll("[^0-9A-Fa-f]", "");
         if (clean.length() % 2 != 0) return null;
         int len = clean.length();
         byte[] out = new byte[len / 2];

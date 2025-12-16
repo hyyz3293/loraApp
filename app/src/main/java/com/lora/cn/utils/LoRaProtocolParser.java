@@ -266,7 +266,9 @@ public class LoRaProtocolParser {
                                            int cartId,
                                            int registerResult,
                                            int clearMask,
-                                           int reportIntervalMin) {
+                                           int reportIntervalMin,
+                                           int alarmCount,
+                                           int[] alarmMinutes) {
         byte[] deviceId = hexToBytes(deviceIdHex);
         if (deviceId == null) deviceId = new byte[8];
         if (deviceId.length != 8) {
@@ -290,14 +292,23 @@ public class LoRaProtocolParser {
         };
         int interval = Math.max(5, Math.min(1440, reportIntervalMin));
         byte[] intervalBytes = new byte[]{(byte) ((interval >> 8) & 0xFF), (byte) (interval & 0xFF)};
-        int len = 7 + 1 + 1 + 1 + 1 + 1 + 4 + 2;
-        int totalLen = 1 + deviceId.length + func.length + 1 + 1 + len + 1 + 1;
+        int ac = Math.max(0, Math.min(2, alarmCount));
+        int listLen = 0;
+        if (ac > 0 && alarmMinutes != null) {
+            listLen = Math.min(ac, alarmMinutes.length) * 2;
+        } else {
+            ac = 0;
+            listLen = 0;
+        }
+        int len = 7 + 1 + 1 + 1 + 1 + 1 + 4 + 2 + 1 + listLen;
+        int totalLen = 1 + deviceId.length + func.length + 1 + 2 + len + 1 + 1;
         byte[] frame = new byte[totalLen];
         int idx = 0;
         frame[idx++] = (byte) 0xA5;
         System.arraycopy(deviceId, 0, frame, idx, deviceId.length); idx += deviceId.length;
         System.arraycopy(func, 0, frame, idx, func.length); idx += func.length;
         frame[idx++] = sequence;
+        frame[idx++] = (byte) ((len >> 8) & 0xFF);
         frame[idx++] = (byte) (len & 0xFF);
         System.arraycopy(time, 0, frame, idx, time.length); idx += time.length;
         frame[idx++] = ack;
@@ -307,6 +318,12 @@ public class LoRaProtocolParser {
         frame[idx++] = reg;
         System.arraycopy(clear, 0, frame, idx, clear.length); idx += clear.length;
         System.arraycopy(intervalBytes, 0, frame, idx, intervalBytes.length); idx += intervalBytes.length;
+        frame[idx++] = (byte) (ac & 0xFF);
+        for (int i = 0; i < ac && alarmMinutes != null && i < alarmMinutes.length; i++) {
+            int m = Math.max(0, Math.min(1440, alarmMinutes[i]));
+            frame[idx++] = (byte) ((m >> 8) & 0xFF);
+            frame[idx++] = (byte) (m & 0xFF);
+        }
         byte xor = 0;
         for (int i = 1; i < idx; i++) xor ^= frame[i];
         frame[idx++] = xor;
@@ -316,7 +333,7 @@ public class LoRaProtocolParser {
 
     public static byte[] buildDownlink8001Simple(String deviceIdHex) {
         long utc = System.currentTimeMillis();
-        return buildDownlink8001(deviceIdHex, (byte) 0x01, utc, 1, 0, 0, 0, 0, 0, 5);
+        return buildDownlink8001(deviceIdHex, (byte) 0x01, utc, 1, 0, 0, 0, 0, 0, 60, 0, null);
     }
 
     private static byte[] buildBcdTimeBytes(long utcMs) {

@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <Spinner
+            android:id="@+id/sp_terminal"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="@drawable/spinner_background"/>
+
+        <EditText
+            android:id="@+id/et_dev_id"
+            android:hint="设备ID(16位HEX)"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="@drawable/spinner_background"
+            android:paddingLeft="10dp"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <EditText
+                android:id="@+id/et_department_id"
+                android:hint="科室ID(1-255)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <EditText
+                android:id="@+id/et_cart_id"
+                android:hint="台车ID(1-255)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <EditText
+                android:id="@+id/et_interval_min"
+                android:hint="上报间隔(5-1440min)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <EditText
+                android:id="@+id/et_clear_mask"
+                android:hint="清除掩码(HEX)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <Spinner
+                android:id="@+id/sp_ack_result"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:entries="@array/ack_result_options"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <Spinner
+                android:id="@+id/sp_query_op"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:entries="@array/query_op_options"/>
+        </LinearLayout>
+
+        <Spinner
+            android:id="@+id/sp_register_result"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/spinner_background"
+            android:entries="@array/register_result_options"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <EditText
+                android:id="@+id/et_alarm_count"
+                android:hint="闹钟数量(0-2)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <EditText
+                android:id="@+id/et_alarm_minutes"
+                android:hint="闹钟分钟(逗号分隔)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:id="@+id/btn_send_ack"
+                android:text="发送应答"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <TextView
+                android:id="@+id/btn_send_query"
+                android:text="发送查询"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:id="@+id/btn_send_config"
+                android:text="发送配置"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <TextView
+                android:id="@+id/btn_send_clear"
+                android:text="发送清除"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:id="@+id/btn_preset_ack_success"
+                android:text="预设:应答成功"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <TextView
+                android:id="@+id/btn_preset_query_routine"
+                android:text="预设:例行查询"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:id="@+id/btn_preset_config_60_two_alarms"
+                android:text="预设:配置60分钟+两闹钟"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+
+            <TextView
+                android:id="@+id/btn_preset_clear_all"
+                android:text="预设:清除全部告警"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/et_raw_hex"
+            android:hint="原始HEX负载(只填数据区HEX)"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="A5d896e0ff0000024080010300122025080308303601010102000000000001680201E004BFB15A"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/spinner_background"
+            android:paddingLeft="10dp"/>
+
+        <TextView
+            android:id="@+id/btn_send_raw_hex"
+            android:text="发送原始HEX下行"
+            android:background="@drawable/bg_btn_4"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:layout_width="match_parent"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:layout_height="40dp"/>
+
+    </LinearLayout>
+</ScrollView>
