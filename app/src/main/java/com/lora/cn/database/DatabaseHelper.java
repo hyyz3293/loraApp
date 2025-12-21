@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 20;
+    private static final int DATABASE_VERSION = 22;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -114,6 +114,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_LOG_OPERATION_TIME = "operation_time";
     public static final String COLUMN_LOG_ACTION = "action";
     public static final String COLUMN_LOG_CREATE_TIME = "create_time";
+
+    public static final String TABLE_MAINTENANCE = "maintenance_records";
+    public static final String COLUMN_MAINTENANCE_ID = "maintenance_id";
+    public static final String COLUMN_MAINTENANCE_TERMINAL_ID = "terminal_id";
+    public static final String COLUMN_MAINTENANCE_TERMINAL_NAME = "terminal_name";
+    public static final String COLUMN_MAINTENANCE_TERMINAL_GROUP = "terminal_group";
+    public static final String COLUMN_MAINTENANCE_STATUS = "status";
+    public static final String COLUMN_MAINTENANCE_CONTENT = "content";
+    public static final String COLUMN_MAINTENANCE_CREATE_USER_ID = "create_user_id";
+    public static final String COLUMN_MAINTENANCE_CREATE_USER = "create_user";
+    public static final String COLUMN_MAINTENANCE_CREATE_TIME = "create_time";
+    public static final String COLUMN_MAINTENANCE_HANDLE_USER_ID = "handle_user_id";
+    public static final String COLUMN_MAINTENANCE_HANDLE_USER = "handle_user";
+    public static final String COLUMN_MAINTENANCE_HANDLE_TIME = "handle_time";
     
     // 终端表
     public static final String TABLE_TERMINALS = "terminals";
@@ -139,6 +153,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_FAVORITE_USER_ID = "favorite_user_id"; // 收藏用户ID
     public static final String COLUMN_TERMINAL_CREATE_TIME = "create_time";
     public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
+    public static final String COLUMN_TERMINAL_MAINTENANCE_ACTIVE = "maintenance_active";
+    public static final String COLUMN_TERMINAL_MAINTENANCE_TIME = "maintenance_time";
     
     // 用户关注映射表
     public static final String TABLE_USER_FAVORITES = "user_favorites";
@@ -202,7 +218,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ")";
     
     // 创建角色表的SQL语句
-    private static final String CREATE_TABLE_ROLES = 
+    private static final String CREATE_TABLE_ROLES =
         "CREATE TABLE " + TABLE_ROLES + " (" +
         COLUMN_ROLE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
         COLUMN_ROLE_NAME + " TEXT NOT NULL UNIQUE, " +
@@ -337,6 +353,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         "handle_time TEXT, " +
         "handle_remark TEXT" +
         ")";
+
+    private static final String CREATE_TABLE_MAINTENANCE =
+        "CREATE TABLE IF NOT EXISTS " + TABLE_MAINTENANCE + " (" +
+        COLUMN_MAINTENANCE_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        COLUMN_MAINTENANCE_TERMINAL_ID + " TEXT NOT NULL, " +
+        COLUMN_MAINTENANCE_TERMINAL_NAME + " TEXT, " +
+        COLUMN_MAINTENANCE_TERMINAL_GROUP + " TEXT, " +
+        COLUMN_MAINTENANCE_STATUS + " INTEGER DEFAULT 0, " +
+        COLUMN_MAINTENANCE_CONTENT + " TEXT, " +
+        COLUMN_MAINTENANCE_CREATE_USER_ID + " INTEGER DEFAULT 0, " +
+        COLUMN_MAINTENANCE_CREATE_USER + " TEXT, " +
+        COLUMN_MAINTENANCE_CREATE_TIME + " TEXT, " +
+        COLUMN_MAINTENANCE_HANDLE_USER_ID + " INTEGER DEFAULT 0, " +
+        COLUMN_MAINTENANCE_HANDLE_USER + " TEXT, " +
+        COLUMN_MAINTENANCE_HANDLE_TIME + " TEXT" +
+        ")";
     
     // 创建索引的SQL语句
     private static final String CREATE_INDEX_CATEGORIES_GROUP_ID = 
@@ -392,6 +424,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TABLE_LOGS);
         // 创建未绑定日志表
         db.execSQL(CREATE_TABLE_LOGS_UNBOUND);
+        db.execSQL(CREATE_TABLE_MAINTENANCE);
         // 创建用户收藏关系表
         db.execSQL(CREATE_TABLE_USER_FAVORITES);
         
@@ -510,6 +543,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_DEVICE_CODE + " TEXT");
             } catch (Exception ignored) {}
         }
+        if (oldVersion < 21) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_MAINTENANCE_ACTIVE + " INTEGER DEFAULT 0");
+                db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_MAINTENANCE_TIME + " INTEGER DEFAULT 0");
+            } catch (Exception ignored) {}
+        }
         // 版本14 -> 15：为终端添加电池电压与RSSI原始值列
         if (oldVersion < 15) {
             try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_BATTERY_VOLTAGE + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
@@ -531,6 +570,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 20) {
             try { db.execSQL(CREATE_TABLE_USER_FAVORITES); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 22) {
+            try { db.execSQL(CREATE_TABLE_MAINTENANCE); } catch (Exception ignored) {}
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -1368,6 +1410,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
                 
+                terminal.setMaintenanceActive(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_ACTIVE)) == 1);
+                terminal.setMaintenanceTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_TIME)));
+                
                 terminals.add(terminal);
             } while (cursor.moveToNext());
         }
@@ -1487,10 +1532,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                  statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
             }  else if (frame.stPowerLockOn == 1) {
                 // 开锁
-                statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
+                if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code)) {
+                    statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
+                }
             } else if (frame.stPowerLockOn == 0) {
                 // 上锁
-                statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+                if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code)) {
+                    statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+                }
             }  else if (frame.evManualPut == 1) {
                 // 设备关闭（放入）
                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
@@ -2106,6 +2155,44 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public boolean isLastLogStatus(String deviceId, int status) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT " + COLUMN_LOG_STATUS + " FROM " + TABLE_LOGS + 
+                       " WHERE " + COLUMN_LOG_DEVICE_ID + " = ? " +
+                       " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1";
+        android.database.Cursor cursor = db.rawQuery(query, new String[]{deviceId});
+        boolean result = false;
+        if (cursor.moveToFirst()) {
+            result = cursor.getInt(0) == status;
+        }
+        cursor.close();
+        return result;
+    }
+
+    public void checkAndLogOfflineDevices() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        long now = System.currentTimeMillis();
+        long timeout = 10 * 60 * 1000L;
+        long threshold = now - timeout;
+        
+        String sql = "SELECT " + COLUMN_TERMINAL_DEVICE_ID + ", " + COLUMN_TERMINAL_NAME + 
+                     " FROM " + TABLE_TERMINALS + 
+                     " WHERE " + COLUMN_TERMINAL_UPDATE_TIME + " < ? AND " + COLUMN_TERMINAL_STATUS + " != ?";
+        android.database.Cursor c = db.rawQuery(sql, new String[]{String.valueOf(threshold), com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE});
+        
+        while (c.moveToNext()) {
+            String did = c.getString(0);
+            String name = c.getString(1);
+            
+            ContentValues v = new ContentValues();
+            v.put(COLUMN_TERMINAL_STATUS, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE);
+            db.update(TABLE_TERMINALS, v, COLUMN_TERMINAL_DEVICE_ID + "=?", new String[]{did});
+            
+            addOfflineLog(did, name);
+        }
+        c.close();
+    }
+
     /**
      * 标记日志为已处理，并记录处理人/处理时间/备注
      */
@@ -2124,5 +2211,66 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             return r;
         } finally {
         }
+    }
+
+    public long addMaintenanceRecord(com.lora.cn.ui.model.MaintenanceInfo info) {
+        if (info == null) return -1L;
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put(COLUMN_MAINTENANCE_TERMINAL_ID, info.getTerminalId() == null ? "" : info.getTerminalId());
+        v.put(COLUMN_MAINTENANCE_TERMINAL_NAME, info.getTerminalName() == null ? "" : info.getTerminalName());
+        v.put(COLUMN_MAINTENANCE_TERMINAL_GROUP, info.getTerminalGroup() == null ? "" : info.getTerminalGroup());
+        v.put(COLUMN_MAINTENANCE_STATUS, info.getStatus());
+        v.put(COLUMN_MAINTENANCE_CONTENT, info.getContent() == null ? "" : info.getContent());
+        v.put(COLUMN_MAINTENANCE_CREATE_USER_ID, info.getCreateUserId());
+        v.put(COLUMN_MAINTENANCE_CREATE_USER, info.getCreateUser() == null ? "" : info.getCreateUser());
+        v.put(COLUMN_MAINTENANCE_CREATE_TIME, info.getCreateTime() == null ? "" : info.getCreateTime());
+        v.put(COLUMN_MAINTENANCE_HANDLE_USER_ID, info.getHandleUserId());
+        v.put(COLUMN_MAINTENANCE_HANDLE_USER, info.getHandleUser() == null ? "" : info.getHandleUser());
+        v.put(COLUMN_MAINTENANCE_HANDLE_TIME, info.getHandleTime() == null ? "" : info.getHandleTime());
+        return db.insert(TABLE_MAINTENANCE, null, v);
+    }
+
+    public java.util.List<com.lora.cn.ui.model.MaintenanceInfo> getMaintenanceRecords(long createUserId) {
+        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> out = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        String sql;
+        String[] args = null;
+        if (createUserId > 0) {
+            sql = "SELECT * FROM " + TABLE_MAINTENANCE + " WHERE " + COLUMN_MAINTENANCE_CREATE_USER_ID + "=? ORDER BY " + COLUMN_MAINTENANCE_ID + " DESC";
+            args = new String[]{String.valueOf(createUserId)};
+        } else {
+            sql = "SELECT * FROM " + TABLE_MAINTENANCE + " ORDER BY " + COLUMN_MAINTENANCE_ID + " DESC";
+        }
+        android.database.Cursor c = db.rawQuery(sql, args);
+        while (c.moveToNext()) {
+            com.lora.cn.ui.model.MaintenanceInfo mi = new com.lora.cn.ui.model.MaintenanceInfo();
+            mi.setId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_ID)));
+            mi.setTerminalId(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_ID)));
+            mi.setTerminalName(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_NAME)));
+            mi.setTerminalGroup(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_GROUP)));
+            mi.setStatus(c.getInt(c.getColumnIndex(COLUMN_MAINTENANCE_STATUS)));
+            mi.setContent(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_CONTENT)));
+            mi.setCreateUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_CREATE_USER_ID)));
+            mi.setCreateUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_CREATE_USER)));
+            mi.setCreateTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_CREATE_TIME)));
+            mi.setHandleUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER_ID)));
+            mi.setHandleUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER)));
+            mi.setHandleTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_TIME)));
+            out.add(mi);
+        }
+        c.close();
+        return out;
+    }
+
+    public int updateMaintenanceHandled(long maintenanceId, long handleUserId, String handleUser, String handleTime, String content) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues v = new ContentValues();
+        v.put(COLUMN_MAINTENANCE_STATUS, 1);
+        v.put(COLUMN_MAINTENANCE_HANDLE_USER_ID, handleUserId);
+        v.put(COLUMN_MAINTENANCE_HANDLE_USER, handleUser == null ? "" : handleUser);
+        v.put(COLUMN_MAINTENANCE_HANDLE_TIME, handleTime == null ? "" : handleTime);
+        if (content != null) v.put(COLUMN_MAINTENANCE_CONTENT, content);
+        return db.update(TABLE_MAINTENANCE, v, COLUMN_MAINTENANCE_ID + "=?", new String[]{String.valueOf(maintenanceId)});
     }
 }

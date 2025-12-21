@@ -18,6 +18,7 @@ import com.lora.cn.ui.model.TerminalStatus;
 
 public class TerminalStatusAdapter extends BaseQuickAdapter<TerminalStatus, QuickViewHolder> {
 
+    private final java.util.WeakHashMap<View, android.animation.ObjectAnimator> animators = new java.util.WeakHashMap<>();
 
     @Override
     protected void onBindViewHolder(@NonNull QuickViewHolder holder, int i, @Nullable TerminalStatus item) {
@@ -46,6 +47,31 @@ public class TerminalStatusAdapter extends BaseQuickAdapter<TerminalStatus, Quic
             tvStatusCount.setTextColor(0xFF666666);
         }
 
+        // 闪烁逻辑
+        stopFlashing(ivStatusIcon);
+        if (item.getCount() > 0 && isAlertStatus(item.getTitle())) {
+            startFlashing(ivStatusIcon);
+        }
+    }
+
+    private boolean isAlertStatus(String title) {
+        return "异常取走".equals(title) || "设备低电量".equals(title) || "设备离线".equals(title);
+    }
+
+    private void startFlashing(View view) {
+        android.animation.ObjectAnimator animator = android.animation.ObjectAnimator.ofFloat(view, "alpha", 1f, 0.2f, 1f);
+        animator.setDuration(3000); // 3s一次
+        animator.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        animator.start();
+        animators.put(view, animator);
+    }
+
+    private void stopFlashing(View view) {
+        android.animation.ObjectAnimator animator = animators.remove(view);
+        if (animator != null) {
+            animator.cancel();
+        }
+        view.setAlpha(1f);
     }
 
     @NonNull

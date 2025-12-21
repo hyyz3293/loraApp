@@ -42,6 +42,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         ImageView ivBatteryIcon = holder.getView(R.id.iv_battery_icon);
         TextView tvBatteryTitle = holder.getView(R.id.tv_battery_title);
         ImageView terminalColl = holder.getView(R.id.terminal_coll);
+        ImageView ivMaintenance = holder.getView(R.id.iv_maintenance);
 
         // 设置终端基本信息
         String title = item.getName();
@@ -200,6 +201,23 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         if (item.isFavorite()) {
             terminalColl.setVisibility(View.VISIBLE);
             terminalColl.setImageResource(R.mipmap.ic_coll); // 已收藏图标
+        }
+        
+        // 设置维修状态
+        if (item.isMaintenanceActive()) {
+            if (ivMaintenance != null) {
+                ivMaintenance.setVisibility(View.VISIBLE);
+                android.view.animation.AlphaAnimation anim = new android.view.animation.AlphaAnimation(1.0f, 0.2f);
+                anim.setDuration(800);
+                anim.setRepeatCount(android.view.animation.Animation.INFINITE);
+                anim.setRepeatMode(android.view.animation.Animation.REVERSE);
+                ivMaintenance.startAnimation(anim);
+            }
+        } else {
+            if (ivMaintenance != null) {
+                ivMaintenance.setVisibility(View.GONE);
+                ivMaintenance.clearAnimation();
+            }
         }
     }
 

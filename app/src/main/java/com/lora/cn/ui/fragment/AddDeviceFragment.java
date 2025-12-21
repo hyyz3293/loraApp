@@ -314,10 +314,11 @@ public class AddDeviceFragment extends Fragment {
         terminal.setDeviceCode(deviceCode);
         terminal.setTerminalName(deviceName);
         terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE); // 默认状态
-        terminal.setSignalStrength(0); // 默认信号强度
+        // terminal.setSignalStrength(0); // 默认信号强度
         terminal.setDepartment(""); // 默认部门
         terminal.setLocation(""); // 默认位置
         if (this.terminal != null) {
+            terminal.setSignalStrength(this.terminal.getSignalStrength());
             if (this.terminal.getBatteryLevel() > 0) terminal.setBatteryLevel(this.terminal.getBatteryLevel());
             if (this.terminal.getBatteryVoltage() > 0) terminal.setBatteryVoltage(this.terminal.getBatteryVoltage());
             if (this.terminal.getRssi() > 0) terminal.setRssi(this.terminal.getRssi());

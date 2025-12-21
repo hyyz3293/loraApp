@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="选择终端"
+        android:textColor="#333333"
+        android:textStyle="bold"
+        android:textSize="14dp" />
+
+    <Spinner
+        android:id="@+id/spinner_terminal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="维护内容"
+        android:textColor="#333333"
+        android:textStyle="bold"
+        android:textSize="14dp"
+        android:layout_marginTop="12dp" />
+
+    <EditText
+        android:id="@+id/et_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="80dp"
+        android:gravity="top"
+        android:inputType="textMultiLine"
+        android:layout_marginTop="8dp"
+        android:hint="请输入维护内容" />
+
+</LinearLayout>
+

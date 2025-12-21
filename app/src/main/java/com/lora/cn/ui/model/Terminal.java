@@ -31,6 +31,8 @@ public class Terminal {
     private int batteryLevel; // 电量百分比
     private int batteryVoltage; // 电池电压(单位0.01V)
     private int rssi; // 原始RSSI (0~138 对应 -138~0dBm)
+    private boolean maintenanceActive;
+    private long maintenanceTime;
 
     public Terminal() {
     }
@@ -272,5 +274,21 @@ public class Terminal {
 
     public void setRssi(int rssi) {
         this.rssi = rssi;
+    }
+
+    public boolean isMaintenanceActive() {
+        return maintenanceActive;
+    }
+
+    public void setMaintenanceActive(boolean maintenanceActive) {
+        this.maintenanceActive = maintenanceActive;
+    }
+
+    public long getMaintenanceTime() {
+        return maintenanceTime;
+    }
+
+    public void setMaintenanceTime(long maintenanceTime) {
+        this.maintenanceTime = maintenanceTime;
     }
 }

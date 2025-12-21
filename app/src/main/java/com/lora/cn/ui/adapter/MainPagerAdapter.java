@@ -10,6 +10,7 @@ import com.lora.cn.ui.fragment.LogInfoFragment;
 import com.lora.cn.ui.fragment.TerminalCheckFragment;
 import com.lora.cn.ui.fragment.SettingsFragment;
 import com.lora.cn.ui.fragment.DownlinkTestFragment;
+import com.lora.cn.ui.fragment.setting.MaintenanceListFragment;
 
 public class MainPagerAdapter extends FragmentStateAdapter {
 
@@ -28,8 +29,10 @@ public class MainPagerAdapter extends FragmentStateAdapter {
             case 2:
                 return new LogInfoFragment();
             case 3:
-                return new SettingsFragment();
+                return new MaintenanceListFragment();
             case 4:
+                return new SettingsFragment();
+            case 5:
                 return new DownlinkTestFragment();
             default:
                 return new TerminalListFragment();
@@ -38,6 +41,6 @@ public class MainPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 5;
+        return 6;
     }
 }

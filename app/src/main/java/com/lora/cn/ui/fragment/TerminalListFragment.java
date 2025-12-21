@@ -422,7 +422,7 @@ public class TerminalListFragment extends Fragment {
                 if (terminal.isFavorite()) {
                     favoriteCount++;
                 }
-
+                
                 int statusCode = terminal.getStatus();
                 if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE) {
                     onlineCount++;

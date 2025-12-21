@@ -351,8 +351,9 @@ public class MainActivity extends AppCompatActivity {
         menuTabs.add(new MenuTab("终端列表", 0));
         menuTabs.add(new MenuTab("清点终端", 1));
         menuTabs.add(new MenuTab("日志信息", 2));
-        menuTabs.add(new MenuTab("设置", 3));
-        menuTabs.add(new MenuTab("下行测试", 4));
+        menuTabs.add(new MenuTab("维护列表", 3));
+        menuTabs.add(new MenuTab("设置", 4));
+        //menuTabs.add(new MenuTab("下行测试", 5));
         //menuTabs.add(new MenuTab("报警处理", -1));
         
         // 设置RecyclerView
@@ -491,7 +492,12 @@ public class MainActivity extends AppCompatActivity {
     private android.os.Handler alertEvaluateHandler;
     private final Runnable alertEvaluateRunnable = new Runnable() {
         @Override public void run() {
-            try { evaluateAlertOverlayGlobal(); } finally { if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 60000); }
+            try {
+                if (databaseHelper != null) databaseHelper.checkAndLogOfflineDevices();
+                evaluateAlertOverlayGlobal();
+            } finally {
+                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 10000);
+            }
         }
     };
 
@@ -1478,7 +1484,7 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
         try {
             if (mqttClient != null) {
                 com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqttClient);
-                helper.sendDownlink8001Config(devHex, mask);
+                helper.sendClearDataDownlink(devHex, mask);
             }
         } catch (Exception e) {
             android.util.Log.e(TAG, "下发处理下行失败 devEUI=" + devHex + ", mask=" + mask, e);

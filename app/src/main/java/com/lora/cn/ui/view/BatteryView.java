@@ -56,7 +56,7 @@ public class BatteryView extends View {
         // 外层电池油漆（透明背景，仅边框）
         outerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         outerPaint.setStyle(Paint.Style.STROKE);
-        outerPaint.setStrokeWidth(dpToPx(context, 3f));
+        outerPaint.setStrokeWidth(dpToPx(context, 1.5f));
 
         // 内部电量油漆
         innerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
