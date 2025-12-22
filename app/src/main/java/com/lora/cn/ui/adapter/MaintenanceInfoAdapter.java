@@ -35,7 +35,7 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
 
     public MaintenanceInfoAdapter(Mode mode) {
         this.mode = mode == null ? Mode.HOME : mode;
-        this.itemLayoutResId = this.mode == Mode.SETTING ? R.layout.item_maintenance_setting : R.layout.item_terminal_log;
+        this.itemLayoutResId =  R.layout.item_maintenance_home;
     }
 
     public void setOnConfirmClickListener(OnConfirmClickListener l) { this.onConfirmClickListener = l; }
@@ -90,6 +90,11 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
             }
         } else {
             if (logContent != null) setTextOrDash(logContent, item.getContent());
+            if (logContent != null) {
+                logContent.setOnClickListener(v -> {
+                    if (onViewClickListener != null) onViewClickListener.onViewClick(item);
+                });
+            }
             if (logHandleTime != null) {
                 logHandleTime.setVisibility(View.VISIBLE);
                 if (done) {
@@ -100,16 +105,32 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
             }
         }
 
-        if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
-        if (btnDelete != null) {
-            btnDelete.setOnClickListener(v -> {
-                if (onDeleteClickListener != null) onDeleteClickListener.onDeleteClick(item);
-            });
-        }
-        if (btnEdit != null) {
-            btnEdit.setOnClickListener(v -> {
-                if (onEditClickListener != null) onEditClickListener.onEditClick(item);
-            });
+        if (mode == Mode.HOME) {
+            if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
+            if (btnDelete != null) btnDelete.setVisibility(View.GONE);
+            if (btnEdit != null) {
+                btnEdit.setVisibility(View.VISIBLE);
+                btnEdit.setText("维护内容");
+                btnEdit.setBackgroundResource(R.drawable.bg_btn_voice);
+                btnEdit.setTextColor(Color.parseColor("#383B40"));
+                btnEdit.setOnClickListener(v -> {
+                    if (onViewClickListener != null) onViewClickListener.onViewClick(item);
+                });
+            }
+        } else {
+            if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
+            if (btnDelete != null) {
+                btnDelete.setVisibility(View.VISIBLE);
+                btnDelete.setOnClickListener(v -> {
+                    if (onDeleteClickListener != null) onDeleteClickListener.onDeleteClick(item);
+                });
+            }
+            if (btnEdit != null) {
+                btnEdit.setVisibility(View.VISIBLE);
+                btnEdit.setOnClickListener(v -> {
+                    if (onEditClickListener != null) onEditClickListener.onEditClick(item);
+                });
+            }
         }
 
         if (logOperation != null) {
@@ -138,6 +159,7 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
                 });
             }
         }
+        btnEdit.setVisibility(View.GONE);
     }
 
     private void setTextOrDash(TextView textView, String text) {

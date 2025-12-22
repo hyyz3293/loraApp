@@ -305,7 +305,15 @@ public class TerminalListFragment extends Fragment {
         terminalStatusAdapter.setOnItemClickListener((adapter1, view1, position1) -> {
             TerminalStatus item = (TerminalStatus) terminalStatusAdapter.getItem(position1);
             if (item == null) return;
-            TerminalStatusListFragment fragment = TerminalStatusListFragment.newInstance(item.getTitle());
+            androidx.fragment.app.Fragment fragment;
+            String backStackTag;
+            if ("维护列表".equals(item.getTitle())) {
+                fragment = MaintenanceHomeListFragment.newInstance();
+                backStackTag = "maintenance_home_list";
+            } else {
+                fragment = TerminalStatusListFragment.newInstance(item.getTitle());
+                backStackTag = "terminal_status_filter";
+            }
             if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
                 com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
                 mainActivity.showOverlayOnly();
@@ -314,7 +322,7 @@ public class TerminalListFragment extends Fragment {
             if (a != null) {
                 a.getSupportFragmentManager().beginTransaction()
                         .replace(R.id.fragment_device_list_container, fragment)
-                        .addToBackStack("terminal_status_filter")
+                        .addToBackStack(backStackTag)
                         .commit();
             }
         });
@@ -915,8 +923,8 @@ public class TerminalListFragment extends Fragment {
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_NORMAL_TAKEN, R.mipmap.ic_blue_right, normalTakenCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ABNORMAL_LOST, R.mipmap.ic_ds, abnormalLostCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_LOW_BATTERY, R.mipmap.ic_red_sd, lowBatteryCount));
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_OFFLINE, R.mipmap.ic_xh_no, offlineCount));
             statusList.add(new TerminalStatus("维护列表", R.drawable.ic_wx_g, maintenanceCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_OFFLINE, R.mipmap.ic_xh_no, offlineCount));
             return statusList;
         } catch (Exception e) {
             Log.e(TAG, "构建状态统计失败", e);

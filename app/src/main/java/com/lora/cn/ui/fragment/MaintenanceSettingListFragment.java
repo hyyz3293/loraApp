@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
-import com.lora.cn.ui.adapter.MaintenanceInfoAdapter;
 import com.lora.cn.ui.adapter.MaintenanceInfoDetailAdapter;
 import com.lora.cn.ui.model.MaintenanceInfo;
 

@@ -185,6 +185,7 @@ public class DeviceListFragment extends Fragment {
         if (ctx == null) return;
         android.content.Context appCtx = ctx.getApplicationContext();
         int token = loadSeq.incrementAndGet();
+        final android.os.Handler handler = mainHandler;
         List<Terminal> seed = new ArrayList<>(allTerminals);
         Set<String> seedIds = new HashSet<>(discoveredDeviceIds);
         ioExecutor.execute(() -> {
@@ -238,7 +239,8 @@ public class DeviceListFragment extends Fragment {
 
             List<Terminal> finalNext = next;
             Set<String> finalNextIds = nextIds;
-            mainHandler.post(() -> {
+            if (handler == null) return;
+            handler.post(() -> {
                 if (!isAdded()) return;
                 if (token != loadSeq.get()) return;
                 allTerminals.clear();
