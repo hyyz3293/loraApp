@@ -1426,8 +1426,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
                 
-                terminal.setMaintenanceActive(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_ACTIVE)) == 1);
-                terminal.setMaintenanceTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_TIME)));
+                int maintActiveIdx = cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_ACTIVE);
+                if (maintActiveIdx != -1) {
+                    terminal.setMaintenanceActive(cursor.getInt(maintActiveIdx) == 1);
+                }
+                int maintTimeIdx = cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_TIME);
+                if (maintTimeIdx != -1) {
+                    terminal.setMaintenanceTime(cursor.getLong(maintTimeIdx));
+                }
                 
                 terminals.add(terminal);
             } while (cursor.moveToNext());

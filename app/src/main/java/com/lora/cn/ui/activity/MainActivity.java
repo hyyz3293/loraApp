@@ -227,9 +227,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-//        if (SPUtils.getInstance().getBoolean("uplink_test_enabled", true)) {
-//            startTestTimer();
-//        }
+        if (SPUtils.getInstance().getBoolean("uplink_test_enabled", true)) {
+            startTestTimer();
+        }
 
         // 启动自动返回首页的周期检查
         autoReturnHandler.removeCallbacks(autoReturnRunnable);

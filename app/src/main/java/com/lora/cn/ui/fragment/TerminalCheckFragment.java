@@ -53,6 +53,8 @@ public class TerminalCheckFragment extends Fragment {
     // 权限相关
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private android.os.Handler mainHandler;
 
     @Nullable
     @Override
@@ -75,11 +77,24 @@ public class TerminalCheckFragment extends Fragment {
             }
         }
         
+        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        
         initViews(view);
         initData();
         initListeners();
         
         return view;
+    }
+    
+    @Override
+    public void onDestroyView() {
+        try {
+            if (ioExecutor != null) ioExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        ioExecutor = null;
+        mainHandler = null;
+        super.onDestroyView();
     }
     
     private void initViews(View view) {
@@ -163,170 +178,172 @@ public class TerminalCheckFragment extends Fragment {
     }
     
     private void initPieChartData() {
-        // 使用数据库真实数据初始化饼图
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
-            int online = 0, offline = 0, abnormal = 0;
-            int batteryNormal = 0, batteryLow = 0;
-            int manualTake = 0; // 正常取走
-            int lowThreshold = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-            for (com.lora.cn.ui.model.Terminal t : terminals) {
-                int sc = t.getStatus();
-                String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc);
-                if ("正常在线".equals(st)) {
-                    online++;
-                } else if ("正常取走".equals(st)) {
-                    manualTake++;
-                } else if ("异常取走".equals(st)) {
-                    abnormal++;
-                } else {
-                    offline++;
+        if (ioExecutor == null || mainHandler == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        ioExecutor.execute(() -> {
+            try {
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
+                int online = 0, offline = 0, abnormal = 0;
+                int batteryNormal = 0, batteryLow = 0;
+                int manualTake = 0;
+                int lowThreshold = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                for (com.lora.cn.ui.model.Terminal t : terminals) {
+                    int sc = t.getStatus();
+                    String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc);
+                    if ("正常在线".equals(st)) {
+                        online++;
+                    } else if ("正常取走".equals(st)) {
+                        manualTake++;
+                    } else if ("异常取走".equals(st)) {
+                        abnormal++;
+                    } else {
+                        offline++;
+                    }
+                    int bl = t.getBatteryLevel();
+                    if (!"设备离线".equals(st)) {
+                        if (bl <= lowThreshold) batteryLow++; else batteryNormal++;
+                    }
                 }
-                int bl = t.getBatteryLevel();
-                if ("设备离线".equals(st)) {
-                    // 离线计入电量离线
-                } else {
-                    if (bl <= lowThreshold) batteryLow++; else batteryNormal++;
-                }
+                int totalStatus = Math.max(1, online + offline + abnormal + manualTake);
+                int totalBattery = Math.max(1, batteryNormal + batteryLow + offline);
+                List<PieChartView.PieData> onlineData = new ArrayList<>();
+                if (online > 0)
+                    onlineData.add(new PieChartView.PieData("正常在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
+                if (manualTake > 0)
+                    onlineData.add(new PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalStatus, Color.parseColor("#5D75F7")));
+                if (abnormal > 0)
+                    onlineData.add(new PieChartView.PieData("异常取走", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
+                if (offline > 0)
+                    onlineData.add(new PieChartView.PieData("设备离线", String.valueOf(offline), (offline * 100f) / totalStatus, Color.parseColor("#CECECE")));
+                List<PieChartView.PieData> batteryData = new ArrayList<>();
+                if (batteryNormal > 0)
+                    batteryData.add(new PieChartView.PieData("电量正常", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, Color.parseColor("#39E56D")));
+                if (batteryLow > 0)
+                    batteryData.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, Color.parseColor("#FF9500")));
+                if (offline > 0)
+                    batteryData.add(new PieChartView.PieData("设备离线", String.valueOf(offline), (offline * 100f) / totalBattery, Color.parseColor("#CECECE")));
+                mainHandler.post(() -> {
+                    if (pieChartOnline != null) pieChartOnline.setData(onlineData);
+                    if (pieChartBattery != null) pieChartBattery.setData(batteryData);
+                });
+            } catch (Exception e) {
+                Log.e("TerminalCheckFragment", "初始化饼图真实数据失败: " + e.getMessage());
             }
-            int totalStatus = Math.max(1, online + offline + abnormal + manualTake);
-            int totalBattery = Math.max(1, batteryNormal + batteryLow + offline);
-            List<PieChartView.PieData> onlineData = new ArrayList<>();
-            if (online > 0)
-                onlineData.add(new PieChartView.PieData("正常在线", String.valueOf(online), (online * 100f) / totalStatus, Color.parseColor("#39E56D")));
-            if (manualTake > 0)
-                onlineData.add(new PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalStatus, Color.parseColor("#5D75F7")));
-            if (abnormal > 0)
-                onlineData.add(new PieChartView.PieData("异常取走", String.valueOf(abnormal), (abnormal * 100f) / totalStatus, Color.parseColor("#D00000")));
-            if (offline > 0)
-                onlineData.add(new PieChartView.PieData("设备离线", String.valueOf(offline), (offline * 100f) / totalStatus, Color.parseColor("#CECECE")));
-            pieChartOnline.setData(onlineData);
-
-            List<PieChartView.PieData> batteryData = new ArrayList<>();
-            if (batteryNormal > 0)
-                batteryData.add(new PieChartView.PieData("电量正常", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, Color.parseColor("#39E56D")));
-            if (batteryLow > 0)
-                batteryData.add(new PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, Color.parseColor("#FF9500")));
-            if (offline > 0)
-                batteryData.add(new PieChartView.PieData("设备离线", String.valueOf(offline), (offline * 100f) / totalBattery, Color.parseColor("#CECECE")));
-            pieChartBattery.setData(batteryData);
-        } catch (Exception e) {
-            Log.e("TerminalCheckFragment", "初始化饼图真实数据失败: " + e.getMessage());
-        }
+        });
     }
     
     /**
      * 初始化图表适配器数据
      */
     private void initChartAdapterData() {
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
-            List<com.lora.cn.ui.model.TerminalChartData> list = new java.util.ArrayList<>();
-
-            // 动态获取所有分组与分类
-            DatabaseManager dm = DatabaseManager.getInstance(getContext());
-            java.util.List<com.lora.cn.database.entity.Group> groups = dm.getAllGroups();
-            if (groups == null) groups = new java.util.ArrayList<>();
-            long depGroupId = 0L, roomGroupId = 0L, nursingGroupId = 0L, otherGroupId = 0L;
+        if (ioExecutor == null || mainHandler == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        ioExecutor.execute(() -> {
             try {
-                com.lora.cn.database.entity.Group gDep = dm.getGroupByName("科室");
-                com.lora.cn.database.entity.Group gRoom = dm.getGroupByName("病房号");
-                com.lora.cn.database.entity.Group gNur = dm.getGroupByName("护理组");
-                com.lora.cn.database.entity.Group gOth = dm.getGroupByName("其他分类");
-                if (gDep != null) depGroupId = gDep.getGroupId();
-                if (gRoom != null) roomGroupId = gRoom.getGroupId();
-                if (gNur != null) nursingGroupId = gNur.getGroupId();
-                if (gOth != null) otherGroupId = gOth.getGroupId();
-            } catch (Exception ignored) {}
-            for (com.lora.cn.database.entity.Group g : groups) {
-                long gid = g.getGroupId();
-                String gname = g.getGroupName() != null ? g.getGroupName() : "分组";
-                String prefix = gname + "-";
-                java.util.List<com.lora.cn.database.entity.Category> cats = DatabaseManager.getInstance(getContext()).getCategoriesByGroupId(gid);
-                if (cats == null) continue;
-                for (com.lora.cn.database.entity.Category c : cats) {
-                    String label = prefix + c.getCategoryName();
-                    int manualTake = 0, illegalLoss = 0;
-                    int batteryNormal = 0, batteryLow = 0, batteryOffline = 0;
-                    int onlineCount = 0, offlineCount = 0;
-
-                    int lowThreshold2 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                    for (com.lora.cn.ui.model.Terminal t : terminals) {
-                        boolean match = (t.getDepartmentId() == (int) c.getCategoryId())
-                                || (t.getRoomId() == (int) c.getCategoryId())
-                                || (t.getNursingGroupId() == (int) c.getCategoryId())
-                                || (t.getOtherId() == (int) c.getCategoryId());
-                        if (!match) {
-                            long val = 0L;
-                            try {
-                                String ext = t.getExtension();
-                                if (ext != null && !ext.isEmpty()) {
-                                    org.json.JSONObject obj = new org.json.JSONObject(ext);
-                                    if (obj.has("extra_groups")) {
-                                        org.json.JSONObject ex = obj.getJSONObject("extra_groups");
-                                        if (ex.has(String.valueOf(gid))) {
-                                            val = ex.optLong(String.valueOf(gid), 0L);
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                List<com.lora.cn.ui.model.Terminal> terminals = dbHelper.getAllTerminals();
+                List<com.lora.cn.ui.model.TerminalChartData> list = new java.util.ArrayList<>();
+                DatabaseManager dm = DatabaseManager.getInstance(appCtx);
+                java.util.List<com.lora.cn.database.entity.Group> groups = dm.getAllGroups();
+                if (groups == null) groups = new java.util.ArrayList<>();
+                long depGroupId = 0L, roomGroupId = 0L, nursingGroupId = 0L, otherGroupId = 0L;
+                try {
+                    com.lora.cn.database.entity.Group gDep = dm.getGroupByName("科室");
+                    com.lora.cn.database.entity.Group gRoom = dm.getGroupByName("病房号");
+                    com.lora.cn.database.entity.Group gNur = dm.getGroupByName("护理组");
+                    com.lora.cn.database.entity.Group gOth = dm.getGroupByName("其他分类");
+                    if (gDep != null) depGroupId = gDep.getGroupId();
+                    if (gRoom != null) roomGroupId = gRoom.getGroupId();
+                    if (gNur != null) nursingGroupId = gNur.getGroupId();
+                    if (gOth != null) otherGroupId = gOth.getGroupId();
+                } catch (Exception ignored) {}
+                for (com.lora.cn.database.entity.Group g : groups) {
+                    long gid = g.getGroupId();
+                    String gname = g.getGroupName() != null ? g.getGroupName() : "分组";
+                    String prefix = gname + "-";
+                    java.util.List<com.lora.cn.database.entity.Category> cats = DatabaseManager.getInstance(appCtx).getCategoriesByGroupId(gid);
+                    if (cats == null) continue;
+                    for (com.lora.cn.database.entity.Category c : cats) {
+                        String label = prefix + c.getCategoryName();
+                        int manualTake = 0, illegalLoss = 0;
+                        int batteryNormal = 0, batteryLow = 0, batteryOffline = 0;
+                        int onlineCount = 0, offlineCount = 0;
+                        int lowThreshold2 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                        for (com.lora.cn.ui.model.Terminal t : terminals) {
+                            boolean match = (t.getDepartmentId() == (int) c.getCategoryId())
+                                    || (t.getRoomId() == (int) c.getCategoryId())
+                                    || (t.getNursingGroupId() == (int) c.getCategoryId())
+                                    || (t.getOtherId() == (int) c.getCategoryId());
+                            if (!match) {
+                                long val = 0L;
+                                try {
+                                    String ext = t.getExtension();
+                                    if (ext != null && !ext.isEmpty()) {
+                                        org.json.JSONObject obj = new org.json.JSONObject(ext);
+                                        if (obj.has("extra_groups")) {
+                                            org.json.JSONObject ex = obj.getJSONObject("extra_groups");
+                                            if (ex.has(String.valueOf(gid))) {
+                                                val = ex.optLong(String.valueOf(gid), 0L);
+                                            }
                                         }
                                     }
-                                }
-                            } catch (Exception ignored) {}
-                            match = (val == c.getCategoryId());
+                                } catch (Exception ignored) {}
+                                match = (val == c.getCategoryId());
+                            }
+                            if (!match) continue;
+                            int sc2 = t.getStatus();
+                            String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc2);
+                            if ("正常在线".equals(st)) { onlineCount++; }
+                            else if ("设备离线".equals(st)) { offlineCount++; batteryOffline++; }
+                            else if ("正常取走".equals(st)) { manualTake++; }
+                            else if ("异常取走".equals(st)) { illegalLoss++; }
+                            int bl = t.getBatteryLevel();
+                            if (!"设备离线".equals(st)) { if (bl <= lowThreshold2) batteryLow++; else batteryNormal++; }
                         }
-                        if (!match) continue;
-
-                        int sc2 = t.getStatus();
-                        String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc2);
-                        if ("正常在线".equals(st)) { onlineCount++; }
-                        else if ("设备离线".equals(st)) { offlineCount++; batteryOffline++; }
-                        else if ("正常取走".equals(st)) { manualTake++; }
-                        else if ("异常取走".equals(st)) { illegalLoss++; }
-                        int bl = t.getBatteryLevel();
-                        if (!"设备离线".equals(st)) { if (bl <= lowThreshold2) batteryLow++; else batteryNormal++; }
+                        com.lora.cn.ui.model.TerminalChartData data = new com.lora.cn.ui.model.TerminalChartData();
+                        data.setOnlineTitle(label);
+                        data.setBatteryTitle(label);
+                        int totalLeft = Math.max(1, onlineCount + offlineCount + manualTake + illegalLoss);
+                        java.util.List<com.lora.cn.ui.view.PieChartView.PieData> onlinePie = new java.util.ArrayList<>();
+                        if (onlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("正常在线", String.valueOf(onlineCount), (onlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#39E56D")));
+                        if (offlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("设备离线", String.valueOf(offlineCount), (offlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#CECECE")));
+                        if (manualTake > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalLeft, android.graphics.Color.parseColor("#5D75F7")));
+                        if (illegalLoss > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("异常取走", String.valueOf(illegalLoss), (illegalLoss * 100f) / totalLeft, android.graphics.Color.parseColor("#D00000")));
+                        data.setOnlinePieData(onlinePie);
+                        int totalBattery = Math.max(1, batteryNormal + batteryLow + batteryOffline);
+                        java.util.List<com.lora.cn.ui.view.PieChartView.PieData> batteryPie = new java.util.ArrayList<>();
+                        if (batteryNormal > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("电量正常", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, android.graphics.Color.parseColor("#39E56D")));
+                        if (batteryLow > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, android.graphics.Color.parseColor("#FF9500")));
+                        if (batteryOffline > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("设备离线", String.valueOf(batteryOffline), (batteryOffline * 100f) / totalBattery, android.graphics.Color.parseColor("#CECECE")));
+                        data.setBatteryPieData(batteryPie);
+                        java.util.List<com.lora.cn.ui.model.ChartItem> onlineItems = new java.util.ArrayList<>();
+                        onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "正常在线", onlineCount + "台"));
+                        onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "设备离线", offlineCount + "台"));
+                        onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#5D75F7"), "正常取走", manualTake + "台"));
+                        onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#D00000"), "异常取走", illegalLoss + "台"));
+                        data.setOnlineChartItems(onlineItems);
+                        java.util.List<com.lora.cn.ui.model.ChartItem> batteryItems = new java.util.ArrayList<>();
+                        batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "电量正常", batteryNormal + "台"));
+                        batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#FF9500"), "低电量", batteryLow + "台"));
+                        batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "设备离线", batteryOffline + "台"));
+                        data.setBatteryChartItems(batteryItems);
+                        list.add(data);
                     }
-
-                    com.lora.cn.ui.model.TerminalChartData data = new com.lora.cn.ui.model.TerminalChartData();
-                    data.setOnlineTitle(label);
-                    data.setBatteryTitle(label);
-
-                    int totalLeft = Math.max(1, onlineCount + offlineCount + manualTake + illegalLoss);
-                    java.util.List<com.lora.cn.ui.view.PieChartView.PieData> onlinePie = new java.util.ArrayList<>();
-                    if (onlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("正常在线", String.valueOf(onlineCount), (onlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#39E56D")));
-                    if (offlineCount > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("设备离线", String.valueOf(offlineCount), (offlineCount * 100f) / totalLeft, android.graphics.Color.parseColor("#CECECE")));
-                    if (manualTake > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("正常取走", String.valueOf(manualTake), (manualTake * 100f) / totalLeft, android.graphics.Color.parseColor("#5D75F7")));
-                    if (illegalLoss > 0) onlinePie.add(new com.lora.cn.ui.view.PieChartView.PieData("异常取走", String.valueOf(illegalLoss), (illegalLoss * 100f) / totalLeft, android.graphics.Color.parseColor("#D00000")));
-                    data.setOnlinePieData(onlinePie);
-
-                    int totalBattery = Math.max(1, batteryNormal + batteryLow + batteryOffline);
-                    java.util.List<com.lora.cn.ui.view.PieChartView.PieData> batteryPie = new java.util.ArrayList<>();
-                    if (batteryNormal > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("电量正常", String.valueOf(batteryNormal), (batteryNormal * 100f) / totalBattery, android.graphics.Color.parseColor("#39E56D")));
-                    if (batteryLow > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("低电量", String.valueOf(batteryLow), (batteryLow * 100f) / totalBattery, android.graphics.Color.parseColor("#FF9500")));
-                    if (batteryOffline > 0) batteryPie.add(new com.lora.cn.ui.view.PieChartView.PieData("设备离线", String.valueOf(batteryOffline), (batteryOffline * 100f) / totalBattery, android.graphics.Color.parseColor("#CECECE")));
-                    data.setBatteryPieData(batteryPie);
-
-                    java.util.List<com.lora.cn.ui.model.ChartItem> onlineItems = new java.util.ArrayList<>();
-                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "正常在线", onlineCount + "台"));
-                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "设备离线", offlineCount + "台"));
-                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#5D75F7"), "正常取走", manualTake + "台"));
-                    onlineItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#D00000"), "异常取走", illegalLoss + "台"));
-                    data.setOnlineChartItems(onlineItems);
-
-                    java.util.List<com.lora.cn.ui.model.ChartItem> batteryItems = new java.util.ArrayList<>();
-                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#39E56D"), "电量正常", batteryNormal + "台"));
-                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#FF9500"), "低电量", batteryLow + "台"));
-                    batteryItems.add(new com.lora.cn.ui.model.ChartItem(android.graphics.Color.parseColor("#CECECE"), "设备离线", batteryOffline + "台"));
-                    data.setBatteryChartItems(batteryItems);
-
-                    list.add(data);
                 }
+                mainHandler.post(() -> {
+                    chartDataList.clear();
+                    chartDataList.addAll(list);
+                    terminalChartAdapter.submitList(list);
+                });
+            } catch (Exception e) {
+                Log.e("TerminalCheckFragment", "初始化图表适配器真实数据失败: " + e.getMessage());
             }
-            chartDataList.clear();
-            chartDataList.addAll(list);
-            terminalChartAdapter.submitList(list);
-        } catch (Exception e) {
-            Log.e("TerminalCheckFragment", "初始化图表适配器真实数据失败: " + e.getMessage());
-        }
+        });
     }
 
     /**
