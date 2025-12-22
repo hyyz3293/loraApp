@@ -139,7 +139,7 @@ public class TerminalStatusListFragment extends Fragment {
         if (statusIcon != null) {
             int res = 0;
             if (statusFilterTitle != null) {
-                if (TerminalStatusConstants.STATUS_ONLINE.equals(statusFilterTitle)) res = R.mipmap.ic_xh_3;
+                if (TerminalStatusConstants.STATUS_ONLINE.equals(statusFilterTitle)) res = R.drawable.ic_xh_signal_4;
                 else if (TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(statusFilterTitle)) res = R.mipmap.ic_ds;
                 else if (TerminalStatusConstants.STATUS_NORMAL_TAKEN.equals(statusFilterTitle)) res = R.mipmap.ic_blue_right;
                 else if (TerminalStatusConstants.STATUS_OFFLINE.equals(statusFilterTitle)) res = R.mipmap.ic_xh_no;
@@ -463,7 +463,7 @@ public class TerminalStatusListFragment extends Fragment {
     private int getStatusIcon(int statusCode) {
         switch (statusCode) {
             case TerminalStatusConstants.CODE_ONLINE:
-                return R.mipmap.ic_xh_3;
+                return R.drawable.ic_xh_signal_4;
             case TerminalStatusConstants.CODE_ABNORMAL_TAKEN:
                 return R.mipmap.ic_ds;
             case TerminalStatusConstants.CODE_NORMAL_TAKEN:

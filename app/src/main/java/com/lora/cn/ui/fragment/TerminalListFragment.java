@@ -972,7 +972,7 @@ public class TerminalListFragment extends Fragment {
 
             List<TerminalStatus> statusList = new ArrayList<>();
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_IMPORTANT, R.mipmap.ic_coll, favoriteCount));
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ONLINE, R.mipmap.ic_xh_3, onlineCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ONLINE, R.drawable.ic_xh_signal_4, onlineCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_NORMAL_TAKEN, R.mipmap.ic_blue_right, normalTakenCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ABNORMAL_LOST, R.mipmap.ic_ds, abnormalLostCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_LOW_BATTERY, R.mipmap.ic_red_sd, lowBatteryCount));
@@ -1069,7 +1069,7 @@ public class TerminalListFragment extends Fragment {
     private int getStatusIcon(int statusCode) {
         switch (statusCode) {
             case com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE:
-                return R.mipmap.ic_xh_3;
+                return R.drawable.ic_xh_signal_4;
             case com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN:
                 return R.mipmap.ic_ds;
             case com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN:

@@ -1,25 +1,18 @@
 package com.lora.cn.ui.view;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
+import androidx.core.content.ContextCompat;
+import com.lora.cn.R;
 
 public class SignalStrengthView extends View {
 
     private int signalColor = Color.parseColor("#3AFCB8");
     private int emptyColor = Color.parseColor("#D8D8D8");
     private int barCount = 4;
-    private float barSpacing;
-    private float barCornerRadius;
     private int signalStrength = 4;
-
-    private Paint paint;
-    private Path path;
 
     public SignalStrengthView(Context context) {
         super(context);
@@ -37,53 +30,13 @@ public class SignalStrengthView extends View {
     }
 
     private void init(Context context) {
-        barSpacing = dpToPx(context, 4);
-        barCornerRadius = dpToPx(context, 2);
-
-        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setColor(signalColor);
-        paint.setStyle(Paint.Style.FILL);
-
-        path = new Path();
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-
-        float totalWidth = getWidth();
-        float totalHeight = getHeight();
-
-        // 计算每个信号条的宽度
-        float barWidth = (totalWidth - (barCount - 1) * barSpacing) / barCount;
-
-        // 计算每个信号条的高度增量
-        float heightIncrement = totalHeight / barCount;
-
-        // 绘制每个信号条（无信号为灰色#D8D8D8，有信号为蓝色#5B8CFF）
-        for (int i = 0; i < barCount; i++) {
-            float left = i * (barWidth + barSpacing);
-            float right = left + barWidth;
-
-            // 当前信号条的高度 (从右到左递增)
-            float barHeight = heightIncrement * (i + 1);
-
-            // 当前信号条的顶部位置 (从底部开始)
-            float top = totalHeight - barHeight;
-
-            // 创建圆角矩形
-            RectF rect = new RectF(left, top, right, totalHeight);
-
-            // 按强度选择颜色绘制
-            paint.setColor(i < signalStrength ? signalColor : emptyColor);
-            canvas.drawRoundRect(rect, barCornerRadius, barCornerRadius, paint);
-        }
+        applyStrengthDrawable();
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int desiredWidth = (int) dpToPx(getContext(), 60);
-        int desiredHeight = (int) dpToPx(getContext(), 30);
+        int desiredWidth = (int) dpToPx(getContext(), 24);
+        int desiredHeight = (int) dpToPx(getContext(), 24);
 
         int widthMode = MeasureSpec.getMode(widthMeasureSpec);
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -117,7 +70,7 @@ public class SignalStrengthView extends View {
      */
     public void setSignalStrength(int strength) {
         signalStrength = Math.max(0, Math.min(strength, barCount));
-        invalidate();
+        applyStrengthDrawable();
     }
 
     /**
@@ -125,7 +78,6 @@ public class SignalStrengthView extends View {
      */
     public void setSignalColor(int color) {
         signalColor = color;
-        paint.setColor(signalColor);
         invalidate();
     }
 
@@ -139,5 +91,26 @@ public class SignalStrengthView extends View {
 
     private float dpToPx(Context context, float dp) {
         return dp * context.getResources().getDisplayMetrics().density;
+    }
+
+    private void applyStrengthDrawable() {
+        int resId = getDrawableResForStrength(signalStrength);
+        if (resId != 0) {
+            setBackground(ContextCompat.getDrawable(getContext(), resId));
+        } else {
+            setBackground(null);
+        }
+        invalidate();
+    }
+
+    private int getDrawableResForStrength(int strength) {
+        switch (strength) {
+            case 0: return R.drawable.ic_xh_signal_0;
+            case 1: return R.drawable.ic_xh_signal_1;
+            case 2: return R.drawable.ic_xh_signal_2;
+            case 3: return R.drawable.ic_xh_signal_3;
+            case 4: return R.drawable.ic_xh_signal_4;
+            default: return R.drawable.ic_xh_signal_0;
+        }
     }
 }
