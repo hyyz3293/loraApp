@@ -2027,29 +2027,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," +
                     com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + "," +
                     com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," +
-                    com.lora.cn.ui.constants.LogStatus.TIMED_MAINTENANCE.code + "," +
                     com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code + "," +
                     com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code +
                     ")");
         } else if (typeSel == 1) {
-            // 全部日志：不加状态条件
         } else if (typeSel == 2) {
-            conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.TIMED_MAINTENANCE.code);
-        } else if (typeSel == 3) {
             conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
-        } else if (typeSel == 4) {
+        } else if (typeSel == 3) {
             conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
-        } else if (typeSel == 5) {
+        } else if (typeSel == 4) {
             conds.add(COLUMN_LOG_STATUS + " IN (" + com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code + "," + com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code + ")");
-        } else if (typeSel == 6) {
+        } else if (typeSel == 5) {
             conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
         }
         if (policeSel == 1 || policeSel == 2) {
-            conds.add(COLUMN_LOG_STATUS + " IN (" +
-                    com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," +
-                    com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," +
-                    com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + "," +
-                    com.lora.cn.ui.constants.LogStatus.TIMED_MAINTENANCE.code + ")");
             if (policeSel == 1) {
                 conds.add("(handle_user IS NOT NULL AND TRIM(handle_user) <> '')");
             } else {
