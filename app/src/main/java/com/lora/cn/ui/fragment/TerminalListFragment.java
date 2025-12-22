@@ -180,6 +180,9 @@ public class TerminalListFragment extends Fragment {
 //        btnAlertPending = view.findViewById(R.id.btn_alert_pending);
 //        tvAlertCount = view.findViewById(R.id.tv_alert_count);
 
+        alertMuted = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("global_alert_muted", false);
+        updateMuteButtons();
+
         // 设置添加终端按钮点击事件
         addTerminalBtn.setOnClickListener(v -> {
             if (hasPermission("terminal_add")) {
@@ -308,6 +311,11 @@ public class TerminalListFragment extends Fragment {
         if (btnAlertMute != null) {
             btnAlertMute.setOnClickListener(v -> {
                 alertMuted = !alertMuted;
+                com.blankj.utilcode.util.SPUtils.getInstance().put("global_alert_muted", alertMuted);
+                updateMuteButtons();
+                if (alertMuted && getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).stopAlertRinging();
+                }
                 Toast.makeText(requireContext(), alertMuted ? "已静音" : "已取消静音", Toast.LENGTH_SHORT).show();
             });
         }
@@ -339,12 +347,22 @@ public class TerminalListFragment extends Fragment {
         if (tvErrorVoiceNo != null) {
             tvErrorVoiceNo.setOnClickListener(v -> {
                 alertMuted = !alertMuted;
+                com.blankj.utilcode.util.SPUtils.getInstance().put("global_alert_muted", alertMuted);
+                updateMuteButtons();
+                if (alertMuted && getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).stopAlertRinging();
+                }
                 Toast.makeText(requireContext(), alertMuted ? "已静音" : "已取消静音", Toast.LENGTH_SHORT).show();
             });
         }
         if (tvErrorComplete != null) {
             tvErrorComplete.setOnClickListener(v -> handleCurrentAlert());
         }
+    }
+
+    private void updateMuteButtons() {
+        if (btnAlertMute != null) btnAlertMute.setText(alertMuted ? "取消静音" : "静音");
+        if (tvErrorVoiceNo != null) tvErrorVoiceNo.setText(alertMuted ? "取消静音" : "静音");
     }
 
     private void initTerminalStatus() {

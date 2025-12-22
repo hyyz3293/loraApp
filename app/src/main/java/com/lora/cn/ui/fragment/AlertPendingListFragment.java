@@ -17,6 +17,8 @@ import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.adapter.LogInfoAlertAdapter;
 import com.lora.cn.ui.model.LogInfo;
 import com.lora.cn.utils.DialogUtils;
+import com.lora.cn.network.MqttPacketsClient;
+import com.lora.cn.utils.DownlinkMessageHelper;
 import java.util.List;
 
 /**
@@ -159,9 +161,13 @@ public class AlertPendingListFragment extends Fragment {
                         String devHex = item.getDeviceId() != null ? item.getDeviceId() : "";
                         try {
                             android.app.Activity a = getActivity();
+                            MqttPacketsClient client = null;
                             if (a instanceof com.lora.cn.ui.activity.MainActivity) {
-                                ((com.lora.cn.ui.activity.MainActivity) a).sendHandleDownlink(devHex, mask);
+                                client = ((com.lora.cn.ui.activity.MainActivity) a).getMqttClient();
                             }
+                            if (client == null) client = new MqttPacketsClient();
+                            DownlinkMessageHelper helper = new DownlinkMessageHelper(client);
+                            helper.sendClearDataDownlink(devHex, mask, 0, null);
                         } catch (Exception ignored) {}
                     }
                     loadAlerts();

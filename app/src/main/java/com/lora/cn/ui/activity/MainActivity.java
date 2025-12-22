@@ -227,9 +227,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-        if (SPUtils.getInstance().getBoolean("uplink_test_enabled", true)) {
-            startTestTimer();
-        }
+//        if (SPUtils.getInstance().getBoolean("uplink_test_enabled", true)) {
+//            startTestTimer();
+//        }
 
         // 启动自动返回首页的周期检查
         autoReturnHandler.removeCallbacks(autoReturnRunnable);
@@ -379,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
         menuTabs.add(new MenuTab("日志信息", 2));
         menuTabs.add(new MenuTab("维护列表", 3));
         menuTabs.add(new MenuTab("设置", 4));
-        //menuTabs.add(new MenuTab("下行测试", 5));
+        menuTabs.add(new MenuTab("下行测试", 5));
         //menuTabs.add(new MenuTab("报警处理", -1));
         
         // 设置RecyclerView
@@ -1407,7 +1407,7 @@ public class MainActivity extends AppCompatActivity {
             ringHandler.postDelayed(ringStopRunnable, 10000);
         } catch (Exception ignored) {}
     }
-    private void stopAlertRinging() {
+    public void stopAlertRinging() {
         try {
             if (ringHandler != null && ringStopRunnable != null) {
                 ringHandler.removeCallbacks(ringStopRunnable);
