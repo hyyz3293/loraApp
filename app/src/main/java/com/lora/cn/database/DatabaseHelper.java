@@ -368,7 +368,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_MAINTENANCE_CREATE_TIME + " TEXT, " +
         COLUMN_MAINTENANCE_HANDLE_USER_ID + " INTEGER DEFAULT 0, " +
         COLUMN_MAINTENANCE_HANDLE_USER + " TEXT, " +
-        COLUMN_MAINTENANCE_HANDLE_TIME + " TEXT" +
+        COLUMN_MAINTENANCE_HANDLE_TIME + " TEXT, " +
+        "handle_remark TEXT" +
         ")";
     
     // 创建索引的SQL语句
@@ -2245,6 +2246,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put(COLUMN_MAINTENANCE_HANDLE_USER_ID, info.getHandleUserId());
         v.put(COLUMN_MAINTENANCE_HANDLE_USER, info.getHandleUser() == null ? "" : info.getHandleUser());
         v.put(COLUMN_MAINTENANCE_HANDLE_TIME, info.getHandleTime() == null ? "" : info.getHandleTime());
+        try {
+            java.lang.reflect.Method m = info.getClass().getMethod("getHandleRemark");
+            Object hr = m.invoke(info);
+            v.put("handle_remark", hr == null ? "" : String.valueOf(hr));
+        } catch (Exception ignored) {
+            v.put("handle_remark", "");
+        }
         return db.insert(TABLE_MAINTENANCE, null, v);
     }
 
@@ -2293,6 +2301,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             mi.setHandleUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER_ID)));
             mi.setHandleUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER)));
             mi.setHandleTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_TIME)));
+            try {
+                String hr = c.getString(c.getColumnIndex("handle_remark"));
+                java.lang.reflect.Method m = mi.getClass().getMethod("setHandleRemark", String.class);
+                m.invoke(mi, hr);
+            } catch (Exception ignored) {}
             out.add(mi);
         }
         c.close();
@@ -2342,6 +2355,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             mi.setHandleUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER_ID)));
             mi.setHandleUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER)));
             mi.setHandleTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_TIME)));
+            try {
+                String hr = c.getString(c.getColumnIndex("handle_remark"));
+                java.lang.reflect.Method m = mi.getClass().getMethod("setHandleRemark", String.class);
+                m.invoke(mi, hr);
+            } catch (Exception ignored) {}
             out.add(mi);
         }
         c.close();
@@ -2390,7 +2408,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put(COLUMN_MAINTENANCE_HANDLE_USER_ID, handleUserId);
         v.put(COLUMN_MAINTENANCE_HANDLE_USER, handleUser == null ? "" : handleUser);
         v.put(COLUMN_MAINTENANCE_HANDLE_TIME, handleTime == null ? "" : handleTime);
-        if (content != null) v.put(COLUMN_MAINTENANCE_CONTENT, content);
+        v.put("handle_remark", content == null ? "" : content);
         return db.update(TABLE_MAINTENANCE, v, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
     }
 
@@ -2428,6 +2446,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER_ID, "INTEGER DEFAULT 0");
             ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER, "TEXT");
             ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_TIME, "TEXT");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, "handle_remark", "TEXT");
 
             try {
                 maintenanceHasDeviceIdColumn = hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID);

@@ -13,6 +13,7 @@ public class MaintenanceInfo {
     private long handleUserId;
     private String handleUser;
     private String handleTime;
+    private String handleRemark;
 
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
@@ -49,5 +50,8 @@ public class MaintenanceInfo {
 
     public String getHandleTime() { return handleTime; }
     public void setHandleTime(String handleTime) { this.handleTime = handleTime; }
+    
+    public String getHandleRemark() { return handleRemark; }
+    public void setHandleRemark(String handleRemark) { this.handleRemark = handleRemark; }
 }
 

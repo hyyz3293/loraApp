@@ -106,7 +106,18 @@ public class MaintenanceHomeListFragment extends Fragment {
                     Toast.makeText(requireContext(), "加载维护列表失败", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                adapter.submitList(finalList);
+                List<MaintenanceInfo> filtered = new ArrayList<>();
+                long now = System.currentTimeMillis();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
+                for (MaintenanceInfo mi : finalList) {
+                    String ct = mi.getCreateTime();
+                    if (ct == null || ct.trim().isEmpty()) continue;
+                    try {
+                        Date dt = sdf.parse(ct.trim());
+                        if (dt != null && dt.getTime() <= now) filtered.add(mi);
+                    } catch (Exception ignored) {}
+                }
+                adapter.submitList(filtered);
                 adapter.notifyDataSetChanged();
             });
         });
@@ -116,8 +127,7 @@ public class MaintenanceHomeListFragment extends Fragment {
         if (item == null) return;
         EditText et = new EditText(requireContext());
         et.setMinLines(3);
-        et.setText(item.getContent() == null ? "" : item.getContent());
-        et.setSelection(et.getText().length());
+        et.setHint("请输入备注");
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("确认维护")
                 .setView(et)
@@ -230,6 +240,10 @@ public class MaintenanceHomeListFragment extends Fragment {
             if (!TextUtils.isEmpty(item.getHandleUser())) sb.append("维护人：").append(item.getHandleUser()).append("\n");
             if (!TextUtils.isEmpty(item.getHandleTime())) sb.append("维护时间：").append(item.getHandleTime());
         }
+        if (!TextUtils.isEmpty(item.getHandleRemark())) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append("备注：").append(item.getHandleRemark());
+        }
         new AlertDialog.Builder(requireContext())
                 .setTitle("维护内容")
                 .setMessage(sb.toString())
@@ -242,4 +256,3 @@ public class MaintenanceHomeListFragment extends Fragment {
         return new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 }
-

@@ -297,7 +297,7 @@ public class TerminalListFragment extends Fragment {
     private void initTerminalStatus() {
         // 设置状态RecyclerView
         //LinearLayoutManager statusLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 6);
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 7);
         rvTerminalStatus.setLayoutManager(gridLayoutManager);
 
         terminalStatusAdapter = new TerminalStatusAdapter();
@@ -871,6 +871,7 @@ public class TerminalListFragment extends Fragment {
             int abnormalLostCount = 0;
             int lowBatteryCount = 0;
             int offlineCount = 0;
+            int maintenanceCount = 0;
 
             int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             if (allTerminals != null) {
@@ -890,6 +891,23 @@ public class TerminalListFragment extends Fragment {
                     }
                 }
             }
+            try {
+                long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = com.lora.cn.database.DatabaseHelper.getInstance(requireContext())
+                        .getMaintenanceRecords(uid);
+                long now = System.currentTimeMillis();
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                if (list != null) {
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
+                        String ct = mi.getCreateTime();
+                        if (ct == null || ct.trim().isEmpty()) continue;
+                        try {
+                            java.util.Date dt = sdf.parse(ct.trim());
+                            if (dt != null && dt.getTime() <= now) maintenanceCount++;
+                        } catch (Exception ignored) {}
+                    }
+                }
+            } catch (Exception ignored) {}
 
             List<TerminalStatus> statusList = new ArrayList<>();
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_IMPORTANT, R.mipmap.ic_coll, favoriteCount));
@@ -898,6 +916,7 @@ public class TerminalListFragment extends Fragment {
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ABNORMAL_LOST, R.mipmap.ic_ds, abnormalLostCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_LOW_BATTERY, R.mipmap.ic_red_sd, lowBatteryCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_OFFLINE, R.mipmap.ic_xh_no, offlineCount));
+            statusList.add(new TerminalStatus("维护列表", R.drawable.ic_wx_g, maintenanceCount));
             return statusList;
         } catch (Exception e) {
             Log.e(TAG, "构建状态统计失败", e);
