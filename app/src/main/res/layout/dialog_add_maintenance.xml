@@ -21,25 +21,6 @@
         android:layout_marginTop="8dp" />
 
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="维护内容"
-        android:textColor="#333333"
-        android:textStyle="bold"
-        android:textSize="14dp"
-        android:layout_marginTop="12dp" />
-
-    <EditText
-        android:id="@+id/et_content"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="80dp"
-        android:gravity="top"
-        android:inputType="textMultiLine"
-        android:layout_marginTop="8dp"
-        android:hint="请输入维护内容" />
-
-    <TextView
         android:id="@+id/tv_maintenance_time_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -62,6 +43,25 @@
         android:text=""
         android:textColor="#333333"
         android:textSize="14dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="维护内容"
+        android:textColor="#333333"
+        android:textStyle="bold"
+        android:textSize="14dp"
+        android:layout_marginTop="12dp" />
+
+    <EditText
+        android:id="@+id/et_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="80dp"
+        android:gravity="top"
+        android:inputType="textMultiLine"
+        android:layout_marginTop="8dp"
+        android:hint="请输入维护内容" />
 
 </LinearLayout>
 

@@ -4,6 +4,8 @@ import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,6 +33,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MaintenanceListFragment extends Fragment {
 
@@ -42,6 +47,9 @@ public class MaintenanceListFragment extends Fragment {
     private long currentUserId = -1;
     private String currentUserName = "";
     private String filterTerminalId = null;
+    private ExecutorService ioExecutor;
+    private Handler mainHandler;
+    private final AtomicInteger loadSeq = new AtomicInteger(0);
 
     public static MaintenanceListFragment newInstance() {
         return new MaintenanceListFragment();
@@ -58,7 +66,9 @@ public class MaintenanceListFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_maintenance_list, container, false);
+        filterTerminalId = getArguments() != null ? getArguments().getString(ARG_TERMINAL_ID, null) : null;
+        int layoutRes = TextUtils.isEmpty(filterTerminalId) ? R.layout.fragment_maintenance_list_home : R.layout.fragment_maintenance_list;
+        View v = inflater.inflate(layoutRes, container, false);
         rv = v.findViewById(R.id.rv_maintenance);
         View btnAdd = v.findViewById(R.id.btn_add_maintenance);
         View btnBack = v.findViewById(R.id.back);
@@ -66,10 +76,11 @@ public class MaintenanceListFragment extends Fragment {
         db = DatabaseHelper.getInstance(requireContext());
         currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
         currentUserName = SPUtils.getInstance().getString("current_user_name", "");
-        filterTerminalId = getArguments() != null ? getArguments().getString(ARG_TERMINAL_ID, null) : null;
+        if (ioExecutor == null) ioExecutor = Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new MaintenanceInfoAdapter();
+        adapter = new MaintenanceInfoAdapter(TextUtils.isEmpty(filterTerminalId) ? MaintenanceInfoAdapter.Mode.HOME : MaintenanceInfoAdapter.Mode.SETTING);
         adapter.setOnConfirmClickListener(this::showConfirmDialog);
         adapter.setOnViewClickListener(this::showViewDialog);
         adapter.setOnEditClickListener(this::showEditDialog);
@@ -92,25 +103,48 @@ public class MaintenanceListFragment extends Fragment {
     }
 
     @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        try {
+            if (ioExecutor != null) ioExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        ioExecutor = null;
+        mainHandler = null;
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
         loadList();
     }
 
     private void loadList() {
-        try {
+        if (ioExecutor == null || mainHandler == null) return;
+        int token = loadSeq.incrementAndGet();
+        ioExecutor.execute(() -> {
             List<MaintenanceInfo> list;
-            if (!TextUtils.isEmpty(filterTerminalId)) {
-                list = db.getMaintenanceRecordsByTerminal(filterTerminalId, currentUserId);
-            } else {
-                list = db.getMaintenanceRecords(currentUserId);
+            try {
+                if (!TextUtils.isEmpty(filterTerminalId)) {
+                    list = db.getMaintenanceRecordsByTerminal(filterTerminalId, currentUserId);
+                } else {
+                    list = db.getMaintenanceRecords(currentUserId);
+                }
+                if (list == null) list = new ArrayList<>();
+            } catch (Exception e) {
+                list = null;
             }
-            if (list == null) list = new ArrayList<>();
-            adapter.submitList(list);
-            adapter.notifyDataSetChanged();
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "加载维护列表失败", Toast.LENGTH_SHORT).show();
-        }
+            List<MaintenanceInfo> finalList = list;
+            mainHandler.post(() -> {
+                if (token != loadSeq.get()) return;
+                if (!isAdded()) return;
+                if (finalList == null) {
+                    Toast.makeText(requireContext(), "加载维护列表失败", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                adapter.submitList(finalList);
+                adapter.notifyDataSetChanged();
+            });
+        });
     }
 
     private void showAddDialog() {
@@ -119,17 +153,27 @@ public class MaintenanceListFragment extends Fragment {
             return;
         }
 
-        List<com.lora.cn.ui.model.Terminal> loaded;
-        try {
-            loaded = db.getAllTerminals();
-        } catch (Exception e) {
-            loaded = null;
-        }
-        final List<com.lora.cn.ui.model.Terminal> terminals = (loaded != null) ? loaded : new ArrayList<>();
-        if (terminals.isEmpty()) {
-            Toast.makeText(requireContext(), "暂无终端可选", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (ioExecutor == null || mainHandler == null) return;
+        ioExecutor.execute(() -> {
+            List<com.lora.cn.ui.model.Terminal> loaded;
+            try {
+                loaded = db.getAllTerminals();
+            } catch (Exception e) {
+                loaded = null;
+            }
+            final List<com.lora.cn.ui.model.Terminal> terminals = (loaded != null) ? loaded : new ArrayList<>();
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (terminals.isEmpty()) {
+                    Toast.makeText(requireContext(), "暂无终端可选", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                showAddDialogWithTerminals(terminals);
+            });
+        });
+    }
+
+    private void showAddDialogWithTerminals(List<com.lora.cn.ui.model.Terminal> terminals) {
 
         View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_maintenance, null);
         Spinner spinner = view.findViewById(R.id.spinner_terminal);
@@ -347,16 +391,22 @@ public class MaintenanceListFragment extends Fragment {
 
     private void showViewDialog(MaintenanceInfo item) {
         if (item == null) return;
-        StringBuilder sb = new StringBuilder();
-        if (!TextUtils.isEmpty(item.getContent())) sb.append(item.getContent());
-        if (!TextUtils.isEmpty(item.getHandleUser()) || !TextUtils.isEmpty(item.getHandleTime())) {
-            if (sb.length() > 0) sb.append("\n\n");
-            if (!TextUtils.isEmpty(item.getHandleUser())) sb.append("维护人：").append(item.getHandleUser()).append("\n");
-            if (!TextUtils.isEmpty(item.getHandleTime())) sb.append("维护时间：").append(item.getHandleTime());
+        String msg;
+        if (!TextUtils.isEmpty(filterTerminalId)) {
+            msg = item.getContent() == null ? "" : item.getContent();
+        } else {
+            StringBuilder sb = new StringBuilder();
+            if (!TextUtils.isEmpty(item.getContent())) sb.append(item.getContent());
+            if (!TextUtils.isEmpty(item.getHandleUser()) || !TextUtils.isEmpty(item.getHandleTime())) {
+                if (sb.length() > 0) sb.append("\n\n");
+                if (!TextUtils.isEmpty(item.getHandleUser())) sb.append("维护人：").append(item.getHandleUser()).append("\n");
+                if (!TextUtils.isEmpty(item.getHandleTime())) sb.append("维护时间：").append(item.getHandleTime());
+            }
+            msg = sb.toString();
         }
         new AlertDialog.Builder(requireContext())
                 .setTitle("维护内容")
-                .setMessage(sb.toString())
+                .setMessage(msg)
                 .setPositiveButton("确定", null)
                 .create()
                 .show();

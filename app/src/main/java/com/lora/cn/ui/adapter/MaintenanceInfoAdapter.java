@@ -17,6 +17,7 @@ import com.lora.cn.R;
 import com.lora.cn.ui.model.MaintenanceInfo;
 
 public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, QuickViewHolder> {
+    public enum Mode { HOME, SETTING }
     public interface OnConfirmClickListener { void onConfirmClick(MaintenanceInfo item); }
     public interface OnViewClickListener { void onViewClick(MaintenanceInfo item); }
     public interface OnEditClickListener { void onEditClick(MaintenanceInfo item); }
@@ -25,6 +26,17 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
     private OnViewClickListener onViewClickListener;
     private OnEditClickListener onEditClickListener;
     private OnDeleteClickListener onDeleteClickListener;
+    private final Mode mode;
+    private final int itemLayoutResId;
+
+    public MaintenanceInfoAdapter() {
+        this(Mode.HOME);
+    }
+
+    public MaintenanceInfoAdapter(Mode mode) {
+        this.mode = mode == null ? Mode.HOME : mode;
+        this.itemLayoutResId = this.mode == Mode.SETTING ? R.layout.item_maintenance_setting : R.layout.item_terminal_log;
+    }
 
     public void setOnConfirmClickListener(OnConfirmClickListener l) { this.onConfirmClickListener = l; }
     public void setOnViewClickListener(OnViewClickListener l) { this.onViewClickListener = l; }
@@ -33,21 +45,29 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
 
     @Override
     protected void onBindViewHolder(@NonNull QuickViewHolder holder, int i, @Nullable MaintenanceInfo item) {
-        TextView logTime = holder.getView(R.id.log_time);
-        TextView logStatus = holder.getView(R.id.log_statu);
-        TextView logName = holder.getView(R.id.log_name);
-        TextView logId = holder.getView(R.id.log_id);
-        TextView logContent = holder.getView(R.id.log_complute);
-        TextView logHandleTime = holder.getView(R.id.log_complute_time);
-        TextView logOperation = holder.getView(R.id.log_operation);
-        View layoutOps = holder.getView(R.id.layout_maintenance_ops);
-        TextView btnDelete = holder.getView(R.id.btn_maintenance_delete);
-        TextView btnEdit = holder.getView(R.id.btn_maintenance_edit);
+        View root = holder.itemView;
+        TextView logTime = root.findViewById(R.id.log_time);
+        TextView logStatus = root.findViewById(R.id.log_statu);
+        TextView logName = root.findViewById(R.id.log_name);
+        TextView logId = root.findViewById(R.id.log_id);
+        TextView logContent = root.findViewById(R.id.log_complute);
+        TextView logHandleTime = root.findViewById(R.id.log_complute_time);
+        TextView logOperation = root.findViewById(R.id.log_operation);
+        View layoutOps = root.findViewById(R.id.layout_maintenance_ops);
+        TextView btnDelete = root.findViewById(R.id.btn_maintenance_delete);
+        TextView btnEdit = root.findViewById(R.id.btn_maintenance_edit);
 
-        setTextOrDash(logTime, item.getCreateTime());
+        if (logTime != null) setTextOrDash(logTime, item.getCreateTime());
 
         boolean done = item.getStatus() == 1;
-        setStatusWithDot(logStatus, done ? "已维护" : "待维护", done);
+        if (mode == Mode.SETTING) {
+            if (logStatus != null) logStatus.setVisibility(View.GONE);
+        } else {
+            if (logStatus != null) {
+                logStatus.setVisibility(View.VISIBLE);
+                setStatusWithDot(logStatus, done ? "已维护" : "待维护", done);
+            }
+        }
 
         String name = item.getTerminalName();
         String group = item.getTerminalGroup();
@@ -57,17 +77,27 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         } else {
             displayName = "终端：" + (name == null ? "" : name);
         }
-        setTextOrDash(logName, displayName);
+        if (logName != null) setTextOrDash(logName, displayName);
 
         String tid = item.getTerminalId();
-        setTextOrDash(logId, "终端ID：" + (tid == null ? "" : tid));
+        if (logId != null) setTextOrDash(logId, "终端ID：" + (tid == null ? "" : tid));
 
-        setTextOrDash(logContent, item.getContent());
-
-        if (done) {
-            setTextOrDash(logHandleTime, item.getHandleTime());
+        if (mode == Mode.SETTING) {
+            if (logContent != null) logContent.setText("");
+            if (logHandleTime != null) {
+                logHandleTime.setText("");
+                logHandleTime.setVisibility(View.GONE);
+            }
         } else {
-            logHandleTime.setText("");
+            if (logContent != null) setTextOrDash(logContent, item.getContent());
+            if (logHandleTime != null) {
+                logHandleTime.setVisibility(View.VISIBLE);
+                if (done) {
+                    setTextOrDash(logHandleTime, item.getHandleTime());
+                } else {
+                    logHandleTime.setText("");
+                }
+            }
         }
 
         if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
@@ -82,24 +112,31 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
             });
         }
 
-        if (done) {
+        if (logOperation != null) {
             logOperation.setVisibility(View.VISIBLE);
-            logOperation.setText("查看");
             logOperation.setEnabled(true);
-            logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
-            logOperation.setTextColor(Color.parseColor("#383B40"));
-            logOperation.setOnClickListener(v -> {
-                if (onViewClickListener != null) onViewClickListener.onViewClick(item);
-            });
-        } else {
-            logOperation.setVisibility(View.VISIBLE);
-            logOperation.setText("确认维护");
-            logOperation.setEnabled(true);
-            logOperation.setBackgroundResource(R.drawable.bg_btn_now);
-            logOperation.setTextColor(Color.WHITE);
-            logOperation.setOnClickListener(v -> {
-                if (onConfirmClickListener != null) onConfirmClickListener.onConfirmClick(item);
-            });
+            if (mode == Mode.SETTING) {
+                logOperation.setText("维护内容");
+                logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
+                logOperation.setTextColor(Color.parseColor("#383B40"));
+                logOperation.setOnClickListener(v -> {
+                    if (onViewClickListener != null) onViewClickListener.onViewClick(item);
+                });
+            } else if (done) {
+                logOperation.setText("查看");
+                logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
+                logOperation.setTextColor(Color.parseColor("#383B40"));
+                logOperation.setOnClickListener(v -> {
+                    if (onViewClickListener != null) onViewClickListener.onViewClick(item);
+                });
+            } else {
+                logOperation.setText("确认维护");
+                logOperation.setBackgroundResource(R.drawable.bg_btn_now);
+                logOperation.setTextColor(Color.WHITE);
+                logOperation.setOnClickListener(v -> {
+                    if (onConfirmClickListener != null) onConfirmClickListener.onConfirmClick(item);
+                });
+            }
         }
     }
 
@@ -133,7 +170,6 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
     @NonNull
     @Override
     protected QuickViewHolder onCreateViewHolder(@NonNull android.content.Context context, @NonNull ViewGroup viewGroup, int i) {
-        return new QuickViewHolder(R.layout.item_terminal_log, viewGroup);
+        return new QuickViewHolder(itemLayoutResId, viewGroup);
     }
 }
-

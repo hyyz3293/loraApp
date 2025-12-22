@@ -118,6 +118,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String TABLE_MAINTENANCE = "maintenance_records";
     public static final String COLUMN_MAINTENANCE_ID = "maintenance_id";
     public static final String COLUMN_MAINTENANCE_TERMINAL_ID = "terminal_id";
+    public static final String COLUMN_MAINTENANCE_DEVICE_ID = "device_id";
     public static final String COLUMN_MAINTENANCE_TERMINAL_NAME = "terminal_name";
     public static final String COLUMN_MAINTENANCE_TERMINAL_GROUP = "terminal_group";
     public static final String COLUMN_MAINTENANCE_STATUS = "status";
@@ -376,6 +377,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         "(" + COLUMN_CATEGORY_GROUP_ID + ")";
     
     private static DatabaseHelper instance;
+    private final Object maintenanceSchemaLock = new Object();
+    private volatile boolean maintenanceSchemaEnsured = false;
+    private volatile Boolean maintenanceHasDeviceIdColumn = null;
     
     private DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -2221,7 +2225,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ensureMaintenanceSchema(db);
         ContentValues v = new ContentValues();
-        v.put(COLUMN_MAINTENANCE_TERMINAL_ID, info.getTerminalId() == null ? "" : info.getTerminalId());
+        String tid = info.getTerminalId() == null ? "" : info.getTerminalId();
+        v.put(COLUMN_MAINTENANCE_TERMINAL_ID, tid);
+        Boolean hasDeviceIdCol = maintenanceHasDeviceIdColumn;
+        if (hasDeviceIdCol == null) {
+            hasDeviceIdCol = hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID);
+            maintenanceHasDeviceIdColumn = hasDeviceIdCol;
+        }
+        if (hasDeviceIdCol) {
+            v.put(COLUMN_MAINTENANCE_DEVICE_ID, tid);
+        }
         v.put(COLUMN_MAINTENANCE_TERMINAL_NAME, info.getTerminalName() == null ? "" : info.getTerminalName());
         v.put(COLUMN_MAINTENANCE_TERMINAL_GROUP, info.getTerminalGroup() == null ? "" : info.getTerminalGroup());
         v.put(COLUMN_MAINTENANCE_STATUS, info.getStatus());
@@ -2399,18 +2412,45 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     private void ensureMaintenanceSchema(SQLiteDatabase db) {
         if (db == null) return;
-        try { db.execSQL(CREATE_TABLE_MAINTENANCE); } catch (Exception ignored) {}
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_ID, "TEXT NOT NULL DEFAULT ''");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_NAME, "TEXT");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_GROUP, "TEXT");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_STATUS, "INTEGER DEFAULT 0");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CONTENT, "TEXT");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER_ID, "INTEGER DEFAULT 0");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER, "TEXT");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_TIME, "TEXT");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER_ID, "INTEGER DEFAULT 0");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER, "TEXT");
-        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_TIME, "TEXT");
+        if (maintenanceSchemaEnsured) return;
+        synchronized (maintenanceSchemaLock) {
+            if (maintenanceSchemaEnsured) return;
+            try { db.execSQL(CREATE_TABLE_MAINTENANCE); } catch (Exception ignored) {}
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID, "TEXT NOT NULL DEFAULT ''");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_ID, "TEXT NOT NULL DEFAULT ''");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_NAME, "TEXT");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_GROUP, "TEXT");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_STATUS, "INTEGER DEFAULT 0");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CONTENT, "TEXT");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER_ID, "INTEGER DEFAULT 0");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER, "TEXT");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_TIME, "TEXT");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER_ID, "INTEGER DEFAULT 0");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER, "TEXT");
+            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_TIME, "TEXT");
+
+            try {
+                maintenanceHasDeviceIdColumn = hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID);
+                if (maintenanceHasDeviceIdColumn && hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_ID)) {
+                    String key = "maintenance_device_id_backfilled_v1";
+                    boolean done = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(key, false);
+                    if (!done) {
+                        db.execSQL(
+                                "UPDATE " + TABLE_MAINTENANCE +
+                                        " SET " + COLUMN_MAINTENANCE_TERMINAL_ID + "=" + COLUMN_MAINTENANCE_DEVICE_ID +
+                                        " WHERE (" + COLUMN_MAINTENANCE_TERMINAL_ID + " IS NULL OR " + COLUMN_MAINTENANCE_TERMINAL_ID + "='')" +
+                                        " AND " + COLUMN_MAINTENANCE_DEVICE_ID + " IS NOT NULL AND " + COLUMN_MAINTENANCE_DEVICE_ID + "<>''");
+                        db.execSQL(
+                                "UPDATE " + TABLE_MAINTENANCE +
+                                        " SET " + COLUMN_MAINTENANCE_DEVICE_ID + "=" + COLUMN_MAINTENANCE_TERMINAL_ID +
+                                        " WHERE (" + COLUMN_MAINTENANCE_DEVICE_ID + " IS NULL OR " + COLUMN_MAINTENANCE_DEVICE_ID + "='')" +
+                                        " AND " + COLUMN_MAINTENANCE_TERMINAL_ID + " IS NOT NULL AND " + COLUMN_MAINTENANCE_TERMINAL_ID + "<>''");
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(key, true);
+                    }
+                }
+            } catch (Exception ignored) {}
+            maintenanceSchemaEnsured = true;
+        }
     }
 
     private void ensureColumnIfMissing(SQLiteDatabase db, String table, String column, String sqlTypeAndDefault) {

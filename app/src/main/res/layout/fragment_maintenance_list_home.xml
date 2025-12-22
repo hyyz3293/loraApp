@@ -20,41 +20,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_centerVertical="true"
-            android:layout_marginRight="34dp"
-            android:layout_alignParentRight="true"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:id="@+id/btn_add_maintenance"
-                android:layout_marginRight="15dp"
-                android:background="@drawable/bg_btn2_4"
-                android:textSize="16dp"
-                android:gravity="center"
-                android:textColor="@color/white"
-                android:text="新增维护"
-                android:textStyle="bold"
-                android:paddingLeft="17dp"
-                android:paddingRight="17dp"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp" />
-
-            <TextView
-                android:id="@+id/back"
-                android:background="@drawable/bg_back_4"
-                android:textSize="16dp"
-                android:gravity="center"
-                android:textColor="#383B40"
-                android:text="返回"
-                android:textStyle="bold"
-                android:layout_width="98dp"
-                android:layout_height="32dp" />
-
-        </LinearLayout>
-
     </RelativeLayout>
 
     <View
@@ -72,12 +37,22 @@
         android:layout_height="50dp">
 
         <TextView
-            android:text="维护时间"
+            android:text="时间"
             android:gravity="center_vertical"
             android:textColor="#333333"
             android:textSize="12dp"
             android:textStyle="bold"
-            android:layout_weight="220"
+            android:layout_weight="188"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:text="状态"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="138"
             android:layout_width="0dp"
             android:layout_height="match_parent" />
 
@@ -87,7 +62,7 @@
             android:textColor="#333333"
             android:textSize="12dp"
             android:textStyle="bold"
-            android:layout_weight="260"
+            android:layout_weight="156"
             android:layout_width="0dp"
             android:layout_height="match_parent" />
 
@@ -97,7 +72,27 @@
             android:textColor="#333333"
             android:textSize="12dp"
             android:textStyle="bold"
-            android:layout_weight="240"
+            android:layout_weight="168"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:text="维护内容"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="168"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:text="维护时间"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="182"
             android:layout_width="0dp"
             android:layout_height="match_parent" />
 
@@ -107,7 +102,7 @@
             android:textColor="#333333"
             android:textSize="12dp"
             android:textStyle="bold"
-            android:layout_weight="160"
+            android:layout_weight="107"
             android:layout_width="0dp"
             android:layout_height="match_parent" />
 
