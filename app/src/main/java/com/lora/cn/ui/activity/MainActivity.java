@@ -63,6 +63,20 @@ public class MainActivity extends AppCompatActivity {
 
     private MqttPacketsClient mqttClient;
     private DatabaseHelper databaseHelper;
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private android.os.Handler mainHandler;
+    private final java.util.concurrent.atomic.AtomicInteger badgeSeq = new java.util.concurrent.atomic.AtomicInteger();
+    private int lastBadgeCount = -1;
+    private int lastBadgeQueueSize = -1;
+    private long lastBadgeRequestMs = 0L;
+    private boolean badgeRequestDelayed = false;
+    private final Runnable badgeRequestRunnable = new Runnable() {
+        @Override
+        public void run() {
+            badgeRequestDelayed = false;
+            updatePendingBadge();
+        }
+    };
     private static final long TEST_INTERVAL = 10 * 1000; // 30秒
     private android.content.BroadcastReceiver brokerReadyReceiver;
     private android.os.Handler testUplinkHandler;
@@ -154,6 +168,8 @@ public class MainActivity extends AppCompatActivity {
         
         // 初始化数据库助手
         databaseHelper = DatabaseHelper.getInstance(this);
+        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         try {
             com.lora.cn.utils.LogUtils.init(getApplicationContext());
             com.lora.cn.utils.CrashLogger.install(getApplicationContext());
@@ -498,10 +514,18 @@ public class MainActivity extends AppCompatActivity {
     private final Runnable alertEvaluateRunnable = new Runnable() {
         @Override public void run() {
             try {
-                if (databaseHelper != null) databaseHelper.checkAndLogOfflineDevices();
-                evaluateAlertOverlayGlobal();
+                if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                ioExecutor.execute(() -> {
+                    try { if (databaseHelper != null) databaseHelper.checkAndLogOfflineDevices(); } catch (Exception ignored) {}
+                    if (mainHandler != null) {
+                        mainHandler.post(() -> {
+                            try { evaluateAlertOverlayGlobal(); } catch (Exception ignored) {}
+                        });
+                    }
+                });
             } finally {
-                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 10000);
+                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 60000);
             }
         }
     };
@@ -519,7 +543,6 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
         } catch (Exception ignored) {}
-        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("主页刷新:" + frame.deviceId)); } catch (Exception ignored) {}
         int statusCode = 0;
         try {
             java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(frame.deviceId);
@@ -681,64 +704,110 @@ public class MainActivity extends AppCompatActivity {
 
     public void updatePendingBadge() {
         try {
-            int count;
-            if (pendingCountOverride != null) {
-                count = pendingCountOverride;
-            } else {
-                java.util.List<com.lora.cn.ui.model.LogInfo> allLogs = databaseHelper.getAllLogsBoundToTerminals();
-                java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
-                java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
-                for (com.lora.cn.ui.model.LogInfo li : allLogs) {
-                    String dev = li.getTerminalId();
-                    int s = li.getStatusCode();
-                    long t = parseMillis(li.getCreateTime());
-                    String hu = li.getHandleUser();
-                    String htStr = li.getHandleTime();
-                    boolean isHandled = (hu != null && hu.trim().length() > 0) || (htStr != null && htStr.trim().length() > 0);
-                    if (isHandled) {
-                        Long prev = lastHandledTime.get(dev);
-                        if (prev == null || t >= prev) lastHandledTime.put(dev, t);
-                        continue;
-                    }
-                    boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                            || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
-                            || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
-                    if (!candidate) continue;
-                    String key = (dev == null ? "" : dev) + ":" + s;
-                    com.lora.cn.ui.model.LogInfo prevLog = latestByDeviceStatus.get(key);
-                    long prevT = prevLog != null ? parseMillis(prevLog.getCreateTime()) : -1L;
-                    if (prevLog == null || t >= prevT) latestByDeviceStatus.put(key, li);
-                }
-                java.util.Map<String, com.lora.cn.ui.model.Terminal> termMap = new java.util.HashMap<>();
-                java.util.List<com.lora.cn.ui.model.Terminal> allTerms = databaseHelper.getAllTerminals();
-                for (com.lora.cn.ui.model.Terminal t : allTerms) termMap.put(t.getTerminalId(), t);
-                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                int c = 0;
-                for (com.lora.cn.ui.model.LogInfo v : latestByDeviceStatus.values()) {
-                    String dev = v.getTerminalId();
-                    Long ht = lastHandledTime.get(dev);
-                    long at = parseMillis(v.getCreateTime());
-                    boolean skipByHandled = (ht != null && at <= ht);
-                    if (skipByHandled) continue;
-                    if (v.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                        com.lora.cn.ui.model.Terminal tt = termMap.get(dev);
-                        if (tt == null) continue;
-                        boolean isLowNow = tt.getBatteryLevel() <= lowTh;
-                        if (!isLowNow) continue;
-                    }
-                    c++;
-                }
-                count = c;
+            Integer override = pendingCountOverride;
+            if (override != null) {
+                applyPendingBadgeUi(override);
+                return;
             }
-            pendingAlertCount = count;
-            if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(count));
-            if (llAlertPendingSmall != null) {
-                boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-                llAlertPendingSmall.setVisibility(!bigVisible && count > 0 ? View.VISIBLE : View.GONE);
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            long now = android.os.SystemClock.uptimeMillis();
+            long delta = now - lastBadgeRequestMs;
+            if (delta < 800) {
+                long delay = 800 - delta;
+                if (!badgeRequestDelayed) {
+                    badgeRequestDelayed = true;
+                    mainHandler.removeCallbacks(badgeRequestRunnable);
+                    mainHandler.postDelayed(badgeRequestRunnable, delay);
+                }
+                return;
             }
-            android.util.Log.d(TAG, "updatePendingBadge count=" + count + ", queueSize=" + alertQueue.size());
+            lastBadgeRequestMs = now;
+            android.content.Context appCtx = getApplicationContext();
+            int token = badgeSeq.incrementAndGet();
+            ioExecutor.execute(() -> {
+                int count = 0;
+                try {
+                    com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                    java.util.List<com.lora.cn.ui.model.LogInfo> allLogs = db.getAllLogsBoundToTerminals();
+                    java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
+                    java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
+                    if (allLogs != null) {
+                        for (com.lora.cn.ui.model.LogInfo li : allLogs) {
+                            if (li == null) continue;
+                            String dev = li.getTerminalId();
+                            int s = li.getStatusCode();
+                            long t = parseMillis(li.getCreateTime());
+                            String hu = li.getHandleUser();
+                            String htStr = li.getHandleTime();
+                            boolean isHandled = (hu != null && hu.trim().length() > 0) || (htStr != null && htStr.trim().length() > 0);
+                            if (isHandled) {
+                                Long prev = lastHandledTime.get(dev);
+                                if (prev == null || t >= prev) lastHandledTime.put(dev, t);
+                                continue;
+                            }
+                            boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                                    || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                                    || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                            if (!candidate) continue;
+                            String key = (dev == null ? "" : dev) + ":" + s;
+                            com.lora.cn.ui.model.LogInfo prevLog = latestByDeviceStatus.get(key);
+                            long prevT = prevLog != null ? parseMillis(prevLog.getCreateTime()) : -1L;
+                            if (prevLog == null || t >= prevT) latestByDeviceStatus.put(key, li);
+                        }
+                    }
+                    java.util.Map<String, com.lora.cn.ui.model.Terminal> termMap = new java.util.HashMap<>();
+                    java.util.List<com.lora.cn.ui.model.Terminal> allTerms = db.getAllTerminals();
+                    if (allTerms != null) {
+                        for (com.lora.cn.ui.model.Terminal t : allTerms) {
+                            if (t == null) continue;
+                            termMap.put(t.getTerminalId(), t);
+                        }
+                    }
+                    int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                    int c = 0;
+                    for (com.lora.cn.ui.model.LogInfo v : latestByDeviceStatus.values()) {
+                        if (v == null) continue;
+                        String dev = v.getTerminalId();
+                        Long ht = lastHandledTime.get(dev);
+                        long at = parseMillis(v.getCreateTime());
+                        boolean skipByHandled = (ht != null && at <= ht);
+                        if (skipByHandled) continue;
+                        if (v.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                            com.lora.cn.ui.model.Terminal tt = termMap.get(dev);
+                            if (tt == null) continue;
+                            boolean isLowNow = tt.getBatteryLevel() <= lowTh;
+                            if (!isLowNow) continue;
+                        }
+                        c++;
+                    }
+                    count = c;
+                } catch (Exception ignored) {}
+                int finalCount = count;
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (token != badgeSeq.get()) return;
+                        applyPendingBadgeUi(finalCount);
+                    });
+                }
+            });
         } catch (Exception e) {
             android.util.Log.e(TAG, "更新待处理徽标失败", e);
+        }
+    }
+
+    private void applyPendingBadgeUi(int count) {
+        pendingAlertCount = count;
+        if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(count));
+        if (llAlertPendingSmall != null) {
+            boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
+            llAlertPendingSmall.setVisibility(!bigVisible && count > 0 ? View.VISIBLE : View.GONE);
+        }
+        int queueSize = alertQueue.size();
+        if (count != lastBadgeCount || queueSize != lastBadgeQueueSize) {
+            lastBadgeCount = count;
+            lastBadgeQueueSize = queueSize;
+            android.util.Log.d(TAG, "updatePendingBadge count=" + count + ", queueSize=" + queueSize);
         }
     }
 
@@ -834,6 +903,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void evaluateAlertOverlayGlobal() {
         try {
+            int beforeQueueSize = alertQueue.size();
+            boolean touchedDb = false;
             java.util.List<com.lora.cn.ui.model.Terminal> all = databaseHelper.getAllTerminals();
             boolean queuedAny = false;
             for (com.lora.cn.ui.model.Terminal t : all) {
@@ -864,7 +935,12 @@ public class MainActivity extends AppCompatActivity {
                         }
                         lastAlertLogIds.put(key, latestId);
                         lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
-                        try { if (newly) databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST); } catch (Exception ignored) {}
+                        try {
+                            if (newly) {
+                                databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                                touchedDb = true;
+                            }
+                        } catch (Exception ignored) {}
                     }
                 } else if (isOffline) {
                     boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
@@ -875,6 +951,7 @@ public class MainActivity extends AppCompatActivity {
                                 String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                                 String key = devId + ":设备离线";
                                 lastAlertLogIds.put(key, nid);
+                                touchedDb = true;
                             }
                         } catch (Exception ignored) {}
                     }
@@ -896,7 +973,12 @@ public class MainActivity extends AppCompatActivity {
                         }
                         lastAlertLogIds.put(key, latestId);
                         lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
-                        try { if (newly) databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE); } catch (Exception ignored) {}
+                        try {
+                            if (newly) {
+                                databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE);
+                                touchedDb = true;
+                            }
+                        } catch (Exception ignored) {}
                     }
                 }
                 if (isLow) {
@@ -907,6 +989,7 @@ public class MainActivity extends AppCompatActivity {
                             if (nid > 0) {
                                 String keyIns = devId + ":设备低电量";
                                 lastAlertLogIds.put(keyIns, nid);
+                                touchedDb = true;
                             }
                         } catch (Exception ignored) {}
                     }
@@ -938,7 +1021,10 @@ public class MainActivity extends AppCompatActivity {
                 if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(!alertQueue.isEmpty() ? View.VISIBLE : View.GONE);
             }
             updatePendingBadge();
-            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+            int afterQueueSize = alertQueue.size();
+            if (queuedAny || touchedDb || beforeQueueSize != afterQueueSize) {
+                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+            }
         } catch (Exception ignored) {}
     }
 
@@ -1042,18 +1128,32 @@ public class MainActivity extends AppCompatActivity {
             hideUserInfo();
         }
 
-        // 显示设备列表Fragment
-        com.lora.cn.ui.fragment.DeviceListFragment fragment = com.lora.cn.ui.fragment.DeviceListFragment.newInstance();
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_device_list_container, fragment)
-                .addToBackStack("device_list")
-                .commit();
-
         fragmentDeviceListContainer.setVisibility(View.VISIBLE);
         rvMenuTabs.setVisibility(View.INVISIBLE);
         viewPager.setVisibility(View.GONE);
         isDeviceListVisible = true;
         lastNonHomeStartMs = System.currentTimeMillis();
+
+        androidx.fragment.app.FragmentManager fm = getSupportFragmentManager();
+        try {
+            int count = fm.getBackStackEntryCount();
+            for (int i = count - 1; i >= 0; i--) {
+                androidx.fragment.app.FragmentManager.BackStackEntry e = fm.getBackStackEntryAt(i);
+                if ("device_list".equals(e.getName())) {
+                    fm.popBackStackImmediate("device_list", 0);
+                    return;
+                }
+            }
+        } catch (Exception ignored) {}
+
+        androidx.fragment.app.Fragment current = fm.findFragmentById(R.id.fragment_device_list_container);
+        if (current instanceof com.lora.cn.ui.fragment.DeviceListFragment) return;
+
+        com.lora.cn.ui.fragment.DeviceListFragment fragment = com.lora.cn.ui.fragment.DeviceListFragment.newInstance();
+        fm.beginTransaction()
+                .replace(R.id.fragment_device_list_container, fragment)
+                .addToBackStack("device_list")
+                .commit();
     }
 
     public void hideDeviceList() {
@@ -1065,6 +1165,10 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setVisibility(View.VISIBLE);
         rvMenuTabs.setVisibility(View.VISIBLE);
         isDeviceListVisible = false;
+
+        try {
+            getSupportFragmentManager().popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        } catch (Exception ignored) {}
 
         // 清除Fragment
         getSupportFragmentManager().beginTransaction()
@@ -1168,6 +1272,7 @@ public class MainActivity extends AppCompatActivity {
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
                             String currentTime = sdf.format(new Date());
                             
+                            boolean wroteAny = false;
                             for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
                                 String devEui = r.deviceId != null ? r.deviceId : "-";
                                 String devAddr = r.devAddr != null ? r.devAddr : "-";
@@ -1185,7 +1290,7 @@ public class MainActivity extends AppCompatActivity {
                                     // 存储到上行数据日志表
                                     long result = databaseHelper.addUplinkLog(hex);
                                     Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
-                                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新")); } catch (Exception ignored) {}
+                                    wroteAny = true;
                                     
 //                                    // 同时存储到日志信息表
 //                                    try {
@@ -1240,6 +1345,9 @@ public class MainActivity extends AppCompatActivity {
                                         " dr=" + dr +
                                         " time=" + time +
                                         " hex=" + hex);
+                            }
+                            if (wroteAny) {
+                                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新")); } catch (Exception ignored) {}
                             }
                         }
                         @Override
@@ -1309,6 +1417,11 @@ public class MainActivity extends AppCompatActivity {
                 alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
                 alertEvaluateHandler = null;
             }
+            try {
+                if (ioExecutor != null) ioExecutor.shutdownNow();
+            } catch (Exception ignored) {}
+            ioExecutor = null;
+            mainHandler = null;
         } catch (Exception e) {
             Log.e(TAG, "发送测试上行数据失败: " + e.getMessage());
         }

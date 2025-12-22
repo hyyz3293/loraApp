@@ -5,7 +5,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.lora.cn.ui.fragment.MaintenanceListFragment;
+import com.lora.cn.ui.fragment.MaintenanceHomeListFragment;
 import com.lora.cn.ui.fragment.TerminalListFragment;
 import com.lora.cn.ui.fragment.LogInfoFragment;
 import com.lora.cn.ui.fragment.TerminalCheckFragment;
@@ -29,7 +29,7 @@ public class MainPagerAdapter extends FragmentStateAdapter {
             case 2:
                 return new LogInfoFragment();
             case 3:
-                return new MaintenanceListFragment();
+                return new MaintenanceHomeListFragment();
             case 4:
                 return new SettingsFragment();
             case 5:

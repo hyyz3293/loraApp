@@ -55,6 +55,9 @@ public class DeviceListFragment extends Fragment {
     private TerminalDao terminalDao;
     private List<Terminal> allTerminals = new ArrayList<>();
     private Set<String> discoveredDeviceIds = new HashSet<>(); // 用于存储已发现的设备ID，避免重复显示
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private android.os.Handler mainHandler;
+    private final java.util.concurrent.atomic.AtomicInteger loadSeq = new java.util.concurrent.atomic.AtomicInteger();
 
     public static DeviceListFragment newInstance() {
         return new DeviceListFragment();
@@ -66,10 +69,22 @@ public class DeviceListFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_device_list, container, false);
         initViews(view);
         initData();
+        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         setupRecyclerView();
         setupClickListeners();
         loadTerminals();
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        try {
+            if (ioExecutor != null) ioExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        ioExecutor = null;
+        mainHandler = null;
+        super.onDestroyView();
     }
 
     private void initViews(View view) {
@@ -165,65 +180,78 @@ public class DeviceListFragment extends Fragment {
     }
 
     private void loadTerminals() {
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            // 从本地日志库中提取最近上行的设备，作为“附近终端”来源
-            List<LogInfo> logs = dbHelper.getAllUnboundLogs();
-            // 清理已添加到终端表的设备，不再展示在发现列表中
-            if (allTerminals != null && !allTerminals.isEmpty()) {
-                java.util.Iterator<com.lora.cn.database.entity.Terminal> it = allTerminals.iterator();
-                while (it.hasNext()) {
-                    com.lora.cn.database.entity.Terminal t = it.next();
-                    if (t != null && !TextUtils.isEmpty(t.getDeviceId()) && dbHelper.isTerminalExists(t.getDeviceId())) {
-                        it.remove();
-                        discoveredDeviceIds.remove(t.getDeviceId());
+        if (ioExecutor == null || mainHandler == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        int token = loadSeq.incrementAndGet();
+        List<Terminal> seed = new ArrayList<>(allTerminals);
+        Set<String> seedIds = new HashSet<>(discoveredDeviceIds);
+        ioExecutor.execute(() -> {
+            List<Terminal> next = new ArrayList<>(seed);
+            Set<String> nextIds = new HashSet<>(seedIds);
+            try {
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                if (!next.isEmpty()) {
+                    java.util.Iterator<Terminal> it = next.iterator();
+                    while (it.hasNext()) {
+                        Terminal t = it.next();
+                        if (t != null && !TextUtils.isEmpty(t.getDeviceId()) && dbHelper.isTerminalExists(t.getDeviceId())) {
+                            it.remove();
+                            nextIds.remove(t.getDeviceId());
+                        }
                     }
                 }
-            }
 
-            if (logs != null) {
-                for (LogInfo li : logs) {
-                    String action = li.getAction();
-                    if (action == null) continue;
-                    if (!action.startsWith("接收上行数据:")) continue;
-                    int idx = action.indexOf(":");
-                    if (idx == -1 || idx + 1 >= action.length()) continue;
-                    String hex = action.substring(idx + 1).trim();
-                    LoRaFrameParser.ParsedFrame pf = LoRaFrameParser.parseFrame(hex);
-                    if (pf == null || TextUtils.isEmpty(pf.deviceId)) continue;
+                List<LogInfo> logs = dbHelper.getAllUnboundLogs();
+                if (logs != null) {
+                    for (LogInfo li : logs) {
+                        String action = li.getAction();
+                        if (action == null) continue;
+                        if (!action.startsWith("接收上行数据:")) continue;
+                        int idx = action.indexOf(":");
+                        if (idx == -1 || idx + 1 >= action.length()) continue;
+                        String hex = action.substring(idx + 1).trim();
+                        LoRaFrameParser.ParsedFrame pf = LoRaFrameParser.parseFrame(hex);
+                        if (pf == null || TextUtils.isEmpty(pf.deviceId)) continue;
 
-                    String deviceId = pf.deviceId;
-                    // 只展示“未添加过”的设备；添加过的跳过
-                    if (dbHelper.isTerminalExists(deviceId)) continue;
-                    // 同一设备只展示一次
-                    if (discoveredDeviceIds.contains(deviceId)) continue;
-                    discoveredDeviceIds.add(deviceId);
+                        String deviceId = pf.deviceId;
+                        if (dbHelper.isTerminalExists(deviceId)) continue;
+                        if (nextIds.contains(deviceId)) continue;
+                        nextIds.add(deviceId);
 
-                    com.lora.cn.database.entity.Terminal discoveredTerminal = new com.lora.cn.database.entity.Terminal();
-                    discoveredTerminal.setDeviceId(deviceId);
-                    discoveredTerminal.setDeviceName("终端ID：" + deviceId);
-                    // 在线规则：电源锁关且任一层板在位；否则不认为在线
-                    boolean anyLayerInPlace = pf.stLayer1NotInPlace == 0 || pf.stLayer2NotInPlace == 0 || pf.stLayer3NotInPlace == 0 || pf.stLayer4NotInPlace == 0 || pf.stLayer5NotInPlace == 0;
-                    boolean isOnline = (pf.stPowerLockOn == 0 && anyLayerInPlace);
-                    boolean isAbnormal = (pf.stPowerLockOn == 0) && (pf.stLayer1NotInPlace == 1 || pf.stLayer2NotInPlace == 1 || pf.stLayer3NotInPlace == 1 || pf.stLayer4NotInPlace == 1 || pf.stLayer5NotInPlace == 1);
-                    discoveredTerminal.setStatus(isAbnormal ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST : (isOnline ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE : com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE));
-                    // 同步展示关键指标（电量、电压、RSSI）
-                    discoveredTerminal.setBatteryLevel(pf.batteryLevel);
-                    discoveredTerminal.setBatteryVoltage(pf.batteryVoltage);
-                    discoveredTerminal.setRssi(pf.rssi);
-                    discoveredTerminal.parsedFrame = pf;
-
-                    allTerminals.add(discoveredTerminal);
+                        Terminal discoveredTerminal = new Terminal();
+                        discoveredTerminal.setDeviceId(deviceId);
+                        discoveredTerminal.setDeviceName("终端ID：" + deviceId);
+                        boolean anyLayerInPlace = pf.stLayer1NotInPlace == 0 || pf.stLayer2NotInPlace == 0 || pf.stLayer3NotInPlace == 0 || pf.stLayer4NotInPlace == 0 || pf.stLayer5NotInPlace == 0;
+                        boolean isOnline = (pf.stPowerLockOn == 0 && anyLayerInPlace);
+                        boolean isAbnormal = (pf.stPowerLockOn == 0) && (pf.stLayer1NotInPlace == 1 || pf.stLayer2NotInPlace == 1 || pf.stLayer3NotInPlace == 1 || pf.stLayer4NotInPlace == 1 || pf.stLayer5NotInPlace == 1);
+                        discoveredTerminal.setStatus(isAbnormal ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST : (isOnline ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE : com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE));
+                        discoveredTerminal.setBatteryLevel(pf.batteryLevel);
+                        discoveredTerminal.setBatteryVoltage(pf.batteryVoltage);
+                        discoveredTerminal.setRssi(pf.rssi);
+                        discoveredTerminal.parsedFrame = pf;
+                        next.add(discoveredTerminal);
+                    }
                 }
-            }
+            } catch (Exception ignored) {}
 
-            deviceListAdapter.submitList(allTerminals);
-            deviceListAdapter.notifyDataSetChanged();
-            updateUI();
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getContext(), "加载终端数据失败", Toast.LENGTH_SHORT).show();
-        }
+            List<Terminal> finalNext = next;
+            Set<String> finalNextIds = nextIds;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
+                allTerminals.clear();
+                if (finalNext != null) allTerminals.addAll(finalNext);
+                discoveredDeviceIds.clear();
+                if (finalNextIds != null) discoveredDeviceIds.addAll(finalNextIds);
+                if (deviceListAdapter != null) {
+                    deviceListAdapter.submitList(new ArrayList<>(allTerminals));
+                    deviceListAdapter.notifyDataSetChanged();
+                }
+                updateUI();
+            });
+        });
     }
 
     private void searchTerminals(String searchText) {
@@ -285,53 +313,40 @@ public class DeviceListFragment extends Fragment {
      */
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onUplinkDataReceived(UplinkDataEvent event) {
-        try {
-            // 解析hex数据
-            LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
-
-            android.util.Log.d("DeviceListFragment", "发现新设备: " + new Gson().toJson(frameData));
-
-            if (frameData != null && frameData.deviceId != null) {
+        if (event == null) return;
+        if (ioExecutor == null || mainHandler == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        String hex = event.getHex();
+        ioExecutor.execute(() -> {
+            try {
+                LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(hex);
+                if (frameData == null || TextUtils.isEmpty(frameData.deviceId)) return;
                 String deviceId = frameData.deviceId;
-                
-                // 检查设备ID是否已经在终端表中存在
-                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-                if (!dbHelper.isTerminalExists(deviceId)) {
-                    // 检查是否已经在发现列表中显示
-                    if (!discoveredDeviceIds.contains(deviceId)) {
-                        discoveredDeviceIds.add(deviceId);
-                        
-                        // 创建一个临时的Terminal对象用于显示
-                        Terminal discoveredTerminal = new Terminal();
-                        discoveredTerminal.setDeviceId(deviceId);
-                        discoveredTerminal.setDeviceName("终端ID：" + deviceId);
-                        // 上行事件解析后，按“不是离线/异常即在线”的规则设置状态
-                        boolean isAbnormal = (frameData.evIllegalRemoval == 1);
-                        discoveredTerminal.setStatus(isAbnormal ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST : com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
-                        // 同步展示关键指标（电量、电压、RSSI）
-                        discoveredTerminal.setBatteryLevel(frameData.batteryLevel);
-                        discoveredTerminal.setBatteryVoltage(frameData.batteryVoltage);
-                        discoveredTerminal.setRssi(frameData.rssi);
-                        discoveredTerminal.parsedFrame = frameData;
-                        // 添加到列表并更新UI
-                        allTerminals.add(discoveredTerminal); // 添加到列表顶部
-
-                        updateUI();
-
-                        deviceListAdapter.submitList(allTerminals);
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                if (dbHelper.isTerminalExists(deviceId)) return;
+                mainHandler.post(() -> {
+                    if (!isAdded()) return;
+                    if (discoveredDeviceIds.contains(deviceId)) return;
+                    discoveredDeviceIds.add(deviceId);
+                    Terminal discoveredTerminal = new Terminal();
+                    discoveredTerminal.setDeviceId(deviceId);
+                    discoveredTerminal.setDeviceName("终端ID：" + deviceId);
+                    boolean isAbnormal = (frameData.evIllegalRemoval == 1);
+                    discoveredTerminal.setStatus(isAbnormal ? com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST : com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                    discoveredTerminal.setBatteryLevel(frameData.batteryLevel);
+                    discoveredTerminal.setBatteryVoltage(frameData.batteryVoltage);
+                    discoveredTerminal.setRssi(frameData.rssi);
+                    discoveredTerminal.parsedFrame = frameData;
+                    allTerminals.add(discoveredTerminal);
+                    updateUI();
+                    if (deviceListAdapter != null) {
+                        deviceListAdapter.submitList(new ArrayList<>(allTerminals));
                         deviceListAdapter.notifyDataSetChanged();
-                        // 显示发现新设备的提示
-                        //Toast.makeText(getContext(), "发现新设备: " + deviceId.substring(deviceId.length() - 4), Toast.LENGTH_SHORT).show();
-
-                        android.util.Log.d("DeviceListFragment", "发现新设备: " + deviceId);
                     }
-                } else {
-                    // 设备已存在于终端表中
-                    android.util.Log.d("DeviceListFragment", "设备 " + deviceId + " 已存在于终端表中");
-                }
-            }
-        } catch (Exception e) {
-            android.util.Log.e("DeviceListFragment", "处理上行数据失败", e);
-        }
+                });
+            } catch (Exception ignored) {}
+        });
     }
 }

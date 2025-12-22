@@ -69,12 +69,23 @@ public class TerminalListFragment extends Fragment {
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
     private android.os.Handler autoRefreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private final java.util.concurrent.atomic.AtomicInteger loadSeq = new java.util.concurrent.atomic.AtomicInteger();
+    private final Runnable terminalRefreshDebounceRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                refreshTerminalsAndStatus();
+                evaluateAlertOverlay();
+                if (adapter != null) adapter.notifyDataSetChanged();
+            } catch (Exception ignored) {}
+        }
+    };
     private final Runnable autoRefreshRunnable = new Runnable() {
         @Override
         public void run() {
             try {
-                loadTerminals();
-                applyCurrentFilters();
+                refreshTerminalsAndStatus();
             } finally {
                 autoRefreshHandler.postDelayed(this, 120000);
             }
@@ -112,6 +123,9 @@ public class TerminalListFragment extends Fragment {
 
         // 初始化数据库管理器
         databaseManager = DatabaseManager.getInstance(requireContext());
+        if (ioExecutor == null) {
+            ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        }
 
         // 初始化用户角色ID
         long userId = SPUtils.getInstance().getLong("current_user_id", -1);
@@ -281,9 +295,6 @@ public class TerminalListFragment extends Fragment {
     }
 
     private void initTerminalStatus() {
-        // 从数据库获取真实的终端统计数据
-        updateTerminalStatusFromDatabase();
-
         // 设置状态RecyclerView
         //LinearLayoutManager statusLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 6);
@@ -402,68 +413,7 @@ public class TerminalListFragment extends Fragment {
      * 从数据库更新终端状态统计
      */
     private void updateTerminalStatusFromDatabase() {
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            List<com.lora.cn.ui.model.Terminal> allTerminals = dbHelper.getAllTerminals();
-
-            // 统计各种状态的终端数量
-            int favoriteCount = 0;
-            int onlineCount = 0;
-            int normalTakenCount = 0;
-            int abnormalLostCount = 0;
-            int lowBatteryCount = 0;
-            int offlineCount = 0;
-
-            for (com.lora.cn.ui.model.Terminal terminal : allTerminals) {
-
-                LogUtils.e("----.>>>>>>. " + new Gson().toJson(terminal));
-
-                // 统计收藏数量
-                if (terminal.isFavorite()) {
-                    favoriteCount++;
-                }
-                
-                int statusCode = terminal.getStatus();
-                if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE) {
-                    onlineCount++;
-                } else if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    offlineCount++;
-                } else if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
-                    abnormalLostCount++;
-                } else if (statusCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN) {
-                    normalTakenCount++;
-                }
-
-                // 统计电量状态（离线优先，在线时按阈值判断低电量）
-                int batteryLevel = terminal.getBatteryLevel();
-                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                if (statusCode != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE && batteryLevel <= lowTh) {
-                    lowBatteryCount++;
-                }
-            }
-
-            // 创建状态列表
-            List<TerminalStatus> statusList = new ArrayList<>();
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_IMPORTANT, R.mipmap.ic_coll, favoriteCount));
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ONLINE, R.mipmap.ic_xh_3, onlineCount));
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_NORMAL_TAKEN, R.mipmap.ic_blue_right, normalTakenCount));
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ABNORMAL_LOST, R.mipmap.ic_ds, abnormalLostCount));
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_LOW_BATTERY, R.mipmap.ic_red_sd, lowBatteryCount));
-            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_OFFLINE, R.mipmap.ic_xh_no, offlineCount));
-
-            // 更新适配器数据
-            if (terminalStatusAdapter != null) {
-                terminalStatusAdapter.submitList(statusList);
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "更新终端状态统计失败", e);
-            // 出错时使用默认数据
-            List<TerminalStatus> statusList = TerminalStatusConstants.getDefaultStatusList();
-            if (terminalStatusAdapter != null) {
-                terminalStatusAdapter.submitList(statusList);
-            }
-        }
+        refreshTerminalsAndStatus();
     }
 
     private void initTerminalList() {
@@ -485,8 +435,7 @@ public class TerminalListFragment extends Fragment {
         super.onResume();
         try {
             // 返回页面时刷新终端列表和状态统计，确保展示最新添加的设备
-            loadTerminals();
-            updateTerminalStatusFromDatabase();
+            refreshTerminalsAndStatus();
             autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
             autoRefreshHandler.postDelayed(autoRefreshRunnable, 120000);
             evaluateAlertOverlay();
@@ -498,10 +447,8 @@ public class TerminalListFragment extends Fragment {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
         try {
-            loadTerminals();
-            updateTerminalStatusFromDatabase();
-            evaluateAlertOverlay();
-            if (adapter != null) adapter.notifyDataSetChanged();
+            autoRefreshHandler.removeCallbacks(terminalRefreshDebounceRunnable);
+            autoRefreshHandler.postDelayed(terminalRefreshDebounceRunnable, 300);
         } catch (Exception ignored) {}
     }
 
@@ -668,57 +615,33 @@ public class TerminalListFragment extends Fragment {
 
     private void onTerminalClick(int position, Terminal terminal) {
         try {
-            // 从数据库获取完整的终端信息
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            com.lora.cn.ui.model.Terminal dbTerminal = null;
-
-            // 通过终端ID查找数据库中的终端信息
-            List<com.lora.cn.ui.model.Terminal> allTerminals = dbHelper.getAllTerminals();
-            for (com.lora.cn.ui.model.Terminal t : allTerminals) {
-                if (t.getTerminalId().equals(terminal.getTerminalId())) {
-                    dbTerminal = t;
-                    break;
-                }
+            if (terminal == null || TextUtils.isEmpty(terminal.getTerminalId())) {
+                Toast.makeText(getContext(), "终端ID为空，无法打开详情", Toast.LENGTH_SHORT).show();
+                return;
             }
 
-            if (dbTerminal != null) {
-                // 创建TerminalInfo对象用于显示详情
-                LoRaProtocolParser.TerminalInfo terminalInfo = new LoRaProtocolParser.TerminalInfo();
-                terminalInfo.deviceId = dbTerminal.getTerminalId();
-                terminalInfo.deviceName = dbTerminal.getTerminalName();
-                terminalInfo.department = dbTerminal.getDepartment();
-                terminalInfo.location = dbTerminal.getLocation();
-                terminalInfo.signalStrength = dbTerminal.getSignalStrength();
-                terminalInfo.batteryLevel = dbTerminal.getBatteryLevel();
-                terminalInfo.status = dbTerminal.getStatus();
-                terminalInfo.timestamp = System.currentTimeMillis();
-                terminalInfo.payloadHex = ""; // 可以从日志中获取最新的payload
-
-                // 导航到终端详情Fragment（根据terminalId从数据库加载）
-                com.lora.cn.ui.fragment.TerminalDetailFragment fragment = com.lora.cn.ui.fragment.TerminalDetailFragment.newInstance(dbTerminal.getTerminalId());
-                if (getActivity() != null) {
-                    if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
-                        ((com.lora.cn.ui.activity.MainActivity) getActivity()).showDeviceList();
-                    }
-                    android.app.Activity a = getActivity();
-                    android.view.View container = a.findViewById(R.id.fragment_device_list_container);
-                    if (container != null) {
-                        container.setVisibility(android.view.View.VISIBLE);
-                        android.view.View rvTabs = a.findViewById(R.id.rv_menu_tabs);
-                        if (rvTabs != null) rvTabs.setVisibility(android.view.View.INVISIBLE);
-                        android.view.View vp = a.findViewById(R.id.view_pager);
-                        if (vp != null) vp.setVisibility(android.view.View.GONE);
-                        ((androidx.appcompat.app.AppCompatActivity)a).getSupportFragmentManager()
-                                .beginTransaction()
-                                .replace(R.id.fragment_device_list_container, fragment)
-                                .addToBackStack("terminal_detail")
-                                .commit();
-                    } else {
-                        Toast.makeText(getContext(), "未找到详情容器", Toast.LENGTH_SHORT).show();
-                    }
+            com.lora.cn.ui.fragment.TerminalDetailFragment fragment =
+                    com.lora.cn.ui.fragment.TerminalDetailFragment.newInstance(terminal.getTerminalId());
+            if (getActivity() != null) {
+                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).showOverlayOnly();
                 }
-            } else {
-                Toast.makeText(getContext(), "未找到终端详细信息", Toast.LENGTH_SHORT).show();
+                android.app.Activity a = getActivity();
+                android.view.View container = a.findViewById(R.id.fragment_device_list_container);
+                if (container != null) {
+                    container.setVisibility(android.view.View.VISIBLE);
+                    android.view.View rvTabs = a.findViewById(R.id.rv_menu_tabs);
+                    if (rvTabs != null) rvTabs.setVisibility(android.view.View.INVISIBLE);
+                    android.view.View vp = a.findViewById(R.id.view_pager);
+                    if (vp != null) vp.setVisibility(android.view.View.GONE);
+                    ((androidx.appcompat.app.AppCompatActivity) a).getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.fragment_device_list_container, fragment)
+                            .addToBackStack("terminal_detail")
+                            .commit();
+                } else {
+                    Toast.makeText(getContext(), "未找到详情容器", Toast.LENGTH_SHORT).show();
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "显示终端详情失败", e);
@@ -773,104 +696,107 @@ public class TerminalListFragment extends Fragment {
      * 加载终端列表数据
      */
     private void loadTerminals() {
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-            List<Terminal> terminals = dbHelper.getAllTerminals();
-            Log.d(TAG, "loadTerminals fetched size=" + (terminals != null ? terminals.size() : -1));
+        refreshTerminalsAndStatus();
+    }
 
-            // 设置终端列表RecyclerView（如果还没有设置）
-            if (adapter == null) {
-                GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 4);
-                terminalRecycle.setLayoutManager(terminalLayoutManager);
-
-                adapter = new TerminalAdapter();
-                adapter.setOnFavoriteClickListener(new TerminalAdapter.OnFavoriteClickListener() {
-                    @Override
-                    public void onFavoriteClick(Terminal terminal, boolean isFavorite) {
-                        try {
-                            // 更新数据库中的收藏状态
-                            DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-                            int result = dbHelper.updateTerminalFavoriteStatus(terminal.getTerminalId(), isFavorite);
-
-                            // 记录收藏状态变更日志
-                            com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                            logInfo.setTerminalId(terminal.getTerminalId());
-                            logInfo.setTerminalName(terminal.getTerminalName());
-                            logInfo.setDeviceId(terminal.getTerminalId());
-                            logInfo.setStatusCode(0);
-                            logInfo.setOperator("");
-                            logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-                            logInfo.setOperationTime("");
-                            logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-
-                            dbHelper.addLog(logInfo);
-
-                            // 更新终端状态统计与列表展示
-                            updateTerminalStatusFromDatabase();
-                            loadTerminals();
-                        } catch (Exception e) {
-                            Log.e(TAG, "更新收藏状态失败", e);
-
-                            // 记录异常日志
-                            try {
-                                DatabaseHelper dbHelper = DatabaseHelper.getInstance(getContext());
-                                com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
-                                logInfo.setTerminalId(terminal.getTerminalId());
-                                logInfo.setTerminalName(terminal.getTerminalName());
-                                logInfo.setDeviceId(terminal.getTerminalId());
-                                logInfo.setStatusCode(0);
-                                logInfo.setOperator("");
-                                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                                String now = sdf.format(new java.util.Date());
-                                logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
-                                logInfo.setOperationTime("");
-                                logInfo.setCreateTime(now);
-
-                                dbHelper.addLog(logInfo);
-                            } catch (Exception logException) {
-                                Log.e(TAG, "记录日志失败", logException);
-                            }
-                        }
-                    }
-                });
-                terminalRecycle.setAdapter(adapter);
-
-                // 设置终端点击事件监听器
-                adapter.setOnItemClickListener((adapter, view, position) -> {
-                    // 查看终端详情权限（修正为正确的权限码：terminal_detail）
-                    if (hasPermission("terminal_detail")) {
-                        Terminal terminal = (Terminal) adapter.getItem(position);
-                        onTerminalClick(position, terminal);
-                    } else {
-                        Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-            if (terminals != null && !terminals.isEmpty()) {
-                // 转换数据库终端数据为UI显示格式
-                allDisplayTerminals = convertToDisplayTerminals(terminals);
-                Log.d(TAG, "convertToDisplayTerminals size=" + allDisplayTerminals.size());
-                applyCurrentFilters();
+    private void ensureTerminalListAdapter() {
+        if (adapter != null) return;
+        if (terminalRecycle == null) return;
+        GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 4);
+        terminalRecycle.setLayoutManager(terminalLayoutManager);
+        adapter = new TerminalAdapter();
+        adapter.setOnFavoriteClickListener((terminal, isFavorite) -> {
+            if (terminal == null || TextUtils.isEmpty(terminal.getTerminalId())) return;
+            if (ioExecutor == null) return;
+            android.content.Context ctx = getContext();
+            if (ctx == null) return;
+            android.content.Context appCtx = ctx.getApplicationContext();
+            ioExecutor.execute(() -> {
+                try {
+                    DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                    dbHelper.updateTerminalFavoriteStatus(terminal.getTerminalId(), isFavorite);
+                    com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
+                    logInfo.setTerminalId(terminal.getTerminalId());
+                    logInfo.setTerminalName(terminal.getTerminalName());
+                    logInfo.setDeviceId(terminal.getTerminalId());
+                    logInfo.setStatusCode(0);
+                    logInfo.setOperator("");
+                    logInfo.setAction(isFavorite ? "收藏终端" : "取消收藏");
+                    logInfo.setOperationTime("");
+                    logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
+                    dbHelper.addLog(logInfo);
+                } catch (Exception e) {
+                    Log.e(TAG, "更新收藏状态失败", e);
+                }
+                autoRefreshHandler.post(this::refreshTerminalsAndStatus);
+            });
+        });
+        terminalRecycle.setAdapter(adapter);
+        adapter.setOnItemClickListener((adapter, view, position) -> {
+            if (hasPermission("terminal_detail")) {
+                Terminal terminal = (Terminal) adapter.getItem(position);
+                onTerminalClick(position, terminal);
             } else {
-                // 如果数据库中没有数据，显示空列表
-                adapter.submitList(new ArrayList<>());
-                Log.d(TAG, "loadTerminals no data -> submit empty list");
+                Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
             }
-        } catch (Exception e) {
-            Log.e(TAG, "加载终端列表失败", e);
-            // 出错时显示空列表
-            if (adapter != null) {
-                adapter.submitList(new ArrayList<>());
-                Log.d(TAG, "loadTerminals error -> submit empty list");
+        });
+    }
+
+    private void refreshTerminalsAndStatus() {
+        if (ioExecutor == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        int token = loadSeq.incrementAndGet();
+        ioExecutor.execute(() -> {
+            List<Terminal> terminals = null;
+            try {
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                terminals = dbHelper.getAllTerminals();
+            } catch (Exception e) {
+                Log.e(TAG, "获取终端列表失败", e);
             }
-        }
+
+            java.util.Map<Long, String> categoryNameById = new java.util.HashMap<>();
+            try {
+                DatabaseManager dm = DatabaseManager.getInstance(appCtx);
+                List<com.lora.cn.database.entity.Category> categories = dm.getAllCategories();
+                if (categories != null) {
+                    for (com.lora.cn.database.entity.Category c : categories) {
+                        if (c == null) continue;
+                        categoryNameById.put(c.getCategoryId(), c.getCategoryName());
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            List<Terminal> displayTerminals = new ArrayList<>();
+            if (terminals != null && !terminals.isEmpty()) {
+                try {
+                    displayTerminals = convertToDisplayTerminals(terminals, categoryNameById);
+                } catch (Exception e) {
+                    Log.e(TAG, "转换终端列表失败", e);
+                }
+            }
+            List<TerminalStatus> statusList = buildStatusList(terminals);
+
+            List<Terminal> finalDisplayTerminals = displayTerminals;
+            autoRefreshHandler.post(() -> {
+                if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
+                ensureTerminalListAdapter();
+                if (terminalStatusAdapter != null) {
+                    terminalStatusAdapter.submitList(statusList);
+                }
+                allDisplayTerminals = finalDisplayTerminals != null ? finalDisplayTerminals : new ArrayList<>();
+                applyCurrentFilters();
+            });
+        });
     }
 
     /**
      * 将数据库终端数据转换为UI显示格式
      */
-    private List<Terminal> convertToDisplayTerminals(List<Terminal> dbTerminals) {
+    private List<Terminal> convertToDisplayTerminals(List<Terminal> dbTerminals, java.util.Map<Long, String> categoryNameById) {
         List<Terminal> displayTerminals = new ArrayList<>();
 
         for (Terminal dbTerminal : dbTerminals) {
@@ -881,19 +807,22 @@ public class TerminalListFragment extends Fragment {
             displayTerminal.setTerminalId(dbTerminal.getTerminalId());
             displayTerminal.setTerminalName(dbTerminal.getTerminalName());
             displayTerminal.setName(dbTerminal.getTerminalName()); // 显示名称使用终端名称
+            displayTerminal.setDepartmentId(dbTerminal.getDepartmentId());
+            displayTerminal.setRoomId(dbTerminal.getRoomId());
+            displayTerminal.setNursingGroupId(dbTerminal.getNursingGroupId());
+            displayTerminal.setOtherId(dbTerminal.getOtherId());
+            displayTerminal.setExtension(dbTerminal.getExtension());
             // 科室与病房：优先使用字符串；为空则根据ID查询分类名称
             String dept = dbTerminal.getDepartment();
             if (TextUtils.isEmpty(dept) && dbTerminal.getDepartmentId() > 0) {
                 try {
-                    com.lora.cn.database.entity.Category c = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getDepartmentId());
-                    if (c != null) dept = c.getCategoryName();
+                    if (categoryNameById != null) dept = categoryNameById.get(dbTerminal.getDepartmentId());
                 } catch (Exception ignored) {}
             }
             String room = dbTerminal.getLocation();
             if (TextUtils.isEmpty(room) && dbTerminal.getRoomId() > 0) {
                 try {
-                    com.lora.cn.database.entity.Category c2 = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getRoomId());
-                    if (c2 != null) room = c2.getCategoryName();
+                    if (categoryNameById != null) room = categoryNameById.get(dbTerminal.getRoomId());
                 } catch (Exception ignored) {}
             }
             displayTerminal.setRssi(dbTerminal.getRssi());
@@ -932,6 +861,62 @@ public class TerminalListFragment extends Fragment {
         }
 
         return displayTerminals;
+    }
+
+    private List<TerminalStatus> buildStatusList(List<Terminal> allTerminals) {
+        try {
+            int favoriteCount = 0;
+            int onlineCount = 0;
+            int normalTakenCount = 0;
+            int abnormalLostCount = 0;
+            int lowBatteryCount = 0;
+            int offlineCount = 0;
+
+            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            if (allTerminals != null) {
+                for (Terminal terminal : allTerminals) {
+                    if (terminal == null) continue;
+                    if (terminal.isFavorite()) favoriteCount++;
+
+                    int statusCode = terminal.getStatus();
+                    if (statusCode == TerminalStatusConstants.CODE_ONLINE) onlineCount++;
+                    else if (statusCode == TerminalStatusConstants.CODE_OFFLINE) offlineCount++;
+                    else if (statusCode == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) abnormalLostCount++;
+                    else if (statusCode == TerminalStatusConstants.CODE_NORMAL_TAKEN) normalTakenCount++;
+
+                    int batteryLevel = terminal.getBatteryLevel();
+                    if (statusCode != TerminalStatusConstants.CODE_OFFLINE && batteryLevel <= lowTh) {
+                        lowBatteryCount++;
+                    }
+                }
+            }
+
+            List<TerminalStatus> statusList = new ArrayList<>();
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_IMPORTANT, R.mipmap.ic_coll, favoriteCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ONLINE, R.mipmap.ic_xh_3, onlineCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_NORMAL_TAKEN, R.mipmap.ic_blue_right, normalTakenCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ABNORMAL_LOST, R.mipmap.ic_ds, abnormalLostCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_LOW_BATTERY, R.mipmap.ic_red_sd, lowBatteryCount));
+            statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_OFFLINE, R.mipmap.ic_xh_no, offlineCount));
+            return statusList;
+        } catch (Exception e) {
+            Log.e(TAG, "构建状态统计失败", e);
+            return TerminalStatusConstants.getDefaultStatusList();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        try {
+            autoRefreshHandler.removeCallbacks(terminalRefreshDebounceRunnable);
+        } catch (Exception ignored) {}
+        if (ioExecutor != null) {
+            try {
+                ioExecutor.shutdownNow();
+            } catch (Exception ignored) {}
+            ioExecutor = null;
+        }
+        super.onDestroy();
     }
 
     private void applyFilters() {
@@ -1083,7 +1068,6 @@ public class TerminalListFragment extends Fragment {
         currentPage = 0;
         submitCurrentPage();
         updatePaginationControls();
-        Log.d(TAG, "submitCurrentPage with list size=" + list.size());
     }
 
     private void submitCurrentPage() {

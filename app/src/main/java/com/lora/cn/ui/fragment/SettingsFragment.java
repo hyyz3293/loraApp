@@ -170,7 +170,7 @@ public class SettingsFragment extends Fragment {
                 }
                 break;
             case "维护列表":
-                targetFragment = MaintenanceListFragment.newInstance();
+                targetFragment = MaintenanceHomeListFragment.newInstance();
                 break;
             case "自动返回首页时间":
                 if (hasPermission("setting")) {

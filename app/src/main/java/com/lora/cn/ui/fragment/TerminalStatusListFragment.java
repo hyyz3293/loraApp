@@ -54,12 +54,14 @@ public class TerminalStatusListFragment extends Fragment {
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
     private android.os.Handler autoRefreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private android.os.Handler mainHandler;
+    private final java.util.concurrent.atomic.AtomicInteger loadSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final Runnable autoRefreshRunnable = new Runnable() {
         @Override
         public void run() {
             try {
-                loadTerminals();
-                applyCurrentFilters();
+                refreshTerminals();
             } finally {
                 autoRefreshHandler.postDelayed(this, 120000);
             }
@@ -74,6 +76,8 @@ public class TerminalStatusListFragment extends Fragment {
             statusFilterTitle = getArguments().getString("status_filter_title", null);
         }
         databaseManager = DatabaseManager.getInstance(requireContext());
+        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         long userId = SPUtils.getInstance().getLong("current_user_id", -1);
         if (userId != -1) {
             User user = databaseManager.getUserById(userId);
@@ -90,6 +94,16 @@ public class TerminalStatusListFragment extends Fragment {
             Toast.makeText(requireContext(), "您没有查看终端列表的权限", Toast.LENGTH_SHORT).show();
         }
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        try {
+            if (ioExecutor != null) ioExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        ioExecutor = null;
+        mainHandler = null;
+        super.onDestroyView();
     }
 
     private void initViews(View view) {
@@ -234,27 +248,15 @@ public class TerminalStatusListFragment extends Fragment {
     }
 
     private void initTerminalList() {
-        loadTerminals();
-        applyCurrentFilters();
+        refreshTerminals();
     }
 
     private void loadTerminals() {
-        try {
-            DatabaseHelper dbHelper = DatabaseHelper.getInstance(requireContext());
-            List<Terminal> terminals = dbHelper.getAllTerminals();
-        if (terminals != null && !terminals.isEmpty()) {
-            allDisplayTerminals.clear();
-            allDisplayTerminals.addAll(convertToDisplayTerminals(terminals));
-        } else {
-            adapter.submitList(new ArrayList<>());
-        }
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "加载终端失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+        refreshTerminals();
     }
 
     /** 将数据库终端数据转换为UI显示格式（与首页一致） */
-    private List<Terminal> convertToDisplayTerminals(List<Terminal> dbTerminals) {
+    private List<Terminal> convertToDisplayTerminals(List<Terminal> dbTerminals, java.util.Map<Long, String> categoryNameById) {
         List<Terminal> displayTerminals = new ArrayList<>();
         for (Terminal dbTerminal : dbTerminals) {
             Terminal displayTerminal = new Terminal();
@@ -262,18 +264,21 @@ public class TerminalStatusListFragment extends Fragment {
             displayTerminal.setTerminalId(dbTerminal.getTerminalId());
             displayTerminal.setTerminalName(dbTerminal.getTerminalName());
             displayTerminal.setName(dbTerminal.getTerminalName());
+            displayTerminal.setDepartmentId(dbTerminal.getDepartmentId());
+            displayTerminal.setRoomId(dbTerminal.getRoomId());
+            displayTerminal.setNursingGroupId(dbTerminal.getNursingGroupId());
+            displayTerminal.setOtherId(dbTerminal.getOtherId());
+            displayTerminal.setExtension(dbTerminal.getExtension());
             String dept = dbTerminal.getDepartment();
             if (android.text.TextUtils.isEmpty(dept) && dbTerminal.getDepartmentId() > 0) {
                 try {
-                    com.lora.cn.database.entity.Category c = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getDepartmentId());
-                    if (c != null) dept = c.getCategoryName();
+                    if (categoryNameById != null) dept = categoryNameById.get(dbTerminal.getDepartmentId());
                 } catch (Exception ignored) {}
             }
             String room = dbTerminal.getLocation();
             if (android.text.TextUtils.isEmpty(room) && dbTerminal.getRoomId() > 0) {
                 try {
-                    com.lora.cn.database.entity.Category c2 = DatabaseManager.getInstance(getContext()).getCategoryById(dbTerminal.getRoomId());
-                    if (c2 != null) room = c2.getCategoryName();
+                    if (categoryNameById != null) room = categoryNameById.get(dbTerminal.getRoomId());
                 } catch (Exception ignored) {}
             }
             displayTerminal.setDepartment(dept);
@@ -293,6 +298,49 @@ public class TerminalStatusListFragment extends Fragment {
             displayTerminals.add(displayTerminal);
         }
         return displayTerminals;
+    }
+
+    private void refreshTerminals() {
+        if (ioExecutor == null || mainHandler == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        int token = loadSeq.incrementAndGet();
+        ioExecutor.execute(() -> {
+            List<Terminal> terminals = null;
+            try {
+                DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                terminals = dbHelper.getAllTerminals();
+            } catch (Exception ignored) {}
+
+            java.util.Map<Long, String> categoryNameById = new java.util.HashMap<>();
+            try {
+                DatabaseManager dm = DatabaseManager.getInstance(appCtx);
+                List<com.lora.cn.database.entity.Category> categories = dm.getAllCategories();
+                if (categories != null) {
+                    for (com.lora.cn.database.entity.Category c : categories) {
+                        if (c == null) continue;
+                        categoryNameById.put(c.getCategoryId(), c.getCategoryName());
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            List<Terminal> display = new ArrayList<>();
+            if (terminals != null && !terminals.isEmpty()) {
+                try {
+                    display = convertToDisplayTerminals(terminals, categoryNameById);
+                } catch (Exception ignored) {}
+            }
+
+            List<Terminal> finalDisplay = display;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
+                allDisplayTerminals.clear();
+                if (finalDisplay != null) allDisplayTerminals.addAll(finalDisplay);
+                applyCurrentFilters();
+            });
+        });
     }
 
     private void onTerminalClick(int position, Terminal terminal) {
@@ -401,6 +449,7 @@ public class TerminalStatusListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        refreshTerminals();
         autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
         autoRefreshHandler.postDelayed(autoRefreshRunnable, 120000);
     }

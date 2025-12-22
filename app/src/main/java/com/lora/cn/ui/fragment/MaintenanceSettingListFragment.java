@@ -37,7 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MaintenanceListFragment extends Fragment {
+public class MaintenanceSettingListFragment extends Fragment {
 
     private static final String ARG_TERMINAL_ID = "arg_terminal_id";
 
@@ -46,17 +46,13 @@ public class MaintenanceListFragment extends Fragment {
     private DatabaseHelper db;
     private long currentUserId = -1;
     private String currentUserName = "";
-    private String filterTerminalId = null;
+    private String terminalId;
     private ExecutorService ioExecutor;
     private Handler mainHandler;
     private final AtomicInteger loadSeq = new AtomicInteger(0);
 
-    public static MaintenanceListFragment newInstance() {
-        return new MaintenanceListFragment();
-    }
-
-    public static MaintenanceListFragment newInstance(String terminalId) {
-        MaintenanceListFragment f = new MaintenanceListFragment();
+    public static MaintenanceSettingListFragment newInstance(String terminalId) {
+        MaintenanceSettingListFragment f = new MaintenanceSettingListFragment();
         Bundle b = new Bundle();
         b.putString(ARG_TERMINAL_ID, terminalId);
         f.setArguments(b);
@@ -66,9 +62,8 @@ public class MaintenanceListFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        filterTerminalId = getArguments() != null ? getArguments().getString(ARG_TERMINAL_ID, null) : null;
-        int layoutRes = TextUtils.isEmpty(filterTerminalId) ? R.layout.fragment_maintenance_list_home : R.layout.fragment_maintenance_list;
-        View v = inflater.inflate(layoutRes, container, false);
+        terminalId = getArguments() != null ? getArguments().getString(ARG_TERMINAL_ID, null) : null;
+        View v = inflater.inflate(R.layout.fragment_maintenance_list, container, false);
         rv = v.findViewById(R.id.rv_maintenance);
         View btnAdd = v.findViewById(R.id.btn_add_maintenance);
         View btnBack = v.findViewById(R.id.back);
@@ -80,7 +75,7 @@ public class MaintenanceListFragment extends Fragment {
         if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new MaintenanceInfoAdapter(TextUtils.isEmpty(filterTerminalId) ? MaintenanceInfoAdapter.Mode.HOME : MaintenanceInfoAdapter.Mode.SETTING);
+        adapter = new MaintenanceInfoAdapter(MaintenanceInfoAdapter.Mode.SETTING);
         adapter.setOnConfirmClickListener(this::showConfirmDialog);
         adapter.setOnViewClickListener(this::showViewDialog);
         adapter.setOnEditClickListener(this::showEditDialog);
@@ -95,7 +90,9 @@ public class MaintenanceListFragment extends Fragment {
             });
         }
         if (btnAdd != null) {
-            btnAdd.setOnClickListener(view -> showAddDialog());
+            btnAdd.setOnClickListener(view -> {
+                if (!TextUtils.isEmpty(terminalId)) showAddDialogForTerminal(terminalId);
+            });
         }
 
         loadList();
@@ -124,19 +121,16 @@ public class MaintenanceListFragment extends Fragment {
         ioExecutor.execute(() -> {
             List<MaintenanceInfo> list;
             try {
-                if (!TextUtils.isEmpty(filterTerminalId)) {
-                    list = db.getMaintenanceRecordsByTerminal(filterTerminalId, currentUserId);
-                } else {
-                    list = db.getMaintenanceRecords(currentUserId);
-                }
+                if (TextUtils.isEmpty(terminalId)) list = new ArrayList<>();
+                else list = db.getMaintenanceRecordsByTerminal(terminalId, currentUserId);
                 if (list == null) list = new ArrayList<>();
             } catch (Exception e) {
                 list = null;
             }
             List<MaintenanceInfo> finalList = list;
             mainHandler.post(() -> {
-                if (token != loadSeq.get()) return;
                 if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
                 if (finalList == null) {
                     Toast.makeText(requireContext(), "加载维护列表失败", Toast.LENGTH_SHORT).show();
                     return;
@@ -145,116 +139,6 @@ public class MaintenanceListFragment extends Fragment {
                 adapter.notifyDataSetChanged();
             });
         });
-    }
-
-    private void showAddDialog() {
-        if (!TextUtils.isEmpty(filterTerminalId)) {
-            showAddDialogForTerminal(filterTerminalId);
-            return;
-        }
-
-        if (ioExecutor == null || mainHandler == null) return;
-        ioExecutor.execute(() -> {
-            List<com.lora.cn.ui.model.Terminal> loaded;
-            try {
-                loaded = db.getAllTerminals();
-            } catch (Exception e) {
-                loaded = null;
-            }
-            final List<com.lora.cn.ui.model.Terminal> terminals = (loaded != null) ? loaded : new ArrayList<>();
-            mainHandler.post(() -> {
-                if (!isAdded()) return;
-                if (terminals.isEmpty()) {
-                    Toast.makeText(requireContext(), "暂无终端可选", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                showAddDialogWithTerminals(terminals);
-            });
-        });
-    }
-
-    private void showAddDialogWithTerminals(List<com.lora.cn.ui.model.Terminal> terminals) {
-
-        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_maintenance, null);
-        Spinner spinner = view.findViewById(R.id.spinner_terminal);
-        EditText etContent = view.findViewById(R.id.et_content);
-        TextView tvTime = view.findViewById(R.id.tv_maintenance_time);
-
-        List<String> display = new ArrayList<>();
-        for (com.lora.cn.ui.model.Terminal t : terminals) {
-            String id = t.getTerminalId() == null ? "" : t.getTerminalId();
-            String name = t.getTerminalName() == null ? "" : t.getTerminalName();
-            display.add(id + " - " + name);
-        }
-        android.widget.ArrayAdapter<String> spinAdapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, display);
-        spinAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinner.setAdapter(spinAdapter);
-
-        if (etContent != null && TextUtils.isEmpty(etContent.getText())) {
-            etContent.setText("给终端更换电池");
-            etContent.setSelection(etContent.getText().length());
-        }
-        if (tvTime != null) {
-            tvTime.setText(nowStr());
-            tvTime.setOnClickListener(v -> pickDateTimeInto(tvTime));
-        }
-
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setTitle("新增维护")
-                .setView(view)
-                .setPositiveButton("保存", null)
-                .setNegativeButton("取消", null)
-                .create();
-
-        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            int idx = spinner.getSelectedItemPosition();
-            if (idx < 0 || idx >= terminals.size()) {
-                Toast.makeText(requireContext(), "请选择终端", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String content = etContent != null ? etContent.getText().toString().trim() : "";
-            if (TextUtils.isEmpty(content)) {
-                Toast.makeText(requireContext(), "请输入维护内容", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            com.lora.cn.ui.model.Terminal t = terminals.get(idx);
-            MaintenanceInfo mi = new MaintenanceInfo();
-            mi.setTerminalId(t.getTerminalId());
-            mi.setTerminalName(t.getTerminalName());
-            String group = t.getDepartment();
-            if (TextUtils.isEmpty(group)) group = t.getLocation();
-            mi.setTerminalGroup(group);
-            mi.setStatus(0);
-            mi.setContent(content);
-            mi.setCreateUserId(currentUserId);
-            mi.setCreateUser(currentUserName);
-            String createTime = tvTime != null && tvTime.getText() != null ? tvTime.getText().toString().trim() : "";
-            mi.setCreateTime(TextUtils.isEmpty(createTime) ? nowStr() : createTime);
-            mi.setHandleUserId(0);
-            mi.setHandleUser("");
-            mi.setHandleTime("");
-            if (ioExecutor == null || mainHandler == null) return;
-            ioExecutor.execute(() -> {
-                long r;
-                try {
-                    r = db.addMaintenanceRecord(mi);
-                } catch (Exception e) {
-                    r = -1;
-                }
-                long finalR = r;
-                mainHandler.post(() -> {
-                    if (!isAdded()) return;
-                    if (finalR > 0) {
-                        dialog.dismiss();
-                        loadList();
-                        Toast.makeText(requireContext(), "已添加", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(requireContext(), "添加失败", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            });
-        }));
-        dialog.show();
     }
 
     private void showAddDialogForTerminal(String terminalId) {
@@ -278,7 +162,6 @@ public class MaintenanceListFragment extends Fragment {
     }
 
     private void showAddDialogForTerminalInternal(com.lora.cn.ui.model.Terminal t) {
-
         View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_maintenance, null);
         Spinner spinner = view.findViewById(R.id.spinner_terminal);
         View terminalLabel = view.findViewById(R.id.tv_select_terminal_label);
@@ -461,19 +344,7 @@ public class MaintenanceListFragment extends Fragment {
 
     private void showViewDialog(MaintenanceInfo item) {
         if (item == null) return;
-        String msg;
-        if (!TextUtils.isEmpty(filterTerminalId)) {
-            msg = item.getContent() == null ? "" : item.getContent();
-        } else {
-            StringBuilder sb = new StringBuilder();
-            if (!TextUtils.isEmpty(item.getContent())) sb.append(item.getContent());
-            if (!TextUtils.isEmpty(item.getHandleUser()) || !TextUtils.isEmpty(item.getHandleTime())) {
-                if (sb.length() > 0) sb.append("\n\n");
-                if (!TextUtils.isEmpty(item.getHandleUser())) sb.append("维护人：").append(item.getHandleUser()).append("\n");
-                if (!TextUtils.isEmpty(item.getHandleTime())) sb.append("维护时间：").append(item.getHandleTime());
-            }
-            msg = sb.toString();
-        }
+        String msg = item.getContent() == null ? "" : item.getContent();
         new AlertDialog.Builder(requireContext())
                 .setTitle("维护内容")
                 .setMessage(msg)
@@ -506,3 +377,4 @@ public class MaintenanceListFragment extends Fragment {
         dp.show();
     }
 }
+
