@@ -65,30 +65,33 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseHelper databaseHelper;
     private static final long TEST_INTERVAL = 10 * 1000; // 30秒
     private android.content.BroadcastReceiver brokerReadyReceiver;
-//    private android.os.Handler testUplinkHandler;
-//    private final Runnable testUplinkRunnable = new Runnable() {
-//        @Override
-//        public void run() {
-//            try {
-//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-//                String time = sdf.format(new Date());
-//                String hex = generateTestUplinkHex();
-//
-//                long result = databaseHelper.addUplinkLog(time, hex);
-//                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
-//
-//                UplinkDataEvent event = new UplinkDataEvent(time, hex);
-//                EventBus.getDefault().post(event);
-//                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
-//            } catch (Exception e) {
-//                Log.e(TAG, "自动测试上行失败", e);
-//            } finally {
-//                if (testUplinkHandler != null) {
-//                    testUplinkHandler.postDelayed(this, TEST_INTERVAL);
-//                }
-//            }
-//        }
-//    };
+    private android.os.Handler testUplinkHandler;
+    private final Runnable testUplinkRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (databaseHelper == null) {
+                    databaseHelper = DatabaseHelper.getInstance(MainActivity.this);
+                }
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+                String time = sdf.format(new Date());
+                String hex = generateTestUplinkHex();
+
+                long result = databaseHelper.addUplinkLog(hex);
+                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
+
+                UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                EventBus.getDefault().post(event);
+                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
+            } catch (Exception e) {
+                Log.e(TAG, "自动测试上行失败", e);
+            } finally {
+                if (testUplinkHandler != null) {
+                    testUplinkHandler.postDelayed(this, TEST_INTERVAL);
+                }
+            }
+        }
+    };
 
     // 自动返回首页计时
     private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -203,7 +206,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-        //stTimer();
+        if (SPUtils.getInstance().getBoolean("uplink_test_enabled", true)) {
+            startTestTimer();
+        }
 
         // 启动自动返回首页的周期检查
         autoReturnHandler.removeCallbacks(autoReturnRunnable);
@@ -263,18 +268,18 @@ public class MainActivity extends AppCompatActivity {
         try { pendingCountOverride = event != null ? event.count : null; updatePendingBadge(); } catch (Exception ignored) {}
     }
 
-//    private void startTestTimer() {
-//        try {
-//            if (testUplinkHandler == null) {
-//                testUplinkHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-//            }
-//            testUplinkHandler.removeCallbacks(testUplinkRunnable);
-//            testUplinkHandler.post(testUplinkRunnable);
-//            Log.d(TAG, "自动测试上行计时器已启动，间隔: " + TEST_INTERVAL + "ms");
-//        } catch (Exception e) {
-//            Log.e(TAG, "启动自动测试上行计时器失败", e);
-//        }
-//    }
+    private void startTestTimer() {
+        try {
+            if (testUplinkHandler == null) {
+                testUplinkHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            }
+            testUplinkHandler.removeCallbacks(testUplinkRunnable);
+            testUplinkHandler.post(testUplinkRunnable);
+            Log.d(TAG, "自动测试上行计时器已启动，间隔: " + TEST_INTERVAL + "ms");
+        } catch (Exception e) {
+            Log.e(TAG, "启动自动测试上行计时器失败", e);
+        }
+    }
 
     @Override
     public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
@@ -1296,10 +1301,10 @@ public class MainActivity extends AppCompatActivity {
                 brokerReadyReceiver = null;
             }
             autoReturnHandler.removeCallbacks(autoReturnRunnable);
-//            if (testUplinkHandler != null) {
-//                testUplinkHandler.removeCallbacks(testUplinkRunnable);
-//                testUplinkHandler = null;
-//            }
+            if (testUplinkHandler != null) {
+                testUplinkHandler.removeCallbacks(testUplinkRunnable);
+                testUplinkHandler = null;
+            }
             if (alertEvaluateHandler != null) {
                 alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
                 alertEvaluateHandler = null;
@@ -1359,45 +1364,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // 生成符合解析器的测试上行hex
-//    private String generateTestUplinkHex() {
-//        try {
-//            String devEui = "2013220000000001";
-//            byte[] buf = new byte[1 + 8 + 2 + 1 + 2 + 24 + 1 + 1];
-//            int idx = 0;
-//            buf[idx++] = (byte) 0xA5;
-//            byte[] devBytes = hexToBytes(devEui);
-//            System.arraycopy(devBytes, 0, buf, idx, 8);
-//            idx += 8;
-//            buf[idx++] = 0x00; buf[idx++] = 0x01;
-//            buf[idx++] = 0x01;
-//            buf[idx++] = 0x00; buf[idx++] = 0x18;
-//            java.util.Calendar cal = java.util.Calendar.getInstance();
-//            int YY = cal.get(java.util.Calendar.YEAR) % 100;
-//            int YY2 = cal.get(java.util.Calendar.YEAR) / 100;
-//            buf[idx++] = (byte) YY2;
-//            buf[idx++] = (byte) YY;
-//            buf[idx++] = (byte) (cal.get(java.util.Calendar.MONTH) + 1);
-//            buf[idx++] = (byte) cal.get(java.util.Calendar.DAY_OF_MONTH);
-//            buf[idx++] = (byte) cal.get(java.util.Calendar.HOUR_OF_DAY);
-//            buf[idx++] = (byte) cal.get(java.util.Calendar.MINUTE);
-//            buf[idx++] = (byte) cal.get(java.util.Calendar.SECOND);
-//            buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x40;
-//            buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x00; buf[idx++] = 0x00;
-//            buf[idx++] = 0x01; buf[idx++] = (byte) 0x68;
-//            buf[idx++] = 55;
-//            buf[idx++] = (byte) 90;
-//            buf[idx++] = 3;
-//            buf[idx++] = 2;
-//            buf[idx++] = 5;
-//            buf[idx++] = 1;
-//            buf[idx++] = 0x00;
-//            buf[idx++] = 0x00;
-//            buf[idx++] = (byte) 0x5A;
-//            return bytesToHex(buf);
-//        } catch (Exception e) {
-//            return "A5" + "2013220000000001" + "0001" + "01" + "0018" + "000000000000000000000000000000000000000000000000" + "00" + "5A";
-//        }
-//    }
+    private String generateTestUplinkHex() {
+        try {
+            long seq = SPUtils.getInstance().getLong("uplink_test_seq", 1L);
+            SPUtils.getInstance().put("uplink_test_seq", seq + 1L);
+
+            String devEui = String.format(Locale.US, "28E200010003%04X", (int) (seq & 0xFFFF));
+            String tpl = "A528E2000100032509000100001820250926080808000000080000007E017261740000000000CF5A";
+            return tpl.substring(0, 2) + devEui + tpl.substring(18);
+        } catch (Exception e) {
+            return "A528E2000100030001000100001820250926080808000000080000007E017261740000000000CF5A";
+        }
+    }
 
     private static byte[] hexToBytes(String hex) {
         int len = hex.length();

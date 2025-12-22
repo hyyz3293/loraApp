@@ -71,6 +71,7 @@ public class TerminalDetailFragment extends Fragment {
     private TextView terminal_detail_battery;
     private TextView terminal_detail_id;
     private Button btnHandleNow;
+    private TextView btnSetMaintenance;
     private boolean waitingForUplink = false;
 
     @Nullable
@@ -110,6 +111,7 @@ public class TerminalDetailFragment extends Fragment {
         terminal_detail_battery = v.findViewById(R.id.terminal_detail_battery);
         terminal_detail_id = v.findViewById(R.id.terminal_detail_id);
         btnHandleNow = v.findViewById(R.id.btn_handle_now);
+        btnSetMaintenance = v.findViewById(R.id.btn_set_maintenance);
 
     }
 
@@ -290,6 +292,10 @@ public class TerminalDetailFragment extends Fragment {
             //ivFavorite.setVisibility(isFavorite ? View.VISIBLE : View.GONE);
             ivFavorite.setTag(isFavorite);
         } catch (Exception ignored) {}
+
+        try {
+            updateMaintenanceCount(deviceId);
+        } catch (Exception ignored) {}
     }
 
     private void setupListeners() {
@@ -383,6 +389,20 @@ public class TerminalDetailFragment extends Fragment {
             }
         });
 
+        if (btnSetMaintenance != null) {
+            btnSetMaintenance.setOnClickListener(v -> {
+                String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+                MaintenanceListFragment fragment = MaintenanceListFragment.newInstance(deviceId);
+                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                if (a != null) {
+                    a.getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_device_list_container, fragment)
+                            .addToBackStack("maintenance_list")
+                            .commit();
+                }
+            });
+        }
+
 //        // 立即处理按钮：下发查询并等待上行回复
 //        if (btnHandleNow != null) {
 //            btnHandleNow.setOnClickListener(v -> {
@@ -400,6 +420,16 @@ public class TerminalDetailFragment extends Fragment {
 //                }
 //            });
 //        }
+    }
+
+    private void updateMaintenanceCount(String deviceId) {
+        if (btnSetMaintenance == null) return;
+        long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+        int count = 0;
+        try {
+            count = dbHelper.getMaintenanceCountByTerminal(deviceId, uid);
+        } catch (Exception ignored) {}
+        btnSetMaintenance.setText("设置维护(" + count + ")");
     }
 
     private void loadLogs() {
@@ -526,6 +556,15 @@ public class TerminalDetailFragment extends Fragment {
         if (!EventBus.getDefault().isRegistered(this)) {
             EventBus.getDefault().register(this);
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        try {
+            String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+            updateMaintenanceCount(deviceId);
+        } catch (Exception ignored) {}
     }
 
     @Override

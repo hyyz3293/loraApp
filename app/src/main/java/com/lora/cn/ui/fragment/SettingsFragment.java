@@ -22,7 +22,6 @@ import com.lora.cn.ui.fragment.setting.DeviceSettingFragment;
 import com.lora.cn.ui.fragment.setting.GroupManagementFragment;
 import com.lora.cn.ui.fragment.setting.RoleManagementFragment;
 import com.lora.cn.ui.fragment.setting.UserManagementFragment;
-import com.lora.cn.ui.fragment.setting.MaintenanceListFragment;
 import com.lora.cn.ui.fragment.setting.device.IpConfigFragment;
 import com.lora.cn.ui.model.SettingItem;
 import com.lora.cn.database.entity.User;
@@ -100,7 +99,7 @@ public class SettingsFragment extends Fragment {
         if (hasPermission("position_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
         }
-        settingList.add(new SettingItem(R.mipmap.ic_setting6, "维护列表"));
+        //settingList.add(new SettingItem(R.mipmap.ic_setting6, "维护列表"));
 //        if (hasPermission("setting")) {
 //            settingList.add(new SettingItem(R.mipmap.ic_setting2, "自动返回首页时间"));
 //        }

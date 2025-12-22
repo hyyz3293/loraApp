@@ -5,12 +5,12 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
+import com.lora.cn.ui.fragment.MaintenanceListFragment;
 import com.lora.cn.ui.fragment.TerminalListFragment;
 import com.lora.cn.ui.fragment.LogInfoFragment;
 import com.lora.cn.ui.fragment.TerminalCheckFragment;
 import com.lora.cn.ui.fragment.SettingsFragment;
 import com.lora.cn.ui.fragment.DownlinkTestFragment;
-import com.lora.cn.ui.fragment.setting.MaintenanceListFragment;
 
 public class MainPagerAdapter extends FragmentStateAdapter {
 

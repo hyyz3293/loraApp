@@ -19,11 +19,17 @@ import com.lora.cn.ui.model.MaintenanceInfo;
 public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, QuickViewHolder> {
     public interface OnConfirmClickListener { void onConfirmClick(MaintenanceInfo item); }
     public interface OnViewClickListener { void onViewClick(MaintenanceInfo item); }
+    public interface OnEditClickListener { void onEditClick(MaintenanceInfo item); }
+    public interface OnDeleteClickListener { void onDeleteClick(MaintenanceInfo item); }
     private OnConfirmClickListener onConfirmClickListener;
     private OnViewClickListener onViewClickListener;
+    private OnEditClickListener onEditClickListener;
+    private OnDeleteClickListener onDeleteClickListener;
 
     public void setOnConfirmClickListener(OnConfirmClickListener l) { this.onConfirmClickListener = l; }
     public void setOnViewClickListener(OnViewClickListener l) { this.onViewClickListener = l; }
+    public void setOnEditClickListener(OnEditClickListener l) { this.onEditClickListener = l; }
+    public void setOnDeleteClickListener(OnDeleteClickListener l) { this.onDeleteClickListener = l; }
 
     @Override
     protected void onBindViewHolder(@NonNull QuickViewHolder holder, int i, @Nullable MaintenanceInfo item) {
@@ -34,6 +40,9 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         TextView logContent = holder.getView(R.id.log_complute);
         TextView logHandleTime = holder.getView(R.id.log_complute_time);
         TextView logOperation = holder.getView(R.id.log_operation);
+        View layoutOps = holder.getView(R.id.layout_maintenance_ops);
+        TextView btnDelete = holder.getView(R.id.btn_maintenance_delete);
+        TextView btnEdit = holder.getView(R.id.btn_maintenance_edit);
 
         setTextOrDash(logTime, item.getCreateTime());
 
@@ -59,6 +68,18 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
             setTextOrDash(logHandleTime, item.getHandleTime());
         } else {
             logHandleTime.setText("");
+        }
+
+        if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
+        if (btnDelete != null) {
+            btnDelete.setOnClickListener(v -> {
+                if (onDeleteClickListener != null) onDeleteClickListener.onDeleteClick(item);
+            });
+        }
+        if (btnEdit != null) {
+            btnEdit.setOnClickListener(v -> {
+                if (onEditClickListener != null) onEditClickListener.onEditClick(item);
+            });
         }
 
         if (done) {

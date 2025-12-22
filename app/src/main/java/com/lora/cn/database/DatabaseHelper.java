@@ -13,7 +13,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 22;
+    private static final int DATABASE_VERSION = 23;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -573,6 +573,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 22) {
             try { db.execSQL(CREATE_TABLE_MAINTENANCE); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 23) {
+            try { ensureMaintenanceSchema(db); } catch (Exception ignored) {}
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -2216,6 +2219,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public long addMaintenanceRecord(com.lora.cn.ui.model.MaintenanceInfo info) {
         if (info == null) return -1L;
         SQLiteDatabase db = this.getWritableDatabase();
+        ensureMaintenanceSchema(db);
         ContentValues v = new ContentValues();
         v.put(COLUMN_MAINTENANCE_TERMINAL_ID, info.getTerminalId() == null ? "" : info.getTerminalId());
         v.put(COLUMN_MAINTENANCE_TERMINAL_NAME, info.getTerminalName() == null ? "" : info.getTerminalName());
@@ -2231,21 +2235,40 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.insert(TABLE_MAINTENANCE, null, v);
     }
 
+    private String resolveMaintenanceIdColumn(SQLiteDatabase db) {
+        if (db == null) return COLUMN_MAINTENANCE_ID;
+        if (hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_ID)) return COLUMN_MAINTENANCE_ID;
+        if (hasColumn(db, TABLE_MAINTENANCE, "id")) return "id";
+        if (hasColumn(db, TABLE_MAINTENANCE, "_id")) return "_id";
+        return "rowid";
+    }
+
     public java.util.List<com.lora.cn.ui.model.MaintenanceInfo> getMaintenanceRecords(long createUserId) {
         java.util.List<com.lora.cn.ui.model.MaintenanceInfo> out = new java.util.ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
+        ensureMaintenanceSchema(db);
+        String idCol = resolveMaintenanceIdColumn(db);
+        String orderCol = "rowid".equalsIgnoreCase(idCol) ? "rowid" : idCol;
+        String selectId = ("rowid".equalsIgnoreCase(idCol) ? "rowid" : idCol) + " AS _mid";
         String sql;
         String[] args = null;
         if (createUserId > 0) {
-            sql = "SELECT * FROM " + TABLE_MAINTENANCE + " WHERE " + COLUMN_MAINTENANCE_CREATE_USER_ID + "=? ORDER BY " + COLUMN_MAINTENANCE_ID + " DESC";
+            sql = "SELECT " + selectId + ", * FROM " + TABLE_MAINTENANCE + " WHERE " + COLUMN_MAINTENANCE_CREATE_USER_ID + "=? ORDER BY " + orderCol + " DESC";
             args = new String[]{String.valueOf(createUserId)};
         } else {
-            sql = "SELECT * FROM " + TABLE_MAINTENANCE + " ORDER BY " + COLUMN_MAINTENANCE_ID + " DESC";
+            sql = "SELECT " + selectId + ", * FROM " + TABLE_MAINTENANCE + " ORDER BY " + orderCol + " DESC";
         }
-        android.database.Cursor c = db.rawQuery(sql, args);
+        android.database.Cursor c;
+        try {
+            c = db.rawQuery(sql, args);
+        } catch (Exception e) {
+            ensureMaintenanceSchema(db);
+            c = db.rawQuery(sql, args);
+        }
         while (c.moveToNext()) {
             com.lora.cn.ui.model.MaintenanceInfo mi = new com.lora.cn.ui.model.MaintenanceInfo();
-            mi.setId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_ID)));
+            int midIdx = c.getColumnIndex("_mid");
+            mi.setId(midIdx != -1 ? c.getLong(midIdx) : 0L);
             mi.setTerminalId(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_ID)));
             mi.setTerminalName(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_NAME)));
             mi.setTerminalGroup(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_GROUP)));
@@ -2263,14 +2286,157 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return out;
     }
 
+    public java.util.List<com.lora.cn.ui.model.MaintenanceInfo> getMaintenanceRecordsByTerminal(String terminalId, long createUserId) {
+        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> out = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        ensureMaintenanceSchema(db);
+        String idCol = resolveMaintenanceIdColumn(db);
+        String orderCol = "rowid".equalsIgnoreCase(idCol) ? "rowid" : idCol;
+        String selectId = ("rowid".equalsIgnoreCase(idCol) ? "rowid" : idCol) + " AS _mid";
+        String tid = terminalId == null ? "" : terminalId;
+        String sql;
+        String[] args;
+        if (createUserId > 0) {
+            sql = "SELECT " + selectId + ", * FROM " + TABLE_MAINTENANCE +
+                    " WHERE " + COLUMN_MAINTENANCE_TERMINAL_ID + "=? AND " + COLUMN_MAINTENANCE_CREATE_USER_ID + "=?" +
+                    " ORDER BY " + orderCol + " DESC";
+            args = new String[]{tid, String.valueOf(createUserId)};
+        } else {
+            sql = "SELECT " + selectId + ", * FROM " + TABLE_MAINTENANCE +
+                    " WHERE " + COLUMN_MAINTENANCE_TERMINAL_ID + "=?" +
+                    " ORDER BY " + orderCol + " DESC";
+            args = new String[]{tid};
+        }
+        android.database.Cursor c;
+        try {
+            c = db.rawQuery(sql, args);
+        } catch (Exception e) {
+            ensureMaintenanceSchema(db);
+            c = db.rawQuery(sql, args);
+        }
+        while (c.moveToNext()) {
+            com.lora.cn.ui.model.MaintenanceInfo mi = new com.lora.cn.ui.model.MaintenanceInfo();
+            int midIdx = c.getColumnIndex("_mid");
+            mi.setId(midIdx != -1 ? c.getLong(midIdx) : 0L);
+            mi.setTerminalId(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_ID)));
+            mi.setTerminalName(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_NAME)));
+            mi.setTerminalGroup(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_TERMINAL_GROUP)));
+            mi.setStatus(c.getInt(c.getColumnIndex(COLUMN_MAINTENANCE_STATUS)));
+            mi.setContent(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_CONTENT)));
+            mi.setCreateUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_CREATE_USER_ID)));
+            mi.setCreateUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_CREATE_USER)));
+            mi.setCreateTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_CREATE_TIME)));
+            mi.setHandleUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER_ID)));
+            mi.setHandleUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER)));
+            mi.setHandleTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_TIME)));
+            out.add(mi);
+        }
+        c.close();
+        return out;
+    }
+
+    public int getMaintenanceCountByTerminal(String terminalId, long createUserId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        ensureMaintenanceSchema(db);
+        String tid = terminalId == null ? "" : terminalId;
+        String sql;
+        String[] args;
+        if (createUserId > 0) {
+            sql = "SELECT COUNT(*) FROM " + TABLE_MAINTENANCE +
+                    " WHERE " + COLUMN_MAINTENANCE_TERMINAL_ID + "=? AND " + COLUMN_MAINTENANCE_CREATE_USER_ID + "=?";
+            args = new String[]{tid, String.valueOf(createUserId)};
+        } else {
+            sql = "SELECT COUNT(*) FROM " + TABLE_MAINTENANCE +
+                    " WHERE " + COLUMN_MAINTENANCE_TERMINAL_ID + "=?";
+            args = new String[]{tid};
+        }
+        android.database.Cursor c = null;
+        try {
+            c = db.rawQuery(sql, args);
+            if (c.moveToFirst()) return c.getInt(0);
+            return 0;
+        } catch (Exception e) {
+            ensureMaintenanceSchema(db);
+            try {
+                if (c != null) c.close();
+            } catch (Exception ignored) {}
+            c = db.rawQuery(sql, args);
+            if (c.moveToFirst()) return c.getInt(0);
+            return 0;
+        } finally {
+            try { if (c != null) c.close(); } catch (Exception ignored) {}
+        }
+    }
+
     public int updateMaintenanceHandled(long maintenanceId, long handleUserId, String handleUser, String handleTime, String content) {
         SQLiteDatabase db = this.getWritableDatabase();
+        ensureMaintenanceSchema(db);
+        String idCol = resolveMaintenanceIdColumn(db);
         ContentValues v = new ContentValues();
         v.put(COLUMN_MAINTENANCE_STATUS, 1);
         v.put(COLUMN_MAINTENANCE_HANDLE_USER_ID, handleUserId);
         v.put(COLUMN_MAINTENANCE_HANDLE_USER, handleUser == null ? "" : handleUser);
         v.put(COLUMN_MAINTENANCE_HANDLE_TIME, handleTime == null ? "" : handleTime);
         if (content != null) v.put(COLUMN_MAINTENANCE_CONTENT, content);
-        return db.update(TABLE_MAINTENANCE, v, COLUMN_MAINTENANCE_ID + "=?", new String[]{String.valueOf(maintenanceId)});
+        return db.update(TABLE_MAINTENANCE, v, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
+    }
+
+    public int updateMaintenanceContent(long maintenanceId, String content) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ensureMaintenanceSchema(db);
+        String idCol = resolveMaintenanceIdColumn(db);
+        ContentValues v = new ContentValues();
+        v.put(COLUMN_MAINTENANCE_CONTENT, content == null ? "" : content);
+        return db.update(TABLE_MAINTENANCE, v, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
+    }
+
+    public int deleteMaintenanceRecord(long maintenanceId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ensureMaintenanceSchema(db);
+        String idCol = resolveMaintenanceIdColumn(db);
+        return db.delete(TABLE_MAINTENANCE, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
+    }
+
+    private void ensureMaintenanceSchema(SQLiteDatabase db) {
+        if (db == null) return;
+        try { db.execSQL(CREATE_TABLE_MAINTENANCE); } catch (Exception ignored) {}
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_ID, "TEXT NOT NULL DEFAULT ''");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_NAME, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_GROUP, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_STATUS, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CONTENT, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER_ID, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_TIME, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER_ID, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_TIME, "TEXT");
+    }
+
+    private void ensureColumnIfMissing(SQLiteDatabase db, String table, String column, String sqlTypeAndDefault) {
+        if (db == null) return;
+        if (table == null || table.trim().isEmpty()) return;
+        if (column == null || column.trim().isEmpty()) return;
+        if (hasColumn(db, table, column)) return;
+        try {
+            db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " " + (sqlTypeAndDefault == null ? "TEXT" : sqlTypeAndDefault));
+        } catch (Exception ignored) {}
+    }
+
+    private boolean hasColumn(SQLiteDatabase db, String table, String column) {
+        android.database.Cursor c = null;
+        try {
+            c = db.rawQuery("PRAGMA table_info(" + table + ")", null);
+            int nameIdx = c.getColumnIndex("name");
+            while (c.moveToNext()) {
+                String n = nameIdx >= 0 ? c.getString(nameIdx) : null;
+                if (column.equalsIgnoreCase(n)) return true;
+            }
+            return false;
+        } catch (Exception ignored) {
+            return false;
+        } finally {
+            try { if (c != null) c.close(); } catch (Exception ignored) {}
+        }
     }
 }

@@ -1,6 +1,8 @@
-package com.lora.cn.ui.fragment.setting;
+package com.lora.cn.ui.fragment;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -8,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -24,20 +27,32 @@ import com.lora.cn.ui.model.MaintenanceInfo;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class MaintenanceListFragment extends Fragment {
 
+    private static final String ARG_TERMINAL_ID = "arg_terminal_id";
+
     private RecyclerView rv;
     private MaintenanceInfoAdapter adapter;
     private DatabaseHelper db;
     private long currentUserId = -1;
     private String currentUserName = "";
+    private String filterTerminalId = null;
 
     public static MaintenanceListFragment newInstance() {
         return new MaintenanceListFragment();
+    }
+
+    public static MaintenanceListFragment newInstance(String terminalId) {
+        MaintenanceListFragment f = new MaintenanceListFragment();
+        Bundle b = new Bundle();
+        b.putString(ARG_TERMINAL_ID, terminalId);
+        f.setArguments(b);
+        return f;
     }
 
     @Nullable
@@ -51,11 +66,14 @@ public class MaintenanceListFragment extends Fragment {
         db = DatabaseHelper.getInstance(requireContext());
         currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
         currentUserName = SPUtils.getInstance().getString("current_user_name", "");
+        filterTerminalId = getArguments() != null ? getArguments().getString(ARG_TERMINAL_ID, null) : null;
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new MaintenanceInfoAdapter();
         adapter.setOnConfirmClickListener(this::showConfirmDialog);
         adapter.setOnViewClickListener(this::showViewDialog);
+        adapter.setOnEditClickListener(this::showEditDialog);
+        adapter.setOnDeleteClickListener(this::showDeleteDialog);
         rv.setAdapter(adapter);
 
         if (btnBack != null) {
@@ -81,7 +99,12 @@ public class MaintenanceListFragment extends Fragment {
 
     private void loadList() {
         try {
-            List<MaintenanceInfo> list = db.getMaintenanceRecords(currentUserId);
+            List<MaintenanceInfo> list;
+            if (!TextUtils.isEmpty(filterTerminalId)) {
+                list = db.getMaintenanceRecordsByTerminal(filterTerminalId, currentUserId);
+            } else {
+                list = db.getMaintenanceRecords(currentUserId);
+            }
             if (list == null) list = new ArrayList<>();
             adapter.submitList(list);
             adapter.notifyDataSetChanged();
@@ -91,6 +114,11 @@ public class MaintenanceListFragment extends Fragment {
     }
 
     private void showAddDialog() {
+        if (!TextUtils.isEmpty(filterTerminalId)) {
+            showAddDialogForTerminal(filterTerminalId);
+            return;
+        }
+
         List<com.lora.cn.ui.model.Terminal> loaded;
         try {
             loaded = db.getAllTerminals();
@@ -106,6 +134,7 @@ public class MaintenanceListFragment extends Fragment {
         View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_maintenance, null);
         Spinner spinner = view.findViewById(R.id.spinner_terminal);
         EditText etContent = view.findViewById(R.id.et_content);
+        TextView tvTime = view.findViewById(R.id.tv_maintenance_time);
 
         List<String> display = new ArrayList<>();
         for (com.lora.cn.ui.model.Terminal t : terminals) {
@@ -116,6 +145,15 @@ public class MaintenanceListFragment extends Fragment {
         android.widget.ArrayAdapter<String> spinAdapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, display);
         spinAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(spinAdapter);
+
+        if (etContent != null && TextUtils.isEmpty(etContent.getText())) {
+            etContent.setText("给终端更换电池");
+            etContent.setSelection(etContent.getText().length());
+        }
+        if (tvTime != null) {
+            tvTime.setText(nowStr());
+            tvTime.setOnClickListener(v -> pickDateTimeInto(tvTime));
+        }
 
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("新增维护")
@@ -146,7 +184,79 @@ public class MaintenanceListFragment extends Fragment {
             mi.setContent(content);
             mi.setCreateUserId(currentUserId);
             mi.setCreateUser(currentUserName);
-            mi.setCreateTime(nowStr());
+            String createTime = tvTime != null && tvTime.getText() != null ? tvTime.getText().toString().trim() : "";
+            mi.setCreateTime(TextUtils.isEmpty(createTime) ? nowStr() : createTime);
+            mi.setHandleUserId(0);
+            mi.setHandleUser("");
+            mi.setHandleTime("");
+            long r = db.addMaintenanceRecord(mi);
+            if (r > 0) {
+                dialog.dismiss();
+                loadList();
+                Toast.makeText(requireContext(), "已添加", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), "添加失败", Toast.LENGTH_SHORT).show();
+            }
+        }));
+        dialog.show();
+    }
+
+    private void showAddDialogForTerminal(String terminalId) {
+        com.lora.cn.ui.model.Terminal t = null;
+        try {
+            com.lora.cn.database.dao.TerminalDao dao = new com.lora.cn.database.dao.TerminalDao(db);
+            t = dao.getTerminalByDeviceId(terminalId);
+        } catch (Exception ignored) {}
+        if (t == null) {
+            Toast.makeText(requireContext(), "未找到终端", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_maintenance, null);
+        Spinner spinner = view.findViewById(R.id.spinner_terminal);
+        View terminalLabel = view.findViewById(R.id.tv_select_terminal_label);
+        EditText etContent = view.findViewById(R.id.et_content);
+        TextView tvTime = view.findViewById(R.id.tv_maintenance_time);
+
+        if (terminalLabel != null) terminalLabel.setVisibility(View.GONE);
+        if (spinner != null) spinner.setVisibility(View.GONE);
+
+        if (etContent != null && TextUtils.isEmpty(etContent.getText())) {
+            etContent.setText("给终端更换电池");
+            etContent.setSelection(etContent.getText().length());
+        }
+        if (tvTime != null) {
+            tvTime.setText(nowStr());
+            tvTime.setOnClickListener(v -> pickDateTimeInto(tvTime));
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("新增维护")
+                .setView(view)
+                .setPositiveButton("保存", null)
+                .setNegativeButton("取消", null)
+                .create();
+
+        com.lora.cn.ui.model.Terminal finalT = t;
+        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String content = etContent != null ? etContent.getText().toString().trim() : "";
+            if (TextUtils.isEmpty(content)) {
+                Toast.makeText(requireContext(), "请输入维护内容", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            MaintenanceInfo mi = new MaintenanceInfo();
+            mi.setTerminalId(finalT.getTerminalId());
+            mi.setTerminalName(finalT.getTerminalName());
+            String group = finalT.getDepartment();
+            if (TextUtils.isEmpty(group)) group = finalT.getLocation();
+            mi.setTerminalGroup(group);
+            mi.setStatus(0);
+            mi.setContent(content);
+            mi.setCreateUserId(currentUserId);
+            mi.setCreateUser(currentUserName);
+            String createTime = tvTime != null && tvTime.getText() != null ? tvTime.getText().toString().trim() : "";
+            mi.setCreateTime(TextUtils.isEmpty(createTime) ? nowStr() : createTime);
             mi.setHandleUserId(0);
             mi.setHandleUser("");
             mi.setHandleTime("");
@@ -186,6 +296,55 @@ public class MaintenanceListFragment extends Fragment {
         dialog.show();
     }
 
+    private void showEditDialog(MaintenanceInfo item) {
+        if (item == null) return;
+        EditText et = new EditText(requireContext());
+        et.setMinLines(3);
+        et.setText(item.getContent() == null ? "" : item.getContent());
+        et.setSelection(et.getText().length());
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
+                .setTitle("编辑维护")
+                .setView(et)
+                .setPositiveButton("保存", null)
+                .setNegativeButton("取消", null)
+                .create();
+        dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String content = et.getText() != null ? et.getText().toString().trim() : "";
+            if (TextUtils.isEmpty(content)) {
+                Toast.makeText(requireContext(), "请输入维护内容", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int r = db.updateMaintenanceContent(item.getId(), content);
+            if (r > 0) {
+                dialog.dismiss();
+                loadList();
+                Toast.makeText(requireContext(), "已保存", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), "保存失败", Toast.LENGTH_SHORT).show();
+            }
+        }));
+        dialog.show();
+    }
+
+    private void showDeleteDialog(MaintenanceInfo item) {
+        if (item == null) return;
+        new AlertDialog.Builder(requireContext())
+                .setTitle("删除确认")
+                .setMessage("确定删除这条维护记录吗？")
+                .setPositiveButton("删除", (d, w) -> {
+                    int r = db.deleteMaintenanceRecord(item.getId());
+                    if (r > 0) {
+                        loadList();
+                        Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), "删除失败", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .create()
+                .show();
+    }
+
     private void showViewDialog(MaintenanceInfo item) {
         if (item == null) return;
         StringBuilder sb = new StringBuilder();
@@ -205,5 +364,25 @@ public class MaintenanceListFragment extends Fragment {
 
     private String nowStr() {
         return new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(new Date());
+    }
+
+    private void pickDateTimeInto(TextView tv) {
+        if (tv == null) return;
+        Calendar cal = Calendar.getInstance();
+        DatePickerDialog dp = new DatePickerDialog(requireContext(), (view, year, month, dayOfMonth) -> {
+            Calendar cal2 = Calendar.getInstance();
+            cal2.set(Calendar.YEAR, year);
+            cal2.set(Calendar.MONTH, month);
+            cal2.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+            TimePickerDialog tp = new TimePickerDialog(requireContext(), (tpView, hourOfDay, minute) -> {
+                cal2.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                cal2.set(Calendar.MINUTE, minute);
+                cal2.set(Calendar.SECOND, 0);
+                String s = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(cal2.getTime());
+                tv.setText(s);
+            }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true);
+            tp.show();
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+        dp.show();
     }
 }

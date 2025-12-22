@@ -125,12 +125,49 @@
            android:layout_weight="107"
            android:layout_width="0dp"
            android:gravity="center_vertical"
-           android:layout_height="match_parent"  >
+           android:layout_height="match_parent"
+           android:orientation="vertical"  >
+
+           <LinearLayout
+               android:id="@+id/layout_maintenance_ops"
+               android:layout_width="match_parent"
+               android:layout_height="wrap_content"
+               android:gravity="center"
+               android:orientation="horizontal"
+               android:visibility="gone">
+
+               <TextView
+                   android:id="@+id/btn_maintenance_delete"
+                   android:layout_width="0dp"
+                   android:layout_height="24dp"
+                   android:layout_marginRight="6dp"
+                   android:layout_weight="1"
+                   android:background="@drawable/bg_btn_edite"
+                   android:gravity="center"
+                   android:text="删除"
+                   android:textColor="@color/black"
+                   android:textSize="10dp"
+                   android:textStyle="bold" />
+
+               <TextView
+                   android:id="@+id/btn_maintenance_edit"
+                   android:layout_width="0dp"
+                   android:layout_height="24dp"
+                   android:layout_weight="1"
+                   android:background="@drawable/bg_btn_edite"
+                   android:gravity="center"
+                   android:text="编辑"
+                   android:textColor="@color/black"
+                   android:textSize="10dp"
+                   android:textStyle="bold" />
+
+           </LinearLayout>
 
            <TextView
                android:id="@+id/log_operation"
                android:layout_width="match_parent"
                android:layout_height="36dp"
+               android:layout_marginTop="2dp"
                android:background="@drawable/bg_btn_now"
                android:gravity="center"
                android:text=""

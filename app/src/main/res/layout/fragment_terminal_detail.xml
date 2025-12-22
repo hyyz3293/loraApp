@@ -59,6 +59,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="30dp" />
 
+            <TextView
+                android:id="@+id/btn_set_maintenance"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="14dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="设置维护(0)"
+                android:textStyle="bold"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp" />
+
             <LinearLayout
                 android:gravity="center|right"
                 android:layout_weight="1"

@@ -6,6 +6,7 @@
     android:padding="16dp">
 
     <TextView
+        android:id="@+id/tv_select_terminal_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="选择终端"
@@ -37,6 +38,30 @@
         android:inputType="textMultiLine"
         android:layout_marginTop="8dp"
         android:hint="请输入维护内容" />
+
+    <TextView
+        android:id="@+id/tv_maintenance_time_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="维护时间"
+        android:textColor="#333333"
+        android:textStyle="bold"
+        android:textSize="14dp"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:id="@+id/tv_maintenance_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_edit_text"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:text=""
+        android:textColor="#333333"
+        android:textSize="14dp" />
 
 </LinearLayout>
 
