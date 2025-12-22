@@ -6,6 +6,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.blankj.utilcode.util.LogUtils;
+
 /**
  * 数据库帮助类
  * 管理分组表和分类表的两层关系结构
@@ -1517,6 +1519,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         // 尝试根据帧中的时间替换操作时间
         
+        int currentLockState = (frame != null) ? frame.stPowerLockOn : -1;
+        int lastLockStateSnapshot = getLastLockStateByDeviceId(deviceId);
+        int lockChangeStatusCode = 0;
+        if (currentLockState != -1 && currentLockState != lastLockStateSnapshot) {
+            lockChangeStatusCode = (currentLockState == 1)
+                    ? com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
+                    : com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+        }
 
         // 根据设备ID查询终端表，获取终端名称等
         try {
@@ -1553,15 +1563,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                  // 正常（取走）
                  statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
             }  else if (frame.stPowerLockOn == 1) {
-                // 开锁
-                if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code)) {
-                    statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
-                }
+                 // 开锁
+                 if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code)) {
+                     statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
+                 }
             } else if (frame.stPowerLockOn == 0) {
-                // 上锁
-                if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code)) {
-                    statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
-                }
+                 // 上锁
+                 if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code)) {
+                     statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+                 }
             }  else if (frame.evManualPut == 1) {
                 // 设备关闭（放入）
                 statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
@@ -1604,6 +1614,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (!skipBySameStatus) {
             result = db.insert(targetTable, null, values);
+        }
+
+        LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));
+
+        if (lockChangeStatusCode > 0 && statusCode != lockChangeStatusCode) {
+            ContentValues vLock = new ContentValues();
+            vLock.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+            vLock.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
+            vLock.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+            vLock.put(COLUMN_LOG_STATUS, lockChangeStatusCode);
+            String nowStr2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+            vLock.put(COLUMN_LOG_OPERATOR, operator);
+            vLock.put(COLUMN_LOG_OPERATION_TIME, nowStr2);
+            vLock.put(COLUMN_LOG_ACTION, action);
+            vLock.put(COLUMN_LOG_CREATE_TIME, nowStr2);
+            db.insert(targetTable, null, vLock);
+            LogUtils.e("开关锁 写入");
         }
 
         // 同步更新终端设备的电量、信号强度，并依据上面得到的 statusCode 更新终端状态
@@ -1655,6 +1682,43 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         return result;
+    }
+
+    private int getLastLockStateByDeviceId(String deviceId) {
+        if (deviceId == null || deviceId.trim().isEmpty()) return -1;
+        SQLiteDatabase db = this.getReadableDatabase();
+        int last = -1;
+        String inLockCodes = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code + "," + com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+        android.database.Cursor c1 = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + " FROM " + TABLE_LOGS +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + " IN (" + inLockCodes + ") " +
+                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                new String[]{deviceId});
+        try {
+            if (c1 != null && c1.moveToFirst()) {
+                int st = c1.getInt(0);
+                last = (st == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code) ? 1 :
+                        (st == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) ? 0 : -1;
+            }
+        } finally {
+            if (c1 != null) c1.close();
+        }
+        if (last != -1) return last;
+        android.database.Cursor c2 = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + " FROM " + TABLE_LOGS_UNBOUND +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + " IN (" + inLockCodes + ") " +
+                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                new String[]{deviceId});
+        try {
+            if (c2 != null && c2.moveToFirst()) {
+                int st = c2.getInt(0);
+                last = (st == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code) ? 1 :
+                        (st == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) ? 0 : -1;
+            }
+        } finally {
+            if (c2 != null) c2.close();
+        }
+        return last;
     }
 
     /**
