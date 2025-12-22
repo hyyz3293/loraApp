@@ -66,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
     private java.util.concurrent.ExecutorService ioExecutor;
     private android.os.Handler mainHandler;
     private final java.util.concurrent.atomic.AtomicInteger badgeSeq = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.atomic.AtomicInteger alertEvalSeq = new java.util.concurrent.atomic.AtomicInteger();
     private int lastBadgeCount = -1;
     private int lastBadgeQueueSize = -1;
     private long lastBadgeRequestMs = 0L;
@@ -84,19 +85,23 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                if (databaseHelper == null) {
-                    databaseHelper = DatabaseHelper.getInstance(MainActivity.this);
-                }
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-                String time = sdf.format(new Date());
-                String hex = generateTestUplinkHex();
-
-                long result = databaseHelper.addUplinkLog(hex);
-                Log.d(TAG, "自动测试上行写入日志库结果: " + result);
-
-                UplinkDataEvent event = new UplinkDataEvent(time, hex);
-                EventBus.getDefault().post(event);
-                Log.d(TAG, "自动测试上行广播: time=" + time + ", hex=" + hex);
+                final String time = sdf.format(new Date());
+                final String hex = generateTestUplinkHex();
+                if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                android.content.Context appCtx = getApplicationContext();
+                ioExecutor.execute(() -> {
+                    try {
+                        com.lora.cn.database.DatabaseHelper db = databaseHelper != null
+                                ? databaseHelper
+                                : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                        long result = db.addUplinkLog(hex);
+                        Log.d(TAG, "自动测试上行写入日志库结果: " + result);
+                        EventBus.getDefault().post(new UplinkDataEvent(time, hex));
+                    } catch (Exception e) {
+                        Log.e(TAG, "自动测试上行失败", e);
+                    }
+                });
             } catch (Exception e) {
                 Log.e(TAG, "自动测试上行失败", e);
             } finally {
@@ -222,9 +227,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // 在 MainActivity 启动 MQTT 连接并打印上下行日志
-        if (SPUtils.getInstance().getBoolean("uplink_test_enabled", true)) {
-            startTestTimer();
-        }
+//        if (SPUtils.getInstance().getBoolean("uplink_test_enabled", true)) {
+//            startTestTimer();
+//        }
 
         // 启动自动返回首页的周期检查
         autoReturnHandler.removeCallbacks(autoReturnRunnable);
@@ -239,12 +244,6 @@ public class MainActivity extends AppCompatActivity {
         alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
         alertEvaluateHandler.postDelayed(alertEvaluateRunnable, 1000);
 
-        LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame("A528E2000100032509000100001820250926080808000000080000007E017261740000000000CF5A");
-
-        Log.d(TAG, " ================ 1111: " + new Gson().toJson(frameData));
-
-        
-        
     } 
 
     public MqttPacketsClient getMqttClient() {
@@ -516,11 +515,24 @@ public class MainActivity extends AppCompatActivity {
             try {
                 if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
                 if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                int token = alertEvalSeq.incrementAndGet();
+                java.util.Map<String, Integer> typesSnapshot = new java.util.HashMap<>(lastAlertTypes);
+                java.util.Map<String, Long> logIdsSnapshot = new java.util.HashMap<>(lastAlertLogIds);
+                android.content.Context appCtx = getApplicationContext();
                 ioExecutor.execute(() -> {
-                    try { if (databaseHelper != null) databaseHelper.checkAndLogOfflineDevices(); } catch (Exception ignored) {}
+                    EvaluateResult res = null;
+                    try {
+                        com.lora.cn.database.DatabaseHelper db = databaseHelper != null
+                                ? databaseHelper
+                                : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                        try { db.checkAndLogOfflineDevices(); } catch (Exception ignored) {}
+                        res = computeAlertOverlay(db, typesSnapshot, logIdsSnapshot);
+                    } catch (Exception ignored) {}
+                    EvaluateResult finalRes = res;
                     if (mainHandler != null) {
                         mainHandler.post(() -> {
-                            try { evaluateAlertOverlayGlobal(); } catch (Exception ignored) {}
+                            if (token != alertEvalSeq.get()) return;
+                            try { applyAlertOverlayResult(finalRes); } catch (Exception ignored) {}
                         });
                     }
                 });
@@ -530,74 +542,345 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
-    // 订阅上行事件：根据状态位/事件映射警报类型，触发全局处理弹窗
-    public void onUplinkDataEvent(UplinkDataEvent event) {
-        if (event == null || alertMuted) return;
-        String hex = event.getHex();
-        LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
-        if (frame == null) return;
-        if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
-        try {
-            if (!databaseHelper.isTerminalExists(frame.deviceId)) {
-                return;
-            }
-        } catch (Exception ignored) {}
-        int statusCode = 0;
-        try {
-            java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(frame.deviceId);
-            if (logs != null && !logs.isEmpty()) {
-                statusCode = logs.get(0).getStatusCode();
-            }
-        } catch (Exception ignored) {}
-        int lowThEvt = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-        boolean isLowEvt = frame.batteryLevel <= lowThEvt;
-        if (isLowEvt) statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
-        if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-            String devId = frame.deviceId;
-            String msg = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "异常取走" : "设备低电量";
-            Integer last = lastAlertTypes.get(devId);
-            if (last == null || last != statusCode) {
-                boolean alreadyInQueue = existsInQueue(devId, msg);
-                if (!alreadyInQueue) {
-                    AlertItem item = buildAlertItem(frame, msg);
-                    alertQueue.addLast(item);
+    private static final class AlertAction {
+        final AlertItem item;
+        final boolean ring;
+        AlertAction(AlertItem item, boolean ring) {
+            this.item = item;
+            this.ring = ring;
+        }
+    }
+
+    private static final class EvaluateResult {
+        final java.util.ArrayList<AlertAction> actions = new java.util.ArrayList<>();
+        final java.util.HashSet<String> clearDevs = new java.util.HashSet<>();
+        final java.util.HashMap<String, Integer> typeUpdates = new java.util.HashMap<>();
+        final java.util.HashMap<String, Long> logIdUpdates = new java.util.HashMap<>();
+        boolean queuedAny;
+        boolean touchedDb;
+    }
+
+    private EvaluateResult computeAlertOverlay(com.lora.cn.database.DatabaseHelper db,
+                                              java.util.Map<String, Integer> lastTypes,
+                                              java.util.Map<String, Long> lastLogIds) {
+        EvaluateResult out = new EvaluateResult();
+        if (db == null) return out;
+        java.util.List<com.lora.cn.ui.model.Terminal> all = null;
+        try { all = db.getAllTerminals(); } catch (Exception ignored) {}
+        if (all == null || all.isEmpty()) return out;
+        String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+
+        for (com.lora.cn.ui.model.Terminal t : all) {
+            if (t == null) continue;
+            String devId = t.getTerminalId();
+            if (devId == null || devId.isEmpty()) continue;
+            Integer last = lastTypes != null ? lastTypes.get(devId) : null;
+            int status = t.getStatus();
+            boolean isOffline = status == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+            boolean isAbnormal = status == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
+            boolean isLow = t.getBatteryLevel() <= lowTh;
+
+            if (isAbnormal) {
+                boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
+                long latestId = -1L;
+                String latestTime = null;
+                try {
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(devId);
+                    if (logs != null) {
+                        for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            if (li != null && li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                                latestId = li.getId();
+                                latestTime = li.getCreateTime();
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+                String key = devId + ":异常取走";
+                Long prev = lastLogIds != null ? lastLogIds.get(key) : null;
+                if (latestId > 0 && (prev == null || prev != latestId)) {
+                    if (newly) {
+                        AlertItem item = new AlertItem();
+                        item.title = "异常取走";
+                        item.name = t.getTerminalName();
+                        item.code = devId;
+                        item.time = latestTime != null ? latestTime : nowStr;
+                        item.logId = latestId;
+                        out.actions.add(new AlertAction(item, true));
+                        out.queuedAny = true;
+                    }
+                    out.logIdUpdates.put(key, latestId);
+                    out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
+                    if (newly) {
+                        try {
+                            db.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                            out.touchedDb = true;
+                        } catch (Exception ignored) {}
+                    }
                 }
-                lastAlertTypes.put(devId, statusCode);
-                updatePendingBadge();
-                startAlertRinging30s();
-                boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-                if (!bigVisible) {
-                    showLatestPending();
-                } else {
-                    if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
-                }
-            } else {
-                updatePendingBadge();
-                if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                continue;
             }
-        } else {
-            String devId = frame.deviceId;
-            if (devId != null) {
+
+            if (isOffline) {
+                boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                if (newly) {
+                    try {
+                        long nid = db.addOfflineLog(devId, t.getTerminalName());
+                        if (nid > 0) {
+                            out.logIdUpdates.put(devId + ":设备离线", nid);
+                            out.touchedDb = true;
+                        }
+                    } catch (Exception ignored) {}
+                }
+                long latestId = -1L;
+                String latestTime = null;
+                try {
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(devId);
+                    if (logs != null) {
+                        for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            if (li != null && li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
+                                latestId = li.getId();
+                                latestTime = li.getCreateTime();
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+                String key = devId + ":设备离线";
+                Long prev = lastLogIds != null ? lastLogIds.get(key) : null;
+                if (latestId > 0 && (prev == null || prev != latestId)) {
+                    if (newly) {
+                        AlertItem item = new AlertItem();
+                        item.title = "设备离线";
+                        item.name = t.getTerminalName();
+                        item.code = devId;
+                        item.time = latestTime != null ? latestTime : nowStr;
+                        item.logId = latestId;
+                        out.actions.add(new AlertAction(item, true));
+                        out.queuedAny = true;
+                    }
+                    out.logIdUpdates.put(key, latestId);
+                    out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
+                    if (newly) {
+                        try {
+                            db.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE);
+                            out.touchedDb = true;
+                        } catch (Exception ignored) {}
+                    }
+                }
+                continue;
+            }
+
+            if (isLow) {
+                boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
+                if (newly) {
+                    try {
+                        long nid = db.addLowBatteryLog(devId, t.getTerminalName());
+                        if (nid > 0) {
+                            out.logIdUpdates.put(devId + ":设备低电量", nid);
+                            out.touchedDb = true;
+                        }
+                    } catch (Exception ignored) {}
+                }
+                long latestId = -1L;
+                String latestTime = null;
+                try {
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(devId);
+                    if (logs != null) {
+                        for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            if (li != null && li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                                latestId = li.getId();
+                                latestTime = li.getCreateTime();
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+                String key = devId + ":设备低电量";
+                Long prev = lastLogIds != null ? lastLogIds.get(key) : null;
+                if (latestId > 0 && (prev == null || prev != latestId)) {
+                    AlertItem item = new AlertItem();
+                    item.title = "设备低电量";
+                    item.name = t.getTerminalName();
+                    item.code = devId;
+                    item.time = latestTime != null ? latestTime : nowStr;
+                    item.logId = latestId;
+                    out.actions.add(new AlertAction(item, newly));
+                    if (newly) out.queuedAny = true;
+                    out.logIdUpdates.put(key, latestId);
+                    out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
+                }
+                continue;
+            }
+
+            out.clearDevs.add(devId);
+        }
+        return out;
+    }
+
+    private void applyAlertOverlayResult(EvaluateResult result) {
+        if (result == null) {
+            updatePendingBadge();
+            return;
+        }
+        int beforeQueueSize = alertQueue.size();
+        boolean queueChanged = false;
+
+        if (!result.logIdUpdates.isEmpty()) {
+            lastAlertLogIds.putAll(result.logIdUpdates);
+        }
+        if (!result.typeUpdates.isEmpty()) {
+            lastAlertTypes.putAll(result.typeUpdates);
+        }
+        if (!result.clearDevs.isEmpty()) {
+            for (String devId : result.clearDevs) {
+                if (devId == null) continue;
                 java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
                 for (AlertItem ai : alertQueue) {
                     boolean sameDev = devId.equalsIgnoreCase(ai.code);
                     boolean abnormal = "异常取走".equals(ai.title) || "设备低电量".equals(ai.title) || "设备离线".equals(ai.title);
                     if (!(sameDev && abnormal)) newQueue.addLast(ai);
                 }
+                if (newQueue.size() != alertQueue.size()) queueChanged = true;
                 alertQueue.clear();
                 alertQueue.addAll(newQueue);
                 lastAlertTypes.remove(devId);
-                updatePendingBadge();
-                if (pendingAlertCount == 0) {
-                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                    if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
-                } else {
-                    showLatestPending();
-                }
             }
         }
-        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("状态刷新")); } catch (Exception ignored) {}
+
+        if (!result.actions.isEmpty()) {
+            for (AlertAction a : result.actions) {
+                if (a == null || a.item == null) continue;
+                String devId = a.item.code;
+                String title = a.item.title;
+                if (devId != null && title != null) {
+                    if (!existsInQueue(devId, title)) {
+                        alertQueue.addLast(a.item);
+                        queueChanged = true;
+                    }
+                    int sc = getStatusCodeForTitle(title);
+                    if (sc != 0) lastAlertTypes.put(devId, sc);
+                }
+                if (a.ring) startAlertRinging30s();
+            }
+        }
+
+        pendingAlertCount = alertQueue.size();
+        if (result.queuedAny) {
+            showLatestPending();
+        } else {
+            if (llAlertPendingSmall != null) {
+                boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
+                llAlertPendingSmall.setVisibility(!bigVisible && !alertQueue.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+        }
+        updatePendingBadge();
+        int afterQueueSize = alertQueue.size();
+        if (result.queuedAny || result.touchedDb || queueChanged || beforeQueueSize != afterQueueSize) {
+            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+        }
+    }
+
+    @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.ASYNC)
+    public void onUplinkDataEvent(UplinkDataEvent event) {
+        if (event == null || alertMuted) return;
+        try {
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            android.content.Context appCtx = getApplicationContext();
+            com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+
+            String hex = event.getHex();
+            LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(hex);
+            if (frame == null) return;
+            if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
+
+            try {
+                if (!db.isTerminalExists(frame.deviceId)) return;
+            } catch (Exception ignored) { return; }
+
+            int statusCode = 0;
+            try {
+                java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(frame.deviceId);
+                if (logs != null && !logs.isEmpty()) statusCode = logs.get(0).getStatusCode();
+            } catch (Exception ignored) {}
+
+            int lowThEvt = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            boolean isLowEvt = frame.batteryLevel <= lowThEvt;
+            if (isLowEvt) statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
+
+            boolean isAlert = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                    || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
+            String devId = frame.deviceId;
+            String msg = isAlert
+                    ? (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "异常取走" : "设备低电量")
+                    : null;
+            AlertItem computedItem = null;
+            if (isAlert) {
+                try {
+                    computedItem = buildAlertItem(frame, msg);
+                } catch (Exception ignored) {}
+                if (computedItem == null) {
+                    computedItem = new AlertItem();
+                    computedItem.title = msg;
+                    computedItem.name = "";
+                    computedItem.code = devId;
+                    computedItem.time = event.getTime() != null ? event.getTime() : "";
+                    computedItem.logId = -1L;
+                }
+            }
+
+            int finalStatusCode = statusCode;
+            AlertItem finalItem = computedItem;
+            String finalMsg = msg;
+            mainHandler.post(() -> {
+                try {
+                    if (finalStatusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                            || finalStatusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                        Integer last = lastAlertTypes.get(devId);
+                        if (last == null || last != finalStatusCode) {
+                            boolean alreadyInQueue = existsInQueue(devId, finalMsg);
+                            if (!alreadyInQueue && finalItem != null) {
+                                alertQueue.addLast(finalItem);
+                            }
+                            lastAlertTypes.put(devId, finalStatusCode);
+                            updatePendingBadge();
+                            startAlertRinging30s();
+                            boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
+                            if (!bigVisible) {
+                                showLatestPending();
+                            } else {
+                                if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                            }
+                        } else {
+                            updatePendingBadge();
+                            if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                        }
+                    } else {
+                        if (devId != null) {
+                            java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
+                            for (AlertItem ai : alertQueue) {
+                                boolean sameDev = devId.equalsIgnoreCase(ai.code);
+                                boolean abnormal = "异常取走".equals(ai.title) || "设备低电量".equals(ai.title) || "设备离线".equals(ai.title);
+                                if (!(sameDev && abnormal)) newQueue.addLast(ai);
+                            }
+                            alertQueue.clear();
+                            alertQueue.addAll(newQueue);
+                            lastAlertTypes.remove(devId);
+                            updatePendingBadge();
+                            if (pendingAlertCount == 0) {
+                                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                            } else {
+                                showLatestPending();
+                            }
+                        }
+                    }
+                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("状态刷新")); } catch (Exception ignored) {}
+                } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) {}
     }
 
     private boolean existsInQueue(String devId, String title) {
@@ -627,10 +910,10 @@ public class MainActivity extends AppCompatActivity {
         if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
         if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
         int sc = getStatusCodeForTitle(currentAlert.title);
-        refreshHandledStatusFromDB(currentAlert.code);
         Integer handled = lastHandledTypes.get(currentAlert.code);
         boolean needConfirm = handled == null || handled != sc;
         if (tvErrorComplete != null) tvErrorComplete.setVisibility(needConfirm ? View.VISIBLE : View.GONE);
+        refreshHandledStatusFromDBAsync(currentAlert.code, sc);
         lastShownKey = key;
     }
 
@@ -689,7 +972,10 @@ public class MainActivity extends AppCompatActivity {
     private void refreshHandledStatusFromDB(String devId) {
         if (devId == null) return;
         try {
-            java.util.List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(devId);
+            com.lora.cn.database.DatabaseHelper db = databaseHelper != null
+                    ? databaseHelper
+                    : com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext());
+            java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(devId);
             if (logs != null && !logs.isEmpty()) {
                 for (com.lora.cn.ui.model.LogInfo li : logs) {
                     String hu = li.getHandleUser();
@@ -699,6 +985,42 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
+        } catch (Exception ignored) {}
+    }
+
+    private void refreshHandledStatusFromDBAsync(String devId, int currentStatusCode) {
+        if (devId == null) return;
+        try {
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            android.content.Context appCtx = getApplicationContext();
+            ioExecutor.execute(() -> {
+                Integer handledCode = null;
+                try {
+                    com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(devId);
+                    if (logs != null) {
+                        for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            String hu = li.getHandleUser();
+                            if (hu != null && !hu.trim().isEmpty()) {
+                                handledCode = li.getStatusCode();
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+                Integer finalHandledCode = handledCode;
+                mainHandler.post(() -> {
+                    try {
+                        if (finalHandledCode != null) lastHandledTypes.put(devId, finalHandledCode);
+                        boolean stillCurrent = currentAlert != null && devId.equalsIgnoreCase(currentAlert.code);
+                        if (!stillCurrent) return;
+                        Integer handled = lastHandledTypes.get(devId);
+                        boolean needConfirm = handled == null || handled != currentStatusCode;
+                        if (tvErrorComplete != null) tvErrorComplete.setVisibility(needConfirm ? View.VISIBLE : View.GONE);
+                    } catch (Exception ignored) {}
+                });
+            });
         } catch (Exception ignored) {}
     }
 
@@ -834,7 +1156,10 @@ public class MainActivity extends AppCompatActivity {
         String time = "";
         long logId = -1L;
         try {
-            List<com.lora.cn.ui.model.Terminal> terminals = databaseHelper.getAllTerminals();
+            com.lora.cn.database.DatabaseHelper db = databaseHelper != null
+                    ? databaseHelper
+                    : com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext());
+            List<com.lora.cn.ui.model.Terminal> terminals = db.getAllTerminals();
             if (terminals != null) {
                 for (com.lora.cn.ui.model.Terminal t : terminals) {
                     if (t.getTerminalId() != null && t.getTerminalId().equalsIgnoreCase(code)) {
@@ -843,7 +1168,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
-            List<com.lora.cn.ui.model.LogInfo> logs = databaseHelper.getLogsByTerminalId(code);
+            List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(code);
             if (logs != null && !logs.isEmpty()) {
                 for (com.lora.cn.ui.model.LogInfo li : logs) {
                     if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ||
@@ -1312,15 +1637,6 @@ public class MainActivity extends AppCompatActivity {
                                     UplinkDataEvent event = new UplinkDataEvent(time, hex);
                                     EventBus.getDefault().post(event);
                                     Log.d(TAG, "上行数据准备广播: time=" + time + ", hex=" + hex);
-                                    LoRaFrameParser.ParsedFrame frameData = LoRaFrameParser.parseFrame(event.getHex());
-                                    Log.d(TAG, "==>>stPowerLockOn>: " + frameData.stPowerLockOn);
-                                    Log.d(TAG, "==>>stLayer1NotInPlace>: " + frameData.stLayer1NotInPlace);
-                                    Log.d(TAG, "==>>stLayer2NotInPlace>: " + frameData.stLayer2NotInPlace);
-                                    Log.d(TAG, "==>>stLayer3NotInPlace>: " + frameData.stLayer3NotInPlace);
-                                    Log.d(TAG, "==>>stLayer4NotInPlace>: " + frameData.stLayer4NotInPlace);
-                                    Log.d(TAG, "==>>stLayer5NotInPlace>: " + frameData.stLayer5NotInPlace);
-
-                                    Log.d(TAG, "==>>frameData=====>: " + new Gson().toJson(frameData));
 
 //                                    D  上行数据存储到上行日志表，结果: 25
 //                                    2025-11-15 21:25:18.642  4652-4652  MainActivity            com.lora.cn                          D  上行数据存储到日志信息表，结果: 26

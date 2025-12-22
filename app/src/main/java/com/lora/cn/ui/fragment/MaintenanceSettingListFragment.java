@@ -25,6 +25,7 @@ import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.adapter.MaintenanceInfoAdapter;
+import com.lora.cn.ui.adapter.MaintenanceInfoDetailAdapter;
 import com.lora.cn.ui.model.MaintenanceInfo;
 
 import java.text.SimpleDateFormat;
@@ -42,7 +43,7 @@ public class MaintenanceSettingListFragment extends Fragment {
     private static final String ARG_TERMINAL_ID = "arg_terminal_id";
 
     private RecyclerView rv;
-    private MaintenanceInfoAdapter adapter;
+    private MaintenanceInfoDetailAdapter adapter;
     private DatabaseHelper db;
     private long currentUserId = -1;
     private String currentUserName = "";
@@ -75,7 +76,7 @@ public class MaintenanceSettingListFragment extends Fragment {
         if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new MaintenanceInfoAdapter(MaintenanceInfoAdapter.Mode.SETTING);
+        adapter = new MaintenanceInfoDetailAdapter(MaintenanceInfoDetailAdapter.Mode.SETTING);
         adapter.setOnConfirmClickListener(this::showConfirmDialog);
         adapter.setOnViewClickListener(this::showViewDialog);
         adapter.setOnEditClickListener(this::showEditDialog);
@@ -172,7 +173,7 @@ public class MaintenanceSettingListFragment extends Fragment {
         if (spinner != null) spinner.setVisibility(View.GONE);
 
         if (etContent != null && TextUtils.isEmpty(etContent.getText())) {
-            etContent.setText("给终端更换电池");
+            etContent.setText("");
             etContent.setSelection(etContent.getText().length());
         }
         if (tvTime != null) {
