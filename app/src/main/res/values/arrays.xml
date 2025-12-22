@@ -26,10 +26,12 @@
 
 
     <string-array name="log_type_options">
-        <item>全部</item>
-        <item>报警日志</item>
-        <item>普通日志</item>
-        <item>处理日志</item>
+        <item>默认显示</item>
+        <item>全部日志</item>
+        <item>异常取走</item>
+        <item>低电量</item>
+        <item>钥匙开关</item>
+        <item>设备离线</item>
     </string-array>
 
     <string-array name="log_police_options">

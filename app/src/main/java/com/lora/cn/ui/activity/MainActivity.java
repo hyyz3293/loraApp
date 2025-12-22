@@ -357,6 +357,12 @@ public class MainActivity extends AppCompatActivity {
                 if (alertMuted) {
                     stopAlertRinging();
                 }
+                try {
+                    android.view.View slash = findViewById(R.id.error_muted_mark);
+                    if (slash != null) slash.setVisibility(alertMuted ? android.view.View.VISIBLE : android.view.View.GONE);
+                } catch (Exception ignored) {}
+                v.setPressed(true);
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 200);
                 android.widget.Toast.makeText(this, alertMuted ? "已静音" : "已取消静音", android.widget.Toast.LENGTH_SHORT).show();
             });
         }

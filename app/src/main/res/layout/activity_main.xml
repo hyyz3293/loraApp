@@ -297,6 +297,15 @@
                     android:layout_width="30dp"
                     android:layout_height="30dp"/>
 
+                <ImageView
+                    android:id="@+id/error_muted_mark"
+                    android:visibility="gone"
+                    android:layout_centerInParent="true"
+                    android:rotation="45"
+                    android:background="@drawable/ic_close_small"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"/>
+
             </RelativeLayout>
 
             <RelativeLayout

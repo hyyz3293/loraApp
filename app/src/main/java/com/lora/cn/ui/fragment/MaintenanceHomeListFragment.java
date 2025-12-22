@@ -22,6 +22,10 @@ import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.adapter.MaintenanceInfoAdapter;
 import com.lora.cn.ui.model.MaintenanceInfo;
+import com.lora.cn.ui.activity.MainActivity;
+import com.lora.cn.utils.DownlinkMessageHelper;
+import com.lora.cn.network.MqttPacketsClient;
+import com.scwang.smart.refresh.layout.SmartRefreshLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -31,9 +35,11 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.greenrobot.eventbus.EventBus;
 
 public class MaintenanceHomeListFragment extends Fragment {
 
+    private SmartRefreshLayout swipe;
     private RecyclerView rv;
     private MaintenanceInfoAdapter adapter;
     private DatabaseHelper db;
@@ -42,6 +48,11 @@ public class MaintenanceHomeListFragment extends Fragment {
     private ExecutorService ioExecutor;
     private Handler mainHandler;
     private final AtomicInteger loadSeq = new AtomicInteger(0);
+    private final List<MaintenanceInfo> allFiltered = new ArrayList<>();
+    private final List<MaintenanceInfo> currentDisplay = new ArrayList<>();
+    private int pageSize = 20;
+    private int currentPage = 0;
+    private boolean loadingMore = false;
 
     public static MaintenanceHomeListFragment newInstance() {
         return new MaintenanceHomeListFragment();
@@ -51,6 +62,7 @@ public class MaintenanceHomeListFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_maintenance_list_home, container, false);
+        swipe = v.findViewById(R.id.swipe_maintenance);
         rv = v.findViewById(R.id.rv_maintenance);
 
         db = DatabaseHelper.getInstance(requireContext());
@@ -66,6 +78,31 @@ public class MaintenanceHomeListFragment extends Fragment {
         adapter.setOnEditClickListener(this::showEditDialog);
         adapter.setOnDeleteClickListener(this::showDeleteDialog);
         rv.setAdapter(adapter);
+
+        if (swipe != null) {
+            swipe.setEnableRefresh(true);
+            swipe.setEnableLoadMore(true);
+            swipe.setOnRefreshListener(layout -> {
+                loadList();
+            });
+            swipe.setOnLoadMoreListener(layout -> {
+                boolean noMore = ((currentPage + 1) * pageSize) >= allFiltered.size();
+                if (noMore) {
+                    layout.finishLoadMoreWithNoMoreData();
+                } else {
+                    loadMorePage();
+                    layout.finishLoadMore(true);
+                }
+            });
+        }
+        rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (dy > 0 && !recyclerView.canScrollVertically(1)) {
+                    loadMorePage();
+                }
+            }
+        });
 
         loadList();
         return v;
@@ -117,10 +154,65 @@ public class MaintenanceHomeListFragment extends Fragment {
                         if (dt != null && dt.getTime() <= now) filtered.add(mi);
                     } catch (Exception ignored) {}
                 }
-                adapter.submitList(filtered);
-                adapter.notifyDataSetChanged();
+                allFiltered.clear();
+                allFiltered.addAll(filtered);
+                currentPage = 0;
+                currentDisplay.clear();
+                submitCurrentPage();
+                autoDispatchDue(filtered);
+                if (swipe != null) swipe.finishRefresh(true);
             });
         });
+    }
+
+    private void submitCurrentPage() {
+        int start = currentPage * pageSize;
+        int end = Math.min(allFiltered.size(), start + pageSize);
+        if (start >= allFiltered.size()) return;
+        currentDisplay.clear();
+        currentDisplay.addAll(allFiltered.subList(0, end));
+        adapter.submitList(new ArrayList<>(currentDisplay));
+        adapter.notifyDataSetChanged();
+    }
+
+    private void loadMorePage() {
+        if (loadingMore) return;
+        int nextStart = (currentPage + 1) * pageSize;
+        if (nextStart >= allFiltered.size()) return;
+        loadingMore = true;
+        mainHandler.post(() -> {
+            int end = Math.min(allFiltered.size(), nextStart + pageSize);
+            List<MaintenanceInfo> more = allFiltered.subList(nextStart, end);
+            currentDisplay.addAll(more);
+            adapter.submitList(new ArrayList<>(currentDisplay));
+            adapter.notifyDataSetChanged();
+            currentPage++;
+            loadingMore = false;
+        });
+    }
+
+    private void autoDispatchDue(List<MaintenanceInfo> list) {
+        if (list == null || list.isEmpty()) return;
+        MainActivity a = (MainActivity) getActivity();
+        MqttPacketsClient client = a != null ? a.getMqttClient() : null;
+        if (client == null) return;
+        DownlinkMessageHelper helper = new DownlinkMessageHelper(client);
+        for (MaintenanceInfo mi : list) {
+            if (mi == null) continue;
+            if (mi.getStatus() != 0) continue;
+            String ct = mi.getCreateTime();
+            if (TextUtils.isEmpty(ct)) continue;
+            String key = "maintenance_sent_" + mi.getId();
+            boolean sent = SPUtils.getInstance().getBoolean(key, false);
+            if (sent) continue;
+            String dev = mi.getTerminalId();
+            if (TextUtils.isEmpty(dev)) continue;
+            try {
+                helper.sendQueryStatusDownlink(dev);
+                SPUtils.getInstance().put(key, true);
+                EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("maintenance_updated"));
+            } catch (Exception ignored) {}
+        }
     }
 
     private void showConfirmDialog(MaintenanceInfo item) {

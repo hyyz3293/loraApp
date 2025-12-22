@@ -24,9 +24,14 @@ import com.lora.cn.ui.fragment.setting.device.IpConfigFragment;
 import com.lora.cn.ui.fragment.setting.device.WifiSettingFragment;
 import com.lora.cn.ui.model.SettingItem;
 import android.widget.Toast;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Intent;
+import android.text.format.DateFormat;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Calendar;
 
 public class DeviceSettingFragment extends Fragment {
 
@@ -106,6 +111,12 @@ public class DeviceSettingFragment extends Fragment {
         if (hasPermission("setting_home_return")) {
             settingList.add(new SettingItem("返回首页时间", 2, 5, "60"));
         }
+        if (hasPermission("setting_inventory")) {
+            int h = SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+            int m = SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+            String ts = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m);
+            settingList.add(new SettingItem("定时清点 " + ts, 0, 6));
+        }
 
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
@@ -126,6 +137,7 @@ public class DeviceSettingFragment extends Fragment {
                 case 3: permCode = "setting_count"; break;
                 case 4: permCode = "setting_low_battery"; break;
                 case 5: permCode = "setting_home_return"; break;
+                case 6: permCode = "setting_inventory"; break;
             }
             if (permCode != null && hasPermission(permCode)) {
                 onSettingClick(idx, settingItem);
@@ -174,9 +186,63 @@ public class DeviceSettingFragment extends Fragment {
                     transaction.commit();
                 }
                 break;
+            case 6:
+                showInventoryTimePicker();
+                break;
         }
 
 
+    }
+    
+    private void showInventoryTimePicker() {
+        android.content.Context ctx = requireContext();
+        int defHour = SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+        int defMinute = SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+        boolean is24 = DateFormat.is24HourFormat(ctx);
+        android.app.TimePickerDialog dlg = new android.app.TimePickerDialog(ctx, (view, hourOfDay, minute) -> {
+            SPUtils.getInstance().put("inventory_schedule_hour", hourOfDay);
+            SPUtils.getInstance().put("inventory_schedule_minute", minute);
+            SPUtils.getInstance().put("inventory_schedule_enabled", true);
+            scheduleInventory(hourOfDay, minute);
+            try {
+                com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(ctx.getApplicationContext());
+                com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+                li.setTerminalId("SYS");
+                li.setTerminalName("系统设置");
+                li.setDeviceId("SYS");
+                li.setStatusCode(0);
+                li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
+                String ts = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                li.setOperationTime(ts);
+                li.setCreateTime(ts);
+                li.setAction("设置: 定时清点=" + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
+                db.addLog(li);
+            } catch (Exception ignored) {}
+            Toast.makeText(ctx, "已设置定时清点: " + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute), Toast.LENGTH_SHORT).show();
+        }, defHour, defMinute, is24);
+        dlg.show();
+    }
+    
+    private void scheduleInventory(int hour, int minute) {
+        android.content.Context ctx = requireContext().getApplicationContext();
+        AlarmManager am = (AlarmManager) ctx.getSystemService(android.content.Context.ALARM_SERVICE);
+        if (am == null) return;
+        Intent intent = new Intent("com.lora.cn.ACTION_INVENTORY_SCHEDULE");
+        intent.setClass(ctx, com.lora.cn.receiver.InventoryScheduleReceiver.class);
+        PendingIntent pi = PendingIntent.getBroadcast(ctx, 10001, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        cal.set(Calendar.HOUR_OF_DAY, hour);
+        cal.set(Calendar.MINUTE, minute);
+        long trigger = cal.getTimeInMillis();
+        long now = System.currentTimeMillis();
+        if (trigger <= now) {
+            cal.add(Calendar.DAY_OF_YEAR, 1);
+            trigger = cal.getTimeInMillis();
+        }
+        am.cancel(pi);
+        am.setRepeating(AlarmManager.RTC_WAKEUP, trigger, AlarmManager.INTERVAL_DAY, pi);
     }
     
     /**

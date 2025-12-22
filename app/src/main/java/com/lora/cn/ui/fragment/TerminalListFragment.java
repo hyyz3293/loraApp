@@ -64,6 +64,7 @@ public class TerminalListFragment extends Fragment {
     private int pageSize = 20;
     private int currentPage = 0;
     private List<Terminal> filteredPageBase = new ArrayList<>();
+    private com.scwang.smart.refresh.layout.SmartRefreshLayout refreshLayout;
 
     // 数据库管理器
     private DatabaseManager databaseManager;
@@ -155,6 +156,7 @@ public class TerminalListFragment extends Fragment {
         rvTerminalStatus = view.findViewById(R.id.rv_terminal_status);
         terminalRecycle = view.findViewById(R.id.terminal_recycle);
         addTerminalBtn = view.findViewById(R.id.add_terminal);
+        refreshLayout = view.findViewById(R.id.refreshLayout);
         tvGroupCategory = view.findViewById(R.id.tv_group_category);
         spinnerTs = view.findViewById(R.id.spinner_ts);
         sxLeft = view.findViewById(R.id.sx_left);
@@ -199,6 +201,45 @@ public class TerminalListFragment extends Fragment {
                 }
             });
         }
+        android.widget.TextView btnRefresh = view.findViewById(R.id.btn_refresh);
+        if (btnRefresh != null) {
+            btnRefresh.setOnClickListener(v -> {
+                if (refreshLayout != null) refreshLayout.autoRefresh();
+                else {
+                    currentPage = 0;
+                    refreshTerminalsAndStatus();
+                }
+            });
+        }
+        if (refreshLayout != null) {
+            refreshLayout.setEnableRefresh(true);
+            refreshLayout.setEnableLoadMore(true);
+            refreshLayout.setOnRefreshListener(layout -> {
+                try {
+                    currentPage = 0;
+                    refreshTerminalsAndStatus();
+                    layout.finishRefresh(true);
+                } catch (Exception e) {
+                    layout.finishRefresh(false);
+                }
+            });
+            refreshLayout.setOnLoadMoreListener(layout -> {
+                try {
+                    int total = filteredPageBase != null ? filteredPageBase.size() : 0;
+                    boolean canNext = (currentPage + 1) * pageSize < total;
+                    if (!canNext) {
+                        layout.finishLoadMoreWithNoMoreData();
+                        return;
+                    }
+                    currentPage++;
+                    submitCurrentPage();
+                    updatePaginationControls();
+                    layout.finishLoadMore(true);
+                } catch (Exception e) {
+                    layout.finishLoadMore(false);
+                }
+            });
+        }
 
         // 初始化两级选择器入口（文本点击弹出选择）
         if (tvGroupCategory != null) {
@@ -206,6 +247,12 @@ public class TerminalListFragment extends Fragment {
         }
         android.widget.Spinner spinnerFilter = view.findViewById(R.id.spinner_filter);
         if (spinnerFilter != null) {
+            try {
+                String[] filterOpts = getResources().getStringArray(R.array.filter_options);
+                android.widget.ArrayAdapter<String> filterAdapter = new android.widget.ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, java.util.Arrays.asList(filterOpts));
+                filterAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+                spinnerFilter.setAdapter(filterAdapter);
+            } catch (Exception ignored) {}
             spinnerFilter.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
                 @Override public void onItemSelected(android.widget.AdapterView<?> parent, View v, int position, long id) {
                     applyCurrentFilters();
@@ -214,6 +261,12 @@ public class TerminalListFragment extends Fragment {
             });
         }
         if (spinnerTs != null) {
+            try {
+                String[] pageOpts = getResources().getStringArray(R.array.page_size_options);
+                android.widget.ArrayAdapter<String> tsAdapter = new android.widget.ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, java.util.Arrays.asList(pageOpts));
+                tsAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+                spinnerTs.setAdapter(tsAdapter);
+            } catch (Exception ignored) {}
             spinnerTs.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
                 @Override public void onItemSelected(android.widget.AdapterView<?> parent, View v, int position, long id) {
                     Object item = parent.getItemAtPosition(position);

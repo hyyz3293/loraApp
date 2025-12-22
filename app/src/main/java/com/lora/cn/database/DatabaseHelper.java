@@ -800,37 +800,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     }
 
-    public void ensureDefaultAdminRoleAssigned() {
-        try {
-            SQLiteDatabase db = getWritableDatabase();
-            long adminRid = -1;
-            android.database.Cursor rc = db.rawQuery("SELECT " + COLUMN_ROLE_ID + " FROM " + TABLE_ROLES + " WHERE " + COLUMN_ROLE_NAME + "='管理员'", null);
-            if (rc.moveToFirst()) adminRid = rc.getLong(0);
-            rc.close();
-            if (adminRid <= 0) {
-                ContentValues roleValues = new ContentValues();
-                roleValues.put(COLUMN_ROLE_NAME, "管理员");
-                roleValues.put(COLUMN_ROLE_DESCRIPTION, "系统管理员，拥有所有权限");
-                roleValues.put(COLUMN_ROLE_SORT_ORDER, 1);
-                roleValues.put(COLUMN_ROLE_STATUS, 1);
-                adminRid = db.insert(TABLE_ROLES, null, roleValues);
-                db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + ") SELECT " + adminRid + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
-            }
-
-            android.database.Cursor c = db.rawQuery("SELECT " + COLUMN_USER_ID + ", " + COLUMN_USER_ROLE_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + "='admin' OR " + COLUMN_USER_NAME + "='管理员'", null);
-            while (c.moveToNext()) {
-                long uid = c.getLong(0);
-                long currentRid = c.getLong(1);
-                if (adminRid > 0 && currentRid != adminRid) {
-                    ContentValues up = new ContentValues();
-                    up.put(COLUMN_USER_ROLE_ID, adminRid);
-                    db.update(TABLE_USERS, up, COLUMN_USER_ID + "=?", new String[]{String.valueOf(uid)});
-                }
-            }
-            c.close();
-        } catch (Exception ignored) {}
-    }
-
     public void debugLogAdminRoleAndUser() {
         try {
             SQLiteDatabase db = getReadableDatabase();
@@ -853,6 +822,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } catch (Exception e) {
             android.util.Log.e("DatabaseHelper", "debugLogAdminRoleAndUser异常: " + e.getMessage());
         }
+    }
+    
+    public void ensureDefaultAdminRoleAssigned() {
+        try {
+            SQLiteDatabase db = getWritableDatabase();
+            long adminRid = -1;
+            android.database.Cursor rc = db.rawQuery("SELECT " + COLUMN_ROLE_ID + " FROM " + TABLE_ROLES + " WHERE " + COLUMN_ROLE_NAME + "='管理员'", null);
+            if (rc.moveToFirst()) adminRid = rc.getLong(0);
+            rc.close();
+            if (adminRid <= 0) {
+                ContentValues roleValues = new ContentValues();
+                roleValues.put(COLUMN_ROLE_NAME, "管理员");
+                roleValues.put(COLUMN_ROLE_DESCRIPTION, "系统管理员，拥有所有权限");
+                roleValues.put(COLUMN_ROLE_SORT_ORDER, 1);
+                roleValues.put(COLUMN_ROLE_STATUS, 1);
+                adminRid = db.insert(TABLE_ROLES, null, roleValues);
+                db.execSQL("INSERT INTO " + TABLE_ROLE_PERMISSIONS + " (" + COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + ") SELECT " + adminRid + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS);
+            }
+            db.execSQL("INSERT OR IGNORE INTO " + TABLE_ROLE_PERMISSIONS + " (" + COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + ") " +
+                    "SELECT " + adminRid + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_ID + " NOT IN (" +
+                    "SELECT " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + " FROM " + TABLE_ROLE_PERMISSIONS + " WHERE " + COLUMN_ROLE_PERMISSION_ROLE_ID + "=" + adminRid + ")");
+            android.database.Cursor c = db.rawQuery("SELECT " + COLUMN_USER_ID + ", " + COLUMN_USER_ROLE_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + "='admin' OR " + COLUMN_USER_NAME + "='管理员'", null);
+            while (c.moveToNext()) {
+                long uid = c.getLong(0);
+                long currentRid = c.getLong(1);
+                if (adminRid > 0 && currentRid != adminRid) {
+                    ContentValues up = new ContentValues();
+                    up.put(COLUMN_USER_ROLE_ID, adminRid);
+                    db.update(TABLE_USERS, up, COLUMN_USER_ID + "=?", new String[]{String.valueOf(uid)});
+                }
+            }
+            c.close();
+        } catch (Exception ignored) {}
     }
     
     /**
@@ -1099,6 +1101,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('setting_home_return', '返回首页时间', '设置相关', '自动返回首页时间设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 6)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('setting_inventory', '定时清点', '设置相关', '定时清点设置', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='setting_device' LIMIT 1), 2, 7)");
 
         // Level 1 - 角色管理的子权限
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
@@ -1944,15 +1952,34 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         java.util.List<String> conds = new java.util.ArrayList<>();
         if (startTime != null && !startTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " >= '" + startTime + "' ");
         if (endTime != null && !endTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " <= '" + endTime + "' ");
-        if (typeSel == 1) {
-            conds.add(COLUMN_LOG_STATUS + " IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + ")");
+        if (typeSel == 0) {
+            conds.add(COLUMN_LOG_STATUS + " IN (" +
+                    com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.TIMED_MAINTENANCE.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code +
+                    ")");
+        } else if (typeSel == 1) {
+            // 全部日志：不加状态条件
         } else if (typeSel == 2) {
-            conds.add(COLUMN_LOG_STATUS + " NOT IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + "," + com.lora.cn.ui.constants.LogStatus.HANDLED.code + ")");
+            conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.TIMED_MAINTENANCE.code);
         } else if (typeSel == 3) {
-            conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.HANDLED.code);
+            conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
+        } else if (typeSel == 4) {
+            conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
+        } else if (typeSel == 5) {
+            conds.add(COLUMN_LOG_STATUS + " IN (" + com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code + "," + com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code + ")");
+        } else if (typeSel == 6) {
+            conds.add(COLUMN_LOG_STATUS + " = " + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
         }
         if (policeSel == 1 || policeSel == 2) {
-            conds.add(COLUMN_LOG_STATUS + " IN (" + com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," + com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," + com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + ")");
+            conds.add(COLUMN_LOG_STATUS + " IN (" +
+                    com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code + "," +
+                    com.lora.cn.ui.constants.LogStatus.TIMED_MAINTENANCE.code + ")");
             if (policeSel == 1) {
                 conds.add("(handle_user IS NOT NULL AND TRIM(handle_user) <> '')");
             } else {

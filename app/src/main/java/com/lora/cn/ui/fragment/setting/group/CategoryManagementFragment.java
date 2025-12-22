@@ -340,8 +340,8 @@ public class CategoryManagementFragment extends Fragment{
             for (Group g : displayGroups) {
                 names.add(g.getGroupName());
             }
-            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, names);
+            adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
             spinnerGroups.setAdapter(adapter);
             spinnerGroups.setTag(displayGroups);
             spinnerGroups.setVisibility(View.VISIBLE);
@@ -374,8 +374,8 @@ public class CategoryManagementFragment extends Fragment{
 
             java.util.List<String> names = new java.util.ArrayList<>();
             for (Category c : displayCategories) names.add(c.getCategoryName());
-            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, names);
+            adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
             spinnerCategories.setAdapter(adapter);
             spinnerCategories.setTag(displayCategories);
             spinnerCategories.setVisibility(View.VISIBLE);

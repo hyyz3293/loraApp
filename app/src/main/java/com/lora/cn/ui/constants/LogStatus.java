@@ -9,7 +9,8 @@ public enum LogStatus {
     DEVICE_OFFLINE(6, "设备离线"),
     LOW_BATTERY(7, "设备低电量"),
     HANDLED(8, "处理"),
-    ONLINE(9, "正常在线");
+    ONLINE(9, "正常在线"),
+    TIMED_MAINTENANCE(10, "定时维护报警");
 
 
     public final int code;

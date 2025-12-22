@@ -235,7 +235,7 @@ public class LogInfoFragment extends Fragment {
         }
         try {
             if (spinnerLogType != null) spinnerLogType.setSelection(0, false);
-            if (spinnerPolice != null) spinnerPolice.setSelection(0, false);
+            if (spinnerPolice != null) spinnerPolice.setSelection(2, false);
             selectedStartTime = "";
             selectedEndTime = "";
         } catch (Exception ignored) {}

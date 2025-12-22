@@ -146,6 +146,7 @@
                     android:layout_height="32dp" />
 
                 <TextView
+                    android:visibility="gone"
                     android:id="@+id/btn_refresh"
                     android:paddingLeft="17dp"
                     android:paddingRight="17dp"

@@ -70,8 +70,8 @@ public class DownlinkTestFragment extends Fragment {
             for (Terminal t : terminalList) {
                 names.add((t.getTerminalName() == null ? "" : t.getTerminalName()) + " (" + (t.getTerminalId() == null ? "" : t.getTerminalId()) + ")");
             }
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, names);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, names);
+            adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
             spTerminal.setAdapter(adapter);
             spTerminal.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
                 @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
@@ -94,6 +94,23 @@ public class DownlinkTestFragment extends Fragment {
                 }
                 @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
             });
+        } catch (Exception ignored) {}
+
+        try {
+            String[] ackOpts = getResources().getStringArray(R.array.ack_result_options);
+            ArrayAdapter<String> ackAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, java.util.Arrays.asList(ackOpts));
+            ackAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+            spAckResult.setAdapter(ackAdapter);
+
+            String[] queryOpts = getResources().getStringArray(R.array.query_op_options);
+            ArrayAdapter<String> queryAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, java.util.Arrays.asList(queryOpts));
+            queryAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+            spQueryOp.setAdapter(queryAdapter);
+
+            String[] regOpts = getResources().getStringArray(R.array.register_result_options);
+            ArrayAdapter<String> regAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, java.util.Arrays.asList(regOpts));
+            regAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+            spRegisterResult.setAdapter(regAdapter);
         } catch (Exception ignored) {}
 
         View btnAck = v.findViewById(R.id.btn_send_ack);
