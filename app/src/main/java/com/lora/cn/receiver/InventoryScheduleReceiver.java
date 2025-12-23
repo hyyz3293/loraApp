@@ -9,7 +9,7 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
         boolean enabled = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("inventory_schedule_enabled", false);
         android.util.Log.i("InventoryScheduleReceiver", "onReceive enabled=" + enabled + " intent=" + (intent != null ? intent.getAction() : ""));
         if (!enabled) return;
-        com.lora.cn.network.MqttPacketsClient client = new com.lora.cn.network.MqttPacketsClient();
+        com.lora.cn.network.MqttPacketsClient client = com.lora.cn.network.MqttPacketsClient.getShared();
         String brokerUrl;
         com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
         int localPort = sp.getInt("mqtt_local_broker_port", 1883);
@@ -18,10 +18,12 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
         String username = sp.getString("mqtt_username", "");
         String password = sp.getString("mqtt_password", "");
         boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
-        String clientId = "android-schedule-" + System.currentTimeMillis();
-        client.connectAndSubscribe(context.getApplicationContext(), brokerUrl, clientId, topicFilter, username, password, trustAll, new com.lora.cn.network.GatewayPacketsClient.PacketsListener() {
+        String clientId = "android-main";
+        final java.util.concurrent.atomic.AtomicBoolean fired = new java.util.concurrent.atomic.AtomicBoolean(false);
+        com.lora.cn.network.GatewayPacketsClient.PacketsListener l = new com.lora.cn.network.GatewayPacketsClient.PacketsListener() {
             @Override public void onStatus(String msg) {
-                if (msg != null && (msg.contains("MQTT连接成功") || msg.contains("订阅成功"))) {
+                if (msg != null && msg.contains("MQTT连接成功")) {
+                    if (!fired.compareAndSet(false, true)) return;
                     com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
                     try {
                         com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(context.getApplicationContext());
@@ -58,7 +60,12 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
             @Override public void onError(String error) {}
             @Override public void onComplete() {}
             @Override public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {}
-        });
+        };
+        if (client.isConnected()) {
+            l.onStatus("MQTT连接成功");
+        } else {
+            client.connectAndSubscribe(context.getApplicationContext(), brokerUrl, clientId, topicFilter, username, password, trustAll, l);
+        }
     }
 
     private void scheduleNextDay(Context ctx, int hour, int minute) {

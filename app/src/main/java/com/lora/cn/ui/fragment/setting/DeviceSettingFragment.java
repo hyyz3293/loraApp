@@ -219,6 +219,7 @@ public class DeviceSettingFragment extends Fragment {
                 db.addLog(li);
             } catch (Exception ignored) {}
             Toast.makeText(ctx, "已设置定时清点: " + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute), Toast.LENGTH_SHORT).show();
+            initSettingData();
         }, defHour, defMinute, is24);
         dlg.show();
     }

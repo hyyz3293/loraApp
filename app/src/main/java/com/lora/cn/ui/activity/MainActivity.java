@@ -1574,12 +1574,12 @@ public class MainActivity extends AppCompatActivity {
     // ---------------- MQTT 全局连接与日志 -----------------
     private void startGlobalMqttLogging() {
         try {
-            if (mqttClient == null) mqttClient = new MqttPacketsClient();
+            if (mqttClient == null) mqttClient = com.lora.cn.network.MqttPacketsClient.getShared();
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
             int localPort = sp.getInt("mqtt_local_broker_port", 1883);
             String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
             android.util.Log.i(TAG, "使用本地MQTT Broker: " + brokerUrl);
-            final String clientId = "android-" + System.currentTimeMillis();
+            final String clientId = "android-main";
             String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
             String username = sp.getString("mqtt_username", "");
             String password = sp.getString("mqtt_password", "");
