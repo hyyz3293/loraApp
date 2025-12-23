@@ -7,6 +7,7 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
     @Override
     public void onReceive(Context context, Intent intent) {
         boolean enabled = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("inventory_schedule_enabled", false);
+        android.util.Log.i("InventoryScheduleReceiver", "onReceive enabled=" + enabled + " intent=" + (intent != null ? intent.getAction() : ""));
         if (!enabled) return;
         com.lora.cn.network.MqttPacketsClient client = new com.lora.cn.network.MqttPacketsClient();
         String brokerUrl;
@@ -33,7 +34,11 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
                 if (dev.length() != 16) continue;
                 int dep = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
                 int cart = (int) Math.max(0, Math.min(255, t.getRoomId()));
-                helper.sendDownlink8001(dev, 1, 1, dep, cart, 0, 0, 60, true);
+                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                android.util.Log.i("InventoryScheduleReceiver", "sendDownlink dev=" + dev + " dep=" + dep + " cart=" + cart + " alarm=" + String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m));
+                helper.sendDownlink8001(dev, 1, 1, dep, cart, 0, 0, 60, 1, new int[]{mins}, true);
                 try {
                     com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
                     li.setTerminalId(t.getTerminalId());
@@ -44,7 +49,8 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
                     li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
                     li.setOperationTime(ts);
                     li.setCreateTime(ts);
-                    li.setAction("终端清点: 定时维护");
+                    String alarmTs = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m);
+                    li.setAction("终端清点: 定时维护(" + alarmTs + ")");
                     //db.addLog(li);
                 } catch (Exception ignored) {}
             }

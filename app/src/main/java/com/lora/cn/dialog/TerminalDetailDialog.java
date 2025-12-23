@@ -402,26 +402,23 @@ public class TerminalDetailDialog extends Dialog {
                 tvRefreshStatus.setText("无效的设备ID（需16位HEX devEUI）");
                 return;
             }
-            byte seq = 0x01;
-            long nowUtc = System.currentTimeMillis();
-            int ackResult = 1;
-            int queryOp = 0;
-            int departmentId = 0;
-            int cartId = 0;
-            int registerResult = 1;
-            int clearMask = 0;
-            int reportIntervalMin = 5;
-            byte[] frame = LoRaProtocolParser.buildDownlink8001(devEui, seq, nowUtc, ackResult, queryOp, departmentId, cartId, registerResult, clearMask, reportIntervalMin, 0, null);
-            String hex = bytesToHexCompact(frame);
-
             if (mqttClient == null) {
                 mqttClient = new MqttPacketsClient();
             }
             try {
-                // 发布到通用主题，devEUI放在消息体中
-                mqttClient.publishDownlinkSimple("/milesight/downlink", devEui, hex, 85, true);
+                com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqttClient);
+                int ackResult = 1;
+                int queryOp = 0;
+                int departmentId = 0;
+                int cartId = 0;
+                int registerResult = 1;
+                int clearMask = 0;
+                int reportIntervalMin = 5;
+                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                helper.sendDownlink8001(devEui, ackResult, queryOp, departmentId, cartId, registerResult, clearMask, reportIntervalMin, 1, new int[]{mins}, true);
                 tvRefreshStatus.setText("已下发8001到设备：" + devEui);
-                // 记录下行日志（仅下行/上行允许写入）
                 try {
                     com.lora.cn.ui.model.LogInfo logInfo = new com.lora.cn.ui.model.LogInfo();
                     logInfo.setTerminalId(info.deviceId);
@@ -431,7 +428,8 @@ public class TerminalDetailDialog extends Dialog {
                     logInfo.setOperator("");
                     logInfo.setOperationTime("");
                     logInfo.setCreateTime(formatTime(System.currentTimeMillis()));
-                    logInfo.setAction("发送下行数据: " + hex);
+                    String ts = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m);
+                    logInfo.setAction("发送下行数据: 8001(含闹钟1," + ts + ")");
                     databaseHelper.addLog(logInfo);
                 } catch (Exception ignored) {}
             } catch (Exception e) {

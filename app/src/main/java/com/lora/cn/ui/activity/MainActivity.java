@@ -1897,7 +1897,10 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
         try {
             if (mqttClient != null) {
                 com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqttClient);
-                helper.sendClearDataDownlink(devHex, mask);
+                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                helper.sendClearDataDownlink(devHex, mask, 1, new int[]{mins});
             }
         } catch (Exception e) {
             android.util.Log.e(TAG, "下发处理下行失败 devEUI=" + devHex + ", mask=" + mask, e);

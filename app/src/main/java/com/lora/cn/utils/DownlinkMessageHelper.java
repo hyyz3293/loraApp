@@ -1,7 +1,7 @@
 package com.lora.cn.utils;
 
-import android.content.Context;
 import android.util.Log;
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.network.MqttPacketsClient;
 
 /**
@@ -50,7 +50,8 @@ public class DownlinkMessageHelper {
                 return;
             }
             
-            // 构建下行8001帧（内部处理时间与流水号）
+            int alarmCount = 1;
+            int[] alarmMinutes = new int[]{getGlobalAlarmMinute()};
             byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
@@ -62,8 +63,8 @@ public class DownlinkMessageHelper {
                 registerResult,
                 clearMask,
                 reportIntervalMin,
-                0,
-                null
+                alarmCount,
+                alarmMinutes
             );
             
             // 转换为HEX字符串
@@ -86,8 +87,61 @@ public class DownlinkMessageHelper {
                       ", registerResult=" + registerResult + 
                       ", clearMask=" + clearMask + 
                       ", reportInterval=" + reportIntervalMin + "分钟" +
+                      ", alarms=" + alarmCount +
                       ", payloadHex=" + payloadHex);
                       
+        } catch (Exception e) {
+            Log.e(TAG, "发送下行8001报文失败: " + e.getMessage(), e);
+        }
+    }
+
+    public void sendDownlink8001(String deviceIdHex,
+                                 int ackResult,
+                                 int queryOp,
+                                 int departmentId,
+                                 int cartId,
+                                 int registerResult,
+                                 int clearMask,
+                                 int reportIntervalMin,
+                                 int alarmCount,
+                                 int[] alarmMinutes,
+                                 boolean confirmed) {
+        try {
+            if (mqttClient == null) {
+                Log.e(TAG, "MQTT客户端未初始化");
+                return;
+            }
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                ackResult,
+                queryOp,
+                departmentId,
+                cartId,
+                registerResult,
+                clearMask,
+                reportIntervalMin,
+                alarmCount,
+                alarmMinutes
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                confirmed
+            );
+            Log.i(TAG, "发送下行8001报文成功: deviceId=" + deviceIdHex +
+                    ", ackResult=" + ackResult +
+                    ", queryOp=" + queryOp +
+                    ", departmentId=" + departmentId +
+                    ", cartId=" + cartId +
+                    ", registerResult=" + registerResult +
+                    ", clearMask=" + clearMask +
+                    ", reportInterval=" + reportIntervalMin + "分钟" +
+                    ", alarms=" + alarmCount);
         } catch (Exception e) {
             Log.e(TAG, "发送下行8001报文失败: " + e.getMessage(), e);
         }
@@ -338,8 +392,8 @@ public class DownlinkMessageHelper {
                 0,
                 clearMask,
                 intervalMin,
-                0,
-                null);
+                1,
+                new int[]{getGlobalAlarmMinute()});
         return LoRaProtocolParser.bytesToHex(frame);
     }
 
@@ -355,8 +409,8 @@ public class DownlinkMessageHelper {
                 0,
                 clearMask,
                 5,
-                0,
-                null);
+                1,
+                new int[]{getGlobalAlarmMinute()});
         String payloadHex = LoRaProtocolParser.bytesToHex(frame);
         mqttClient.publishDownlinkByDevEuiTopic(
                 DOWNLINK_TOPIC_BASE,
@@ -397,5 +451,14 @@ public class DownlinkMessageHelper {
                 DEFAULT_FPORT,
                 true);
         Log.i(TAG, "原始HEX下行已调用publish: devEUI=" + deviceIdHex);
+    }
+
+    private int getGlobalAlarmMinute() {
+        int h = SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+        int m = SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+        int minutes = h * 60 + m;
+        if (minutes < 0) minutes = 0;
+        if (minutes > 1440) minutes = 1440;
+        return minutes;
     }
 }

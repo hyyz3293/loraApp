@@ -115,7 +115,7 @@ public class DeviceSettingFragment extends Fragment {
             int h = SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
             int m = SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
             String ts = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m);
-            settingList.add(new SettingItem("定时清点 ", 0, 6, ts));
+            settingList.add(new SettingItem("定时清点      " +  ts, 0, 6));
         }
 
         // 设置RecyclerView

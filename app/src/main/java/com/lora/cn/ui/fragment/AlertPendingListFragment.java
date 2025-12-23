@@ -167,7 +167,10 @@ public class AlertPendingListFragment extends Fragment {
                             }
                             if (client == null) client = new MqttPacketsClient();
                             DownlinkMessageHelper helper = new DownlinkMessageHelper(client);
-                            helper.sendClearDataDownlink(devHex, mask, 0, null);
+                            int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                            int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                            int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                            helper.sendClearDataDownlink(devHex, mask, 1, new int[]{mins});
                         } catch (Exception ignored) {}
                     }
                     loadAlerts();
