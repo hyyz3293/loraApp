@@ -21,6 +21,11 @@ import com.lora.cn.network.GatewayPacketsClient;
 import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.model.LogInfo;
 import com.lora.cn.ui.adapter.LogInfoAdapter;
+import com.lora.cn.events.UplinkDataEvent;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+import com.lora.cn.utils.LoRaFrameParser;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -129,7 +134,7 @@ public class TerminalDetailDialog extends Dialog {
         loadTerminalLogs();
 
         btnClose.setOnClickListener(v -> {
-            if (mqttClient != null) mqttClient.disconnect();
+            try { if (EventBus.getDefault().isRegistered(this)) EventBus.getDefault().unregister(this); } catch (Exception ignored) {}
             dismiss();
         });
         btnCopy.setOnClickListener(v -> copyHexToClipboard());
@@ -143,7 +148,7 @@ public class TerminalDetailDialog extends Dialog {
         btnEditLocation.setOnClickListener(v -> toggleEdit(etLocation, "位置信息"));
 
         setOnDismissListener(d -> {
-            if (mqttClient != null) mqttClient.disconnect();
+            try { if (EventBus.getDefault().isRegistered(this)) EventBus.getDefault().unregister(this); } catch (Exception ignored) {}
         });
     }
 
@@ -316,77 +321,29 @@ public class TerminalDetailDialog extends Dialog {
     private void startMqttListen() {
         if (refreshing) return;
         refreshing = true;
-        tvRefreshStatus.setText("通过MQTT监听设备上行数据...");
+        tvRefreshStatus.setText("通过EventBus监听设备上行数据...");
         try {
-            if (mqttClient == null) mqttClient = new MqttPacketsClient();
-            // 读取自定义MQTT设置，未设定时回落到局域网网关或公共Broker
-            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
-            if (!sp.getBoolean("mqtt_local_broker_ready", false)) {
-                handler.post(() -> {
-                    tvRefreshStatus.setText("本地MQTT服务端未就绪，请稍后再试");
-                });
-                refreshing = false;
-                return;
-            }
-            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
-            String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
-            android.util.Log.i("TerminalDetailDialog", "使用本地MQTT Broker: " + brokerUrl);
-            final String clientId = "android-" + System.currentTimeMillis();
-            String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink");
-            String username = sp.getString("mqtt_username", "");
-            String password = sp.getString("mqtt_password", "");
-            boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
-            mqttClient.connectAndSubscribe(context, brokerUrl, clientId, topicFilter,
-                    username, password, trustAll,
-                    new GatewayPacketsClient.PacketsListener() {
-                        @Override
-                        public void onStatus(String msg) {
-                            handler.post(() -> {
-                                tvRefreshStatus.setText(msg);
-                                Log.d("TerminalDetailDialog", "MQTT状态 TerminalDetail: " + msg);
-                            });
-                        }
-
-
-
-                        @Override
-                        public void onPackets(java.util.List<GatewayPacketsClient.PacketRecord> records) {
-                            if (records == null || records.isEmpty()) return;
-                            // 找到匹配当前设备ID的记录
-                            for (GatewayPacketsClient.PacketRecord r : records) {
-                                String dev = r.deviceId != null ? r.deviceId : "";
-                                if (dev.equalsIgnoreCase(info.deviceId)) {
-                                    handler.post(() -> {
-                                        tvPayload.setText(r.payloadHex != null ? r.payloadHex : "");
-                                        tvTime.setText(formatTime(System.currentTimeMillis()));
-                                        tvRefreshStatus.setText("已接收到该设备上行数据");
-                                        refreshing = false;
-                                    });
-                                    break;
-                                }
-                            }
-                        }
-                        @Override
-                        public void onError(String error) {
-                            handler.post(() -> {
-                                tvRefreshStatus.setText("MQTT错误: " + error);
-                                refreshing = false;
-                            });
-                        }
-                        @Override
-                        public void onComplete() {
-                            handler.post(() -> {
-                                tvRefreshStatus.setText("MQTT监听已结束");
-                                refreshing = false;
-                            });
-                        }
-                    });
+            if (!EventBus.getDefault().isRegistered(this)) EventBus.getDefault().register(this);
         } catch (Exception e) {
-            handler.post(() -> {
-                tvRefreshStatus.setText("MQTT监听启动失败: " + e.getMessage());
-                refreshing = false;
-            });
+            tvRefreshStatus.setText("监听失败: " + e.getMessage());
+            refreshing = false;
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onUplinkDataEvent(UplinkDataEvent event) {
+        if (event == null) return;
+        try {
+            LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(event.getHex());
+            if (frame == null || frame.deviceId == null) return;
+            if (frame.deviceId.equalsIgnoreCase(info.deviceId)) {
+                tvPayload.setText(event.getHex());
+                tvTime.setText(formatTime(System.currentTimeMillis()));
+                tvRefreshStatus.setText("已接收到该设备上行数据");
+                refreshing = false;
+                try { EventBus.getDefault().unregister(this); } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {}
     }
 
     // 原 refresh 走网关扫描逻辑已移除
@@ -403,7 +360,7 @@ public class TerminalDetailDialog extends Dialog {
                 return;
             }
             if (mqttClient == null) {
-                mqttClient = new MqttPacketsClient();
+                mqttClient = MqttPacketsClient.getShared();
             }
             try {
                 com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(mqttClient);

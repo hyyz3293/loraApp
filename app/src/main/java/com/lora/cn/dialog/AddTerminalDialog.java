@@ -23,6 +23,11 @@ import com.lora.cn.adapter.PacketRecordAdapter;
 import com.lora.cn.network.GatewayPacketsClient;
 import com.lora.cn.network.MqttPacketsClient;
 import com.lora.cn.utils.LoRaProtocolParser;
+import com.lora.cn.events.UplinkDataEvent;
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+import com.lora.cn.utils.LoRaFrameParser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,14 +124,54 @@ public class AddTerminalDialog extends Dialog {
         uiHandler = new Handler(Looper.getMainLooper());
 
         root.findViewById(R.id.btn_cancel).setOnClickListener(v -> {
-            if (mqttClient != null) mqttClient.disconnect();
             dismiss();
         });
         root.findViewById(R.id.btn_search).setOnClickListener(v -> startSearching());
 
         setOnDismissListener(d -> {
-            if (mqttClient != null) mqttClient.disconnect();
+            try { if (EventBus.getDefault().isRegistered(this)) EventBus.getDefault().unregister(this); } catch (Exception ignored) {}
         });
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onUplinkDataEvent(UplinkDataEvent event) {
+        if (event == null) return;
+        try {
+            LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(event.getHex());
+            if (frame == null || frame.deviceId == null) return;
+            GatewayPacketsClient.PacketRecord r = new GatewayPacketsClient.PacketRecord();
+            r.deviceId = frame.deviceId;
+            r.payloadHex = event.getHex();
+            r.rssi = frame.rssi;
+            r.time = event.getTime();
+            packets.add(r);
+            if (cbGroupByDevEui.isChecked()) {
+                packetRecordAdapter.setGroupedRecords(packets);
+            } else {
+                packetRecordAdapter.setRecords(packets);
+            }
+            rvPackets.setVisibility(View.VISIBLE);
+            tvPacketsTitle.setVisibility(View.VISIBLE);
+            tvNoPackets.setVisibility(View.GONE);
+            LoRaProtocolParser.TerminalInfo t = new LoRaProtocolParser.TerminalInfo();
+            t.deviceId = frame.deviceId;
+            t.deviceName = frame.deviceId;
+            t.signalStrength = frame.rssi;
+            t.batteryLevel = frame.batteryLevel;
+            t.status = 1;
+            t.payloadHex = event.getHex();
+            boolean exists = false;
+            for (LoRaProtocolParser.TerminalInfo e1 : foundTerminals) {
+                if (frame.deviceId.equalsIgnoreCase(e1.deviceId)) { exists = true; break; }
+            }
+            if (!exists) {
+                foundTerminals.add(t);
+                foundTerminalAdapter.updateTerminals(foundTerminals);
+                rvFoundTerminals.setVisibility(View.VISIBLE);
+                tvFoundTitle.setVisibility(View.VISIBLE);
+                tvNoDevices.setVisibility(View.GONE);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void startSearching() {
@@ -146,76 +191,15 @@ public class AddTerminalDialog extends Dialog {
 
         llSearchStatus.setVisibility(View.VISIBLE);
         pbSearching.setVisibility(View.VISIBLE);
-        tvSearchStatus.setText("正在通过MQTT订阅上行数据...");
-
-        // 改为MQTT采集：使用自定义设置连接并订阅上行
-        if (mqttClient == null) mqttClient = new MqttPacketsClient();
-        com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
-        if (!sp.getBoolean("mqtt_local_broker_ready", false)) {
-            tvSearchStatus.setText("本地MQTT服务端未就绪，请稍后再试");
+        tvSearchStatus.setText("已通过全局MQTT连接监听上行数据...");
+        try {
+            if (!EventBus.getDefault().isRegistered(this)) EventBus.getDefault().register(this);
             pbSearching.setVisibility(View.GONE);
-            return;
+            llSearchStatus.setVisibility(View.GONE);
+        } catch (Exception e) {
+            tvNoPackets.setText("监听失败：" + e.getMessage());
+            tvNoPackets.setVisibility(View.VISIBLE);
         }
-        int localPort = sp.getInt("mqtt_local_broker_port", 1883);
-        String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
-        android.util.Log.i("AddTerminalDialog", "使用本地MQTT Broker: " + brokerUrl);
-        final String clientId = "android-" + System.currentTimeMillis();
-        String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
-        String username = sp.getString("mqtt_username", "");
-        String password = sp.getString("mqtt_password", "");
-        boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
-
-        mqttClient.connectAndSubscribe(context, brokerUrl, clientId, topicFilter,
-                username, password, trustAll,
-                new GatewayPacketsClient.PacketsListener() {
-                    @Override
-                    public void onStatus(String msg) {
-                        uiHandler.post(() -> {
-                            tvSearchStatus.setText(msg);
-                            android.util.Log.d("AddTerminalDialog", msg);
-                            // 订阅成功后隐藏进度
-                            if (msg != null && msg.contains("订阅成功")) {
-                                pbSearching.setVisibility(View.GONE);
-                                llSearchStatus.setVisibility(View.GONE);
-                            }
-                        });
-                    }
-
-
-
-                    @Override
-                    public void onPackets(List<GatewayPacketsClient.PacketRecord> records) {
-                        uiHandler.post(() -> {
-                            if (records == null || records.isEmpty()) {
-                                tvNoPackets.setVisibility(View.VISIBLE);
-                                return;
-                            }
-                            llPacketsHeader.setVisibility(View.VISIBLE);
-                            rvPackets.setVisibility(View.VISIBLE);
-                            tvNoPackets.setVisibility(View.GONE);
-                            packets.clear();
-                            packets.addAll(records);
-                            if (cbGroupByDevEui.isChecked()) {
-                                packetRecordAdapter.setGroupedRecords(packets);
-                            } else {
-                                packetRecordAdapter.setRecords(packets);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        uiHandler.post(() -> {
-                            tvNoPackets.setText("MQTT连接/订阅失败：" + error);
-                            tvNoPackets.setVisibility(View.VISIBLE);
-                        });
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        // ignore
-                    }
-                });
 
         // 旧代码：通过网关HTTP抓取packets，已停用
         // new Thread(() -> {
