@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat;
 import android.app.Service;
 import android.util.Log;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
 
@@ -36,12 +37,15 @@ public class MqttBrokerService extends Service {
     private Server broker;
     private int currentPort = -1;
     private ExecutorService brokerExecutor;
+    private android.os.Handler tickHandler;
+    private final java.util.concurrent.atomic.AtomicReference<String> lastFireKey = new java.util.concurrent.atomic.AtomicReference<>("");
 
     @Override
     public void onCreate() {
         super.onCreate();
         ensureNotificationChannel();
         brokerExecutor = Executors.newSingleThreadExecutor();
+        tickHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     }
 
     @Override
@@ -54,6 +58,7 @@ public class MqttBrokerService extends Service {
         } else {
             startBrokerIfNeeded(port);
         }
+        startTicking();
         return START_STICKY;
     }
 
@@ -150,6 +155,8 @@ public class MqttBrokerService extends Service {
             if (nm != null) {
                 NotificationChannel ch = new NotificationChannel(CHANNEL_ID, "MQTT Broker", NotificationManager.IMPORTANCE_LOW);
                 nm.createNotificationChannel(ch);
+                NotificationChannel ch2 = new NotificationChannel("inventory_schedule", "定时清点", NotificationManager.IMPORTANCE_DEFAULT);
+                nm.createNotificationChannel(ch2);
             }
         }
     }
@@ -183,5 +190,109 @@ public class MqttBrokerService extends Service {
         } catch (Exception ignored) {
             return "";
         }
+    }
+
+    private void startTicking() {
+        if (tickHandler == null) return;
+        tickHandler.removeCallbacksAndMessages(null);
+        tickHandler.post(tickRunnable);
+    }
+
+    private final Runnable tickRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                LogUtils.e("---");
+                boolean enabled = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("inventory_schedule_enabled", true);
+                if (enabled) {
+                    int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                    int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                    int ch = cal.get(java.util.Calendar.HOUR_OF_DAY);
+                    int cm = cal.get(java.util.Calendar.MINUTE);
+                    int day = cal.get(java.util.Calendar.DAY_OF_YEAR);
+                    String key = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day, h, m);
+                    String currKey = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day, ch, cm);
+                    String last = lastFireKey.get();
+                    LogUtils.e("--- ch=" + ch+ "--cm=" + cm + "-----h=" + h + "----" + m + "____" + !key.equals(last)) ;
+                    if (h == ch && m == cm && !key.equals(last)) {
+                        lastFireKey.set(key);
+                        performInventoryDownlink();
+                    } else if (!currKey.equals(last) && !key.equals(last) && (h != ch || m != cm)) {
+                        // 重置日切换或分钟变更
+                    }
+                }
+            } catch (Exception ignored) {}
+            if (tickHandler != null) tickHandler.postDelayed(this, 1000);
+        }
+    };
+
+    private void performInventoryDownlink() {
+        Context ctx = getApplicationContext();
+        int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+        int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+        String alarmTs = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m);
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                Intent open = new Intent(ctx, com.lora.cn.ui.activity.MainActivity.class);
+                android.app.PendingIntent contentPi = android.app.PendingIntent.getActivity(ctx, 30001, open, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+                NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, "inventory_schedule")
+                        .setSmallIcon(com.lora.cn.R.mipmap.app_logo)
+                        .setContentTitle("定时清点已触发")
+                        .setContentText("时间: " + alarmTs)
+                        .setContentIntent(contentPi)
+                        .setAutoCancel(true);
+                nm.notify(30002, b.build());
+            }
+        } catch (Exception ignored) {}
+        com.lora.cn.network.MqttPacketsClient client = com.lora.cn.network.MqttPacketsClient.getShared();
+        try {
+            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+            boolean localEnabled = sp.getBoolean("mqtt_local_broker_enabled", true);
+            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
+            String brokerUrl = localEnabled ? ("tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883)) : sp.getString("mqtt_broker_url", "");
+            String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
+            String username = sp.getString("mqtt_username", "");
+            String password = sp.getString("mqtt_password", "");
+            boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
+            if (!client.isConnected() && brokerUrl != null && !brokerUrl.isEmpty()) {
+                client.connectAndSubscribe(ctx, brokerUrl, "android-ticker", topicFilter, username, password, trustAll,
+                        new com.lora.cn.network.GatewayPacketsClient.PacketsListener() {
+                            @Override public void onStatus(String msg) {}
+                            @Override public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {}
+                            @Override public void onError(String error) {}
+                            @Override public void onComplete() {}
+                        });
+            }
+        } catch (Exception ignored) {}
+        try {
+            com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(ctx);
+            java.util.List<com.lora.cn.ui.model.Terminal> terminals = db.getAllTerminals();
+            int mins = Math.max(0, Math.min(1440, h * 60 + m));
+            com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
+            if (terminals != null) {
+                for (com.lora.cn.ui.model.Terminal t : terminals) {
+                    String dev = t.getTerminalId() != null ? t.getTerminalId().trim().replace(" ", "") : "";
+                    if (dev.length() != 16) continue;
+                    int dep = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
+                    int cart = (int) Math.max(0, Math.min(255, t.getRoomId()));
+                    helper.sendDownlink8001(dev, 1, 1, dep, cart, 0, 0, 60, 1, new int[]{mins}, true);
+                    try {
+                        com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+                        li.setTerminalId(t.getTerminalId());
+                        li.setTerminalName(t.getTerminalName());
+                        li.setDeviceId(t.getTerminalId());
+                        li.setStatusCode(com.lora.cn.ui.constants.LogStatus.TIMED_MAINTENANCE.code);
+                        String ts = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                        li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
+                        li.setOperationTime(ts);
+                        li.setCreateTime(ts);
+                        li.setAction("终端清点: 定时维护(" + alarmTs + ")");
+                        //db.addLog(li);
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
     }
 }

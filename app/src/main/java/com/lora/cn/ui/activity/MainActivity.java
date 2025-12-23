@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.blankj.utilcode.util.SPUtils;
 import com.chad.library.adapter4.BaseQuickAdapter;
 import com.google.gson.Gson;
@@ -200,6 +201,35 @@ public class MainActivity extends AppCompatActivity {
         // 默认显示终端列表
         menuTabs.get(0).setSelected(true);
         menuTabAdapter.notifyDataSetChanged();
+
+        try {
+            LogUtils.e("android.os.Build.VERSION.SDK_INT===" + android.os.Build.VERSION.SDK_INT);
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                android.app.AlarmManager am = (android.app.AlarmManager) getSystemService(android.content.Context.ALARM_SERVICE);
+                boolean prompted = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("exact_alarm_permission_prompted", false);
+                if (am != null && !am.canScheduleExactAlarms() && !prompted) {
+                    com.blankj.utilcode.util.SPUtils.getInstance().put("exact_alarm_permission_prompted", true);
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("需要精确闹钟权限")
+                            .setMessage("为确保定时清点准时执行，请允许精确闹钟。")
+                            .setPositiveButton("去开启", (d, w) -> {
+                                try {
+                                    android.content.Intent i = new android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                                    i.setData(android.net.Uri.parse("package:" + getPackageName()));
+                                    startActivity(i);
+                                } catch (Exception e) {
+                                    android.content.Intent i2 = new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                    i2.setData(android.net.Uri.parse("package:" + getPackageName()));
+                                    startActivity(i2);
+                                }
+                            })
+                            .setNegativeButton("稍后", null)
+                            .show();
+                }
+            }
+        } catch (Exception ignored) {
+            LogUtils.e("ERROR===" + ignored);
+        }
 
         try {
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();

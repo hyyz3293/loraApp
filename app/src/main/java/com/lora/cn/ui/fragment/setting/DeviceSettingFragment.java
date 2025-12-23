@@ -203,7 +203,7 @@ public class DeviceSettingFragment extends Fragment {
             SPUtils.getInstance().put("inventory_schedule_hour", hourOfDay);
             SPUtils.getInstance().put("inventory_schedule_minute", minute);
             SPUtils.getInstance().put("inventory_schedule_enabled", true);
-            scheduleInventory(hourOfDay, minute);
+            //scheduleInventory(hourOfDay, minute);
             try {
                 com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(ctx.getApplicationContext());
                 com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
@@ -216,7 +216,7 @@ public class DeviceSettingFragment extends Fragment {
                 li.setOperationTime(ts);
                 li.setCreateTime(ts);
                 li.setAction("设置: 定时清点=" + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
-                db.addLog(li);
+                //db.addLog(li);
             } catch (Exception ignored) {}
             Toast.makeText(ctx, "已设置定时清点: " + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute), Toast.LENGTH_SHORT).show();
             initSettingData();
@@ -226,11 +226,15 @@ public class DeviceSettingFragment extends Fragment {
     
     private void scheduleInventory(int hour, int minute) {
         android.content.Context ctx = requireContext().getApplicationContext();
+        //com.lora.cn.work.InventoryScheduleWorker.scheduleAt(ctx, hour, minute);
+
         AlarmManager am = (AlarmManager) ctx.getSystemService(android.content.Context.ALARM_SERVICE);
         if (am == null) return;
         Intent intent = new Intent("com.lora.cn.ACTION_INVENTORY_SCHEDULE");
         intent.setClass(ctx, com.lora.cn.receiver.InventoryScheduleReceiver.class);
         PendingIntent pi = PendingIntent.getBroadcast(ctx, 10001, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Intent showIntent = new Intent(ctx, com.lora.cn.ui.activity.MainActivity.class);
+        PendingIntent showPi = PendingIntent.getActivity(ctx, 20001, showIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
@@ -244,7 +248,8 @@ public class DeviceSettingFragment extends Fragment {
         }
         am.cancel(pi);
         if (android.os.Build.VERSION.SDK_INT >= 23) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi);
+            AlarmManager.AlarmClockInfo info = new AlarmManager.AlarmClockInfo(trigger, showPi);
+            am.setAlarmClock(info, pi);
         } else {
             am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi);
         }
