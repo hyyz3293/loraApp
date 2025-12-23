@@ -11,7 +11,7 @@ public class BootReceiver extends android.content.BroadcastReceiver {
         if (!android.content.Intent.ACTION_BOOT_COMPLETED.equals(action)) return;
         boolean enabled = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("inventory_schedule_enabled", false);
         if (!enabled) return;
-        int hour = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 8);
+        int hour = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
         int minute = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
         android.app.AlarmManager am = (android.app.AlarmManager) context.getSystemService(android.content.Context.ALARM_SERVICE);
         if (am == null) return;
@@ -30,6 +30,10 @@ public class BootReceiver extends android.content.BroadcastReceiver {
             trigger = cal.getTimeInMillis();
         }
         am.cancel(pi);
-        am.setRepeating(android.app.AlarmManager.RTC_WAKEUP, trigger, android.app.AlarmManager.INTERVAL_DAY, pi);
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, trigger, pi);
+        } else {
+            am.setExact(android.app.AlarmManager.RTC_WAKEUP, trigger, pi);
+        }
     }
 }

@@ -242,7 +242,11 @@ public class DeviceSettingFragment extends Fragment {
             trigger = cal.getTimeInMillis();
         }
         am.cancel(pi);
-        am.setRepeating(AlarmManager.RTC_WAKEUP, trigger, AlarmManager.INTERVAL_DAY, pi);
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi);
+        } else {
+            am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi);
+        }
     }
     
     /**
