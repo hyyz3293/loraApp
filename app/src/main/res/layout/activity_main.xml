@@ -69,24 +69,17 @@
                     android:id="@+id/rl_alert_icon"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
-                    android:layout_marginRight="12dp">
+                    android:layout_marginRight="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless">
 
                     <ImageView
                         android:id="@+id/iv_alert_icon"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:layout_centerInParent="true"
-                        android:src="@drawable/ic_warning"
-                        android:tint="#B1060F" />
-
-                    <ImageView
-                        android:id="@+id/iv_alert_icon_muted_mark"
-                        android:visibility="gone"
-                        android:layout_centerInParent="true"
-                        android:rotation="45"
-                        android:background="@drawable/ic_close_small"
-                        android:layout_width="18dp"
-                        android:layout_height="18dp" />
+                        android:src="@drawable/ic_alert_horn_red" />
                 </RelativeLayout>
 
                 <ImageView

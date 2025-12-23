@@ -58,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
     private UserInfoFragment userInfoFragment;
     private View rlAlertIcon;
     private ImageView ivAlertIcon;
-    private ImageView ivAlertIconMutedMark;
     
     private int currentTabIndex = 0;
     private boolean isUserInfoVisible = false;
@@ -332,7 +331,6 @@ public class MainActivity extends AppCompatActivity {
         fragmentDeviceListContainer = findViewById(R.id.fragment_device_list_container);
         rlAlertIcon = findViewById(R.id.rl_alert_icon);
         ivAlertIcon = findViewById(R.id.iv_alert_icon);
-        ivAlertIconMutedMark = findViewById(R.id.iv_alert_icon_muted_mark);
         View globalOverlay = findViewById(R.id.global_overlay_container);
         if (globalOverlay != null) globalOverlay.bringToFront();
         llAlertPending = findViewById(R.id.ll_alert_pending);
@@ -347,6 +345,9 @@ public class MainActivity extends AppCompatActivity {
         tvErrorVoiceNo = findViewById(R.id.error_voice_no);
         tvErrorComplete = findViewById(R.id.error_complte);
 
+        if (rlAlertIcon != null) {
+            rlAlertIcon.setOnClickListener(this::toggleGlobalMute);
+        }
         if (ivErrorSmall != null) {
             ivErrorSmall.setOnClickListener(v -> minimizePending());
         }
@@ -360,23 +361,27 @@ public class MainActivity extends AppCompatActivity {
             });
         }
         if (tvErrorVoiceNo != null) {
-            tvErrorVoiceNo.setOnClickListener(v -> {
-                alertMuted = !alertMuted;
-                com.blankj.utilcode.util.SPUtils.getInstance().put("global_alert_muted", alertMuted);
-                if (alertMuted) {
-                    stopAlertRinging();
-                }
-                updateAlertMutedUI();
-                v.setPressed(true);
-                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 200);
-                android.widget.Toast.makeText(this, alertMuted ? "已静音" : "已取消静音", android.widget.Toast.LENGTH_SHORT).show();
-            });
+            tvErrorVoiceNo.setOnClickListener(this::toggleGlobalMute);
         }
         if (tvErrorComplete != null) {
             tvErrorComplete.setOnClickListener(v -> showImmediateHandleDialog());
             tvErrorComplete.setText("确认处理");
         }
         updateAlertMutedUI();
+    }
+
+    private void toggleGlobalMute(View v) {
+        alertMuted = !alertMuted;
+        com.blankj.utilcode.util.SPUtils.getInstance().put("global_alert_muted", alertMuted);
+        if (alertMuted) {
+            stopAlertRinging();
+        }
+        updateAlertMutedUI();
+        if (v != null) {
+            v.setPressed(true);
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 200);
+        }
+        android.widget.Toast.makeText(this, alertMuted ? "已静音" : "已取消静音", android.widget.Toast.LENGTH_SHORT).show();
     }
 
     private void updateAlertMutedUI() {
@@ -386,8 +391,8 @@ public class MainActivity extends AppCompatActivity {
             }
             android.view.View slash = findViewById(R.id.error_muted_mark);
             if (slash != null) slash.setVisibility(alertMuted ? android.view.View.VISIBLE : android.view.View.GONE);
-            if (ivAlertIconMutedMark != null) {
-                ivAlertIconMutedMark.setVisibility(alertMuted ? View.VISIBLE : View.GONE);
+            if (ivAlertIcon != null) {
+                ivAlertIcon.setImageResource(alertMuted ? R.drawable.ic_alert_horn_red_muted : R.drawable.ic_alert_horn_red);
             }
         } catch (Exception ignored) {}
     }
