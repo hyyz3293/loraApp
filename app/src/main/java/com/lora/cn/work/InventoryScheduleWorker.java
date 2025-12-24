@@ -23,6 +23,15 @@ public class InventoryScheduleWorker extends Worker {
         Context ctx = getApplicationContext();
         int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
         int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        int day = cal.get(java.util.Calendar.DAY_OF_YEAR);
+        String key = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day, h, m);
+        String last = com.blankj.utilcode.util.SPUtils.getInstance().getString("inventory_last_fire_key", "");
+        if (key.equals(last)) {
+            scheduleFromPrefs(ctx);
+            return Result.success();
+        }
+        com.blankj.utilcode.util.SPUtils.getInstance().put("inventory_last_fire_key", key);
         com.lora.cn.network.MqttPacketsClient client = com.lora.cn.network.MqttPacketsClient.getShared();
         try {
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();

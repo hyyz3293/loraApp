@@ -202,7 +202,7 @@ public class MqttBrokerService extends Service {
         @Override
         public void run() {
             try {
-                LogUtils.e("---");
+                //LogUtils.e("---");
                 boolean enabled = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("inventory_schedule_enabled", true);
                 if (enabled) {
                     int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
@@ -213,13 +213,13 @@ public class MqttBrokerService extends Service {
                     int day = cal.get(java.util.Calendar.DAY_OF_YEAR);
                     String key = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day, h, m);
                     String currKey = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day, ch, cm);
-                    String last = lastFireKey.get();
-                    LogUtils.e("--- ch=" + ch+ "--cm=" + cm + "-----h=" + h + "----" + m + "____" + !key.equals(last)) ;
+                    String last = com.blankj.utilcode.util.SPUtils.getInstance().getString("inventory_last_fire_key", "");
+                    //LogUtils.e("--- ch=" + ch+ "--cm=" + cm + "-----h=" + h + "----" + m + "____" + !key.equals(last)) ;
                     if (h == ch && m == cm && !key.equals(last)) {
                         lastFireKey.set(key);
+                        com.blankj.utilcode.util.SPUtils.getInstance().put("inventory_last_fire_key", key);
                         performInventoryDownlink();
                     } else if (!currKey.equals(last) && !key.equals(last) && (h != ch || m != cm)) {
-                        // 重置日切换或分钟变更
                     }
                 }
             } catch (Exception ignored) {}
@@ -228,6 +228,15 @@ public class MqttBrokerService extends Service {
     };
 
     private void performInventoryDownlink() {
+        int h0 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+        int m0 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+        java.util.Calendar cal0 = java.util.Calendar.getInstance();
+        int day0 = cal0.get(java.util.Calendar.DAY_OF_YEAR);
+        String key0 = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day0, h0, m0);
+        String last0 = com.blankj.utilcode.util.SPUtils.getInstance().getString("inventory_last_fire_key", "");
+        if (key0.equals(last0)) return;
+        lastFireKey.set(key0);
+        com.blankj.utilcode.util.SPUtils.getInstance().put("inventory_last_fire_key", key0);
         Context ctx = getApplicationContext();
         int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
         int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
