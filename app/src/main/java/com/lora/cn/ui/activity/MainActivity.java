@@ -74,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     private int lastBadgeQueueSize = -1;
     private long lastBadgeRequestMs = 0L;
     private boolean badgeRequestDelayed = false;
+    private int mqttReadyRetry = 0;
     private final Runnable badgeRequestRunnable = new Runnable() {
         @Override
         public void run() {
@@ -245,7 +246,9 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onReceive(android.content.Context context, android.content.Intent intent) {
                     if ("com.lora.cn.MQTT_BROKER_READY".equals(intent.getAction())) {
-                        android.util.Log.i(TAG, "收到MQTT_BROKER_READY广播，开始连接本地MQTT");
+                        int p = intent != null ? intent.getIntExtra("port", -1) : -1;
+                        String ips = intent != null ? intent.getStringExtra("ips") : "";
+                        android.util.Log.i(TAG, "收到MQTT_BROKER_READY广播: port=" + p + ", ips=" + ips + "，开始连接本地MQTT");
                         startGlobalMqttLogging();
                     }
                 }
@@ -254,6 +257,7 @@ public class MainActivity extends AppCompatActivity {
             registerReceiver(brokerReadyReceiver, filter);
             // 若服务端已就绪（比如用户此前已启动），立即连接
             if (sp.getBoolean("mqtt_local_broker_ready", false)) {
+                android.util.Log.i(TAG, "检测到mqtt_local_broker_ready=true，立即连接本地MQTT");
                 startGlobalMqttLogging();
             }
         } catch (Exception ignored) {
@@ -1634,12 +1638,24 @@ public class MainActivity extends AppCompatActivity {
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
             int localPort = sp.getInt("mqtt_local_broker_port", 1883);
             String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
+            boolean readyFlag = sp.getBoolean("mqtt_local_broker_ready", false);
+            android.util.Log.i(TAG, "准备连接MQTT: brokerUrl=" + brokerUrl + ", readyFlag=" + readyFlag + ", attempt=" + mqttReadyRetry);
+            if (!isLocalPortOpen(localPort)) {
+                android.util.Log.w(TAG, "本地端口未打开，延迟重试: port=" + localPort + ", attempt=" + mqttReadyRetry);
+                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                if (mqttReadyRetry < 40) {
+                    mqttReadyRetry++;
+                    mainHandler.postDelayed(this::startGlobalMqttLogging, 500);
+                    return;
+                }
+            }
             android.util.Log.i(TAG, "使用本地MQTT Broker: " + brokerUrl);
             final String clientId = "android-main";
             String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
             String username = sp.getString("mqtt_username", "");
             String password = sp.getString("mqtt_password", "");
             boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
+            android.util.Log.i(TAG, "开始连接MQTT: clientId=" + clientId + ", topicFilter=" + topicFilter);
             mqttClient.connectAndSubscribe(getApplicationContext(), brokerUrl, clientId, topicFilter,
                     username, password, trustAll,
                     new GatewayPacketsClient.PacketsListener() {
@@ -1834,6 +1850,17 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "navigateHome 异常: " + e.getMessage());
         } finally {
             lastNonHomeStartMs = 0L;
+        }
+    }
+
+    private boolean isLocalPortOpen(int port) {
+        try {
+            java.net.Socket s = new java.net.Socket();
+            s.connect(new java.net.InetSocketAddress("127.0.0.1", port > 0 ? port : 1883), 200);
+            try { s.close(); } catch (Exception ignored) {}
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
