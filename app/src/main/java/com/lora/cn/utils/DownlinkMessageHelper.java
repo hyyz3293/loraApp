@@ -53,16 +53,22 @@ public class DownlinkMessageHelper {
             int alarmCount = 1;
             int[] alarmMinutes = new int[]{getGlobalAlarmMinute()};
             int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin);
-            intervalMin = Math.max(3, Math.min(1440, intervalMin));
-            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+            intervalMin = Math.max(5, Math.min(1440, intervalMin));
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
                 System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
                 ackResult,
-                queryOp,
                 departmentId,
                 cartId,
-                registerResult,
+                0xFF,
+                0xFF,
+                queryOp,
                 clearMask,
                 intervalMin,
                 alarmCount,
@@ -113,17 +119,23 @@ public class DownlinkMessageHelper {
                 Log.e(TAG, "MQTT客户端未初始化");
                 return;
             }
-            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
                 System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
                 ackResult,
-                queryOp,
                 departmentId,
                 cartId,
-                registerResult,
+                0xFF,
+                0xFF,
+                queryOp,
                 clearMask,
-                reportIntervalMin,
+                Math.max(5, Math.min(1440, reportIntervalMin)),
                 alarmCount,
                 alarmMinutes
             );
@@ -188,23 +200,30 @@ public class DownlinkMessageHelper {
             0,
             0,
             0,
-            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
+            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 5),
             true
         );
     }
     public void sendAckDownlink(String deviceIdHex, int ackResult, int alarmCount, int[] alarmMinutes) {
         try {
-            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 5);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
                 System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
                 ackResult,
                 0,
                 0,
+                0xFF,
+                0xFF,
                 0,
                 0,
-                0,
-                com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
+                intervalMin,
                 alarmCount,
                 alarmMinutes
             );
@@ -229,29 +248,58 @@ public class DownlinkMessageHelper {
      * @param deviceIdHex 设备ID
      */
     public void sendQueryStatusDownlink(String deviceIdHex) {
-        sendDownlink8001(
-            deviceIdHex,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
-            true
-        );
-    }
-    public void sendQueryStatusDownlink(String deviceIdHex, int alarmCount, int[] alarmMinutes) {
         try {
-            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 5);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
                 System.currentTimeMillis(),
-                0,
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
                 1,
                 0,
                 0,
+                0xFF,
+                0xFF,
+                1,
                 0,
+                intervalMin,
+                1,
+                new int[]{getGlobalAlarmMinute()}
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true
+            );
+            Log.i(TAG, "查询下发已调用publish: devEUI=" + deviceIdHex);
+        } catch (Exception e) {
+            Log.e(TAG, "查询下发失败: devEUI=" + deviceIdHex + ", err=" + e.getMessage(), e);
+        }
+    }
+    public void sendQueryStatusDownlink(String deviceIdHex, int alarmCount, int[] alarmMinutes) {
+        try {
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
+                0,
+                0,
+                0,
+                0xFF,
+                0xFF,
+                1,
                 0,
                 com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
                 alarmCount,
@@ -284,17 +332,41 @@ public class DownlinkMessageHelper {
                                   int departmentId, 
                                   int cartId, 
                                   int reportIntervalMin) {
-        sendDownlink8001(
-            deviceIdHex,
-            1,
-            0,
-            departmentId,
-            cartId,
-            2,
-            0,
-            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin),
-            true
-        );
+        try {
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin);
+            intervalMin = Math.max(5, Math.min(1440, intervalMin));
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
+                1,
+                departmentId,
+                cartId,
+                0xFF,
+                0xFF,
+                0,
+                0,
+                intervalMin,
+                1,
+                new int[]{getGlobalAlarmMinute()}
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true
+            );
+            Log.i(TAG, "配置下发已调用publish: devEUI=" + deviceIdHex);
+        } catch (Exception e) {
+            Log.e(TAG, "配置下发失败: devEUI=" + deviceIdHex + ", err=" + e.getMessage(), e);
+        }
     }
     public void sendConfigDownlink(String deviceIdHex,
                                    int departmentId,
@@ -303,15 +375,21 @@ public class DownlinkMessageHelper {
                                    int alarmCount,
                                    int[] alarmMinutes) {
         try {
-            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
                 System.currentTimeMillis(),
-                0,
-                0,
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
+                1,
                 departmentId,
                 cartId,
-                2,
+                0xFF,
+                0xFF,
+                0,
                 0,
                 com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin),
                 alarmCount,
@@ -339,29 +417,58 @@ public class DownlinkMessageHelper {
      * @param clearMask 清除掩码 (bit0:清除事件, bit1:清除状态, bit2:清除配置等)
      */
     public void sendClearDataDownlink(String deviceIdHex, int clearMask) {
-        sendDownlink8001(
-            deviceIdHex,
-            1,
-            1,
-            0,
-            0,
-            0,
-            clearMask,
-            60,
-            true
-        );
-    }
-    public void sendClearDataDownlink(String deviceIdHex, int clearMask, int alarmCount, int[] alarmMinutes) {
         try {
-            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 5);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
                 System.currentTimeMillis(),
-                0,
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
                 1,
                 0,
                 0,
+                0xFF,
+                0xFF,
+                1,
+                clearMask,
+                intervalMin,
+                1,
+                new int[]{getGlobalAlarmMinute()}
+            );
+            String payloadHex = LoRaProtocolParser.bytesToHex(downlinkFrame);
+            mqttClient.publishDownlinkByDevEuiTopic(
+                DOWNLINK_TOPIC_BASE,
+                deviceIdHex,
+                payloadHex,
+                DEFAULT_FPORT,
+                true
+            );
+            Log.i(TAG, "清除下发已调用publish: devEUI=" + deviceIdHex);
+        } catch (Exception e) {
+            Log.e(TAG, "清除下发失败: devEUI=" + deviceIdHex + ", err=" + e.getMessage(), e);
+        }
+    }
+    public void sendClearDataDownlink(String deviceIdHex, int clearMask, int alarmCount, int[] alarmMinutes) {
+        try {
+            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
+                deviceIdHex,
+                (byte) (System.currentTimeMillis() & 0xFF),
+                System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
+                1,
                 0,
+                0,
+                0xFF,
+                0xFF,
+                1,
                 clearMask,
                 60,
                 alarmCount,
@@ -383,34 +490,47 @@ public class DownlinkMessageHelper {
     }
 
     public String buildDownlink8001Hex(String deviceIdHex, int clearMask, int intervalMin) {
-        byte[] frame = LoRaProtocolParser.buildDownlink8001(
+        int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+        byte[] frame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) 0x01,
                 System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
                 1,
                 0,
                 0,
-                0,
+                0xFF,
+                0xFF,
                 0,
                 clearMask,
-                intervalMin,
+                Math.max(5, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", intervalMin))),
                 1,
                 new int[]{getGlobalAlarmMinute()});
         return LoRaProtocolParser.bytesToHex(frame);
     }
 
     public void sendDownlink8001Config(String deviceIdHex, int clearMask) {
-        byte[] frame = LoRaProtocolParser.buildDownlink8001(
+        int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+        int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 5);
+        byte[] frame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) 0x01,
                 System.currentTimeMillis(),
+                0xFFFFFFFF,
+                0xFFFFFFFF,
+                0xFFFF,
+                lowBatteryPercent,
                 1,
                 0,
                 0,
-                0,
+                0xFF,
+                0xFF,
                 0,
                 clearMask,
-                5,
+                intervalMin,
                 1,
                 new int[]{getGlobalAlarmMinute()});
         String payloadHex = LoRaProtocolParser.bytesToHex(frame);

@@ -326,6 +326,11 @@ public class LoRaProtocolParser {
         }
         byte xor = 0;
         for (int i = 1; i < idx; i++) xor ^= frame[i];
+        if (idx + 2 > frame.length) {
+            byte[] resized = new byte[idx + 2];
+            System.arraycopy(frame, 0, resized, 0, idx);
+            frame = resized;
+        }
         frame[idx++] = xor;
         frame[idx++] = (byte) 0x5A;
         return frame;
@@ -334,6 +339,111 @@ public class LoRaProtocolParser {
     public static byte[] buildDownlink8001Simple(String deviceIdHex) {
         long utc = System.currentTimeMillis();
         return buildDownlink8001(deviceIdHex, (byte) 0x01, utc, 1, 0, 0, 0, 0, 0, 60, 0, null);
+    }
+
+    public static byte[] buildDownlink8001Full(String deviceIdHex,
+                                               byte sequence,
+                                               long utcMs,
+                                               int reserve2_4b,
+                                               int reserve3_4b,
+                                               int reserve4_2b,
+                                               int lowBatteryPercent,
+                                               int ackResult,
+                                               int departmentId,
+                                               int cartId,
+                                               int reserve9_1b,
+                                               int reserve10_1b,
+                                               int queryOp,
+                                               int clearMask,
+                                               int reportIntervalMin,
+                                               int alarmCount,
+                                               int[] alarmMinutes) {
+        byte[] deviceId = hexToBytes(deviceIdHex);
+        if (deviceId == null) deviceId = new byte[8];
+        if (deviceId.length != 8) {
+            byte[] fixed = new byte[8];
+            int copy = Math.min(deviceId.length, 8);
+            System.arraycopy(deviceId, 0, fixed, 0, copy);
+            deviceId = fixed;
+        }
+        byte[] func = new byte[]{(byte) 0x80, 0x01};
+        byte[] time = buildBcdTimeBytes(utcMs);
+        byte[] res2 = new byte[]{
+                (byte) ((reserve2_4b >> 24) & 0xFF),
+                (byte) ((reserve2_4b >> 16) & 0xFF),
+                (byte) ((reserve2_4b >> 8) & 0xFF),
+                (byte) (reserve2_4b & 0xFF)
+        };
+        byte[] res3 = new byte[]{
+                (byte) ((reserve3_4b >> 24) & 0xFF),
+                (byte) ((reserve3_4b >> 16) & 0xFF),
+                (byte) ((reserve3_4b >> 8) & 0xFF),
+                (byte) (reserve3_4b & 0xFF)
+        };
+        int r4 = Math.max(0, Math.min(0xFFFF, reserve4_2b));
+        byte[] res4 = new byte[]{(byte) ((r4 >> 8) & 0xFF), (byte) (r4 & 0xFF)};
+        byte low = (byte) (Math.max(0, Math.min(100, lowBatteryPercent)) & 0xFF);
+        byte ack = (byte) (ackResult & 0x01);
+        byte dep = (byte) (departmentId & 0xFF);
+        byte cart = (byte) (cartId & 0xFF);
+        byte r9 = (byte) (reserve9_1b & 0xFF);
+        byte r10 = (byte) (reserve10_1b & 0xFF);
+        byte qop = (byte) (queryOp & 0xFF);
+        byte[] clear = new byte[]{
+                (byte) ((clearMask >> 24) & 0xFF),
+                (byte) ((clearMask >> 16) & 0xFF),
+                (byte) ((clearMask >> 8) & 0xFF),
+                (byte) (clearMask & 0xFF)
+        };
+        int interval = Math.max(5, Math.min(1440, reportIntervalMin));
+        byte[] intervalBytes = new byte[]{(byte) ((interval >> 8) & 0xFF), (byte) (interval & 0xFF)};
+        int ac = Math.max(0, Math.min(2, alarmCount));
+        int listLen = 0;
+        if (ac > 0 && alarmMinutes != null) {
+            listLen = Math.min(ac, alarmMinutes.length) * 2;
+        } else {
+            ac = 0;
+            listLen = 0;
+        }
+        int len = 7 + 4 + 4 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 4 + 2 + 1 + listLen;
+        int totalLen = 1 + deviceId.length + func.length + 1 + 2 + len + 1 + 1;
+        byte[] frame = new byte[totalLen];
+        int idx = 0;
+        frame[idx++] = (byte) 0xA5;
+        System.arraycopy(deviceId, 0, frame, idx, deviceId.length); idx += deviceId.length;
+        System.arraycopy(func, 0, frame, idx, func.length); idx += func.length;
+        frame[idx++] = sequence;
+        frame[idx++] = (byte) ((len >> 8) & 0xFF);
+        frame[idx++] = (byte) (len & 0xFF);
+        System.arraycopy(time, 0, frame, idx, time.length); idx += time.length;
+        System.arraycopy(res2, 0, frame, idx, res2.length); idx += res2.length;
+        System.arraycopy(res3, 0, frame, idx, res3.length); idx += res3.length;
+        System.arraycopy(res4, 0, frame, idx, res4.length); idx += res4.length;
+        frame[idx++] = low;
+        frame[idx++] = ack;
+        frame[idx++] = dep;
+        frame[idx++] = cart;
+        frame[idx++] = r9;
+        frame[idx++] = r10;
+        frame[idx++] = qop;
+        System.arraycopy(clear, 0, frame, idx, clear.length); idx += clear.length;
+        System.arraycopy(intervalBytes, 0, frame, idx, intervalBytes.length); idx += intervalBytes.length;
+        frame[idx++] = (byte) (ac & 0xFF);
+        for (int i = 0; i < ac && alarmMinutes != null && i < alarmMinutes.length; i++) {
+            int m = Math.max(0, Math.min(1440, alarmMinutes[i]));
+            frame[idx++] = (byte) ((m >> 8) & 0xFF);
+            frame[idx++] = (byte) (m & 0xFF);
+        }
+        byte xor = 0;
+        for (int i = 1; i < idx; i++) xor ^= frame[i];
+        if (idx + 2 > frame.length) {
+            byte[] resized = new byte[idx + 2];
+            System.arraycopy(frame, 0, resized, 0, idx);
+            frame = resized;
+        }
+        frame[idx++] = xor;
+        frame[idx++] = (byte) 0x5A;
+        return frame;
     }
 
     private static byte[] buildBcdTimeBytes(long utcMs) {

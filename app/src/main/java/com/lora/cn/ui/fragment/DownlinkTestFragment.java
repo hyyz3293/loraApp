@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.lora.cn.R;
 import com.lora.cn.network.MqttPacketsClient;
 import com.lora.cn.database.DatabaseHelper;
@@ -31,12 +32,21 @@ public class DownlinkTestFragment extends Fragment {
     private EditText etAlarmCount;
     private EditText etAlarmMinutes;
     private EditText etRawHex;
+    private EditText etBcdTime;
+    private EditText etRes2_4b;
+    private EditText etRes3_4b;
+    private EditText etRes4_2b;
+    private EditText etLowBattery;
+    private EditText etRes9_1b;
+    private EditText etRes10_1b;
     private Spinner spAckResult;
     private Spinner spQueryOp;
     private Spinner spRegisterResult;
 
     private DownlinkMessageHelper helper;
     private java.util.List<Terminal> terminalList = new java.util.ArrayList<>();
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private android.os.Handler mainHandler;
 
     @Nullable
     @Override
@@ -51,6 +61,13 @@ public class DownlinkTestFragment extends Fragment {
         etAlarmCount = v.findViewById(R.id.et_alarm_count);
         etAlarmMinutes = v.findViewById(R.id.et_alarm_minutes);
         etRawHex = v.findViewById(R.id.et_raw_hex);
+        etBcdTime = v.findViewById(R.id.et_bcd_time);
+        etRes2_4b = v.findViewById(R.id.et_res2_4b);
+        etRes3_4b = v.findViewById(R.id.et_res3_4b);
+        etRes4_2b = v.findViewById(R.id.et_res4_2b);
+        etLowBattery = v.findViewById(R.id.et_low_battery);
+        etRes9_1b = v.findViewById(R.id.et_res9_1b);
+        etRes10_1b = v.findViewById(R.id.et_res10_1b);
         spAckResult = v.findViewById(R.id.sp_ack_result);
         spQueryOp = v.findViewById(R.id.sp_query_op);
         spRegisterResult = v.findViewById(R.id.sp_register_result);
@@ -63,6 +80,8 @@ public class DownlinkTestFragment extends Fragment {
             client = new MqttPacketsClient();
         }
         helper = new DownlinkMessageHelper(client);
+        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         try {
             DatabaseHelper db = DatabaseHelper.getInstance(requireContext());
             terminalList = db.getAllTerminals();
@@ -83,13 +102,17 @@ public class DownlinkTestFragment extends Fragment {
                         int cart = (int) Math.max(0, Math.min(255, sel.getRoomId()));
                         etDepartmentId.setText(String.valueOf(dep));
                         etCartId.setText(String.valueOf(cart));
-                        if (TextUtils.isEmpty(etIntervalMin.getText())) etIntervalMin.setText(String.valueOf(60));
+                        int intervalSet = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 60);
+                        if (TextUtils.isEmpty(etIntervalMin.getText())) etIntervalMin.setText(String.valueOf(Math.max(5, Math.min(1440, intervalSet))));
                         if (TextUtils.isEmpty(etClearMask.getText())) etClearMask.setText("00000000");
                         if (spAckResult != null) spAckResult.setSelection(0);
                         if (spQueryOp != null) spQueryOp.setSelection(0);
                         if (spRegisterResult != null) spRegisterResult.setSelection(1);
-                        if (TextUtils.isEmpty(etAlarmCount.getText())) etAlarmCount.setText("0");
-                        if (TextUtils.isEmpty(etAlarmMinutes.getText())) etAlarmMinutes.setText("");
+                        if (TextUtils.isEmpty(etAlarmCount.getText())) etAlarmCount.setText("1");
+                        int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                        int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                        int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                        if (TextUtils.isEmpty(etAlarmMinutes.getText())) etAlarmMinutes.setText(String.valueOf(mins));
                     }
                 }
                 @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
@@ -122,6 +145,7 @@ public class DownlinkTestFragment extends Fragment {
         View btnPresetConfig = v.findViewById(R.id.btn_preset_config_60_two_alarms);
         View btnPresetClear = v.findViewById(R.id.btn_preset_clear_all);
         View btnSendRawHex = v.findViewById(R.id.btn_send_raw_hex);
+        View btnBuildHex = v.findViewById(R.id.btn_build_hex);
 
         btnAck.setOnClickListener(view -> {
             String dev = getDevId();
@@ -129,24 +153,28 @@ public class DownlinkTestFragment extends Fragment {
             int ack = getSpinnerInt(spAckResult);
             int[] alarms = parseAlarms();
             int ac = getAlarmCount(alarms);
-            try {
-                helper.sendAckDownlink(dev, ack, ac, alarms);
-                Toast.makeText(requireContext(), "已发送应答下行", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendAckDownlink(dev, ack, ac, alarms);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送应答下行", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnQuery.setOnClickListener(view -> {
             String dev = getDevId();
             if (dev == null) return;
             int[] alarms = parseAlarms();
             int ac = getAlarmCount(alarms);
-            try {
-                helper.sendQueryStatusDownlink(dev, ac, alarms);
-                Toast.makeText(requireContext(), "已发送查询下行", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendQueryStatusDownlink(dev, ac, alarms);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送查询下行", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnConfig.setOnClickListener(view -> {
             String dev = getDevId();
@@ -156,12 +184,14 @@ public class DownlinkTestFragment extends Fragment {
             int interval = clamp(parseInt(etIntervalMin, 60), 5, 1440);
             int[] alarms = parseAlarms();
             int ac = getAlarmCount(alarms);
-            try {
-                helper.sendConfigDownlink(dev, dep, cart, interval, ac, alarms);
-                Toast.makeText(requireContext(), "已发送配置下行", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendConfigDownlink(dev, dep, cart, interval, ac, alarms);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送配置下行", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnClear.setOnClickListener(view -> {
             String dev = getDevId();
@@ -169,55 +199,125 @@ public class DownlinkTestFragment extends Fragment {
             int clearMask = parseHexInt(etClearMask, 0);
             int[] alarms = parseAlarms();
             int ac = getAlarmCount(alarms);
-            try {
-                helper.sendClearDataDownlink(dev, clearMask, ac, alarms);
-                Toast.makeText(requireContext(), "已发送清除下行", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendClearDataDownlink(dev, clearMask, ac, alarms);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送清除下行", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnPresetAck.setOnClickListener(view -> {
             String dev = getDevId();
             if (dev == null) return;
-            try {
-                helper.sendAckDownlink(dev, 0, 0, null);
-                Toast.makeText(requireContext(), "预设应答成功已发送", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendAckDownlink(dev, 0, 0, null);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设应答成功已发送", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnPresetQuery.setOnClickListener(view -> {
             String dev = getDevId();
             if (dev == null) return;
             int[] alarms = new int[]{480};
-            try {
-                helper.sendQueryStatusDownlink(dev, 1, alarms);
-                Toast.makeText(requireContext(), "预设例行查询已发送", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendQueryStatusDownlink(dev, 1, alarms);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设例行查询已发送", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnPresetConfig.setOnClickListener(view -> {
             String dev = getDevId();
             if (dev == null) return;
             int[] alarms = new int[]{480, 1215};
-            try {
-                helper.sendConfigDownlink(dev, 0, 0, 60, 2, alarms);
-                Toast.makeText(requireContext(), "预设配置60分钟+两闹钟已发送", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendConfigDownlink(dev, 0, 0, 60, 2, alarms);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设配置60分钟+两闹钟已发送", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnPresetClear.setOnClickListener(view -> {
             String dev = getDevId();
             if (dev == null) return;
             int clearMask = 0x00000005;
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendClearDataDownlink(dev, clearMask, 0, null);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设清除全部告警已发送", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
+        });
+        btnBuildHex.setOnClickListener(view -> {
+            String dev = getDevId();
+            if (dev == null) return;
+            long utcMs = System.currentTimeMillis();
             try {
-                helper.sendClearDataDownlink(dev, clearMask, 0, null);
-                Toast.makeText(requireContext(), "预设清除全部告警已发送", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+                String t = etBcdTime.getText() != null ? etBcdTime.getText().toString().trim() : "";
+                if (!TextUtils.isEmpty(t) && t.matches("\\d{14}")) {
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault());
+                    sdf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                    java.util.Date d = sdf.parse(t);
+                    if (d != null) utcMs = d.getTime();
+                }
+            } catch (Exception ignored) {}
+            final long utcMsFinal = utcMs;
+            int ack = getSpinnerInt(spAckResult);
+            int qop = getSpinnerInt(spQueryOp);
+            int dep = parseInt(etDepartmentId, 0);
+            int cart = parseInt(etCartId, 0);
+            int clearMask = parseHexInt(etClearMask, 0);
+            int interval = clamp(parseInt(etIntervalMin, 60), 5, 1440);
+            int[] alarms = parseAlarms();
+            int ac = getAlarmCount(alarms);
+            int res2 = parseHexInt(etRes2_4b, 0xFFFFFFFF);
+            int res3 = parseHexInt(etRes3_4b, 0xFFFFFFFF);
+            int res4 = parseHexInt(etRes4_2b, 0xFFFF);
+            int lowBat = clamp(parseInt(etLowBattery, 0), 0, 100);
+            int res9 = parseHexInt(etRes9_1b, 0xFF) & 0xFF;
+            int res10 = parseHexInt(etRes10_1b, 0xFF) & 0xFF;
+            ioExecutor.execute(() -> {
+                try {
+                    byte[] frame = com.lora.cn.utils.LoRaProtocolParser.buildDownlink8001Full(
+                            dev,
+                            (byte) (System.currentTimeMillis() & 0xFF),
+                            utcMsFinal,
+                            res2,
+                            res3,
+                            res4,
+                            lowBat,
+                            ack,
+                            dep,
+                            cart,
+                            res9,
+                            res10,
+                            qop,
+                            clearMask,
+                            interval,
+                            ac,
+                            alarms
+                    );
+                    String hex = com.lora.cn.utils.LoRaProtocolParser.bytesToHex(frame).replaceAll("\\s+", "");
+                    if (mainHandler != null) mainHandler.post(() -> {
+                        etRawHex.setText(hex);
+                        Toast.makeText(requireContext(), "已生成HEX", Toast.LENGTH_SHORT).show();
+                    });
+                } catch (Exception e) {
+                    LogUtils.e("生成失败:::=====" + e);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "生成失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         btnSendRawHex.setOnClickListener(view -> {
             String dev = getDevId();
@@ -227,12 +327,14 @@ public class DownlinkTestFragment extends Fragment {
                 Toast.makeText(requireContext(), "请输入原始HEX数据", Toast.LENGTH_SHORT).show();
                 return;
             }
-            try {
-                helper.sendRawHexDownlink(dev, hex);
-                Toast.makeText(requireContext(), "已发送原始HEX下行", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show();
-            }
+            ioExecutor.execute(() -> {
+                try {
+                    helper.sendRawHexDownlink(dev, hex);
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送原始HEX下行", Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
+                }
+            });
         });
         return v;
     }

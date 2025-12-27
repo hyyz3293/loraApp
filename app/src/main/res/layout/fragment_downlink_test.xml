@@ -13,134 +13,370 @@
             android:id="@+id/sp_terminal"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:background="@drawable/spinner_background"/>
-
-        <EditText
-            android:id="@+id/et_dev_id"
-            android:hint="设备ID(16位HEX)"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
             android:background="@drawable/spinner_background"
-            android:paddingLeft="10dp"/>
+            android:layout_marginBottom="8dp"/>
 
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
-
-            <EditText
-                android:id="@+id/et_department_id"
-                android:hint="科室ID(1-255)"
+            android:layout_marginTop="4dp">
+            <TextView
+                android:text="设备ID"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
-                android:background="@drawable/spinner_background"
-                android:paddingLeft="10dp"/>
-
-            <View
-                android:layout_width="12dp"
-                android:layout_height="40dp"/>
-
+                android:gravity="center_vertical"/>
             <EditText
-                android:id="@+id/et_cart_id"
-                android:hint="台车ID(1-255)"
+                android:id="@+id/et_dev_id"
+                android:hint="16位HEX"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
-                android:layout_weight="1"
+                android:layout_weight="2"
                 android:background="@drawable/spinner_background"
                 android:paddingLeft="10dp"/>
         </LinearLayout>
 
+        <TextView
+            android:text="DATA字段列表"
+            android:textStyle="bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"/>
+        
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
-
-            <EditText
-                android:id="@+id/et_interval_min"
-                android:hint="上报间隔(5-1440min)"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="1 数据产生时间(UTC)"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
-                android:background="@drawable/spinner_background"
-                android:paddingLeft="10dp"/>
-
-            <View
-                android:layout_width="12dp"
-                android:layout_height="40dp"/>
-
+                android:gravity="center_vertical"/>
             <EditText
-                android:id="@+id/et_clear_mask"
-                android:hint="清除掩码(HEX)"
+                android:id="@+id/et_bcd_time"
+                android:hint="YYYYMMDDhhmmss(留空自动)"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
-                android:layout_weight="1"
+                android:layout_weight="2"
                 android:background="@drawable/spinner_background"
                 android:paddingLeft="10dp"/>
         </LinearLayout>
-
+        
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
-
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="2 保留(4B)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_res2_4b"
+                android:hint="8位HEX, 默认FFFFFFFF"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="3 保留(4B)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_res3_4b"
+                android:hint="8位HEX, 默认FFFFFFFF"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="4 保留(2B)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_res4_2b"
+                android:hint="4位HEX, 默认FFFF"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="5 低电量报警预值(%)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_low_battery"
+                android:hint="0-100, 默认0"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="6 应答结果"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
             <Spinner
                 android:id="@+id/sp_ack_result"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
-                android:layout_weight="1"
+                android:layout_weight="2"
                 android:background="@drawable/spinner_background"
                 android:entries="@array/ack_result_options"/>
-
-            <View
-                android:layout_width="12dp"
-                android:layout_height="40dp"/>
-
-            <Spinner
-                android:id="@+id/sp_query_op"
+        </LinearLayout>
+        
+        
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="7 科室/护士站编号"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_department_id"
+                android:hint="1-255"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
                 android:background="@drawable/spinner_background"
-                android:entries="@array/query_op_options"/>
+                android:paddingLeft="10dp"/>
         </LinearLayout>
-
-        <Spinner
-            android:id="@+id/sp_register_result"
+        
+        <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/spinner_background"
-            android:entries="@array/register_result_options"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="8 台车编号"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_cart_id"
+                android:hint="1-255"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="9 保留(1B)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_res9_1b"
+                android:hint="2位HEX, 默认FF"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="10 保留(1B)"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_res10_1b"
+                android:hint="2位HEX, 默认FF"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
 
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
-
-            <EditText
-                android:id="@+id/et_alarm_count"
-                android:hint="闹钟数量(0-2)"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="11 操作指令"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <Spinner
+                android:id="@+id/sp_query_op"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:entries="@array/query_op_options"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="登记结果"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <Spinner
+                android:id="@+id/sp_register_result"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:entries="@array/register_result_options"/>
+        </LinearLayout>
+
+        
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="12 操作指令参数"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_clear_mask"
+                android:hint="4字节HEX, 如00000005"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
                 android:background="@drawable/spinner_background"
                 android:paddingLeft="10dp"/>
-
-            <View
-                android:layout_width="12dp"
-                android:layout_height="40dp"/>
-
-            <EditText
-                android:id="@+id/et_alarm_minutes"
-                android:hint="闹钟分钟(逗号分隔)"
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="13 休眠间隔(min)"
                 android:layout_width="0dp"
                 android:layout_height="40dp"
                 android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_interval_min"
+                android:hint="5-1440"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="14 闹钟数量"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_alarm_count"
+                android:hint="0-2"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
+                android:background="@drawable/spinner_background"
+                android:paddingLeft="10dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <TextView
+                android:text="15 闹钟时刻列表"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"/>
+            <EditText
+                android:id="@+id/et_alarm_minutes"
+                android:hint="分钟,逗号分隔"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="2"
                 android:background="@drawable/spinner_background"
                 android:paddingLeft="10dp"/>
         </LinearLayout>
@@ -279,24 +515,45 @@
 
         <EditText
             android:id="@+id/et_raw_hex"
-            android:hint="原始HEX负载(只填数据区HEX)"
+            android:hint="完整HEX帧(自动生成可编辑)"
             android:layout_width="match_parent"
             android:layout_height="40dp"
-            android:text="A5d896e0ff0000024080010300122025080308303601010102000000000001680201E004BFB15A"
             android:layout_marginTop="12dp"
             android:background="@drawable/spinner_background"
             android:paddingLeft="10dp"/>
-
-        <TextView
-            android:id="@+id/btn_send_raw_hex"
-            android:text="发送原始HEX下行"
-            android:background="@drawable/bg_btn_4"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
+        
+        <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_marginTop="12dp"
-            android:gravity="center"
-            android:layout_height="40dp"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+            
+            <TextView
+                android:id="@+id/btn_build_hex"
+                android:text="生成HEX"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+            
+            <View
+                android:layout_width="12dp"
+                android:layout_height="40dp"/>
+            
+            <TextView
+                android:id="@+id/btn_send_raw_hex"
+                android:text="发送原始HEX下行"
+                android:background="@drawable/bg_btn_4"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:layout_height="40dp"/>
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
