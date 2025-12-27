@@ -19,6 +19,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="输入上行HEX"
+        android:text="A5d896e0ff0000024000010b002320250926081018000000040000007f01686430000000000100000001003C0201E004BF325A"
         android:inputType="text"
         android:textSize="14sp"/>
 
@@ -28,6 +29,23 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="解析并生成下行字段"/>
+
+    <Button
+        android:id="@+id/btn_build_downlink_hex"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="生成下行HEX"/>
+
+    <TextView
+        android:id="@+id/tv_downlink_hex"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textSize="12sp"
+        android:textColor="#333333"
+        android:textIsSelectable="true"
+        android:text=""/>
 
     <TextView
         android:id="@+id/tv_device_id"
