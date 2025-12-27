@@ -1431,7 +1431,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
                 long nowMs = System.currentTimeMillis();
-                long timeoutMs = 10 * 60 * 1000L;
+                long timeoutMs = 3 * 60 * 1000L;
                 if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > timeoutMs) {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
@@ -2172,7 +2172,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
                 long nowMs = System.currentTimeMillis();
-                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 10 * 60 * 1000L) {
+                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 3 * 60 * 1000L) {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
                 terminals.add(terminal);
@@ -2276,7 +2276,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void checkAndLogOfflineDevices() {
         SQLiteDatabase db = this.getWritableDatabase();
         long now = System.currentTimeMillis();
-        long timeout = 10 * 60 * 1000L;
+        long timeout = 3 * 60 * 1000L;
         long threshold = now - timeout;
         
         String sql = "SELECT " + COLUMN_TERMINAL_DEVICE_ID + ", " + COLUMN_TERMINAL_NAME + 
