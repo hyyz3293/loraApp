@@ -342,7 +342,7 @@ public class DownlinkMessageHelper {
         sendDownlink8001(
             deviceIdHex,
             1,
-            0,
+            1,
             0,
             0,
             0,
@@ -358,7 +358,7 @@ public class DownlinkMessageHelper {
                 (byte) (System.currentTimeMillis() & 0xFF),
                 System.currentTimeMillis(),
                 0,
-                0,
+                1,
                 0,
                 0,
                 0,

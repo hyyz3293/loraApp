@@ -211,7 +211,7 @@ public class DownlinkTestFragment extends Fragment {
         btnPresetClear.setOnClickListener(view -> {
             String dev = getDevId();
             if (dev == null) return;
-            int clearMask = 0x00000003;
+            int clearMask = 0x00000005;
             try {
                 helper.sendClearDataDownlink(dev, clearMask, 0, null);
                 Toast.makeText(requireContext(), "预设清除全部告警已发送", Toast.LENGTH_SHORT).show();
