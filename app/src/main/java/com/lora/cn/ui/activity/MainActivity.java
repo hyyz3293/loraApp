@@ -1180,7 +1180,7 @@ public class MainActivity extends AppCompatActivity {
                         if (!stillCurrent) return;
                         Integer handled = lastHandledTypes.get(devId);
                         boolean needConfirm = handled == null || handled != currentStatusCode;
-                        if (tvErrorComplete != null) tvErrorComplete.setVisibility(needConfirm ? View.VISIBLE : View.GONE);
+                        if (tvErrorComplete != null) tvErrorComplete.setVisibility(needConfirm ? View.VISIBLE : View.VISIBLE);
                     } catch (Exception ignored) {}
                 });
             });

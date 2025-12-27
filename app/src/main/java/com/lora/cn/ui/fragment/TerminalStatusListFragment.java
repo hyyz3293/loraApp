@@ -50,6 +50,8 @@ public class TerminalStatusListFragment extends Fragment {
     private int pageSize = 20;
     private int currentPage = 0;
     private List<Terminal> filteredPageBase = new ArrayList<>();
+    private java.util.Set<String> pendingAbnormalIds = new java.util.HashSet<>();
+    private java.util.Set<String> pendingOfflineIds = new java.util.HashSet<>();
 
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
@@ -331,6 +333,65 @@ public class TerminalStatusListFragment extends Fragment {
                     display = convertToDisplayTerminals(terminals, categoryNameById);
                 } catch (Exception ignored) {}
             }
+            java.util.Set<String> pa = new java.util.HashSet<>();
+            java.util.Set<String> po = new java.util.HashSet<>();
+            try {
+                com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getAllLogsBoundToTerminals();
+                java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestAbnormal = new java.util.HashMap<>();
+                java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestOffline = new java.util.HashMap<>();
+                java.util.Map<String, Long> lastHandled = new java.util.HashMap<>();
+                java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                if (logs != null) {
+                    for (com.lora.cn.ui.model.LogInfo li : logs) {
+                        if (li == null) continue;
+                        String tid = li.getTerminalId();
+                        int s = li.getStatusCode();
+                        if (tid == null || tid.isEmpty()) continue;
+                        if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                            com.lora.cn.ui.model.LogInfo prev = latestAbnormal.get(tid);
+                            long pt = 0L;
+                            try { pt = prev != null ? sdf2.parse(prev.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            long ct = 0L;
+                            try { ct = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            if (prev == null || ct >= pt) latestAbnormal.put(tid, li);
+                        } else if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
+                            com.lora.cn.ui.model.LogInfo prev2 = latestOffline.get(tid);
+                            long pt2 = 0L;
+                            try { pt2 = prev2 != null ? sdf2.parse(prev2.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            long ct2 = 0L;
+                            try { ct2 = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            if (prev2 == null || ct2 >= pt2) latestOffline.put(tid, li);
+                        }
+                        String hu2 = li.getHandleUser();
+                        String ht2 = li.getHandleTime();
+                        if ((hu2 != null && !hu2.trim().isEmpty()) || (ht2 != null && !ht2.trim().isEmpty())) {
+                            long ctH2 = 0L;
+                            try { ctH2 = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            Long prevH2 = lastHandled.get(tid);
+                            if (prevH2 == null || ctH2 >= prevH2) lastHandled.put(tid, ctH2);
+                        }
+                    }
+                    for (java.util.Map.Entry<String, com.lora.cn.ui.model.LogInfo> e : latestAbnormal.entrySet()) {
+                        String tid = e.getKey();
+                        com.lora.cn.ui.model.LogInfo li = e.getValue();
+                        long at = 0L;
+                        try { at = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                        Long ht = lastHandled.get(tid);
+                        boolean pending = ht == null || at > ht;
+                        if (pending) pa.add(tid);
+                    }
+                    for (java.util.Map.Entry<String, com.lora.cn.ui.model.LogInfo> e : latestOffline.entrySet()) {
+                        String tid = e.getKey();
+                        com.lora.cn.ui.model.LogInfo li = e.getValue();
+                        long at = 0L;
+                        try { at = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                        Long ht = lastHandled.get(tid);
+                        boolean pending = ht == null || at > ht;
+                        if (pending) po.add(tid);
+                    }
+                }
+            } catch (Exception ignored) {}
 
             List<Terminal> finalDisplay = display;
             mainHandler.post(() -> {
@@ -338,6 +399,8 @@ public class TerminalStatusListFragment extends Fragment {
                 if (token != loadSeq.get()) return;
                 allDisplayTerminals.clear();
                 if (finalDisplay != null) allDisplayTerminals.addAll(finalDisplay);
+                pendingAbnormalIds = pa;
+                pendingOfflineIds = po;
                 applyCurrentFilters();
             });
         });
@@ -365,7 +428,10 @@ public class TerminalStatusListFragment extends Fragment {
                 else if (TerminalStatusConstants.STATUS_ONLINE.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_ONLINE;
                 else if (TerminalStatusConstants.STATUS_OFFLINE.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_OFFLINE;
                 else if (TerminalStatusConstants.STATUS_NORMAL_TAKEN.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_NORMAL_TAKEN;
-                else if (TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
+                else if (TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(statusFilterTitle)) {
+                    String tid = t.getTerminalId();
+                    match = t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || (tid != null && pendingAbnormalIds.contains(tid));
+                }
                 else if (TerminalStatusConstants.STATUS_LOW_BATTERY.equals(statusFilterTitle)) {
                     int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                     match = t.getStatus() != TerminalStatusConstants.CODE_OFFLINE && t.getBatteryLevel() <= lowTh;

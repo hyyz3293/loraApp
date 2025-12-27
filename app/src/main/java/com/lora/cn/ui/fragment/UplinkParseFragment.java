@@ -120,6 +120,63 @@ public class UplinkParseFragment extends Fragment {
         }
         return v;
     }
+    
+    @Override
+    public void onResume() {
+        super.onResume();
+        prefillLatestUplink();
+    }
+    
+    private void prefillLatestUplink() {
+        try {
+            android.content.Context ctx = getContext();
+            if (ctx == null) return;
+            android.content.Context appCtx = ctx.getApplicationContext();
+            ioExecutor.execute(() -> {
+                String hex = null;
+                try {
+                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getAllLogs();
+                    if (logs != null) {
+                        for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            String a = li.getAction();
+                            if (a != null && a.startsWith("接收上行数据")) {
+                                int idx = a.indexOf(":");
+                                if (idx >= 0 && idx + 1 < a.length()) {
+                                    hex = a.substring(idx + 1).trim();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (hex == null) {
+                        java.util.List<com.lora.cn.ui.model.LogInfo> unbound = db.getAllUnboundLogs();
+                        if (unbound != null) {
+                            for (com.lora.cn.ui.model.LogInfo li : unbound) {
+                                String a = li.getAction();
+                                if (a != null && a.startsWith("接收上行数据")) {
+                                    int idx = a.indexOf(":");
+                                    if (idx >= 0 && idx + 1 < a.length()) {
+                                        hex = a.substring(idx + 1).trim();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+                final String finalHex = hex;
+                if (finalHex != null && mainHandler != null) {
+                    mainHandler.post(() -> {
+                        try {
+                            if (etHexInput != null) etHexInput.setText(finalHex);
+                            if (btnParseHex != null) btnParseHex.performClick();
+                        } catch (Exception ignored) {}
+                    });
+                }
+            });
+        } catch (Exception ignored) {}
+    }
 
     private java.util.List<Item> buildItemsFromFrame(LoRaFrameParser.ParsedFrame frame) {
         java.util.List<Item> list = new java.util.ArrayList<>();
