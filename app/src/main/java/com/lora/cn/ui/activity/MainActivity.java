@@ -435,6 +435,7 @@ public class MainActivity extends AppCompatActivity {
         menuTabs.add(new MenuTab("维护列表", 3));
         menuTabs.add(new MenuTab("设置", 4));
         menuTabs.add(new MenuTab("下行测试", 5));
+        menuTabs.add(new MenuTab("上行解析", 6));
         //menuTabs.add(new MenuTab("报警处理", -1));
         
         // 设置RecyclerView

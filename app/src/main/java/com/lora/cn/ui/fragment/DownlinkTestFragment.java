@@ -311,6 +311,8 @@ public class DownlinkTestFragment extends Fragment {
                     String hex = com.lora.cn.utils.LoRaProtocolParser.bytesToHex(frame).replaceAll("\\s+", "");
                     if (mainHandler != null) mainHandler.post(() -> {
                         etRawHex.setText(hex);
+                        LogUtils.e("生成成功::=====" + hex);
+
                         Toast.makeText(requireContext(), "已生成HEX", Toast.LENGTH_SHORT).show();
                     });
                 } catch (Exception e) {
