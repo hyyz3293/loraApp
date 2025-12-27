@@ -15,6 +15,13 @@ public class LoraApp extends Application {
         super.onCreate();
         Utils.init(this);
         try {
+            com.lora.cn.utils.LogUtils.init(getApplicationContext());
+        } catch (Exception ignored) {}
+        try { com.lora.cn.utils.CrashLogger.install(getApplicationContext()); } catch (Exception ignored) {}
+        try {
+            com.lora.cn.utils.LogcatCapture.start(getApplicationContext());
+        } catch (Exception ignored) {}
+        try {
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
             boolean initialized = sp.getBoolean("inventory_schedule_initialized", false);
             if (!initialized) {

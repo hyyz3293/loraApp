@@ -34,6 +34,7 @@ public class CrashLogger implements Thread.UncaughtExceptionHandler {
             File f = new File(logs, name);
             String content = android.util.Log.getStackTraceString(e);
             FileOutputStream fos = new FileOutputStream(f, false);
+            fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
             fos.write(content.getBytes("UTF-8"));
             fos.flush();
             fos.close();

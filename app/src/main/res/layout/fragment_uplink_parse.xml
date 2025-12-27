@@ -10,9 +10,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="上行解析与下行字段生成"
-        android:textSize="18sp"
+        android:textSize="12sp"
         android:textColor="#000000"
-        android:paddingBottom="8dp"/>
+      />
 
     <EditText
         android:id="@+id/et_hex_input"
@@ -21,27 +21,27 @@
         android:hint="输入上行HEX"
         android:text="A5d896e0ff0000024000010b002320250926081018000000040000007f01686430000000000100000001003C0201E004BF325A"
         android:inputType="text"
-        android:textSize="14sp"/>
+        android:textSize="12sp"/>
 
     <Button
         android:id="@+id/btn_parse_hex"
+        android:textSize="12sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="解析并生成下行字段"/>
+         android:text="解析并生成下行字段"/>
 
     <Button
         android:id="@+id/btn_build_downlink_hex"
+        android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="生成下行HEX"/>
+         android:text="生成下行HEX"/>
 
     <TextView
         android:id="@+id/tv_downlink_hex"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:visibility="gone"
         android:textSize="12sp"
         android:textColor="#333333"
         android:textIsSelectable="true"
@@ -51,7 +51,7 @@
         android:id="@+id/tv_device_id"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
+        android:textSize="12sp"
         android:textColor="#222222"
         android:text="设备ID" />
 
@@ -59,8 +59,8 @@
         android:id="@+id/tv_time"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textSize="14sp"
+        android:visibility="gone"
+        android:textSize="12sp"
         android:textColor="#444444"
         android:text="时间" />
 
@@ -68,8 +68,7 @@
         android:id="@+id/tv_hex"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textSize="12sp"
+         android:textSize="12sp"
         android:textColor="#666666"
         android:text="HEX" />
 

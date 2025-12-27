@@ -17,7 +17,15 @@ public class LogUtils {
         File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         File logs = new File(dir, "LoraAppLogs");
         if (!logs.exists()) logs.mkdirs();
-        logFile = new File(logs, "log.txt");
+        logFile = new File(logs, "app_log.txt");
+        try {
+            if (!logFile.exists()) {
+                FileOutputStream fos = new FileOutputStream(logFile, false);
+                fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+                fos.flush();
+                fos.close();
+            }
+        } catch (Exception ignored) {}
     }
 
     public static void d(String msg) {
@@ -60,6 +68,14 @@ public class LogUtils {
     private static void write(String level, String tag, String msg, Throwable tr) {
         try {
             if (logFile == null) return;
+            if (!logFile.exists()) {
+                try {
+                    FileOutputStream init = new FileOutputStream(logFile, false);
+                    init.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+                    init.flush();
+                    init.close();
+                } catch (Exception ignored) {}
+            }
             String time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(new Date());
             StringBuilder sb = new StringBuilder();
             sb.append(time).append(" ").append(level).append("/").append(tag).append(": ").append(msg);

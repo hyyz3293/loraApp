@@ -59,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
     private UserInfoFragment userInfoFragment;
     private View rlAlertIcon;
     private ImageView ivAlertIcon;
+    private ImageView ivLogo;
+    private android.widget.TextView btnShareLogs;
     
     private int currentTabIndex = 0;
     private boolean isUserInfoVisible = false;
@@ -361,6 +363,8 @@ public class MainActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.view_pager);
         btnLogout = findViewById(R.id.logout);
         tvUserName = findViewById(R.id.tv_user_name);
+        ivLogo = findViewById(R.id.iv_logo);
+        btnShareLogs = findViewById(R.id.btn_share_logs);
         fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
         fragmentDeviceListContainer = findViewById(R.id.fragment_device_list_container);
         rlAlertIcon = findViewById(R.id.rl_alert_icon);
@@ -402,6 +406,7 @@ public class MainActivity extends AppCompatActivity {
             tvErrorComplete.setText("确认处理");
         }
         updateAlertMutedUI();
+        setupSecretShareLogs();
     }
 
     private void toggleGlobalMute(View v) {
@@ -495,6 +500,98 @@ public class MainActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> confirmLogout());
 
         tvUserName.setOnClickListener(v -> toggleUserInfo());
+    }
+
+    private int secretTapCount = 0;
+    private long firstTapTs = 0L;
+    private void setupSecretShareLogs() {
+        if (ivLogo != null) {
+            ivLogo.setOnClickListener(v -> {
+                long now = System.currentTimeMillis();
+                if (now - firstTapTs > 3000) {
+                    secretTapCount = 0;
+                    firstTapTs = now;
+                }
+                secretTapCount++;
+                if (secretTapCount >= 5) {
+                    secretTapCount = 0;
+                    firstTapTs = 0L;
+                    try {
+                        java.io.File f1 = com.lora.cn.utils.LogUtils.getLogFile();
+                        java.io.File downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+                        java.io.File logsDir = new java.io.File(downloads, "LoraAppLogs");
+                        java.io.File f2 = new java.io.File(logsDir, "app_logcat.txt");
+                        java.util.ArrayList<java.io.File> files = new java.util.ArrayList<>();
+                        if (f1 != null && f1.exists()) files.add(f1);
+                        if (f2.exists()) files.add(f2);
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("是否分享以下日志文件：\n");
+                        for (java.io.File f : files) {
+                            sb.append(f.getAbsolutePath()).append("\n");
+                        }
+                        if (files.isEmpty()) {
+                            sb.append("暂无可分享日志文件");
+                        }
+                        android.util.Log.i(TAG, "日志路径:\n" + sb.toString());
+                        new androidx.appcompat.app.AlertDialog.Builder(this)
+                                .setTitle("分享日志")
+                                .setMessage(sb.toString())
+                                .setPositiveButton("分享", (d, w2) -> {
+                                    try {
+                                        if (files.isEmpty()) {
+                                            android.widget.Toast.makeText(this, "暂无可分享日志文件", android.widget.Toast.LENGTH_SHORT).show();
+                                            return;
+                                        }
+                                        java.util.ArrayList<android.net.Uri> uris = new java.util.ArrayList<>();
+                                        for (java.io.File f : files) {
+                                            android.net.Uri u = androidx.core.content.FileProvider.getUriForFile(this, "com.lora.cn.fileprovider", f);
+                                            uris.add(u);
+                                        }
+                                        android.content.Intent share = new android.content.Intent(android.content.Intent.ACTION_SEND_MULTIPLE);
+                                        share.setType("text/plain");
+                                        share.putParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, uris);
+                                        share.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                        startActivity(android.content.Intent.createChooser(share, "分享日志文件"));
+                                    } catch (Exception e) {
+                                        android.widget.Toast.makeText(this, "分享失败: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+                                    }
+                                })
+                                .setNegativeButton("取消", null)
+                                .show();
+                    } catch (Exception e) {
+                        android.widget.Toast.makeText(this, "准备分享失败: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
+        if (btnShareLogs != null) {
+            btnShareLogs.setOnClickListener(v -> {
+                try {
+                    java.util.ArrayList<android.net.Uri> uris = new java.util.ArrayList<>();
+                    java.io.File f1 = com.lora.cn.utils.LogUtils.getLogFile();
+                    if (f1 != null && f1.exists()) {
+                        uris.add(androidx.core.content.FileProvider.getUriForFile(this, "com.lora.cn.fileprovider", f1));
+                    }
+                    java.io.File downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+                    java.io.File logsDir = new java.io.File(downloads, "LoraAppLogs");
+                    java.io.File f2 = new java.io.File(logsDir, "app_logcat.txt");
+                    if (f2 != null && f2.exists()) {
+                        uris.add(androidx.core.content.FileProvider.getUriForFile(this, "com.lora.cn.fileprovider", f2));
+                    }
+                    if (uris.isEmpty()) {
+                        android.widget.Toast.makeText(this, "暂无可分享日志文件", android.widget.Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    android.content.Intent share = new android.content.Intent(android.content.Intent.ACTION_SEND_MULTIPLE);
+                    share.setType("text/plain");
+                    share.putParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, uris);
+                    share.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(android.content.Intent.createChooser(share, "分享日志文件"));
+                } catch (Exception e) {
+                    android.widget.Toast.makeText(this, "分享失败: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private void showImmediateHandleDialog() {
@@ -978,7 +1075,7 @@ public class MainActivity extends AppCompatActivity {
         int sc = getStatusCodeForTitle(currentAlert.title);
         Integer handled = lastHandledTypes.get(currentAlert.code);
         boolean needConfirm = handled == null || handled != sc;
-        if (tvErrorComplete != null) tvErrorComplete.setVisibility(needConfirm ? View.VISIBLE : View.GONE);
+        if (tvErrorComplete != null) tvErrorComplete.setVisibility(needConfirm ? View.VISIBLE : View.VISIBLE);
         refreshHandledStatusFromDBAsync(currentAlert.code, sc);
         lastShownKey = key;
     }

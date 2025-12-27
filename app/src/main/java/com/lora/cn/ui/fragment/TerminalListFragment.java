@@ -974,15 +974,22 @@ public class TerminalListFragment extends Fragment {
                 }
                 try {
                     java.util.Set<String> abnormalIds = new java.util.HashSet<>();
+                    java.util.Set<String> offlineIds = new java.util.HashSet<>();
                     for (Terminal t : allTerminals) {
-                        if (t != null && t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
-                            String id = t.getTerminalId();
-                            if (id != null) abnormalIds.add(id);
+                        if (t == null) continue;
+                        String id = t.getTerminalId();
+                        if (id == null) continue;
+                        if (t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
+                            abnormalIds.add(id);
+                        }
+                        if (t.getStatus() == TerminalStatusConstants.CODE_OFFLINE) {
+                            offlineIds.add(id);
                         }
                     }
                     com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
                     java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getAllLogsBoundToTerminals();
                     java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestAbnormal = new java.util.HashMap<>();
+                    java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestOffline = new java.util.HashMap<>();
                     java.util.Map<String, Long> lastHandled = new java.util.HashMap<>();
                     java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
                     for (com.lora.cn.ui.model.LogInfo li : logs) {
@@ -996,6 +1003,13 @@ public class TerminalListFragment extends Fragment {
                             long ct = 0L;
                             try { ct = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
                             if (prev == null || ct >= pt) latestAbnormal.put(tid, li);
+                        } else if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
+                            com.lora.cn.ui.model.LogInfo prev = latestOffline.get(tid);
+                            long pt = 0L;
+                            try { pt = prev != null ? sdf2.parse(prev.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            long ct = 0L;
+                            try { ct = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            if (prev == null || ct >= pt) latestOffline.put(tid, li);
                         }
                         String hu = li.getHandleUser();
                         String htStr = li.getHandleTime();
@@ -1015,7 +1029,17 @@ public class TerminalListFragment extends Fragment {
                         boolean pending = ht == null || at > ht;
                         if (pending) abnormalIds.add(tid);
                     }
+                    for (java.util.Map.Entry<String, com.lora.cn.ui.model.LogInfo> e : latestOffline.entrySet()) {
+                        String tid = e.getKey();
+                        com.lora.cn.ui.model.LogInfo li = e.getValue();
+                        long at = 0L;
+                        try { at = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                        Long ht = lastHandled.get(tid);
+                        boolean pending = ht == null || at > ht;
+                        if (pending) offlineIds.add(tid);
+                    }
                     abnormalLostCount = abnormalIds.size();
+                    offlineCount = offlineIds.size();
                 } catch (Exception ignored) {}
             }
             try {
