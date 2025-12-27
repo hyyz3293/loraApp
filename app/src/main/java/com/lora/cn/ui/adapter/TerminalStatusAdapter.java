@@ -49,8 +49,12 @@ public class TerminalStatusAdapter extends BaseQuickAdapter<TerminalStatus, Quic
 
         // 闪烁逻辑
         stopFlashing(ivStatusIcon);
+        stopFlashing(tvStatusTitle);
+        stopFlashing(tvStatusCount);
         if (item.getCount() > 0 && isAlertStatus(item.getTitle())) {
             startFlashing(ivStatusIcon);
+            startFlashing(tvStatusTitle);
+            startFlashing(tvStatusCount);
         }
     }
 
@@ -59,9 +63,11 @@ public class TerminalStatusAdapter extends BaseQuickAdapter<TerminalStatus, Quic
     }
 
     private void startFlashing(View view) {
-        android.animation.ObjectAnimator animator = android.animation.ObjectAnimator.ofFloat(view, "alpha", 1f, 0.2f, 1f);
-        animator.setDuration(3000); // 3s一次
+        android.animation.ObjectAnimator animator = android.animation.ObjectAnimator.ofFloat(view, "alpha", 1f, 0f);
+        animator.setDuration(800);
+        animator.setRepeatMode(android.animation.ValueAnimator.REVERSE);
         animator.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        animator.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
         animator.start();
         animators.put(view, animator);
     }

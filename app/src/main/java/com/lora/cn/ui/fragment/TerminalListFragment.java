@@ -972,6 +972,51 @@ public class TerminalListFragment extends Fragment {
                         lowBatteryCount++;
                     }
                 }
+                try {
+                    java.util.Set<String> abnormalIds = new java.util.HashSet<>();
+                    for (Terminal t : allTerminals) {
+                        if (t != null && t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
+                            String id = t.getTerminalId();
+                            if (id != null) abnormalIds.add(id);
+                        }
+                    }
+                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getAllLogsBoundToTerminals();
+                    java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestAbnormal = new java.util.HashMap<>();
+                    java.util.Map<String, Long> lastHandled = new java.util.HashMap<>();
+                    java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                    for (com.lora.cn.ui.model.LogInfo li : logs) {
+                        String tid = li.getTerminalId();
+                        int s = li.getStatusCode();
+                        if (tid == null || tid.isEmpty()) continue;
+                        if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                            com.lora.cn.ui.model.LogInfo prev = latestAbnormal.get(tid);
+                            long pt = 0L;
+                            try { pt = prev != null ? sdf2.parse(prev.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            long ct = 0L;
+                            try { ct = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            if (prev == null || ct >= pt) latestAbnormal.put(tid, li);
+                        }
+                        String hu = li.getHandleUser();
+                        String htStr = li.getHandleTime();
+                        if ((hu != null && !hu.trim().isEmpty()) || (htStr != null && !htStr.trim().isEmpty())) {
+                            long ct = 0L;
+                            try { ct = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                            Long prev = lastHandled.get(tid);
+                            if (prev == null || ct >= prev) lastHandled.put(tid, ct);
+                        }
+                    }
+                    for (java.util.Map.Entry<String, com.lora.cn.ui.model.LogInfo> e : latestAbnormal.entrySet()) {
+                        String tid = e.getKey();
+                        com.lora.cn.ui.model.LogInfo li = e.getValue();
+                        long at = 0L;
+                        try { at = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                        Long ht = lastHandled.get(tid);
+                        boolean pending = ht == null || at > ht;
+                        if (pending) abnormalIds.add(tid);
+                    }
+                    abnormalLostCount = abnormalIds.size();
+                } catch (Exception ignored) {}
             }
             try {
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
@@ -985,7 +1030,11 @@ public class TerminalListFragment extends Fragment {
                         if (ct == null || ct.trim().isEmpty()) continue;
                         try {
                             java.util.Date dt = sdf.parse(ct.trim());
-                            if (dt != null && dt.getTime() <= now) maintenanceCount++;
+                            if (dt != null && dt.getTime() <= now) {
+                                if (mi.getStatus() == 0) {
+                                    maintenanceCount++;
+                                }
+                            }
                         } catch (Exception ignored) {}
                     }
                 }
@@ -993,11 +1042,11 @@ public class TerminalListFragment extends Fragment {
 
             List<TerminalStatus> statusList = new ArrayList<>();
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_IMPORTANT, R.mipmap.ic_coll, favoriteCount));
+            statusList.add(new TerminalStatus("需维修", R.drawable.ic_wx_g, maintenanceCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ONLINE, R.drawable.ic_xh_signal_4, onlineCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_NORMAL_TAKEN, R.mipmap.ic_blue_right, normalTakenCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_ABNORMAL_LOST, R.mipmap.ic_ds, abnormalLostCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_LOW_BATTERY, R.mipmap.ic_red_sd, lowBatteryCount));
-            statusList.add(new TerminalStatus("维护列表", R.drawable.ic_wx_g, maintenanceCount));
             statusList.add(new TerminalStatus(TerminalStatusConstants.STATUS_OFFLINE, R.mipmap.ic_xh_no, offlineCount));
             return statusList;
         } catch (Exception e) {

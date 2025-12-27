@@ -290,7 +290,7 @@ public class LoRaProtocolParser {
                 (byte) ((clearMask >> 8) & 0xFF),
                 (byte) (clearMask & 0xFF)
         };
-        int interval = Math.max(5, Math.min(1440, reportIntervalMin));
+        int interval = Math.max(3, Math.min(1440, reportIntervalMin));
         byte[] intervalBytes = new byte[]{(byte) ((interval >> 8) & 0xFF), (byte) (interval & 0xFF)};
         int ac = Math.max(0, Math.min(2, alarmCount));
         int listLen = 0;

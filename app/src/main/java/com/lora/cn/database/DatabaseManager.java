@@ -617,6 +617,15 @@ public class DatabaseManager {
      * 检查角色是否拥有某个权限
      */
     public boolean hasPermission(int roleId, String permissionCode) {
+        // try {
+        //     Role r = roleDao.getRoleById(roleId);
+        //     if (r != null) {
+        //         String name = r.getRoleName();
+        //         if (name != null && name.trim().equals("管理员")) {
+        //             return true;
+        //         }
+        //     }
+        // } catch (Throwable ignored) {}
         return rolePermissionDao.hasPermissionByCode(roleId, permissionCode);
     }
     

@@ -58,7 +58,7 @@ public class MqttBrokerService extends Service {
         } else {
             startBrokerIfNeeded(port);
         }
-        startTicking();
+        //startTicking();
         return START_STICKY;
     }
 

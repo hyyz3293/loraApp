@@ -36,6 +36,11 @@ public class LoRaFrameParser {
         public int cartNumber;           // 台车编号 (1字节)
         public int deviceCount;          // 放置的设备数量 (1字节)
         public int rackNumber;           // 设备所属台车台架编号 (1字节)
+        public int nurseAckOp;           // 应答护士站操作指令 (1字节)
+        public long nurseAckParams;      // 应答护士站操作指令参数 (4字节)
+        public int sleepIntervalMin;     // 当前休眠间隔 (2字节, 单位min)
+        public int alarmCount;           // 当前闹钟数量 (1字节, 0-2)
+        public int[] alarmMinutes;       // 闹钟时刻点列表 (N*2, 单位min)
 
         // 设备事件 bit 展开
         public int evPowerLockOpen;      // Bit0: 电源开关锁-开事件 (0/1)
@@ -54,6 +59,7 @@ public class LoRaFrameParser {
         public int stLayer3NotInPlace;   // Bit3: 第3层开关状态 1:不在位 0:在位
         public int stLayer4NotInPlace;   // Bit4: 第4层开关状态 1:不在位 0:在位
         public int stLayer5NotInPlace;   // Bit5: 第5层开关状态 1:不在位 0:在位
+        public int stMaintenanceNeeded;   // Bit6: 维护状态 1:需要维护 0:不需要维护
         // 枚举集合（事件/状态）
         public java.util.EnumSet<DeviceEventFlag> eventFlags = java.util.EnumSet.noneOf(DeviceEventFlag.class);
         public java.util.EnumSet<DeviceStatusFlag> statusFlags = java.util.EnumSet.noneOf(DeviceStatusFlag.class);
@@ -190,6 +196,7 @@ public class LoRaFrameParser {
             frame.stLayer3NotInPlace  = ((frame.deviceStatus & 0x08L) != 0) ? 1 : 0;
             frame.stLayer4NotInPlace  = ((frame.deviceStatus & 0x10L) != 0) ? 1 : 0;
             frame.stLayer5NotInPlace  = ((frame.deviceStatus & 0x20L) != 0) ? 1 : 0;
+            frame.stMaintenanceNeeded  = ((frame.deviceStatus & 0x40L) != 0) ? 1 : 0;
             // 填充状态枚举集合
             frame.statusFlags = DeviceStatusFlag.fromMask(frame.deviceStatus);
             // 填充状态枚举集合
@@ -225,7 +232,48 @@ public class LoRaFrameParser {
             if (offset < frame.dataContent.length) {
                 frame.rackNumber = frame.dataContent[offset] & 0xFF;
             }
-            
+            offset += 1;
+
+            // 11. 应答护士站操作指令 (1字节)
+            if (offset + 1 <= frame.dataContent.length) {
+                frame.nurseAckOp = frame.dataContent[offset] & 0xFF;
+            }
+            offset += 1;
+
+            // 12. 应答护士站操作指令参数 (4字节)
+            if (offset + 4 <= frame.dataContent.length) {
+                frame.nurseAckParams = bytesToLong(frame.dataContent, offset, 4);
+            }
+            offset += 4;
+
+            // 13. 当前休眠间隔 (2字节)
+            if (offset + 2 <= frame.dataContent.length) {
+                frame.sleepIntervalMin = ((frame.dataContent[offset] & 0xFF) << 8) | (frame.dataContent[offset + 1] & 0xFF);
+            }
+            offset += 2;
+
+            // 14. 当前闹钟数量 (1字节)
+            if (offset + 1 <= frame.dataContent.length) {
+                frame.alarmCount = frame.dataContent[offset] & 0xFF;
+            }
+            offset += 1;
+
+            // 15. 闹钟时刻点列表 (N*2)
+            if (frame.alarmCount > 0) {
+                int remaining = Math.max(0, frame.dataContent.length - offset);
+                int availableItems = remaining / 2;
+                int n = Math.min(frame.alarmCount, availableItems);
+                frame.alarmMinutes = new int[n];
+                for (int i = 0; i < n; i++) {
+                    int hi = frame.dataContent[offset] & 0xFF;
+                    int lo = frame.dataContent[offset + 1] & 0xFF;
+                    frame.alarmMinutes[i] = (hi << 8) | lo;
+                    offset += 2;
+                }
+            } else {
+                frame.alarmMinutes = new int[0];
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -262,7 +310,8 @@ public class LoRaFrameParser {
         LAYER2_NOT_IN_PLACE(0x04L, "层2:不在位"),
         LAYER3_NOT_IN_PLACE(0x08L, "层3:不在位"),
         LAYER4_NOT_IN_PLACE(0x10L, "层4:不在位"),
-        LAYER5_NOT_IN_PLACE(0x20L, "层5:不在位");
+        LAYER5_NOT_IN_PLACE(0x20L, "层5:不在位"),
+        MAINTENANCE_NEEDED(0x40L, "维护需要");
 
         public final long mask;
         private final String label;

@@ -117,6 +117,9 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
         } else if (item.getIndex() == 5) {
             long sec = com.blankj.utilcode.util.SPUtils.getInstance().getLong("home_auto_return_timeout_sec", 60);
             currentNum = String.valueOf(sec);
+        } else if (item.getIndex() == 7) {
+            int sleepMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+            currentNum = String.valueOf(sleepMin);
         } else {
             currentNum = item.getValue() != null ? item.getValue() : "";
         }
@@ -150,6 +153,12 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                     hint = "回到首页时间";
                     value = item.getValue() != null ? item.getValue() : "60";
                     unit = "秒";
+                    break;
+                case 7:
+                    title = "设备休眠间隔(分钟)";
+                    hint = "休眠间隔(3-1440)";
+                    value = item.getValue() != null ? item.getValue() : "60";
+                    unit = "分钟";
                     break;
             }
 
@@ -216,6 +225,27 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                                     li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
                                     li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                                     li.setAction("设置: 回到首页时间=" + out + "秒");
+                                    li.setCreateTime(li.getOperationTime());
+                                    db.addLog(li);
+                                } catch (Exception ignored) {}
+                            } catch (Exception ignored) {}
+                        } else if (item.getIndex() == 7) {
+                            try {
+                                int n = Integer.parseInt(newValue);
+                                if (n < 3) n = 3;
+                                if (n > 1440) n = 1440;
+                                out = String.valueOf(n);
+                                com.blankj.utilcode.util.SPUtils.getInstance().put("device_sleep_interval_min", n);
+                                try {
+                                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(v.getContext());
+                                    com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+                                    li.setTerminalId("SYS");
+                                    li.setTerminalName("系统设置");
+                                    li.setDeviceId("SYS");
+                                    li.setStatusCode(0);
+                                    li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
+                                    li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                                    li.setAction("设置: 设备休眠间隔=" + out + "分钟");
                                     li.setCreateTime(li.getOperationTime());
                                     db.addLog(li);
                                 } catch (Exception ignored) {}

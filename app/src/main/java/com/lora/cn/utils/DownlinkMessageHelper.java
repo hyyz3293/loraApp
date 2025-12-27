@@ -52,6 +52,8 @@ public class DownlinkMessageHelper {
             
             int alarmCount = 1;
             int[] alarmMinutes = new int[]{getGlobalAlarmMinute()};
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin);
+            intervalMin = Math.max(3, Math.min(1440, intervalMin));
             byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
@@ -62,7 +64,7 @@ public class DownlinkMessageHelper {
                 cartId,
                 registerResult,
                 clearMask,
-                reportIntervalMin,
+                intervalMin,
                 alarmCount,
                 alarmMinutes
             );
@@ -186,7 +188,7 @@ public class DownlinkMessageHelper {
             0,
             0,
             0,
-            60,
+            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
             true
         );
     }
@@ -202,7 +204,7 @@ public class DownlinkMessageHelper {
                 0,
                 0,
                 0,
-                30,
+                com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
                 alarmCount,
                 alarmMinutes
             );
@@ -235,7 +237,7 @@ public class DownlinkMessageHelper {
             0,
             0,
             0,
-            60,
+            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
             true
         );
     }
@@ -251,7 +253,7 @@ public class DownlinkMessageHelper {
                 0,
                 0,
                 0,
-                30,
+                com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
                 alarmCount,
                 alarmMinutes
             );
@@ -290,7 +292,7 @@ public class DownlinkMessageHelper {
             cartId,
             2,
             0,
-            reportIntervalMin,
+            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin),
             true
         );
     }
@@ -311,7 +313,7 @@ public class DownlinkMessageHelper {
                 cartId,
                 2,
                 0,
-                reportIntervalMin,
+                com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin),
                 alarmCount,
                 alarmMinutes
             );

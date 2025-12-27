@@ -31,6 +31,11 @@ public class DetailedUplinkLog {
     private int cartNumber;              // 台车编号 (1字节)
     private int deviceCount;             // 放置的设备数量 (1字节)
     private int rackNumber;              // 设备所属台车台架编号 (1字节)
+    private int nurseAckOp;              // 应答护士站操作指令 (1字节)
+    private long nurseAckParams;         // 应答护士站操作指令参数 (4字节)
+    private int sleepIntervalMin;        // 当前休眠间隔 (2字节)
+    private int alarmCount;              // 当前闹钟数量 (1字节)
+    private int[] alarmMinutes;          // 闹钟时刻点列表 (N*2)
     
     // 解析状态
     private boolean parseSuccess;        // 解析是否成功
@@ -100,6 +105,21 @@ public class DetailedUplinkLog {
     public int getRackNumber() { return rackNumber; }
     public void setRackNumber(int rackNumber) { this.rackNumber = rackNumber; }
     
+    public int getNurseAckOp() { return nurseAckOp; }
+    public void setNurseAckOp(int nurseAckOp) { this.nurseAckOp = nurseAckOp; }
+    
+    public long getNurseAckParams() { return nurseAckParams; }
+    public void setNurseAckParams(long nurseAckParams) { this.nurseAckParams = nurseAckParams; }
+    
+    public int getSleepIntervalMin() { return sleepIntervalMin; }
+    public void setSleepIntervalMin(int sleepIntervalMin) { this.sleepIntervalMin = sleepIntervalMin; }
+    
+    public int getAlarmCount() { return alarmCount; }
+    public void setAlarmCount(int alarmCount) { this.alarmCount = alarmCount; }
+    
+    public int[] getAlarmMinutes() { return alarmMinutes; }
+    public void setAlarmMinutes(int[] alarmMinutes) { this.alarmMinutes = alarmMinutes; }
+    
     public boolean isParseSuccess() { return parseSuccess; }
     public void setParseSuccess(boolean parseSuccess) { this.parseSuccess = parseSuccess; }
     
@@ -125,6 +145,11 @@ public class DetailedUplinkLog {
             this.cartNumber = frame.cartNumber;
             this.deviceCount = frame.deviceCount;
             this.rackNumber = frame.rackNumber;
+            this.nurseAckOp = frame.nurseAckOp;
+            this.nurseAckParams = frame.nurseAckParams;
+            this.sleepIntervalMin = frame.sleepIntervalMin;
+            this.alarmCount = frame.alarmCount;
+            this.alarmMinutes = frame.alarmMinutes;
             this.parseSuccess = true;
             this.parseError = null;
         } else {

@@ -117,6 +117,10 @@ public class DeviceSettingFragment extends Fragment {
             String ts = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m);
             settingList.add(new SettingItem("定时清点      " +  ts, 0, 6));
         }
+        if (hasPermission("setting_sleep_interval")) {
+            int sleepMin = SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+            settingList.add(new SettingItem("设备休眠间隔(分钟) " + sleepMin, 2, 7, String.valueOf(sleepMin)));
+        }
 
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
@@ -138,6 +142,7 @@ public class DeviceSettingFragment extends Fragment {
                 case 4: permCode = "setting_low_battery"; break;
                 case 5: permCode = "setting_home_return"; break;
                 case 6: permCode = "setting_inventory"; break;
+                case 7: permCode = "setting_sleep_interval"; break;
             }
             if (permCode != null && hasPermission(permCode)) {
                 onSettingClick(idx, settingItem);
@@ -203,7 +208,7 @@ public class DeviceSettingFragment extends Fragment {
             SPUtils.getInstance().put("inventory_schedule_hour", hourOfDay);
             SPUtils.getInstance().put("inventory_schedule_minute", minute);
             SPUtils.getInstance().put("inventory_schedule_enabled", true);
-            //scheduleInventory(hourOfDay, minute);
+            scheduleInventory(hourOfDay, minute);
             try {
                 com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(ctx.getApplicationContext());
                 com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
