@@ -65,6 +65,7 @@ public class TerminalListFragment extends Fragment {
     private int currentPage = 0;
     private List<Terminal> filteredPageBase = new ArrayList<>();
     private com.scwang.smart.refresh.layout.SmartRefreshLayout refreshLayout;
+    private boolean noMoreData = false;
 
     // 数据库管理器
     private DatabaseManager databaseManager;
@@ -229,9 +230,11 @@ public class TerminalListFragment extends Fragment {
             refreshLayout.setOnLoadMoreListener(layout -> {
                 try {
                     int total = filteredPageBase != null ? filteredPageBase.size() : 0;
-                    boolean canNext = (currentPage + 1) * pageSize < total;
+                    boolean canNext = (currentPage + 1) * pageSize < total && !noMoreData;
                     if (!canNext) {
                         layout.finishLoadMoreWithNoMoreData();
+                        noMoreData = true;
+                        refreshLayout.setEnableLoadMore(false);
                         return;
                     }
                     currentPage++;
@@ -1193,5 +1196,7 @@ public class TerminalListFragment extends Fragment {
             sxRight.setEnabled(canNext);
             sxRight.setAlpha(canNext ? 1f : 0.4f);
         }
+        noMoreData = !canNext;
+        if (refreshLayout != null) refreshLayout.setEnableLoadMore(canNext);
     }
 }

@@ -51,6 +51,7 @@ public class LogInfoFragment extends Fragment {
     private android.widget.Spinner spinnerTs;
     private android.widget.ImageView sxLeft;
     private android.widget.ImageView sxRight;
+    private boolean noMoreData = false;
     @Override
     public void onStart() {
         super.onStart();
@@ -167,7 +168,8 @@ public class LogInfoFragment extends Fragment {
                     recalcAndSubmit(displayedLogs);
                     refreshLayout.finishRefresh(true);
                     boolean noMore = (currentPage + 1) * pageSize >= totalFilteredCount || (first == null || first.size() < pageSize);
-                    refreshLayout.setNoMoreData(noMore);
+                    noMoreData = noMore;
+                    refreshLayout.setEnableLoadMore(!noMoreData);
                 } catch (Exception e) {
                     refreshLayout.finishRefresh(false);
                 }
@@ -178,9 +180,11 @@ public class LogInfoFragment extends Fragment {
                     String endStr = selectedEndTime;
                     int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
                     int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-                    boolean canNext = (currentPage + 1) * pageSize < totalFilteredCount;
+                    boolean canNext = (currentPage + 1) * pageSize < totalFilteredCount && !noMoreData;
                     if (!canNext) {
                         refreshLayout.finishLoadMoreWithNoMoreData();
+                        noMoreData = true;
+                        refreshLayout.setEnableLoadMore(false);
                         return;
                     }
                     currentPage++;
@@ -191,6 +195,8 @@ public class LogInfoFragment extends Fragment {
                         refreshLayout.finishLoadMore(true);
                     } else {
                         refreshLayout.finishLoadMoreWithNoMoreData();
+                        noMoreData = true;
+                        refreshLayout.setEnableLoadMore(false);
                     }
                 } catch (Exception e) {
                     refreshLayout.finishLoadMore(false);
@@ -413,7 +419,8 @@ public class LogInfoFragment extends Fragment {
         recalcAndSubmit(displayedLogs);
         if (refreshLayout != null) {
             boolean noMore = (currentPage + 1) * pageSize >= totalFilteredCount || (out == null || out.size() < pageSize);
-            refreshLayout.setNoMoreData(noMore);
+            noMoreData = noMore;
+            refreshLayout.setEnableLoadMore(!noMoreData);
         }
     }
 

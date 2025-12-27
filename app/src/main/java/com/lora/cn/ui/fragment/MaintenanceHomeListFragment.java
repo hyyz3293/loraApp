@@ -89,6 +89,7 @@ public class MaintenanceHomeListFragment extends Fragment {
                 boolean noMore = ((currentPage + 1) * pageSize) >= allFiltered.size();
                 if (noMore) {
                     layout.finishLoadMoreWithNoMoreData();
+                    swipe.setEnableLoadMore(false);
                 } else {
                     loadMorePage();
                     layout.finishLoadMore(true);
