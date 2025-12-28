@@ -138,18 +138,26 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 }
                 tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
             } else if (isOnline) {
-                int rssiRaw = Math.max(0, Math.min(138,138 - item.getRssi()));
+                int rssiRaw = Math.max(0, Math.min(138, item.getRssi()));
                 int bars;
                 if (rssiRaw <= 65) bars = 4;
                 else if (rssiRaw <= 75) bars = 3;
                 else if (rssiRaw <= 85) bars = 2;
                 else if (rssiRaw <= 95) bars = 1;
                 else bars = 0;
-                if (signalView != null) {
-                    signalView.setVisibility(View.VISIBLE);
-                    signalView.setSignalStrength(bars);
+                if (signalView != null) signalView.setVisibility(View.GONE);
+                if (ivStatusIcon != null) {
+                    ivStatusIcon.setVisibility(View.VISIBLE);
+                    int iconRes;
+                    switch (bars) {
+                        case 4: iconRes = R.drawable.ic_xh_signal_4; break;
+                        case 3: iconRes = R.drawable.ic_xh_signal_3; break;
+                        case 2: iconRes = R.drawable.ic_xh_signal_2; break;
+                        case 1: iconRes = R.drawable.ic_xh_signal_1; break;
+                        default: iconRes = R.drawable.ic_xh_signal_0; break;
+                    }
+                    ivStatusIcon.setImageResource(iconRes);
                 }
-                if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
                 tvStatusTitle.setText("正常在线");
             } else if (isNormalTaken) {
                 if (signalView != null) signalView.setVisibility(View.GONE);
@@ -166,11 +174,19 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 else if (rssiRaw <= 85) bars = 2;
                 else if (rssiRaw <= 95) bars = 1;
                 else bars = 0;
-                if (signalView != null) {
-                    signalView.setVisibility(View.VISIBLE);
-                    signalView.setSignalStrength(bars);
+                if (signalView != null) signalView.setVisibility(View.GONE);
+                if (ivStatusIcon != null) {
+                    ivStatusIcon.setVisibility(View.VISIBLE);
+                    int iconRes;
+                    switch (bars) {
+                        case 4: iconRes = R.drawable.ic_xh_signal_4; break;
+                        case 3: iconRes = R.drawable.ic_xh_signal_3; break;
+                        case 2: iconRes = R.drawable.ic_xh_signal_2; break;
+                        case 1: iconRes = R.drawable.ic_xh_signal_1; break;
+                        default: iconRes = R.drawable.ic_xh_signal_0; break;
+                    }
+                    ivStatusIcon.setImageResource(iconRes);
                 }
-                if (ivStatusIcon != null) ivStatusIcon.setVisibility(View.GONE);
                 tvStatusTitle.setText("正常在线");
             }
         }
