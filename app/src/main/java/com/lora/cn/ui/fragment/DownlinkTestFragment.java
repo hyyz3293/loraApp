@@ -102,8 +102,8 @@ public class DownlinkTestFragment extends Fragment {
                         int cart = (int) Math.max(0, Math.min(255, sel.getRoomId()));
                         etDepartmentId.setText(String.valueOf(dep));
                         etCartId.setText(String.valueOf(cart));
-                        int intervalSet = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 60);
-                        if (TextUtils.isEmpty(etIntervalMin.getText())) etIntervalMin.setText(String.valueOf(Math.max(5, Math.min(1440, intervalSet))));
+                        int intervalSet = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                        if (TextUtils.isEmpty(etIntervalMin.getText())) etIntervalMin.setText(String.valueOf(Math.max(3, Math.min(1440, intervalSet))));
                         if (TextUtils.isEmpty(etClearMask.getText())) etClearMask.setText("00000000");
                         if (spAckResult != null) spAckResult.setSelection(0);
                         if (spQueryOp != null) spQueryOp.setSelection(0);

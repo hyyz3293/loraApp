@@ -84,7 +84,7 @@ public class UplinkParseFragment extends Fragment {
                                 int r10 = 0xFF;
                                 int qop = 0;
                                 int clearMask = 0x00000000;
-                                int interval = Math.max(5, Math.min(1440, frame.sleepIntervalMin > 0 ? frame.sleepIntervalMin : com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 60)));
+                                int interval = Math.max(3, Math.min(1440, frame.sleepIntervalMin > 0 ? frame.sleepIntervalMin : com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3)));
                                 int alarmCount = Math.max(0, Math.min(2, frame.alarmCount));
                                 int[] alarmMinutes = frame.alarmMinutes != null && frame.alarmMinutes.length > 0
                                         ? frame.alarmMinutes

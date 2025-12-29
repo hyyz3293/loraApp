@@ -992,6 +992,30 @@ public class MainActivity extends AppCompatActivity {
                 if (!db.isTerminalExists(frame.deviceId)) return;
             } catch (Exception ignored) { return; }
 
+            try {
+                com.lora.cn.network.MqttPacketsClient client = mqttClient != null ? mqttClient : com.lora.cn.network.MqttPacketsClient.getShared();
+                com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
+                java.util.List<com.lora.cn.ui.model.Terminal> terms = db.getAllTerminals();
+                long depId = 0L;
+                long roomId = 0L;
+                if (terms != null) {
+                    for (com.lora.cn.ui.model.Terminal t : terms) {
+                        if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                            depId = t.getDepartmentId();
+                            roomId = t.getRoomId();
+                            break;
+                        }
+                    }
+                }
+                int dep = (int) Math.max(0, Math.min(255, depId));
+                int cart = (int) Math.max(0, Math.min(255, roomId));
+                int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                helper.sendDownlink8001(frame.deviceId, 1, 2, dep, cart, 0, 0, intervalMin, 1, new int[]{mins}, true);
+            } catch (Exception ignored) {}
+
             int statusCode = 0;
             try {
                 java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(frame.deviceId);
