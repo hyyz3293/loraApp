@@ -146,18 +146,16 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 else if (rssiRaw <= 95) bars = 1;
                 else bars = 0;
                 if (signalView != null) signalView.setVisibility(View.GONE);
-                if (ivStatusIcon != null) {
-                    ivStatusIcon.setVisibility(View.VISIBLE);
-                    int iconRes;
-                    switch (bars) {
-                        case 4: iconRes = R.drawable.ic_xh_signal_4; break;
-                        case 3: iconRes = R.drawable.ic_xh_signal_3; break;
-                        case 2: iconRes = R.drawable.ic_xh_signal_2; break;
-                        case 1: iconRes = R.drawable.ic_xh_signal_1; break;
-                        default: iconRes = R.drawable.ic_xh_signal_0; break;
-                    }
-                    ivStatusIcon.setImageResource(iconRes);
+                ivStatusIcon.setVisibility(View.VISIBLE);
+                int iconRes;
+                switch (bars) {
+                    case 4: iconRes = R.drawable.ic_xh_signal_4; break;
+                    case 3: iconRes = R.drawable.ic_xh_signal_3; break;
+                    case 2: iconRes = R.drawable.ic_xh_signal_2; break;
+                    case 1: iconRes = R.drawable.ic_xh_signal_1; break;
+                    default: iconRes = R.drawable.ic_xh_signal_0; break;
                 }
+                ivStatusIcon.setImageResource(iconRes);
                 tvStatusTitle.setText("正常在线");
             } else if (isNormalTaken) {
                 if (signalView != null) signalView.setVisibility(View.GONE);

@@ -12,10 +12,14 @@ import java.util.Locale;
 public class CrashLogger implements Thread.UncaughtExceptionHandler {
     private final Context context;
     private final Thread.UncaughtExceptionHandler previous;
+    private static volatile boolean installed = false;
 
     public static void install(Context context) {
-        Thread.UncaughtExceptionHandler prev = Thread.getDefaultUncaughtExceptionHandler();
-        Thread.setDefaultUncaughtExceptionHandler(new CrashLogger(context, prev));
+        Thread.UncaughtExceptionHandler current = Thread.getDefaultUncaughtExceptionHandler();
+        if (current instanceof CrashLogger) return;
+        if (installed) return;
+        Thread.setDefaultUncaughtExceptionHandler(new CrashLogger(context, current));
+        installed = true;
     }
 
     private CrashLogger(Context context, Thread.UncaughtExceptionHandler previous) {
@@ -39,6 +43,6 @@ public class CrashLogger implements Thread.UncaughtExceptionHandler {
             fos.flush();
             fos.close();
         } catch (Exception ignored) {}
-        if (previous != null) previous.uncaughtException(t, e);
+        if (previous != null && !(previous instanceof CrashLogger)) previous.uncaughtException(t, e);
     }
 }

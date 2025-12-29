@@ -204,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
         // 默认显示终端列表
         menuTabs.get(0).setSelected(true);
         menuTabAdapter.notifyDataSetChanged();
+        applyImmersiveMode();
 
         try {
             LogUtils.e("android.os.Build.VERSION.SDK_INT===" + android.os.Build.VERSION.SDK_INT);
@@ -296,6 +297,7 @@ public class MainActivity extends AppCompatActivity {
         if (!org.greenrobot.eventbus.EventBus.getDefault().isRegistered(this)) {
             org.greenrobot.eventbus.EventBus.getDefault().register(this);
         }
+        applyImmersiveMode();
     }
 
     @Override
@@ -311,6 +313,33 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (Exception ignored) {}
         super.onStop();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) applyImmersiveMode();
+    }
+
+    private void applyImmersiveMode() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 30) {
+                android.view.WindowInsetsController c = getWindow().getInsetsController();
+                if (c != null) {
+                    c.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
+                    c.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                }
+            } else {
+                android.view.View decor = getWindow().getDecorView();
+                int flags = android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+                decor.setSystemUiVisibility(flags);
+            }
+        } catch (Exception ignored) {}
     }
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
