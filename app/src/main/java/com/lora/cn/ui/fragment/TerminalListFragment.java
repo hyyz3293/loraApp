@@ -834,6 +834,7 @@ public class TerminalListFragment extends Fragment {
             List<Terminal> terminals = null;
             try {
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                try { dbHelper.checkAndLogOfflineDevices(); } catch (Exception ignored) {}
                 terminals = dbHelper.getAllTerminals();
             } catch (Exception e) {
                 Log.e(TAG, "获取终端列表失败", e);

@@ -169,7 +169,19 @@ public class AlertPendingListFragment extends Fragment {
                             int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                             int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                             int mins = Math.max(0, Math.min(1440, h * 60 + m));
-                            helper.sendClearDataDownlink(devHex, mask, 1, new int[]{mins});
+                            helper.sendDownlink8001(
+                                    devHex,
+                                    1,
+                                    1,
+                                    0,
+                                    0,
+                                    0,
+                                    mask,
+                                    60,
+                                    1,
+                                    new int[]{mins},
+                                    true
+                            );
                         } catch (Exception ignored) {}
                     }
                     loadAlerts();

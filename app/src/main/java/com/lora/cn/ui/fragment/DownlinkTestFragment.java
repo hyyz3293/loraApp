@@ -155,7 +155,20 @@ public class DownlinkTestFragment extends Fragment {
             int ac = getAlarmCount(alarms);
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendAckDownlink(dev, ack, ac, alarms);
+                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                    helper.sendDownlink8001(
+                            dev,
+                            ack,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            Math.max(3, Math.min(1440, interval)),
+                            ac,
+                            alarms,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送应答下行", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
@@ -169,7 +182,20 @@ public class DownlinkTestFragment extends Fragment {
             int ac = getAlarmCount(alarms);
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendQueryStatusDownlink(dev, ac, alarms);
+                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                    helper.sendDownlink8001(
+                            dev,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            Math.max(3, Math.min(1440, interval)),
+                            ac,
+                            alarms,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送查询下行", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
@@ -186,7 +212,19 @@ public class DownlinkTestFragment extends Fragment {
             int ac = getAlarmCount(alarms);
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendConfigDownlink(dev, dep, cart, interval, ac, alarms);
+                    helper.sendDownlink8001(
+                            dev,
+                            1,
+                            0,
+                            dep,
+                            cart,
+                            0,
+                            0,
+                            interval,
+                            ac,
+                            alarms,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送配置下行", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
@@ -201,7 +239,19 @@ public class DownlinkTestFragment extends Fragment {
             int ac = getAlarmCount(alarms);
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendClearDataDownlink(dev, clearMask, ac, alarms);
+                    helper.sendDownlink8001(
+                            dev,
+                            1,
+                            1,
+                            0,
+                            0,
+                            0,
+                            clearMask,
+                            60,
+                            ac,
+                            alarms,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "已发送清除下行", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
@@ -213,7 +263,20 @@ public class DownlinkTestFragment extends Fragment {
             if (dev == null) return;
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendAckDownlink(dev, 0, 0, null);
+                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                    helper.sendDownlink8001(
+                            dev,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            Math.max(3, Math.min(1440, interval)),
+                            0,
+                            null,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设应答成功已发送", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
@@ -226,7 +289,20 @@ public class DownlinkTestFragment extends Fragment {
             int[] alarms = new int[]{480};
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendQueryStatusDownlink(dev, 1, alarms);
+                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                    helper.sendDownlink8001(
+                            dev,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            Math.max(3, Math.min(1440, interval)),
+                            1,
+                            alarms,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设例行查询已发送", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
@@ -239,7 +315,19 @@ public class DownlinkTestFragment extends Fragment {
             int[] alarms = new int[]{480, 1215};
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendConfigDownlink(dev, 0, 0, 60, 2, alarms);
+                    helper.sendDownlink8001(
+                            dev,
+                            1,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            60,
+                            2,
+                            alarms,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设配置60分钟+两闹钟已发送", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());
@@ -252,7 +340,19 @@ public class DownlinkTestFragment extends Fragment {
             int clearMask = 0x00000005;
             ioExecutor.execute(() -> {
                 try {
-                    helper.sendClearDataDownlink(dev, clearMask, 0, null);
+                    helper.sendDownlink8001(
+                            dev,
+                            1,
+                            1,
+                            0,
+                            0,
+                            0,
+                            clearMask,
+                            60,
+                            0,
+                            null,
+                            true
+                    );
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "预设清除全部告警已发送", Toast.LENGTH_SHORT).show());
                 } catch (Exception e) {
                     if (mainHandler != null) mainHandler.post(() -> Toast.makeText(requireContext(), "发送失败", Toast.LENGTH_SHORT).show());

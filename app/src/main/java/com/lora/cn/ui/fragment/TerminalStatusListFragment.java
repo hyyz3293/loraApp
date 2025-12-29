@@ -312,6 +312,7 @@ public class TerminalStatusListFragment extends Fragment {
             List<Terminal> terminals = null;
             try {
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
+                try { dbHelper.checkAndLogOfflineDevices(); } catch (Exception ignored) {}
                 terminals = dbHelper.getAllTerminals();
             } catch (Exception ignored) {}
 

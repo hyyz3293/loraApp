@@ -1116,7 +1116,7 @@ public class MainActivity extends AppCompatActivity {
                         String uname = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
                         mi.setCreateUserId(uid > 0 ? uid : 0L);
                         mi.setCreateUser(uname == null ? "" : uname);
-                        mi.setCreateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                        mi.setCreateTime(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                         try { databaseHelper.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
                     } catch (Exception ignored) {}
                 }
@@ -1163,6 +1163,7 @@ public class MainActivity extends AppCompatActivity {
                             || finalStatusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                         Integer last = lastAlertTypes.get(devId);
                         if (last == null || last != finalStatusCode) {
+                            lastShownKey = null;
                             boolean alreadyInQueue = existsInQueue(devId, finalMsg);
                             if (!alreadyInQueue && finalItem != null) {
                                 alertQueue.addLast(finalItem);
@@ -1242,7 +1243,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void minimizePending() {
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-        // 保留 lastShownKey，使相同设备相同状态不再弹大浮层
+        // 立即显示右下角小浮标（若仍有待处理）
+        if (llAlertPendingSmall != null) {
+            int qs = alertQueue != null ? alertQueue.size() : 0;
+            int c = pendingAlertCount > 0 ? pendingAlertCount : qs;
+            llAlertPendingSmall.setVisibility(c > 0 ? View.VISIBLE : View.GONE);
+        }
+        // 保留 lastShownKey，使相同设备相同状态不再弹大浮层；同时更新徽标
         updatePendingBadge();
     }
 
@@ -1446,7 +1453,9 @@ public class MainActivity extends AppCompatActivity {
         if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(count));
         if (llAlertPendingSmall != null) {
             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-            llAlertPendingSmall.setVisibility(!bigVisible && count > 0 ? View.VISIBLE : View.GONE);
+            int queueSizeLocal = alertQueue != null ? alertQueue.size() : 0;
+            boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0);
+            llAlertPendingSmall.setVisibility(shouldShowSmall ? View.VISIBLE : View.GONE);
         }
         int queueSize = alertQueue.size();
         if (count != lastBadgeCount || queueSize != lastBadgeQueueSize) {
@@ -2240,7 +2249,19 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
                 int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int mins = Math.max(0, Math.min(1440, h * 60 + m));
-                helper.sendClearDataDownlink(devHex, mask, 1, new int[]{mins});
+                helper.sendDownlink8001(
+                        devHex,
+                        1,
+                        1,
+                        0,
+                        0,
+                        0,
+                        mask,
+                        60,
+                        1,
+                        new int[]{mins},
+                        true
+                );
             }
         } catch (Exception e) {
             android.util.Log.e(TAG, "下发处理下行失败 devEUI=" + devHex + ", mask=" + mask, e);

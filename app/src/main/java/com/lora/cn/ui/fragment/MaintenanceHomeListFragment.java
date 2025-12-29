@@ -209,7 +209,23 @@ public class MaintenanceHomeListFragment extends Fragment {
             String dev = mi.getTerminalId();
             if (TextUtils.isEmpty(dev)) continue;
             try {
-                helper.sendQueryStatusDownlink(dev);
+                int h = SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                int m = SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                int interval = SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                helper.sendDownlink8001(
+                        dev,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        Math.max(3, Math.min(1440, interval)),
+                        1,
+                        new int[]{mins},
+                        true
+                );
                 SPUtils.getInstance().put(key, true);
                 EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("maintenance_updated"));
             } catch (Exception ignored) {}
