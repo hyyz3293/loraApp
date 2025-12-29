@@ -76,7 +76,18 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
                 int dep = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
                 int cart = (int) Math.max(0, Math.min(255, t.getRoomId()));
                 LogUtils.e("InventoryScheduleReceiver", "sendDownlink dev=" + dev + " dep=" + dep + " cart=" + cart + " alarm=" + alarmTs);
-                helper.sendDownlink8001(dev, 1, 1, dep, cart, 0, 0, 60, 1, new int[]{mins}, true);
+                helper.sendDownlink8001(
+                        dev,
+                        1,
+                        0,
+                        dep,
+                        cart,
+                        0,
+                        0,
+                        com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
+                        1,
+                        new int[]{mins},
+                        true);
                 try {
                     com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
                     li.setTerminalId(t.getTerminalId());

@@ -370,7 +370,7 @@ public class TerminalDetailDialog extends Dialog {
                 int cartId = 0;
                 int registerResult = 1;
                 int clearMask = 0;
-                int reportIntervalMin = 5;
+                int reportIntervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
                 int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int mins = Math.max(0, Math.min(1440, h * 60 + m));

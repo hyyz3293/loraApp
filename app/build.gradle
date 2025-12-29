@@ -32,8 +32,8 @@ android {
         // 临时兼容：为避免 Android 12+ PendingIntent 标志崩溃，降低 targetSdkVersion
         // 正式修复建议使用 hannesa2 修补库或在 AlarmPingSender 中添加 FLAG_IMMUTABLE
         targetSdkVersion 35
-        versionCode 100001
-        versionName "1.0.1"
+        versionCode 100002
+        versionName "1.0.2"
     }
 
     signingConfigs {// 自动化打包配置

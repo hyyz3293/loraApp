@@ -82,6 +82,17 @@ public class DownlinkMessageHelper {
             String payloadClean = payloadHex.replaceAll("\\s+", "");
             String base64 = android.util.Base64.encodeToString(hexToBytesLocal(payloadClean), android.util.Base64.NO_WRAP);
             String utcText = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(utcMs));
+            String ackText = ((ackResult & 0x01) == 1) ? "收到数据" : "不正确重发";
+            String opText;
+            if (queryOp == 0x00) {
+                opText = "无操作";
+            } else if (queryOp == 0x01) {
+                opText = "清除报警";
+            } else {
+                opText = "未知(" + queryOp + ")";
+            }
+            boolean pBit0 = (clearMask & (1 << 0)) != 0;
+            boolean pBit2 = (clearMask & (1 << 2)) != 0;
             Log.i(TAG,
                     "下行8001字段: 设备ID=" + deviceIdHex +
                     ", 序列号=" + (sequence & 0xFF) +
@@ -92,12 +103,16 @@ public class DownlinkMessageHelper {
                     ", 保留4(2B)=" + String.format(java.util.Locale.US, "0x%04X", 0xFFFF) +
                     ", 低电量阈值(%)=" + lowBatteryPercent +
                     ", 应答结果=" + ackResult +
-                    ", 查询操作=" + queryOp +
+                    ", 应答结果含义=" + ackText +
+                    ", 护士站操作指令=" + queryOp +
+                    ", 护士站操作指令含义=" + opText +
                     ", 科室ID=" + departmentId +
                     ", 台车ID=" + cartId +
                     ", 保留9(1B)=" + String.format(java.util.Locale.US, "0x%02X", 0xFF) +
                     ", 保留10(1B)=" + String.format(java.util.Locale.US, "0x%02X", 0xFF) +
-                    ", 清除掩码=" + String.format(java.util.Locale.US, "0x%08X", clearMask) +
+                    ", 护士站操作指令参数=" + String.format(java.util.Locale.US, "0x%08X", clearMask) +
+                    ", 设备非法移走告警清除=" + (pBit0 ? "是" : "否") +
+                    ", 终端主动维护标识清除=" + (pBit2 ? "是" : "否") +
                     ", 上报间隔(分钟)=" + intervalMin +
                     ", 闹钟数量=" + alarmCount +
                     ", 闹钟分钟列表=" + java.util.Arrays.toString(alarmMinutes) +
@@ -166,7 +181,7 @@ public class DownlinkMessageHelper {
                 0xFF,
                 queryOp,
                 clearMask,
-                Math.max(5, Math.min(1440, reportIntervalMin)),
+                Math.max(3, Math.min(1440, reportIntervalMin)),
                 alarmCount,
                 alarmMinutes
             );
@@ -174,6 +189,17 @@ public class DownlinkMessageHelper {
             String payloadClean = payloadHex.replaceAll("\\s+", "");
             String base64 = android.util.Base64.encodeToString(hexToBytesLocal(payloadClean), android.util.Base64.NO_WRAP);
             String utcText = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(utcMs));
+            String ackText = ((ackResult & 0x01) == 1) ? "收到数据" : "不正确重发";
+            String opText;
+            if (queryOp == 0x00) {
+                opText = "无操作";
+            } else if (queryOp == 0x01) {
+                opText = "清除报警";
+            } else {
+                opText = "未知(" + queryOp + ")";
+            }
+            boolean pBit0 = (clearMask & (1 << 0)) != 0;
+            boolean pBit2 = (clearMask & (1 << 2)) != 0;
             Log.i(TAG,
                     "下行8001字段: 设备ID=" + deviceIdHex +
                     ", 序列号=" + (sequence & 0xFF) +
@@ -184,12 +210,16 @@ public class DownlinkMessageHelper {
                     ", 保留4(2B)=" + String.format(java.util.Locale.US, "0x%04X", 0xFFFF) +
                     ", 低电量阈值(%)=" + lowBatteryPercent +
                     ", 应答结果=" + ackResult +
-                    ", 查询操作=" + queryOp +
+                    ", 应答结果含义=" + ackText +
+                    ", 护士站操作指令=" + queryOp +
+                    ", 护士站操作指令含义=" + opText +
                     ", 科室ID=" + departmentId +
                     ", 台车ID=" + cartId +
                     ", 保留9(1B)=" + String.format(java.util.Locale.US, "0x%02X", 0xFF) +
                     ", 保留10(1B)=" + String.format(java.util.Locale.US, "0x%02X", 0xFF) +
-                    ", 清除掩码=" + String.format(java.util.Locale.US, "0x%08X", clearMask) +
+                    ", 护士站操作指令参数=" + String.format(java.util.Locale.US, "0x%08X", clearMask) +
+                    ", 设备非法移走告警清除=" + (pBit0 ? "是" : "否") +
+                    ", 终端主动维护标识清除=" + (pBit2 ? "是" : "否") +
                     ", 上报间隔(分钟)=" + Math.max(3, Math.min(1440, reportIntervalMin)) +
                     ", 闹钟数量=" + alarmCount +
                     ", 闹钟分钟列表=" + java.util.Arrays.toString(alarmMinutes) +
@@ -322,7 +352,7 @@ public class DownlinkMessageHelper {
                 0,
                 0xFF,
                 0xFF,
-                1,
+                0,
                 0,
                 intervalMin,
                 1,
@@ -357,7 +387,7 @@ public class DownlinkMessageHelper {
                 0,
                 0xFF,
                 0xFF,
-                1,
+                0,
                 0,
                 com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
                 alarmCount,
@@ -393,7 +423,7 @@ public class DownlinkMessageHelper {
         try {
             int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", reportIntervalMin);
-            intervalMin = Math.max(5, Math.min(1440, intervalMin));
+            intervalMin = Math.max(3, Math.min(1440, intervalMin));
             byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
                 deviceIdHex,
                 (byte) (System.currentTimeMillis() & 0xFF),
@@ -564,7 +594,7 @@ public class DownlinkMessageHelper {
                 0xFF,
                 0,
                 clearMask,
-                Math.max(5, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", intervalMin))),
+                Math.max(3, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", intervalMin))),
                 1,
                 new int[]{getGlobalAlarmMinute()});
         return LoRaProtocolParser.bytesToHex(frame);

@@ -1013,7 +1013,40 @@ public class MainActivity extends AppCompatActivity {
                 int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int mins = Math.max(0, Math.min(1440, h * 60 + m));
-                helper.sendDownlink8001(frame.deviceId, 1, 2, dep, cart, 0, 0, intervalMin, 1, new int[]{mins}, true);
+                boolean maintenanceNeeded = false;
+                try {
+                    if (frame.statusFlags != null) {
+                        maintenanceNeeded = frame.statusFlags.contains(com.lora.cn.utils.LoRaFrameParser.DeviceStatusFlag.MAINTENANCE_NEEDED);
+                    }
+                } catch (Exception ignored) {}
+                if (maintenanceNeeded) {
+                    try {
+                        String name = "";
+                        String groups = "";
+                        if (terms != null) {
+                            for (com.lora.cn.ui.model.Terminal t : terms) {
+                                if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                                    name = t.getTerminalName();
+                                    groups = t.getGroupNamesText();
+                                    break;
+                                }
+                            }
+                        }
+                        com.lora.cn.ui.model.MaintenanceInfo mi = new com.lora.cn.ui.model.MaintenanceInfo();
+                        mi.setTerminalId(frame.deviceId);
+                        mi.setTerminalName(name == null ? "" : name);
+                        mi.setTerminalGroup(groups == null ? "" : groups);
+                        mi.setStatus(0);
+                        mi.setContent("设备维护：需要维护");
+                        long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                        String uname = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                        mi.setCreateUserId(uid > 0 ? uid : 0L);
+                        mi.setCreateUser(uname == null ? "" : uname);
+                        mi.setCreateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                        try { databaseHelper.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
+                    } catch (Exception ignored) {}
+                }
+                helper.sendDownlink8001(frame.deviceId, 1, 0, dep, cart, 0, 0, intervalMin, 1, new int[]{mins}, true);
             } catch (Exception ignored) {}
 
             int statusCode = 0;
