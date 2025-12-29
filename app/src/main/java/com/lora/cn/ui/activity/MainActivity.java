@@ -420,6 +420,80 @@ public class MainActivity extends AppCompatActivity {
         }
         if (llAlertPendingSmall != null) {
             llAlertPendingSmall.setOnClickListener(v -> openAlertPendingList());
+            llAlertPendingSmall.setOnTouchListener(new android.view.View.OnTouchListener() {
+                float downRawX;
+                float downRawY;
+                float dX;
+                float dY;
+                boolean moved;
+                @Override
+                public boolean onTouch(android.view.View v, android.view.MotionEvent event) {
+                    android.view.View parent = (android.view.View) v.getParent();
+                    if (parent == null) return false;
+                    int[] loc = new int[2];
+                    parent.getLocationOnScreen(loc);
+                    switch (event.getAction()) {
+                        case android.view.MotionEvent.ACTION_DOWN:
+                            downRawX = event.getRawX();
+                            downRawY = event.getRawY();
+                            dX = v.getX() - (downRawX - loc[0]);
+                            dY = v.getY() - (downRawY - loc[1]);
+                            moved = false;
+                            return true;
+                        case android.view.MotionEvent.ACTION_MOVE: {
+                            float rawX = event.getRawX();
+                            float rawY = event.getRawY();
+                            float newX = rawX - loc[0] + dX;
+                            float newY = rawY - loc[1] + dY;
+                            int parentWidth = parent.getWidth();
+                            int parentHeight = parent.getHeight();
+                            int vWidth = v.getWidth();
+                            int vHeight = v.getHeight();
+                            if (parentWidth > 0 && parentHeight > 0 && vWidth > 0 && vHeight > 0) {
+                                newX = Math.max(0, Math.min(parentWidth - vWidth, newX));
+                                newY = Math.max(0, Math.min(parentHeight - vHeight, newY));
+                            }
+                            v.setX(newX);
+                            v.setY(newY);
+                            if (!moved) {
+                                float dx = Math.abs(rawX - downRawX);
+                                float dy = Math.abs(rawY - downRawY);
+                                moved = dx > 8 || dy > 8;
+                            }
+                            return true;
+                        }
+                        case android.view.MotionEvent.ACTION_UP:
+                            if (!moved) {
+                                openAlertPendingList();
+                            } else {
+                                com.blankj.utilcode.util.SPUtils.getInstance().put("alert_small_last_x", (int) v.getX());
+                                com.blankj.utilcode.util.SPUtils.getInstance().put("alert_small_last_y", (int) v.getY());
+                            }
+                            return true;
+                        default:
+                            return false;
+                    }
+                }
+            });
+            llAlertPendingSmall.post(() -> {
+                int x = com.blankj.utilcode.util.SPUtils.getInstance().getInt("alert_small_last_x", Integer.MIN_VALUE);
+                int y = com.blankj.utilcode.util.SPUtils.getInstance().getInt("alert_small_last_y", Integer.MIN_VALUE);
+                if (x != Integer.MIN_VALUE && y != Integer.MIN_VALUE) {
+                    android.view.View parent = (android.view.View) llAlertPendingSmall.getParent();
+                    int parentWidth = parent != null ? parent.getWidth() : 0;
+                    int parentHeight = parent != null ? parent.getHeight() : 0;
+                    int vWidth = llAlertPendingSmall.getWidth();
+                    int vHeight = llAlertPendingSmall.getHeight();
+                    float newX = x;
+                    float newY = y;
+                    if (parentWidth > 0 && parentHeight > 0 && vWidth > 0 && vHeight > 0) {
+                        newX = Math.max(0, Math.min(parentWidth - vWidth, newX));
+                        newY = Math.max(0, Math.min(parentHeight - vHeight, newY));
+                    }
+                    llAlertPendingSmall.setX(newX);
+                    llAlertPendingSmall.setY(newY);
+                }
+            });
         }
         if (ivErrorClose != null) {
             ivErrorClose.setOnClickListener(v -> {

@@ -334,7 +334,9 @@ public class LoRaFrameParser {
             StringBuilder timeStr = new StringBuilder();
             for (int i = 0; i < 7; i++) {
                 int bcd = data[offset + i] & 0xFF;
-                timeStr.append(String.format("%02d", bcd));
+                int hi = (bcd >> 4) & 0x0F;
+                int lo = bcd & 0x0F;
+                timeStr.append(hi).append(lo);
             }
             
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault());
