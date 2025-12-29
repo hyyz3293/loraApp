@@ -231,7 +231,7 @@ public class DeviceSettingFragment extends Fragment {
     
     private void scheduleInventory(int hour, int minute) {
         android.content.Context ctx = requireContext().getApplicationContext();
-        //com.lora.cn.work.InventoryScheduleWorker.scheduleAt(ctx, hour, minute);
+        try { com.lora.cn.LoraApp.scheduleInventory(ctx, hour, minute); } catch (Exception ignored) {}
 
         AlarmManager am = (AlarmManager) ctx.getSystemService(android.content.Context.ALARM_SERVICE);
         if (am == null) return;
@@ -248,9 +248,9 @@ public class DeviceSettingFragment extends Fragment {
         long trigger = cal.getTimeInMillis();
         long now = System.currentTimeMillis();
         if (trigger <= now) {
-            cal.add(Calendar.DAY_OF_YEAR, 1);
-            trigger = cal.getTimeInMillis();
+            trigger = now + 60_000L;
         }
+        try { com.lora.cn.utils.LogUtils.e("DeviceSettingFragment", "定时执行设置: " + String.format(java.util.Locale.getDefault(), "%02d:%02d", hour, minute) + ", trigger=" + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(trigger))); } catch (Exception ignored) {}
         am.cancel(pi);
         if (android.os.Build.VERSION.SDK_INT >= 23) {
             AlarmManager.AlarmClockInfo info = new AlarmManager.AlarmClockInfo(trigger, showPi);

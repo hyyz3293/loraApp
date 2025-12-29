@@ -17,10 +17,12 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
         java.util.Calendar cal = java.util.Calendar.getInstance();
         int day = cal.get(java.util.Calendar.DAY_OF_YEAR);
         String key = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day, h, m);
-        String last = com.blankj.utilcode.util.SPUtils.getInstance().getString("inventory_last_fire_key", "");
-        if (key.equals(last)) return;
-        com.blankj.utilcode.util.SPUtils.getInstance().put("inventory_last_fire_key", key);
-        scheduleNextDay(context.getApplicationContext(), h, m);
+        boolean begun = com.lora.cn.LoraApp.tryBeginInventoryExecute(key);
+        try {
+            String last = com.blankj.utilcode.util.SPUtils.getInstance().getString("inventory_last_fire_key", "");
+            if (key.equals(last) || !begun) return;
+            com.blankj.utilcode.util.SPUtils.getInstance().put("inventory_last_fire_key", key);
+            scheduleNextDay(context.getApplicationContext(), h, m);
 //        try {
 //            if (client != null && !client.isConnected()) {
 //                com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
@@ -41,8 +43,7 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
 //            }
 //        } catch (Exception ignored) {}
         com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
-        try {
-            com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(context.getApplicationContext());
+        com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(context.getApplicationContext());
             java.util.List<com.lora.cn.ui.model.Terminal> terminals = db.getAllTerminals();
             int mins = Math.max(0, Math.min(1440, h * 60 + m));
             String alarmTs = String.format(java.util.Locale.getDefault(), "%02d:%02d", h, m);
@@ -53,24 +54,22 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
                     if (dev0.length() == 16) targetCount++;
                 }
             }
-            try {
-                android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(android.content.Context.NOTIFICATION_SERVICE);
-                if (nm != null) {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        android.app.NotificationChannel ch = new android.app.NotificationChannel("inventory_schedule", "定时清点", android.app.NotificationManager.IMPORTANCE_DEFAULT);
-                        nm.createNotificationChannel(ch);
-                    }
-                    android.content.Intent open = new android.content.Intent(context, com.lora.cn.ui.activity.MainActivity.class);
-                    android.app.PendingIntent contentPi = android.app.PendingIntent.getActivity(context, 30001, open, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
-                    androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(context, "inventory_schedule")
-                            .setSmallIcon(com.lora.cn.R.mipmap.app_logo)
-                            .setContentTitle("定时清点已触发")
-                            .setContentText("时间: " + alarmTs + "，终端: " + targetCount)
-                            .setContentIntent(contentPi)
-                            .setAutoCancel(true);
-                    nm.notify(30002, b.build());
+            android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(android.content.Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    android.app.NotificationChannel ch = new android.app.NotificationChannel("inventory_schedule", "定时清点", android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                    nm.createNotificationChannel(ch);
                 }
-            } catch (Exception ignored) {}
+                android.content.Intent open = new android.content.Intent(context, com.lora.cn.ui.activity.MainActivity.class);
+                android.app.PendingIntent contentPi = android.app.PendingIntent.getActivity(context, 30001, open, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+                androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(context, "inventory_schedule")
+                        .setSmallIcon(com.lora.cn.R.mipmap.app_logo)
+                        .setContentTitle("定时清点已触发")
+                        .setContentText("时间: " + alarmTs + "，终端: " + targetCount)
+                        .setContentIntent(contentPi)
+                        .setAutoCancel(true);
+                nm.notify(30002, b.build());
+            }
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 String dev = t.getTerminalId() != null ? t.getTerminalId().trim().replace(" ", "") : "";
                 if (dev.length() != 16) continue;
@@ -97,6 +96,8 @@ public class InventoryScheduleReceiver extends android.content.BroadcastReceiver
             }
         } catch (Exception ignored) {
             LogUtils.e("InventoryScheduleReceiver", "ignored y  xxx=" + ignored);
+        } finally {
+            if (begun) com.lora.cn.LoraApp.endInventoryExecute(key);
         }
     }
 

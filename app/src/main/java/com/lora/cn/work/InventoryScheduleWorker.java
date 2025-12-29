@@ -27,11 +27,13 @@ public class InventoryScheduleWorker extends Worker {
         int day = cal.get(java.util.Calendar.DAY_OF_YEAR);
         String key = String.format(java.util.Locale.getDefault(), "%d-%02d:%02d", day, h, m);
         String last = com.blankj.utilcode.util.SPUtils.getInstance().getString("inventory_last_fire_key", "");
-        if (key.equals(last)) {
-            scheduleFromPrefs(ctx);
-            return Result.success();
-        }
-        com.blankj.utilcode.util.SPUtils.getInstance().put("inventory_last_fire_key", key);
+        boolean begun = com.lora.cn.LoraApp.tryBeginInventoryExecute(key);
+        try {
+            if (key.equals(last) || !begun) {
+                scheduleFromPrefs(ctx);
+                return Result.success();
+            }
+            com.blankj.utilcode.util.SPUtils.getInstance().put("inventory_last_fire_key", key);
         com.lora.cn.network.MqttPacketsClient client = com.lora.cn.network.MqttPacketsClient.getShared();
         try {
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
@@ -110,6 +112,9 @@ public class InventoryScheduleWorker extends Worker {
         } catch (Exception ignored) {}
         scheduleFromPrefs(ctx);
         return Result.success();
+        } finally {
+            if (begun) com.lora.cn.LoraApp.endInventoryExecute(key);
+        }
     }
 
     public static void scheduleFromPrefs(Context ctx) {
