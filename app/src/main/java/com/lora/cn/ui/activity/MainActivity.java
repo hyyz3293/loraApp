@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView ivAlertIcon;
     private ImageView ivLogo;
     private android.widget.TextView btnShareLogs;
+    private android.widget.TextView btnMaintenanceBadge;
     
     private int currentTabIndex = 0;
     private boolean isUserInfoVisible = false;
@@ -344,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
     public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
-        try { updatePendingBadge(); } catch (Exception ignored) {}
+        try { updatePendingBadge(); updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
@@ -394,6 +395,7 @@ public class MainActivity extends AppCompatActivity {
         tvUserName = findViewById(R.id.tv_user_name);
         ivLogo = findViewById(R.id.iv_logo);
         btnShareLogs = findViewById(R.id.btn_share_logs);
+        btnMaintenanceBadge = findViewById(R.id.btn_maintenance_badge);
         fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
         fragmentDeviceListContainer = findViewById(R.id.fragment_device_list_container);
         rlAlertIcon = findViewById(R.id.rl_alert_icon);
@@ -510,6 +512,7 @@ public class MainActivity extends AppCompatActivity {
         }
         updateAlertMutedUI();
         setupSecretShareLogs();
+        try { updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
     private void toggleGlobalMute(View v) {
@@ -603,6 +606,9 @@ public class MainActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> confirmLogout());
 
         tvUserName.setOnClickListener(v -> toggleUserInfo());
+        if (btnMaintenanceBadge != null) {
+            btnMaintenanceBadge.setOnClickListener(v -> switchToTab(3));
+        }
     }
 
     private int secretTapCount = 0;
@@ -766,6 +772,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         try { updatePendingBadge(); } catch (Exception ignored) {}
+        try { updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
     // 全局报警窗口状态
@@ -1505,6 +1512,41 @@ public class MainActivity extends AppCompatActivity {
             lastBadgeCount = count;
             lastBadgeQueueSize = queueSize;
             android.util.Log.d(TAG, "updatePendingBadge count=" + count + ", queueSize=" + queueSize);
+        }
+    }
+
+    private void updateMaintenanceBadge() {
+        try {
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+            ioExecutor.execute(() -> {
+                int count = 0;
+                try {
+                    com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext());
+                    java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = db.getMaintenanceRecords(uid);
+                    java.util.Set<String> pendingDevSet = new java.util.HashSet<>();
+                    if (list != null) {
+                        for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
+                            if (mi == null) continue;
+                            String c = mi.getContent();
+                            if ("设备维护：需要维护".equals(c) && mi.getStatus() == 0) {
+                                String dev = mi.getTerminalId();
+                                if (dev != null && dev.length() > 0) pendingDevSet.add(dev);
+                            }
+                        }
+                    }
+                    count = pendingDevSet.size();
+                } catch (Exception ignored) {}
+                final int finalCount = count;
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        if (btnMaintenanceBadge != null) btnMaintenanceBadge.setText("需维修: " + finalCount);
+                    });
+                }
+            });
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "更新需维修数量失败", e);
         }
     }
 
