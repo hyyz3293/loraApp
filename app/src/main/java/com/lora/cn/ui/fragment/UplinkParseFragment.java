@@ -32,6 +32,9 @@ public class UplinkParseFragment extends Fragment {
     private TextView tvDownlinkHex;
     private java.util.concurrent.ExecutorService ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
     private android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private android.widget.Spinner spTerminal;
+    private Button btnRefresh;
+    private java.util.List<com.lora.cn.ui.model.Terminal> terminalList = new java.util.ArrayList<>();
 
     @Nullable
     @Override
@@ -43,6 +46,8 @@ public class UplinkParseFragment extends Fragment {
         tvDeviceId = v.findViewById(R.id.tv_device_id);
         tvTime = v.findViewById(R.id.tv_time);
         tvHex = v.findViewById(R.id.tv_hex);
+        spTerminal = v.findViewById(R.id.sp_terminal);
+        btnRefresh = v.findViewById(R.id.btn_refresh);
         rvList = v.findViewById(R.id.rv_list);
         rvList.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvList.setHasFixedSize(true);
@@ -118,6 +123,7 @@ public class UplinkParseFragment extends Fragment {
                 }
             });
         }
+        setupTerminalSpinnerAndRefresh();
         return v;
     }
     
@@ -126,17 +132,47 @@ public class UplinkParseFragment extends Fragment {
         super.onResume();
         prefillLatestUplink();
     }
-    
-    private void prefillLatestUplink() {
+
+    private void setupTerminalSpinnerAndRefresh() {
         try {
-            android.content.Context ctx = getContext();
-            if (ctx == null) return;
-            android.content.Context appCtx = ctx.getApplicationContext();
+            com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
+            terminalList = db.getAllTerminals();
+            java.util.List<String> names = new java.util.ArrayList<>();
+            for (com.lora.cn.ui.model.Terminal t : terminalList) {
+                names.add((t.getTerminalName() == null ? "" : t.getTerminalName()) + " (" + (t.getTerminalId() == null ? "" : t.getTerminalId()) + ")");
+            }
+            android.widget.ArrayAdapter<String> adapter2 = new android.widget.ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, names);
+            adapter2.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+            if (spTerminal != null) spTerminal.setAdapter(adapter2);
+            if (spTerminal != null && !terminalList.isEmpty()) spTerminal.setSelection(0);
+            if (spTerminal != null) {
+                spTerminal.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                        refreshSelectedDeviceLatestUplink();
+                    }
+                    @Override
+                    public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+                });
+            }
+        } catch (Exception ignored) {}
+        if (btnRefresh != null) {
+            btnRefresh.setOnClickListener(v -> refreshSelectedDeviceLatestUplink());
+        }
+    }
+
+    private void refreshSelectedDeviceLatestUplink() {
+        try {
+            int pos = spTerminal != null ? spTerminal.getSelectedItemPosition() : -1;
+            com.lora.cn.ui.model.Terminal sel = (pos >= 0 && pos < terminalList.size()) ? terminalList.get(pos) : null;
+            String devId = sel != null ? sel.getTerminalId() : null;
+            if (devId == null || devId.trim().length() == 0) return;
+            String dev = devId.trim().replace(" ", "");
             ioExecutor.execute(() -> {
                 String hex = null;
                 try {
-                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
-                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getAllLogs();
+                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(dev);
                     if (logs != null) {
                         for (com.lora.cn.ui.model.LogInfo li : logs) {
                             String a = li.getAction();
@@ -144,7 +180,53 @@ public class UplinkParseFragment extends Fragment {
                                 int idx = a.indexOf(":");
                                 if (idx >= 0 && idx + 1 < a.length()) {
                                     hex = a.substring(idx + 1).trim();
-                                    break;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+                final String finalHex = hex != null ? hex : "";
+                final boolean hasHex = hex != null;
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        try {
+                            if (tvDeviceId != null) tvDeviceId.setText(dev);
+                            if (etHexInput != null) etHexInput.setText(finalHex);
+                            if (hasHex && btnParseHex != null) btnParseHex.performClick();
+                        } catch (Exception ignored) {}
+                    });
+                }
+            });
+        } catch (Exception ignored) {}
+    }
+
+    private void prefillLatestUplink() {
+        try {
+            android.content.Context ctx = getContext();
+            if (ctx == null) return;
+            android.content.Context appCtx = ctx.getApplicationContext();
+            ioExecutor.execute(() -> {
+                String hex = null;
+                long latestT = -1L;
+                try {
+                    com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                    java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getAllLogs();
+                    if (logs != null) {
+                        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                        for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            String a = li.getAction();
+                            if (a != null && a.startsWith("接收上行数据")) {
+                                int idx = a.indexOf(":");
+                                String hx = null;
+                                if (idx >= 0 && idx + 1 < a.length()) {
+                                    hx = a.substring(idx + 1).trim();
+                                }
+                                long t = -1L;
+                                try { t = li.getCreateTime() != null ? sdf.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                                if (hx != null && (latestT < 0 || t >= latestT)) {
+                                    hex = hx;
+                                    latestT = t;
                                 }
                             }
                         }
@@ -152,13 +234,20 @@ public class UplinkParseFragment extends Fragment {
                     if (hex == null) {
                         java.util.List<com.lora.cn.ui.model.LogInfo> unbound = db.getAllUnboundLogs();
                         if (unbound != null) {
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
                             for (com.lora.cn.ui.model.LogInfo li : unbound) {
                                 String a = li.getAction();
                                 if (a != null && a.startsWith("接收上行数据")) {
                                     int idx = a.indexOf(":");
+                                    String hx = null;
                                     if (idx >= 0 && idx + 1 < a.length()) {
-                                        hex = a.substring(idx + 1).trim();
-                                        break;
+                                        hx = a.substring(idx + 1).trim();
+                                    }
+                                    long t = -1L;
+                                    try { t = li.getCreateTime() != null ? sdf.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
+                                    if (hx != null && (latestT < 0 || t >= latestT)) {
+                                        hex = hx;
+                                        latestT = t;
                                     }
                                 }
                             }

@@ -136,6 +136,8 @@ public class DownlinkTestFragment extends Fragment {
             spRegisterResult.setAdapter(regAdapter);
         } catch (Exception ignored) {}
 
+        prefillDefaults();
+
         View btnAck = v.findViewById(R.id.btn_send_ack);
         View btnQuery = v.findViewById(R.id.btn_send_query);
         View btnConfig = v.findViewById(R.id.btn_send_config);
@@ -439,6 +441,50 @@ public class DownlinkTestFragment extends Fragment {
             });
         });
         return v;
+    }
+
+    private void prefillDefaults() {
+        try {
+            if (spTerminal != null && terminalList != null && !terminalList.isEmpty()) {
+                spTerminal.setSelection(0);
+            }
+            int intervalSet = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+            if (etIntervalMin != null && TextUtils.isEmpty(etIntervalMin.getText())) {
+                etIntervalMin.setText(String.valueOf(Math.max(3, Math.min(1440, intervalSet))));
+            }
+            if (etClearMask != null && TextUtils.isEmpty(etClearMask.getText())) {
+                etClearMask.setText("00000000");
+            }
+            if (spAckResult != null) spAckResult.setSelection(0);
+            if (spQueryOp != null) spQueryOp.setSelection(0);
+            if (spRegisterResult != null) spRegisterResult.setSelection(1);
+            int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+            int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+            int mins = Math.max(0, Math.min(1440, h * 60 + m));
+            if (etAlarmCount != null && TextUtils.isEmpty(etAlarmCount.getText())) {
+                etAlarmCount.setText("1");
+            }
+            if (etAlarmMinutes != null && TextUtils.isEmpty(etAlarmMinutes.getText())) {
+                etAlarmMinutes.setText(String.valueOf(mins));
+            }
+            int low = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            if (etLowBattery != null && TextUtils.isEmpty(etLowBattery.getText())) {
+                etLowBattery.setText(String.valueOf(low));
+            }
+            if (etRes2_4b != null && TextUtils.isEmpty(etRes2_4b.getText())) etRes2_4b.setText("FFFFFFFF");
+            if (etRes3_4b != null && TextUtils.isEmpty(etRes3_4b.getText())) etRes3_4b.setText("FFFFFFFF");
+            if (etRes4_2b != null && TextUtils.isEmpty(etRes4_2b.getText())) etRes4_2b.setText("FFFF");
+            if (etRes9_1b != null && TextUtils.isEmpty(etRes9_1b.getText())) etRes9_1b.setText("FF");
+            if (etRes10_1b != null && TextUtils.isEmpty(etRes10_1b.getText())) etRes10_1b.setText("FF");
+            try {
+                String nowUtcBcd = new java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.getDefault())
+                        .format(new java.util.Date());
+                if (etBcdTime != null && TextUtils.isEmpty(etBcdTime.getText())) {
+                    etBcdTime.setText(nowUtcBcd);
+                }
+            } catch (Exception ignored) {}
+            if (etRawHex != null && TextUtils.isEmpty(etRawHex.getText())) etRawHex.setText("");
+        } catch (Exception ignored) {}
     }
 
     private String getDevId() {

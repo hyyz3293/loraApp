@@ -14,6 +14,27 @@
         android:textColor="#000000"
       />
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+        <Spinner
+            android:id="@+id/sp_terminal"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/spinner_background"/>
+        <View
+            android:layout_width="8dp"
+            android:layout_height="40dp"/>
+        <Button
+            android:id="@+id/btn_refresh"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="刷新最新上行"/>
+    </LinearLayout>
+
     <EditText
         android:id="@+id/et_hex_input"
         android:layout_width="match_parent"
