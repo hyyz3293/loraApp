@@ -79,21 +79,21 @@
             android:name=".service.MqttBrokerService"
             android:exported="false" />
         
-        <receiver
-            android:name=".receiver.InventoryScheduleReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.lora.cn.ACTION_INVENTORY_SCHEDULE" />
-            </intent-filter>
-        </receiver>
-        <receiver
-            android:name=".receiver.BootReceiver"
-            android:enabled="true"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+<!--        <receiver-->
+<!--            android:name=".receiver.InventoryScheduleReceiver"-->
+<!--            android:exported="false">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="com.lora.cn.ACTION_INVENTORY_SCHEDULE" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
+<!--        <receiver-->
+<!--            android:name=".receiver.BootReceiver"-->
+<!--            android:enabled="true"-->
+<!--            android:exported="false">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.BOOT_COMPLETED" />-->
+<!--            </intent-filter>-->
+<!--        </receiver>-->
     </application>
 
 </manifest>

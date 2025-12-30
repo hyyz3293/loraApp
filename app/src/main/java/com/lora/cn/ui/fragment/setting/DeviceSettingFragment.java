@@ -228,37 +228,37 @@ public class DeviceSettingFragment extends Fragment {
         }, defHour, defMinute, is24);
         dlg.show();
     }
-    
-    private void scheduleInventory(int hour, int minute) {
-        android.content.Context ctx = requireContext().getApplicationContext();
-        try { com.lora.cn.LoraApp.scheduleInventory(ctx, hour, minute); } catch (Exception ignored) {}
-
-        AlarmManager am = (AlarmManager) ctx.getSystemService(android.content.Context.ALARM_SERVICE);
-        if (am == null) return;
-        Intent intent = new Intent("com.lora.cn.ACTION_INVENTORY_SCHEDULE");
-        intent.setClass(ctx, com.lora.cn.receiver.InventoryScheduleReceiver.class);
-        PendingIntent pi = PendingIntent.getBroadcast(ctx, 10001, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        Intent showIntent = new Intent(ctx, com.lora.cn.ui.activity.MainActivity.class);
-        PendingIntent showPi = PendingIntent.getActivity(ctx, 20001, showIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        cal.set(Calendar.HOUR_OF_DAY, hour);
-        cal.set(Calendar.MINUTE, minute);
-        long trigger = cal.getTimeInMillis();
-        long now = System.currentTimeMillis();
-        if (trigger <= now) {
-            trigger = now + 60_000L;
-        }
-        try { com.lora.cn.utils.LogUtils.e("DeviceSettingFragment", "定时执行设置: " + String.format(java.util.Locale.getDefault(), "%02d:%02d", hour, minute) + ", trigger=" + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(trigger))); } catch (Exception ignored) {}
-        am.cancel(pi);
-        if (android.os.Build.VERSION.SDK_INT >= 23) {
-            AlarmManager.AlarmClockInfo info = new AlarmManager.AlarmClockInfo(trigger, showPi);
-            am.setAlarmClock(info, pi);
-        } else {
-            am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi);
-        }
-    }
+//
+//    private void scheduleInventory(int hour, int minute) {
+//        android.content.Context ctx = requireContext().getApplicationContext();
+//        try { com.lora.cn.LoraApp.scheduleInventory(ctx, hour, minute); } catch (Exception ignored) {}
+//
+//        AlarmManager am = (AlarmManager) ctx.getSystemService(android.content.Context.ALARM_SERVICE);
+//        if (am == null) return;
+//        Intent intent = new Intent("com.lora.cn.ACTION_INVENTORY_SCHEDULE");
+//        intent.setClass(ctx, com.lora.cn.receiver.InventoryScheduleReceiver.class);
+//        PendingIntent pi = PendingIntent.getBroadcast(ctx, 10001, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+//        Intent showIntent = new Intent(ctx, com.lora.cn.ui.activity.MainActivity.class);
+//        PendingIntent showPi = PendingIntent.getActivity(ctx, 20001, showIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+//        Calendar cal = Calendar.getInstance();
+//        cal.set(Calendar.SECOND, 0);
+//        cal.set(Calendar.MILLISECOND, 0);
+//        cal.set(Calendar.HOUR_OF_DAY, hour);
+//        cal.set(Calendar.MINUTE, minute);
+//        long trigger = cal.getTimeInMillis();
+//        long now = System.currentTimeMillis();
+//        if (trigger <= now) {
+//            trigger = now + 60_000L;
+//        }
+//        try { com.lora.cn.utils.LogUtils.e("DeviceSettingFragment", "定时执行设置: " + String.format(java.util.Locale.getDefault(), "%02d:%02d", hour, minute) + ", trigger=" + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(trigger))); } catch (Exception ignored) {}
+//        am.cancel(pi);
+//        if (android.os.Build.VERSION.SDK_INT >= 23) {
+//            AlarmManager.AlarmClockInfo info = new AlarmManager.AlarmClockInfo(trigger, showPi);
+//            am.setAlarmClock(info, pi);
+//        } else {
+//            am.setExact(AlarmManager.RTC_WAKEUP, trigger, pi);
+//        }
+//    }
     
     /**
      * 检查当前用户是否有指定权限
