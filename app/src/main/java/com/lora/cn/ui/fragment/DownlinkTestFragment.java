@@ -247,7 +247,7 @@ public class DownlinkTestFragment extends Fragment {
                             0,
                             0,
                             clearMask,
-                            60,
+                            Math.max(3, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3))),
                             ac,
                             alarms,
                             true
@@ -348,7 +348,7 @@ public class DownlinkTestFragment extends Fragment {
                             0,
                             0,
                             clearMask,
-                            60,
+                            Math.max(3, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3))),
                             0,
                             null,
                             true

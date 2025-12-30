@@ -734,6 +734,21 @@ public class MainActivity extends AppCompatActivity {
                     String time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                     try {
                         if (finalTarget.logId > 0) databaseHelper.updateLogHandled(finalTarget.logId, user, time, remark);
+                        if ("设备离线".equals(finalTarget.title)) {
+                            try {
+                                java.util.List<com.lora.cn.ui.model.LogInfo> devLogs = databaseHelper.getLogsByTerminalId(finalTarget.code);
+                                if (devLogs != null) {
+                                    for (com.lora.cn.ui.model.LogInfo li : devLogs) {
+                                        if (li == null) continue;
+                                        boolean unhandled = (li.getHandleUser() == null || li.getHandleUser().trim().isEmpty())
+                                                && (li.getHandleTime() == null || li.getHandleTime().trim().isEmpty());
+                                        if (unhandled && li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
+                                            databaseHelper.updateLogHandled(li.getId(), user, time, remark);
+                                        }
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
                         int mask = 0;
                         if ("异常取走".equals(finalTarget.title)) mask |= 0x00000001;
                         if ("设备低电量".equals(finalTarget.title)) mask |= 0x00000002;
@@ -1028,7 +1043,7 @@ public class MainActivity extends AppCompatActivity {
                     int sc = getStatusCodeForTitle(title);
                     if (sc != 0) lastAlertTypes.put(devId, sc);
                 }
-                if (a.ring) startAlertRinging30s();
+                if (a.ring && !alertMuted) startAlertRinging30s();
             }
         }
 
@@ -1050,7 +1065,7 @@ public class MainActivity extends AppCompatActivity {
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.ASYNC)
     public void onUplinkDataEvent(UplinkDataEvent event) {
-        if (event == null || alertMuted) return;
+        if (event == null) return;
         try {
             if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -1095,29 +1110,57 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception ignored) {}
                 if (maintenanceNeeded) {
                     try {
-                        String name = "";
-                        String groups = "";
-                        if (terms != null) {
-                            for (com.lora.cn.ui.model.Terminal t : terms) {
-                                if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
-                                    name = t.getTerminalName();
-                                    groups = t.getGroupNamesText();
+                        boolean existsPendingAuto = false;
+                        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
+                        if (existingAll != null) {
+                            for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
+                                String c = x != null ? x.getContent() : null;
+                                if ("设备维护：需要维护".equals(c) && x.getStatus() == 0) {
+                                    existsPendingAuto = true;
                                     break;
                                 }
                             }
                         }
-                        com.lora.cn.ui.model.MaintenanceInfo mi = new com.lora.cn.ui.model.MaintenanceInfo();
-                        mi.setTerminalId(frame.deviceId);
-                        mi.setTerminalName(name == null ? "" : name);
-                        mi.setTerminalGroup(groups == null ? "" : groups);
-                        mi.setStatus(0);
-                        mi.setContent("设备维护：需要维护");
-                        long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                        String uname = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
-                        mi.setCreateUserId(uid > 0 ? uid : 0L);
-                        mi.setCreateUser(uname == null ? "" : uname);
-                        mi.setCreateTime(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
-                        try { databaseHelper.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
+                        if (!existsPendingAuto) {
+                            String name = "";
+                            String groups = "";
+                            if (terms != null) {
+                                for (com.lora.cn.ui.model.Terminal t : terms) {
+                                    if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                                        name = t.getTerminalName();
+                                        groups = t.getGroupNamesText();
+                                        break;
+                                    }
+                                }
+                            }
+                            com.lora.cn.ui.model.MaintenanceInfo mi = new com.lora.cn.ui.model.MaintenanceInfo();
+                            mi.setTerminalId(frame.deviceId);
+                            mi.setTerminalName(name == null ? "" : name);
+                            mi.setTerminalGroup(groups == null ? "" : groups);
+                            mi.setStatus(0);
+                            mi.setContent("设备维护：需要维护");
+                            long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                            String uname = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                            mi.setCreateUserId(uid > 0 ? uid : 0L);
+                            mi.setCreateUser(uname == null ? "" : uname);
+                            mi.setCreateTime(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                            try { databaseHelper.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
+                        }
+                    } catch (Exception ignored) {}
+                } else {
+                    try {
+                        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
+                        if (existingAll != null) {
+                            String autoUser = "系统自动";
+                            String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                            String autoRemark = "设备恢复：自动标记已维护";
+                            for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
+                                String c = x != null ? x.getContent() : null;
+                                if ("设备维护：需要维护".equals(c) && x.getStatus() == 0) {
+                                    try { databaseHelper.updateMaintenanceHandled(x.getId(), 0L, autoUser, autoTime, autoRemark); } catch (Exception ignored2) {}
+                                }
+                            }
+                        }
                     } catch (Exception ignored) {}
                 }
                 helper.sendDownlink8001(frame.deviceId, 1, 0, dep, cart, 0, 0, intervalMin, 1, new int[]{mins}, true);
@@ -1170,7 +1213,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                             lastAlertTypes.put(devId, finalStatusCode);
                             updatePendingBadge();
-                            startAlertRinging30s();
+                            if (!alertMuted) startAlertRinging30s();
                             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
                             if (!bigVisible) {
                                 showLatestPending();
@@ -2249,6 +2292,7 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
                 int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                int interval = Math.max(3, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3)));
                 helper.sendDownlink8001(
                         devHex,
                         1,
@@ -2257,7 +2301,7 @@ public void showAddDeviceFragment(com.lora.cn.ui.model.Terminal uiTerminal) {
                         0,
                         0,
                         mask,
-                        60,
+                        interval,
                         1,
                         new int[]{mins},
                         true

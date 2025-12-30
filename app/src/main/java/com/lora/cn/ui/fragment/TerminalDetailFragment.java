@@ -456,7 +456,14 @@ public class TerminalDetailFragment extends Fragment {
             long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
             int count = 0;
             try {
-                count = dbHelper.getMaintenanceCountByTerminal(deviceId, uid);
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = dbHelper.getMaintenanceRecordsByTerminal(deviceId, uid);
+                if (list != null) {
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
+                        String c = mi != null ? mi.getContent() : null;
+                        boolean isAuto = "设备维护：需要维护".equals(c);
+                        if (!isAuto && mi.getStatus() == 0) count++;
+                    }
+                }
             } catch (Exception ignored) {}
             int finalCount = count;
             mainHandler.post(() -> {

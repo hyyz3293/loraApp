@@ -124,6 +124,13 @@ public class MaintenanceSettingListFragment extends Fragment {
                 if (TextUtils.isEmpty(terminalId)) list = new ArrayList<>();
                 else list = db.getMaintenanceRecordsByTerminal(terminalId, currentUserId);
                 if (list == null) list = new ArrayList<>();
+                List<MaintenanceInfo> filtered = new ArrayList<>();
+                for (MaintenanceInfo mi : list) {
+                    String c = mi != null ? mi.getContent() : null;
+                    boolean isAuto = "设备维护：需要维护".equals(c);
+                    if (!isAuto) filtered.add(mi);
+                }
+                list = filtered;
             } catch (Exception e) {
                 list = null;
             }
@@ -377,4 +384,3 @@ public class MaintenanceSettingListFragment extends Fragment {
         dp.show();
     }
 }
-

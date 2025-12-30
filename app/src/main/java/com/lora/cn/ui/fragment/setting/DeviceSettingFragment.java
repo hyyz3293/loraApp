@@ -208,7 +208,7 @@ public class DeviceSettingFragment extends Fragment {
             SPUtils.getInstance().put("inventory_schedule_hour", hourOfDay);
             SPUtils.getInstance().put("inventory_schedule_minute", minute);
             SPUtils.getInstance().put("inventory_schedule_enabled", true);
-            scheduleInventory(hourOfDay, minute);
+            //scheduleInventory(hourOfDay, minute);
             try {
                 com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(ctx.getApplicationContext());
                 com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();

@@ -182,13 +182,44 @@ public class MaintenanceHomeListFragment extends Fragment {
         if (nextStart >= allFiltered.size()) return;
         loadingMore = true;
         mainHandler.post(() -> {
-            int end = Math.min(allFiltered.size(), nextStart + pageSize);
-            List<MaintenanceInfo> more = allFiltered.subList(nextStart, end);
-            currentDisplay.addAll(more);
-            adapter.submitList(new ArrayList<>(currentDisplay));
-            adapter.notifyDataSetChanged();
-            currentPage++;
-            loadingMore = false;
+            try {
+                int size = allFiltered != null ? allFiltered.size() : 0;
+                if (size <= 0) {
+                    loadingMore = false;
+                    if (swipe != null) {
+                        swipe.finishLoadMoreWithNoMoreData();
+                        swipe.setEnableLoadMore(false);
+                    }
+                    return;
+                }
+                int safeNextStart = (currentPage + 1) * pageSize;
+                if (safeNextStart >= size) {
+                    loadingMore = false;
+                    if (swipe != null) {
+                        swipe.finishLoadMoreWithNoMoreData();
+                        swipe.setEnableLoadMore(false);
+                    }
+                    return;
+                }
+                int end = Math.min(size, safeNextStart + pageSize);
+                if (end <= safeNextStart) {
+                    loadingMore = false;
+                    if (swipe != null) {
+                        swipe.finishLoadMoreWithNoMoreData();
+                        swipe.setEnableLoadMore(false);
+                    }
+                    return;
+                }
+                List<MaintenanceInfo> more = new ArrayList<>(allFiltered.subList(safeNextStart, end));
+                currentDisplay.addAll(more);
+                adapter.submitList(new ArrayList<>(currentDisplay));
+                adapter.notifyDataSetChanged();
+                currentPage++;
+            } catch (Exception ignored) {
+                if (swipe != null) swipe.finishLoadMore(false);
+            } finally {
+                loadingMore = false;
+            }
         });
     }
 

@@ -153,6 +153,19 @@ public class AlertPendingListFragment extends Fragment {
                 try {
                     DatabaseHelper db = DatabaseHelper.getInstance(requireContext());
                     db.updateLogHandled(item.getId(), user, time, remark);
+                    try {
+                        java.util.List<LogInfo> devLogs = db.getLogsByTerminalId(item.getDeviceId());
+                        if (devLogs != null) {
+                            for (LogInfo li : devLogs) {
+                                if (li == null) continue;
+                                boolean unhandled = (li.getHandleUser() == null || li.getHandleUser().trim().isEmpty())
+                                        && (li.getHandleTime() == null || li.getHandleTime().trim().isEmpty());
+                                if (unhandled && li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
+                                    db.updateLogHandled(li.getId(), user, time, remark);
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
                     int s = item.getStatusCode();
                     if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
                         int mask = 0;
@@ -169,6 +182,7 @@ public class AlertPendingListFragment extends Fragment {
                             int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                             int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                             int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                            int interval = Math.max(3, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3)));
                             helper.sendDownlink8001(
                                     devHex,
                                     1,
@@ -177,7 +191,7 @@ public class AlertPendingListFragment extends Fragment {
                                     0,
                                     0,
                                     mask,
-                                    60,
+                                    interval,
                                     1,
                                     new int[]{mins},
                                     true
