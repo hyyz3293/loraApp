@@ -2209,6 +2209,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         return result > 0;
     }
+
+    /**
+     * 更新终端维护状态
+     */
+    public int updateTerminalMaintenanceState(String terminalId, boolean active, long timeMs) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_TERMINAL_MAINTENANCE_ACTIVE, active ? 1 : 0);
+        values.put(COLUMN_TERMINAL_MAINTENANCE_TIME, Math.max(0L, timeMs));
+        values.put(COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
+        return db.update(TABLE_TERMINALS, values,
+                COLUMN_TERMINAL_DEVICE_ID + "=?",
+                new String[]{terminalId == null ? "" : terminalId});
+    }
     
     /**
      * 更新终端所属科室

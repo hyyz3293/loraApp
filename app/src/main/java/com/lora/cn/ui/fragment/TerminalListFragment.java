@@ -928,6 +928,10 @@ public class TerminalListFragment extends Fragment {
             displayTerminal.setBatteryLevel(dbTerminal.getBatteryLevel());
             displayTerminal.setBatteryText(dbTerminal.getBatteryLevel() + "%");
 
+            // 维护状态
+            displayTerminal.setMaintenanceActive(dbTerminal.isMaintenanceActive());
+            displayTerminal.setMaintenanceTime(dbTerminal.getMaintenanceTime());
+
             // 根据电量设置电池图标
             if (dbTerminal.getBatteryLevel() > 80) {
                 displayTerminal.setBatteryIconResId(R.drawable.ic_green_sd); // 高电量-绿色电池
@@ -978,22 +982,18 @@ public class TerminalListFragment extends Fragment {
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
                 java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = com.lora.cn.database.DatabaseHelper.getInstance(requireContext())
                         .getMaintenanceRecords(uid);
-                long now = System.currentTimeMillis();
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                java.util.Set<String> pendingDevSet = new java.util.HashSet<>();
                 if (list != null) {
                     for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
-                        String ct = mi.getCreateTime();
-                        if (ct == null || ct.trim().isEmpty()) continue;
-                        try {
-                            java.util.Date dt = sdf.parse(ct.trim());
-                            if (dt != null && dt.getTime() <= now) {
-                                if (mi.getStatus() == 0) {
-                                    maintenanceCount++;
-                                }
-                            }
-                        } catch (Exception ignored) {}
+                        if (mi == null) continue;
+                        String c = mi.getContent();
+                        if ("设备维护：需要维护".equals(c) && mi.getStatus() == 0) {
+                            String dev = mi.getTerminalId();
+                            if (dev != null && dev.length() > 0) pendingDevSet.add(dev);
+                        }
                     }
                 }
+                maintenanceCount = pendingDevSet.size();
             } catch (Exception ignored) {}
 
             List<TerminalStatus> statusList = new ArrayList<>();

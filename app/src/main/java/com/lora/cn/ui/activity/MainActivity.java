@@ -1117,6 +1117,7 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception ignored) {}
                 if (maintenanceNeeded) {
                     try {
+                        try { db.updateTerminalMaintenanceState(frame.deviceId, true, System.currentTimeMillis()); } catch (Exception ignored) {}
                         boolean existsPendingAuto = false;
                         java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
                         if (existingAll != null) {
@@ -1156,6 +1157,7 @@ public class MainActivity extends AppCompatActivity {
                     } catch (Exception ignored) {}
                 } else {
                     try {
+                        try { db.updateTerminalMaintenanceState(frame.deviceId, false, System.currentTimeMillis()); } catch (Exception ignored) {}
                         java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
                         if (existingAll != null) {
                             String autoUser = "系统自动";
