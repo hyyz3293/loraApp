@@ -627,12 +627,43 @@ public class MainActivity extends AppCompatActivity {
                     firstTapTs = 0L;
                     try {
                         java.io.File f1 = com.lora.cn.utils.LogUtils.getLogFile();
+                        java.io.File appBase = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
+                        if (appBase == null) appBase = getExternalFilesDir(null);
+                        java.io.File logsDirApp = appBase != null ? new java.io.File(appBase, "LoraAppLogs") : null;
+                        java.io.File f2 = null;
+                        if (logsDirApp != null && logsDirApp.exists()) {
+                            java.io.File[] arr = logsDirApp.listFiles();
+                            if (arr != null) {
+                                long best = -1L;
+                                for (java.io.File f : arr) {
+                                    String n = f != null ? f.getName() : "";
+                                    if (n.startsWith("app_logcat") && n.endsWith(".txt")) {
+                                        long lm = f.lastModified();
+                                        if (lm > best) { best = lm; f2 = f; }
+                                    }
+                                }
+                            }
+                        }
                         java.io.File downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
                         java.io.File logsDir = new java.io.File(downloads, "LoraAppLogs");
-                        java.io.File f2 = new java.io.File(logsDir, "app_logcat.txt");
+                        java.io.File f2Legacy = null;
+                        if (logsDir.exists()) {
+                            java.io.File[] arr2 = logsDir.listFiles();
+                            if (arr2 != null) {
+                                long best2 = -1L;
+                                for (java.io.File f : arr2) {
+                                    String n = f != null ? f.getName() : "";
+                                    if (n.startsWith("app_logcat") && n.endsWith(".txt")) {
+                                        long lm = f.lastModified();
+                                        if (lm > best2) { best2 = lm; f2Legacy = f; }
+                                    }
+                                }
+                            }
+                        }
                         java.util.ArrayList<java.io.File> files = new java.util.ArrayList<>();
                         if (f1 != null && f1.exists()) files.add(f1);
-                        if (f2.exists()) files.add(f2);
+                        if (f2 != null && f2.exists()) files.add(f2);
+                        else if (f2Legacy != null && f2Legacy.exists()) files.add(f2Legacy);
                         StringBuilder sb = new StringBuilder();
                         sb.append("是否分享以下日志文件：\n");
                         for (java.io.File f : files) {
@@ -681,11 +712,45 @@ public class MainActivity extends AppCompatActivity {
                     if (f1 != null && f1.exists()) {
                         uris.add(androidx.core.content.FileProvider.getUriForFile(this, "com.lora.cn.fileprovider", f1));
                     }
-                    java.io.File downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
-                    java.io.File logsDir = new java.io.File(downloads, "LoraAppLogs");
-                    java.io.File f2 = new java.io.File(logsDir, "app_logcat.txt");
+                    java.io.File appBase = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
+                    if (appBase == null) appBase = getExternalFilesDir(null);
+                    java.io.File logsDirApp = appBase != null ? new java.io.File(appBase, "LoraAppLogs") : null;
+                    java.io.File f2 = null;
+                    if (logsDirApp != null && logsDirApp.exists()) {
+                        java.io.File[] arr = logsDirApp.listFiles();
+                        if (arr != null) {
+                            long best = -1L;
+                            for (java.io.File f : arr) {
+                                String n = f != null ? f.getName() : "";
+                                if (n.startsWith("app_logcat") && n.endsWith(".txt")) {
+                                    long lm = f.lastModified();
+                                    if (lm > best) { best = lm; f2 = f; }
+                                }
+                            }
+                        }
+                    }
                     if (f2 != null && f2.exists()) {
                         uris.add(androidx.core.content.FileProvider.getUriForFile(this, "com.lora.cn.fileprovider", f2));
+                    } else {
+                        java.io.File downloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS);
+                        java.io.File logsDir = new java.io.File(downloads, "LoraAppLogs");
+                        java.io.File f2Legacy = null;
+                        if (logsDir.exists()) {
+                            java.io.File[] arr2 = logsDir.listFiles();
+                            if (arr2 != null) {
+                                long best2 = -1L;
+                                for (java.io.File f : arr2) {
+                                    String n = f != null ? f.getName() : "";
+                                    if (n.startsWith("app_logcat") && n.endsWith(".txt")) {
+                                        long lm = f.lastModified();
+                                        if (lm > best2) { best2 = lm; f2Legacy = f; }
+                                    }
+                                }
+                            }
+                        }
+                        if (f2Legacy != null && f2Legacy.exists()) {
+                            uris.add(androidx.core.content.FileProvider.getUriForFile(this, "com.lora.cn.fileprovider", f2Legacy));
+                        }
                     }
                     if (uris.isEmpty()) {
                         android.widget.Toast.makeText(this, "暂无可分享日志文件", android.widget.Toast.LENGTH_SHORT).show();
@@ -2043,9 +2108,11 @@ public class MainActivity extends AppCompatActivity {
                                 
                                 // 存储到数据库
                                 if (!"-".equals(hex)) {
+                                    com.lora.cn.utils.LogUtils.i(TAG, "准备入库上行数据 hex=" + hex);
                                     // 存储到上行数据日志表
                                     long result = databaseHelper.addUplinkLog(hex);
                                     Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
+                                    com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
                                     wroteAny = true;
                                     
 //                                    // 同时存储到日志信息表
@@ -2082,6 +2149,17 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 
                                 Log.i(TAG,
+                                        "UPLINK devEUI=" + devEui +
+                                        " devAddr=" + devAddr +
+                                        " fport=" + fport +
+                                        " fcnt=" + fcnt +
+                                        " rssi=" + rssi +
+                                        " snr=" + snr +
+                                        " freq=" + freq +
+                                        " dr=" + dr +
+                                        " time=" + time +
+                                        " hex=" + hex);
+                                com.lora.cn.utils.LogUtils.i(TAG,
                                         "UPLINK devEUI=" + devEui +
                                         " devAddr=" + devAddr +
                                         " fport=" + fport +
