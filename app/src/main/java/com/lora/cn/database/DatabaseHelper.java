@@ -1555,11 +1555,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             // 备注：statusCode 使用 LogStatus 枚举的 code，便于统一展示
 
 
-             if (frame.stPowerLockOn == 1 && (frame.stLayer1NotInPlace == 1 ||
-                     frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
-                    frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
-                // 非法移走 -> 设备丢失
-                statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
+            boolean clearedIllegalRemovalByAck = false;
+            try { clearedIllegalRemovalByAck = (frame.nurseAckParams & 0x1L) != 0; } catch (Exception ignored) {}
+            if (frame.stPowerLockOn == 1 && (frame.stLayer1NotInPlace == 1 ||
+                    frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
+                   frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
+               if (!clearedIllegalRemovalByAck) {
+                   statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
+               } else {
+                   statusCode = 0;
+               }
             } else if ((frame.stLayer1NotInPlace == 0 &&
                      frame.stLayer2NotInPlace == 0 && frame.stLayer3NotInPlace == 0 &&
                      frame.stLayer4NotInPlace == 0 && frame.stLayer5NotInPlace == 0)) {
