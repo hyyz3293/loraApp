@@ -1547,8 +1547,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         int lockChangeStatusCode = 0;
         if (currentLockState != -1 && currentLockState != lastLockStateSnapshot) {
             lockChangeStatusCode = (currentLockState == 1)
-                    ? com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
-                    : com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+                    ? com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
+                    : com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
         }
 
         // 根据设备ID查询终端表，获取终端名称等
