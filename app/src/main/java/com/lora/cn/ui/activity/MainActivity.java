@@ -1443,7 +1443,26 @@ public class MainActivity extends AppCompatActivity {
     private void minimizePending() {
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
         if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
-        LogUtils.e("llAlertPendingSmall=Visibility===1===" + llAlertPendingSmall.getVisibility());
+        if (llAlertPendingSmall != null) {
+            llAlertPendingSmall.post(() -> {
+                android.view.View parent = (android.view.View) llAlertPendingSmall.getParent();
+                if (parent != null) {
+                    int parentWidth = parent.getWidth();
+                    int parentHeight = parent.getHeight();
+                    int vWidth = llAlertPendingSmall.getWidth();
+                    int vHeight = llAlertPendingSmall.getHeight();
+                    float x = llAlertPendingSmall.getX();
+                    float y = llAlertPendingSmall.getY();
+                    if (parentWidth > 0 && parentHeight > 0 && vWidth > 0 && vHeight > 0) {
+                        float nx = Math.max(0, Math.min(parentWidth - vWidth, x));
+                        float ny = Math.max(0, Math.min(parentHeight - vHeight, y));
+                        llAlertPendingSmall.setX(nx);
+                        llAlertPendingSmall.setY(ny);
+                    }
+                    llAlertPendingSmall.bringToFront();
+                }
+            });
+        }
         updatePendingBadge();
     }
 
@@ -1655,6 +1674,27 @@ public class MainActivity extends AppCompatActivity {
             boolean hasTypes = lastAlertTypes != null && !lastAlertTypes.isEmpty();
             boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0 || hasTypes);
             llAlertPendingSmall.setVisibility(shouldShowSmall ? View.VISIBLE : View.GONE);
+            if (shouldShowSmall) {
+                llAlertPendingSmall.setAlpha(1f);
+                llAlertPendingSmall.post(() -> {
+                    android.view.View parent = (android.view.View) llAlertPendingSmall.getParent();
+                    if (parent != null) {
+                        int parentWidth = parent.getWidth();
+                        int parentHeight = parent.getHeight();
+                        int vWidth = llAlertPendingSmall.getWidth();
+                        int vHeight = llAlertPendingSmall.getHeight();
+                        float x = llAlertPendingSmall.getX();
+                        float y = llAlertPendingSmall.getY();
+                        if (parentWidth > 0 && parentHeight > 0 && vWidth > 0 && vHeight > 0) {
+                            float nx = Math.max(0, Math.min(parentWidth - vWidth, x));
+                            float ny = Math.max(0, Math.min(parentHeight - vHeight, y));
+                            llAlertPendingSmall.setX(nx);
+                            llAlertPendingSmall.setY(ny);
+                        }
+                        llAlertPendingSmall.bringToFront();
+                    }
+                });
+            }
             LogUtils.e("llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + llAlertPendingSmall.getVisibility());
         }
         int queueSize = alertQueue.size();
