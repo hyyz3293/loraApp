@@ -70,11 +70,12 @@ public class DownlinkMessageHelper {
             if (queryOp == 0x00) {
                 opText = "无操作";
             } else if (queryOp == 0x01) {
-                opText = "清除报警";
+                opText = "控制设备指令";
             } else {
                 opText = "未知(" + queryOp + ")";
             }
             boolean pBit0 = (clearMask & (1 << 0)) != 0;
+            boolean pBit1 = (clearMask & (1 << 1)) != 0;
             boolean pBit2 = (clearMask & (1 << 2)) != 0;
             Log.i(TAG,
                     "下行8001字段: 设备ID=" + deviceIdHex +
@@ -95,6 +96,7 @@ public class DownlinkMessageHelper {
                     ", 保留10(1B)=" + String.format(java.util.Locale.US, "0x%02X", 0xFF) +
                     ", 护士站操作指令参数=" + String.format(java.util.Locale.US, "0x%08X", clearMask) +
                     ", 设备非法移走告警清除=" + (pBit0 ? "是" : "否") +
+                    ", 开启定时维护=" + (pBit1 ? "是" : "否") +
                     ", 终端主动维护标识清除=" + (pBit2 ? "是" : "否") +
                     ", 上报间隔(分钟)=" + Math.max(3, Math.min(1440, reportIntervalMin)) +
                     ", 闹钟数量=" + alarmCount +

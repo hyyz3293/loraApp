@@ -249,11 +249,11 @@ public class MaintenanceHomeListFragment extends Fragment {
                 helper.sendDownlink8001(
                         dev,
                         0,
+                        1,
                         0,
                         0,
                         0,
-                        0,
-                        0,
+                        (1 << 1),
                         Math.max(3, Math.min(1440, interval)),
                         1,
                         new int[]{mins},
