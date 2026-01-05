@@ -39,6 +39,67 @@ public class MqttBrokerService extends Service {
     private ExecutorService brokerExecutor;
     private android.os.Handler tickHandler;
     private final java.util.concurrent.atomic.AtomicReference<String> lastFireKey = new java.util.concurrent.atomic.AtomicReference<>("");
+    private android.os.Handler maintenanceEvaluateHandler;
+    private final Runnable maintenanceEvaluateRunnable = new Runnable() {
+        @Override public void run() {
+            try {
+                long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                android.content.Context appCtx = getApplicationContext();
+                Runnable task = () -> {
+                    try {
+                        com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = db.getMaintenanceRecords(uid);
+                        if (list != null) {
+                            com.lora.cn.network.MqttPacketsClient client = com.lora.cn.network.MqttPacketsClient.getShared();
+                            com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
+                            long now = System.currentTimeMillis();
+                            for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
+                                if (mi == null) continue;
+                                if (mi.getStatus() != 0) continue;
+                                String ct = mi.getCreateTime();
+                                if (ct == null || ct.trim().isEmpty()) continue;
+                                long ts = now;
+                                try { java.util.Date dt = sdf.parse(ct.trim()); if (dt != null) ts = dt.getTime(); } catch (Exception ignored) {}
+                                if (ts > now) continue;
+                                if (mi.getSentFlag() == 1) continue;
+                                String dev = mi.getTerminalId();
+                                if (dev == null || dev.isEmpty()) continue;
+                                try {
+                                    int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                                    int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                                    int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                                    helper.sendDownlink8001(
+                                            dev,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            Math.max(3, Math.min(1440, interval)),
+                                            1,
+                                            new int[]{mins},
+                                            true
+                                    );
+                                    String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                                    db.updateMaintenanceSent(mi.getId(), sentTime);
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                };
+                if (brokerExecutor != null) {
+                    brokerExecutor.execute(task);
+                } else {
+                    task.run();
+                }
+            } finally {
+                if (maintenanceEvaluateHandler != null) maintenanceEvaluateHandler.postDelayed(this, 1000);
+            }
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -46,6 +107,7 @@ public class MqttBrokerService extends Service {
         ensureNotificationChannel();
         brokerExecutor = Executors.newSingleThreadExecutor();
         tickHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        maintenanceEvaluateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     }
 
     @Override
@@ -57,6 +119,10 @@ public class MqttBrokerService extends Service {
             brokerExecutor.execute(() -> startBrokerIfNeeded(port));
         } else {
             startBrokerIfNeeded(port);
+        }
+        if (maintenanceEvaluateHandler != null) {
+            maintenanceEvaluateHandler.removeCallbacks(maintenanceEvaluateRunnable);
+            maintenanceEvaluateHandler.postDelayed(maintenanceEvaluateRunnable, 1000);
         }
         //startTicking();
         return START_STICKY;
@@ -72,6 +138,12 @@ public class MqttBrokerService extends Service {
             } catch (InterruptedException ignored) {
             }
         }
+        try {
+            if (maintenanceEvaluateHandler != null) {
+                maintenanceEvaluateHandler.removeCallbacks(maintenanceEvaluateRunnable);
+                maintenanceEvaluateHandler = null;
+            }
+        } catch (Exception ignored) {}
         super.onDestroy();
     }
 

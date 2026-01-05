@@ -131,6 +131,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_MAINTENANCE_HANDLE_USER_ID = "handle_user_id";
     public static final String COLUMN_MAINTENANCE_HANDLE_USER = "handle_user";
     public static final String COLUMN_MAINTENANCE_HANDLE_TIME = "handle_time";
+    public static final String COLUMN_MAINTENANCE_SENT_FLAG = "sent_flag";
+    public static final String COLUMN_MAINTENANCE_SENT_TIME = "sent_time";
     
     // 终端表
     public static final String TABLE_TERMINALS = "terminals";
@@ -371,6 +373,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         COLUMN_MAINTENANCE_HANDLE_USER_ID + " INTEGER DEFAULT 0, " +
         COLUMN_MAINTENANCE_HANDLE_USER + " TEXT, " +
         COLUMN_MAINTENANCE_HANDLE_TIME + " TEXT, " +
+        COLUMN_MAINTENANCE_SENT_FLAG + " INTEGER DEFAULT 0, " +
+        COLUMN_MAINTENANCE_SENT_TIME + " TEXT, " +
         "handle_remark TEXT" +
         ")";
     
@@ -2368,6 +2372,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } catch (Exception ignored) {
             v.put("handle_remark", "");
         }
+        v.put(COLUMN_MAINTENANCE_SENT_FLAG, 0);
+        v.put(COLUMN_MAINTENANCE_SENT_TIME, "");
         return db.insert(TABLE_MAINTENANCE, null, v);
     }
 
@@ -2416,6 +2422,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             mi.setHandleUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER_ID)));
             mi.setHandleUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER)));
             mi.setHandleTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_TIME)));
+            try {
+                int sflagIdx = c.getColumnIndex(COLUMN_MAINTENANCE_SENT_FLAG);
+                if (sflagIdx != -1) {
+                    java.lang.reflect.Method m2 = mi.getClass().getMethod("setSentFlag", int.class);
+                    m2.invoke(mi, c.getInt(sflagIdx));
+                }
+            } catch (Exception ignored) {}
+            try {
+                int stimeIdx = c.getColumnIndex(COLUMN_MAINTENANCE_SENT_TIME);
+                if (stimeIdx != -1) {
+                    java.lang.reflect.Method m3 = mi.getClass().getMethod("setSentTime", String.class);
+                    m3.invoke(mi, c.getString(stimeIdx));
+                }
+            } catch (Exception ignored) {}
             try {
                 String hr = c.getString(c.getColumnIndex("handle_remark"));
                 java.lang.reflect.Method m = mi.getClass().getMethod("setHandleRemark", String.class);
@@ -2470,6 +2490,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             mi.setHandleUserId(c.getLong(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER_ID)));
             mi.setHandleUser(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_USER)));
             mi.setHandleTime(c.getString(c.getColumnIndex(COLUMN_MAINTENANCE_HANDLE_TIME)));
+            try {
+                int sflagIdx = c.getColumnIndex(COLUMN_MAINTENANCE_SENT_FLAG);
+                if (sflagIdx != -1) {
+                    java.lang.reflect.Method m2 = mi.getClass().getMethod("setSentFlag", int.class);
+                    m2.invoke(mi, c.getInt(sflagIdx));
+                }
+            } catch (Exception ignored) {}
+            try {
+                int stimeIdx = c.getColumnIndex(COLUMN_MAINTENANCE_SENT_TIME);
+                if (stimeIdx != -1) {
+                    java.lang.reflect.Method m3 = mi.getClass().getMethod("setSentTime", String.class);
+                    m3.invoke(mi, c.getString(stimeIdx));
+                }
+            } catch (Exception ignored) {}
             try {
                 String hr = c.getString(c.getColumnIndex("handle_remark"));
                 java.lang.reflect.Method m = mi.getClass().getMethod("setHandleRemark", String.class);
@@ -2527,6 +2561,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return db.update(TABLE_MAINTENANCE, v, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
     }
 
+    public int updateMaintenanceSent(long maintenanceId, String sentTime) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ensureMaintenanceSchema(db);
+        String idCol = resolveMaintenanceIdColumn(db);
+        ContentValues v = new ContentValues();
+        v.put(COLUMN_MAINTENANCE_SENT_FLAG, 1);
+        v.put(COLUMN_MAINTENANCE_SENT_TIME, sentTime == null ? "" : sentTime);
+        return db.update(TABLE_MAINTENANCE, v, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
+    }
+
     public int updateMaintenanceContent(long maintenanceId, String content) {
         SQLiteDatabase db = this.getWritableDatabase();
         ensureMaintenanceSchema(db);
@@ -2548,20 +2592,22 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (maintenanceSchemaEnsured) return;
         synchronized (maintenanceSchemaLock) {
             if (maintenanceSchemaEnsured) return;
-            try { db.execSQL(CREATE_TABLE_MAINTENANCE); } catch (Exception ignored) {}
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID, "TEXT NOT NULL DEFAULT ''");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_ID, "TEXT NOT NULL DEFAULT ''");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_NAME, "TEXT");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_GROUP, "TEXT");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_STATUS, "INTEGER DEFAULT 0");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CONTENT, "TEXT");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER_ID, "INTEGER DEFAULT 0");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER, "TEXT");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_TIME, "TEXT");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER_ID, "INTEGER DEFAULT 0");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER, "TEXT");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_TIME, "TEXT");
-            ensureColumnIfMissing(db, TABLE_MAINTENANCE, "handle_remark", "TEXT");
+        try { db.execSQL(CREATE_TABLE_MAINTENANCE); } catch (Exception ignored) {}
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID, "TEXT NOT NULL DEFAULT ''");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_ID, "TEXT NOT NULL DEFAULT ''");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_NAME, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_GROUP, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_STATUS, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CONTENT, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER_ID, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_USER, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_CREATE_TIME, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER_ID, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_USER, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_HANDLE_TIME, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_SENT_FLAG, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_SENT_TIME, "TEXT");
+        ensureColumnIfMissing(db, TABLE_MAINTENANCE, "handle_remark", "TEXT");
 
             try {
                 maintenanceHasDeviceIdColumn = hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID);

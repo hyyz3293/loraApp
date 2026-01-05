@@ -88,8 +88,8 @@ public class MaintenanceHomeListFragment extends Fragment {
             swipe.setOnLoadMoreListener(layout -> {
                 boolean noMore = ((currentPage + 1) * pageSize) >= allFiltered.size();
                 if (noMore) {
-                    layout.finishLoadMoreWithNoMoreData();
-                    swipe.setEnableLoadMore(false);
+                    layout.finishLoadMore(true);
+                    layout.setEnableLoadMore(false);
                 } else {
                     loadMorePage();
                     layout.finishLoadMore(true);
@@ -161,7 +161,11 @@ public class MaintenanceHomeListFragment extends Fragment {
                 currentDisplay.clear();
                 submitCurrentPage();
                 autoDispatchDue(filtered);
-                if (swipe != null) swipe.finishRefresh(true);
+                if (swipe != null) {
+                    swipe.finishRefresh(true);
+                    swipe.setNoMoreData(false);
+                    swipe.setEnableLoadMore(allFiltered.size() > pageSize);
+                }
             });
         });
     }
@@ -187,7 +191,7 @@ public class MaintenanceHomeListFragment extends Fragment {
                 if (size <= 0) {
                     loadingMore = false;
                     if (swipe != null) {
-                        swipe.finishLoadMoreWithNoMoreData();
+                        swipe.finishLoadMore(true);
                         swipe.setEnableLoadMore(false);
                     }
                     return;
@@ -196,7 +200,7 @@ public class MaintenanceHomeListFragment extends Fragment {
                 if (safeNextStart >= size) {
                     loadingMore = false;
                     if (swipe != null) {
-                        swipe.finishLoadMoreWithNoMoreData();
+                        swipe.finishLoadMore(true);
                         swipe.setEnableLoadMore(false);
                     }
                     return;
@@ -205,7 +209,7 @@ public class MaintenanceHomeListFragment extends Fragment {
                 if (end <= safeNextStart) {
                     loadingMore = false;
                     if (swipe != null) {
-                        swipe.finishLoadMoreWithNoMoreData();
+                        swipe.finishLoadMore(true);
                         swipe.setEnableLoadMore(false);
                     }
                     return;
@@ -234,9 +238,7 @@ public class MaintenanceHomeListFragment extends Fragment {
             if (mi.getStatus() != 0) continue;
             String ct = mi.getCreateTime();
             if (TextUtils.isEmpty(ct)) continue;
-            String key = "maintenance_sent_" + mi.getId();
-            boolean sent = SPUtils.getInstance().getBoolean(key, false);
-            if (sent) continue;
+            if (mi.getSentFlag() == 1) continue;
             String dev = mi.getTerminalId();
             if (TextUtils.isEmpty(dev)) continue;
             try {
@@ -257,7 +259,7 @@ public class MaintenanceHomeListFragment extends Fragment {
                         new int[]{mins},
                         true
                 );
-                SPUtils.getInstance().put(key, true);
+                db.updateMaintenanceSent(mi.getId(), nowStr());
                 EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("maintenance_updated"));
             } catch (Exception ignored) {}
         }

@@ -313,6 +313,12 @@ public class MainActivity extends AppCompatActivity {
                 alertPlayer = null;
             }
         } catch (Exception ignored) {}
+        try {
+            if (maintenanceEvaluateHandler != null) {
+                maintenanceEvaluateHandler.removeCallbacks(maintenanceEvaluateRunnable);
+                maintenanceEvaluateHandler = null;
+            }
+        } catch (Exception ignored) {}
         super.onStop();
     }
 
@@ -891,6 +897,70 @@ public class MainActivity extends AppCompatActivity {
                 });
             } finally {
                 if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 60000);
+            }
+        }
+    };
+
+    private android.os.Handler maintenanceEvaluateHandler;
+    private final Runnable maintenanceEvaluateRunnable = new Runnable() {
+        @Override public void run() {
+            try {
+                if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                android.content.Context appCtx = getApplicationContext();
+                ioExecutor.execute(() -> {
+                    try {
+                        com.lora.cn.database.DatabaseHelper db = databaseHelper != null
+                                ? databaseHelper
+                                : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = db.getMaintenanceRecords(uid);
+                        if (list != null) {
+                            com.lora.cn.network.MqttPacketsClient client = mqttClient != null ? mqttClient : com.lora.cn.network.MqttPacketsClient.getShared();
+                            com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
+                            long now = System.currentTimeMillis();
+                            for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
+                                if (mi == null) continue;
+                                if (mi.getStatus() != 0) continue;
+                                String ct = mi.getCreateTime();
+                                if (ct == null || ct.trim().isEmpty()) continue;
+                                long ts = now;
+                                try { java.util.Date dt = sdf.parse(ct.trim()); if (dt != null) ts = dt.getTime(); } catch (Exception ignored) {}
+                                if (ts > now) continue;
+                                if (mi.getSentFlag() == 1) continue;
+                                String dev = mi.getTerminalId();
+                                if (dev == null || dev.isEmpty()) continue;
+                                try {
+                                    int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                                    int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                                    int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                                    helper.sendDownlink8001(
+                                            dev,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            Math.max(3, Math.min(1440, interval)),
+                                            1,
+                                            new int[]{mins},
+                                            true
+                                    );
+                                    String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                                    db.updateMaintenanceSent(mi.getId(), sentTime);
+                                    android.util.Log.i(TAG, "已下发维护提醒: dev=" + dev + " recordId=" + mi.getId() + " time=" + ct);
+                                } catch (Exception e) {
+                                    android.util.Log.e(TAG, "下发维护失败: " + e.getMessage());
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                });
+            } finally {
+                if (maintenanceEvaluateHandler != null) maintenanceEvaluateHandler.postDelayed(this, 60000);
             }
         }
     };

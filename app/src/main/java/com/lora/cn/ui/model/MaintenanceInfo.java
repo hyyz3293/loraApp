@@ -14,6 +14,8 @@ public class MaintenanceInfo {
     private String handleUser;
     private String handleTime;
     private String handleRemark;
+    private int sentFlag;
+    private String sentTime;
 
     public long getId() { return id; }
     public void setId(long id) { this.id = id; }
@@ -53,5 +55,9 @@ public class MaintenanceInfo {
     
     public String getHandleRemark() { return handleRemark; }
     public void setHandleRemark(String handleRemark) { this.handleRemark = handleRemark; }
+    public int getSentFlag() { return sentFlag; }
+    public void setSentFlag(int sentFlag) { this.sentFlag = sentFlag; }
+    public String getSentTime() { return sentTime; }
+    public void setSentTime(String sentTime) { this.sentTime = sentTime; }
 }
 

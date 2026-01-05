@@ -1,4 +1,4 @@
-package com.lora.cn;
+package com.lora.cn.ui.activity;
 
 import android.app.Activity;
 import android.database.Cursor;
@@ -9,7 +9,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseHelper;
-import java.lang.reflect.Method;
 
 /**
  * 数据库调试Activity
