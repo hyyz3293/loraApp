@@ -86,6 +86,7 @@
                     android:background="@drawable/bg_btn_edite"
                     android:gravity="center"
                     android:text="维护内容"
+                    android:visibility="gone"
                     android:layout_marginRight="6dp"
                     android:textColor="@color/black"
                     android:textSize="10dp"

@@ -113,9 +113,10 @@ public class MaintenanceInfoDetailAdapter extends BaseQuickAdapter<MaintenanceIn
         }
 
         if (logOperation != null) {
-            logOperation.setVisibility(View.VISIBLE);
+            logOperation.setVisibility(View.GONE);
             logOperation.setEnabled(true);
             if (mode == Mode.SETTING) {
+                logOperation.setVisibility(View.GONE);
                 logOperation.setText("维护内容");
                 //logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
                 logOperation.setTextColor(Color.parseColor("#383B40"));

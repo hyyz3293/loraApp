@@ -79,7 +79,7 @@
 
         <TextView
             android:text="维护内容"
-            android:visibility="gone"
+            android:visibility="visible"
             android:gravity="center_vertical"
             android:textColor="#333333"
             android:textSize="12dp"

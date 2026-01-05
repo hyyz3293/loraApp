@@ -107,15 +107,27 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
 
         if (mode == Mode.HOME) {
             if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
-            if (btnDelete != null) btnDelete.setVisibility(View.GONE);
             if (btnEdit != null) {
-                btnEdit.setVisibility(View.VISIBLE);
-                btnEdit.setText("维护内容");
+                btnEdit.setVisibility(View.GONE);
+                btnEdit.setText(done ? "维护内容" : "维护内容");
                 btnEdit.setBackgroundResource(R.drawable.bg_btn_voice);
                 btnEdit.setTextColor(Color.parseColor("#383B40"));
                 btnEdit.setOnClickListener(v -> {
                     if (onViewClickListener != null) onViewClickListener.onViewClick(item);
                 });
+            }
+            if (btnDelete != null) {
+                if (done) {
+                    btnDelete.setVisibility(View.GONE);
+                } else {
+                    btnDelete.setVisibility(View.VISIBLE);
+                    btnDelete.setText("确认维护");
+                    btnDelete.setBackgroundResource(R.drawable.bg_btn_now);
+                    btnDelete.setTextColor(Color.WHITE);
+                    btnDelete.setOnClickListener(v -> {
+                        if (onConfirmClickListener != null) onConfirmClickListener.onConfirmClick(item);
+                    });
+                }
             }
         } else {
             if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
@@ -134,29 +146,34 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         }
 
         if (logOperation != null) {
-            logOperation.setVisibility(View.VISIBLE);
-            logOperation.setEnabled(true);
-            if (mode == Mode.SETTING) {
-                logOperation.setText("维护内容");
-                logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
-                logOperation.setTextColor(Color.parseColor("#383B40"));
-                logOperation.setOnClickListener(v -> {
-                    if (onViewClickListener != null) onViewClickListener.onViewClick(item);
-                });
-            } else if (done) {
-                logOperation.setText("查看");
-                logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
-                logOperation.setTextColor(Color.parseColor("#383B40"));
-                logOperation.setOnClickListener(v -> {
-                    if (onViewClickListener != null) onViewClickListener.onViewClick(item);
-                });
+            if (mode == Mode.HOME) {
+                logOperation.setVisibility(View.GONE);
+                logOperation.setEnabled(false);
             } else {
-                logOperation.setText("确认维护");
-                logOperation.setBackgroundResource(R.drawable.bg_btn_now);
-                logOperation.setTextColor(Color.WHITE);
-                logOperation.setOnClickListener(v -> {
-                    if (onConfirmClickListener != null) onConfirmClickListener.onConfirmClick(item);
-                });
+                logOperation.setVisibility(View.VISIBLE);
+                logOperation.setEnabled(true);
+                if (mode == Mode.SETTING) {
+                    logOperation.setText("维护内容");
+                    logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
+                    logOperation.setTextColor(Color.parseColor("#383B40"));
+                    logOperation.setOnClickListener(v -> {
+                        if (onViewClickListener != null) onViewClickListener.onViewClick(item);
+                    });
+                } else if (done) {
+                    logOperation.setText("查看");
+                    logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
+                    logOperation.setTextColor(Color.parseColor("#383B40"));
+                    logOperation.setOnClickListener(v -> {
+                        if (onViewClickListener != null) onViewClickListener.onViewClick(item);
+                    });
+                } else {
+                    logOperation.setText("确认维护");
+                    logOperation.setBackgroundResource(R.drawable.bg_btn_now);
+                    logOperation.setTextColor(Color.WHITE);
+                    logOperation.setOnClickListener(v -> {
+                        if (onConfirmClickListener != null) onConfirmClickListener.onConfirmClick(item);
+                    });
+                }
             }
         }
     }
