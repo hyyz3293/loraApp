@@ -440,6 +440,15 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void recalcAndSubmit(java.util.List<LogInfo> list) {
+        java.util.Map<String, com.lora.cn.ui.model.Terminal> termMap = new java.util.HashMap<>();
+        try {
+            java.util.List<com.lora.cn.ui.model.Terminal> terms = databaseHelper.getAllTerminals();
+            if (terms != null) {
+                for (com.lora.cn.ui.model.Terminal t : terms) {
+                    termMap.put(t.getTerminalId(), t);
+                }
+            }
+        } catch (Exception ignored) {}
         java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
         java.util.Map<String, LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
         for (LogInfo li : list) {
@@ -466,7 +475,10 @@ public class LogInfoFragment extends Fragment {
             Long ht = lastHandledTime.get(v.getTerminalId());
             long at = parseMillis(v.getCreateTime());
             boolean afterHandled = ht == null || at > ht;
-            if (afterHandled) allowedIds.add(v.getId());
+            boolean offlineCase = v.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+            com.lora.cn.ui.model.Terminal tt = termMap.get(v.getTerminalId());
+            boolean devStillOffline = tt != null && tt.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+            if (afterHandled && (!offlineCase || devStillOffline)) allowedIds.add(v.getId());
         }
         if (!hasPermission("log_confirm")) allowedIds.clear();
         if (logInfoAdapter != null) logInfoAdapter.setAllowedHandleIds(allowedIds);

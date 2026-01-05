@@ -1429,13 +1429,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void minimizePending() {
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-        // 立即显示右下角小浮标（若仍有待处理）
-        if (llAlertPendingSmall != null) {
-            int qs = alertQueue != null ? alertQueue.size() : 0;
-            int c = pendingAlertCount > 0 ? pendingAlertCount : qs;
-            llAlertPendingSmall.setVisibility(c > 0 ? View.VISIBLE : View.GONE);
-        }
-        // 保留 lastShownKey，使相同设备相同状态不再弹大浮层；同时更新徽标
+        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
         updatePendingBadge();
     }
 

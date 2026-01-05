@@ -1669,6 +1669,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 } else if (statusCode == com.lora.cn.ui.constants.LogStatus.ONLINE.code) {
                     int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
                     android.util.Log.d("DatabaseHelper", "按日志状态更新终端为正常在线 deviceId=" + deviceId + ", rows=" + rows);
+                    try {
+                        markOfflineLogsHandled(deviceId, nowStr, "系统自动处理");
+                    } catch (Exception ignored) {}
                 } else {
                     android.util.Log.d("DatabaseHelper", "日志状态不触发终端状态变更 deviceId=" + deviceId + ", statusCode=" + statusCode);
                 }
@@ -1705,6 +1708,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
 
         return result;
+    }
+
+    private void markOfflineLogsHandled(String deviceId, String handleTime, String handleUser) {
+        if (deviceId == null || deviceId.trim().isEmpty()) return;
+        SQLiteDatabase db = this.getWritableDatabase();
+        android.database.Cursor c = db.rawQuery(
+                "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
+                new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)});
+        java.util.List<Long> ids = new java.util.ArrayList<>();
+        while (c.moveToNext()) {
+            long id = c.getLong(0);
+            String hu = c.getString(1);
+            String ht = c.getString(2);
+            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+            if (unhandled) ids.add(id);
+        }
+        c.close();
+        if (ids.isEmpty()) return;
+        ContentValues v = new ContentValues();
+        v.put("handle_user", handleUser == null ? "" : handleUser);
+        v.put("handle_time", handleTime == null ? "" : handleTime);
+        for (Long id : ids) {
+            db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+        }
     }
 
     private int getLastLockStateByDeviceId(String deviceId) {

@@ -860,6 +860,28 @@ public class TerminalListFragment extends Fragment {
                     Log.e(TAG, "转换终端列表失败", e);
                 }
             }
+            try {
+                long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = com.lora.cn.database.DatabaseHelper.getInstance(appCtx).getMaintenanceRecords(uid);
+                java.util.Set<String> pendingDevSet = new java.util.HashSet<>();
+                if (list != null) {
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
+                        if (mi == null) continue;
+                        String c = mi.getContent();
+                        if ("设备维护：需要维护".equals(c) && mi.getStatus() == 0) {
+                            String dev = mi.getTerminalId();
+                            if (dev != null && dev.length() > 0) pendingDevSet.add(dev);
+                        }
+                    }
+                }
+                if (displayTerminals != null) {
+                    for (Terminal t : displayTerminals) {
+                        if (t == null) continue;
+                        String dev = t.getTerminalId();
+                        if (dev != null && pendingDevSet.contains(dev)) t.setMaintenanceActive(true);
+                    }
+                }
+            } catch (Exception ignored) {}
             List<TerminalStatus> statusList = buildStatusList(terminals);
 
             List<Terminal> finalDisplayTerminals = displayTerminals;

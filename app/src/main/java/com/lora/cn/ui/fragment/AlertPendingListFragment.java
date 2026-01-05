@@ -120,7 +120,15 @@ public class AlertPendingListFragment extends Fragment {
                         if (isLowNow && afterHandled) filtered.add(li);
                     }
                 } else {
-                    if (ht == null || at > ht) filtered.add(li);
+                    com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                    boolean isOfflineCase = li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                    boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                    boolean afterHandled = ht == null || at > ht;
+                    if (isOfflineCase) {
+                        if (devStillOffline && afterHandled) filtered.add(li);
+                    } else {
+                        if (afterHandled) filtered.add(li);
+                    }
                 }
             }
             adapter.submitList(filtered);
@@ -134,7 +142,10 @@ public class AlertPendingListFragment extends Fragment {
                 if (!candidate) continue;
                 Long ht2 = lastHandledTime.get(li.getTerminalId());
                 long at2 = parseMillis(li.getCreateTime());
-                boolean canHandle = ht2 == null || at2 > ht2;
+                com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                boolean isOfflineCase2 = s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                boolean devStillOffline2 = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                boolean canHandle = (ht2 == null || at2 > ht2) && (!isOfflineCase2 || devStillOffline2);
                 if (canHandle) allowedIds.add(li.getId());
             }
             adapter.setAllowedHandleIds(allowedIds);
