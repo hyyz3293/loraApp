@@ -1222,7 +1222,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                if (llAlertPendingSmall != null) setSmallVisible(false);
                 LogUtils.e("llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
             }
         }
@@ -1388,7 +1387,15 @@ public class MainActivity extends AppCompatActivity {
                             if (!alertMuted) startAlertRinging30s();
                             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
                             if (!bigVisible) {
-                                showLatestPending();
+                                boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
+                                String keyCandidate = (devId == null ? "" : devId) + ":" + (finalMsg == null ? "" : finalMsg);
+                                if (smallVisible && keyCandidate.equals(lastSmallKey)) {
+                                    if (llAlertPendingSmall != null) setSmallVisible(true);
+                                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                                    lastSmallKey = keyCandidate;
+                                } else {
+                                    showLatestPending();
+                                }
                             } else {
                                 if (llAlertPendingSmall != null) setSmallVisible(false);
                                 LogUtils.e("llAlertPendingSmall=Visibility===10===" + llAlertPendingSmall.getVisibility());
@@ -1412,10 +1419,18 @@ public class MainActivity extends AppCompatActivity {
                             updatePendingBadge();
                             if (pendingAlertCount == 0) {
                                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                                if (llAlertPendingSmall != null) setSmallVisible(false);
+                                // 不主动在此隐藏小窗，让徽标逻辑决定是否展示，避免闪烁
                                 LogUtils.e("llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
                             } else {
-                                showLatestPending();
+                                boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
+                                String keyCandidate = (devId == null ? "" : devId) + ":" + (finalMsg == null ? "" : finalMsg);
+                                if (smallVisible && keyCandidate.equals(lastSmallKey)) {
+                                    if (llAlertPendingSmall != null) setSmallVisible(true);
+                                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                                    lastSmallKey = keyCandidate;
+                                } else {
+                                    showLatestPending();
+                                }
                             }
                         }
                     }
