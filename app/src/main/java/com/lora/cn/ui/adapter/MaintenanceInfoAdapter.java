@@ -159,7 +159,6 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
                 });
             }
         }
-        btnEdit.setVisibility(View.GONE);
     }
 
     private void setTextOrDash(TextView textView, String text) {

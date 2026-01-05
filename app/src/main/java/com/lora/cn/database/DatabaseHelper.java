@@ -1675,7 +1675,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
                     android.util.Log.d("DatabaseHelper", "按日志状态更新终端为正常在线 deviceId=" + deviceId + ", rows=" + rows);
                     try {
-                        markOfflineLogsHandled(deviceId, nowStr, "系统自动处理");
+                        String autoUser = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
+                        markOfflineLogsHandled(deviceId, nowStr, autoUser);
                     } catch (Exception ignored) {}
                 } else {
                     android.util.Log.d("DatabaseHelper", "日志状态不触发终端状态变更 deviceId=" + deviceId + ", statusCode=" + statusCode);
@@ -1733,8 +1734,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         c.close();
         if (ids.isEmpty()) return;
         ContentValues v = new ContentValues();
-        v.put("handle_user", handleUser == null ? "" : handleUser);
+        String user2 = handleUser;
+        if (user2 == null || user2.trim().isEmpty()) {
+            user2 = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
+        }
+        v.put("handle_user", user2);
         v.put("handle_time", handleTime == null ? "" : handleTime);
+        v.put("handle_remark", "自动处理");
         for (Long id : ids) {
             db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
         }
