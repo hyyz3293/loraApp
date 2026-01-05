@@ -897,7 +897,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             } finally {
-                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 60000);
+                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 1000);
             }
         }
     };
@@ -1196,9 +1196,13 @@ public class MainActivity extends AppCompatActivity {
         } else {
             boolean hasQueue = !alertQueue.isEmpty();
             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-            if (hasQueue) {
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(!bigVisible ? View.VISIBLE : View.GONE);
-                LogUtils.e("llAlertPendingSmall=Visibility===8===" + llAlertPendingSmall.getVisibility());
+                    if (hasQueue) {
+                if (!bigVisible) {
+                    showLatestPending();
+                } else {
+                    if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                    LogUtils.e("llAlertPendingSmall=Visibility===8===" + llAlertPendingSmall.getVisibility());
+                }
             } else {
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
@@ -1950,8 +1954,18 @@ public class MainActivity extends AppCompatActivity {
             if (queuedAny) {
                 showLatestPending();
             } else {
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(!alertQueue.isEmpty() ? View.VISIBLE : View.GONE);
-                LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
+                boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
+                if (!alertQueue.isEmpty()) {
+                    if (!bigVisible) {
+                        showLatestPending();
+                    } else {
+                        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                        LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
+                    }
+                } else {
+                    if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                    LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
+                }
             }
             updatePendingBadge();
             int afterQueueSize = alertQueue.size();
