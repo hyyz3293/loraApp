@@ -9,16 +9,17 @@ import java.util.Calendar;
 
 import com.blankj.utilcode.util.Utils;
 
-public class LoraApp extends Application {
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        Utils.init(this);
-        try {
-            com.lora.cn.utils.LogUtils.init(getApplicationContext());
-        } catch (Exception ignored) {}
-        try { com.lora.cn.utils.CrashLogger.install(getApplicationContext()); } catch (Exception ignored) {}
-        try {
+    public class LoraApp extends Application {
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            Utils.init(this);
+            try { com.lora.cn.utils.ViewEffects.registerGlobal(this); } catch (Exception ignored) {}
+            try {
+                com.lora.cn.utils.LogUtils.init(getApplicationContext());
+            } catch (Exception ignored) {}
+            try { com.lora.cn.utils.CrashLogger.install(getApplicationContext()); } catch (Exception ignored) {}
+            try {
             com.lora.cn.utils.LogcatCapture.start(getApplicationContext());
         } catch (Exception ignored) {}
 //        try {
