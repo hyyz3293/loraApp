@@ -278,10 +278,40 @@ public class MaintenanceHomeListFragment extends Fragment {
                     if (ioExecutor == null || mainHandler == null) return;
                     ioExecutor.execute(() -> {
                         int r;
+                        String devId = item.getTerminalId();
                         try {
                             r = db.updateMaintenanceHandled(item.getId(), currentUserId, currentUserName, nowStr(), content);
                         } catch (Exception e) {
                             r = 0;
+                        }
+                        if (r > 0 && devId != null && devId.length() > 0) {
+                            try {
+                                com.lora.cn.database.dao.TerminalDao tdao = new com.lora.cn.database.dao.TerminalDao(db);
+                                com.lora.cn.ui.model.Terminal t = tdao.getTerminalByDeviceId(devId);
+                                int dep = t != null ? (int) Math.max(0, Math.min(255, t.getDepartmentId())) : 0;
+                                int cart = t != null ? (int) Math.max(0, Math.min(255, t.getRoomId())) : 0;
+                                MainActivity a = (MainActivity) getActivity();
+                                com.lora.cn.network.MqttPacketsClient client = a != null ? a.getMqttClient() : null;
+                                if (client == null) client = com.lora.cn.network.MqttPacketsClient.getShared();
+                                DownlinkMessageHelper helper = new DownlinkMessageHelper(client);
+                                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                                int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                                int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                                helper.sendDownlink8001(
+                                        devId,
+                                        1,
+                                        1,
+                                        dep,
+                                        cart,
+                                        0,
+                                        (1 << 2),
+                                        Math.max(3, Math.min(1440, interval)),
+                                        1,
+                                        new int[]{mins},
+                                        true
+                                );
+                            } catch (Exception ignored) {}
                         }
                         int finalR = r;
                         mainHandler.post(() -> {

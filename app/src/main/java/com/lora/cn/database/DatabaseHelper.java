@@ -2230,6 +2230,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      */
     public int updateTerminalMaintenanceState(String terminalId, boolean active, long timeMs) {
         SQLiteDatabase db = this.getWritableDatabase();
+        ensureColumnIfMissing(db, TABLE_TERMINALS, COLUMN_TERMINAL_MAINTENANCE_ACTIVE, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_TERMINALS, COLUMN_TERMINAL_MAINTENANCE_TIME, "INTEGER DEFAULT 0");
         ContentValues values = new ContentValues();
         values.put(COLUMN_TERMINAL_MAINTENANCE_ACTIVE, active ? 1 : 0);
         values.put(COLUMN_TERMINAL_MAINTENANCE_TIME, Math.max(0L, timeMs));
