@@ -87,6 +87,14 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
             logOperation.setTextColor(android.graphics.Color.WHITE);
             logOperation.setOnClickListener(v -> { if (onHandleClickListener != null) onHandleClickListener.onHandleClick(item); });
             logOperation.setVisibility(android.view.View.VISIBLE);
+        } else if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
+                || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) {
+            String label = com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode());
+            setTextOrPlaceholder(logOperation, label);
+            logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
+            logOperation.setTextColor(android.graphics.Color.parseColor("#383B40"));
+            logOperation.setOnClickListener(null);
+            logOperation.setVisibility(android.view.View.VISIBLE);
         } else if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
             setTextOrPlaceholder(logOperation, act);
             logOperation.setOnClickListener(null);

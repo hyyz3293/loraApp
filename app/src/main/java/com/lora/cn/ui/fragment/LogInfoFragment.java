@@ -161,8 +161,9 @@ public class LogInfoFragment extends Fragment {
                     String endStr = selectedEndTime;
                     int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
                     int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-                    totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, false);
-                    java.util.List<LogInfo> first = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
+                    boolean includeUnbound = (typeSel == 1);
+                    totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, includeUnbound);
+                    java.util.List<LogInfo> first = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
                     displayedLogs.clear();
                     if (first != null) displayedLogs.addAll(first);
                     recalcAndSubmit(displayedLogs);
@@ -180,6 +181,7 @@ public class LogInfoFragment extends Fragment {
                     String endStr = selectedEndTime;
                     int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
                     int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
+                    boolean includeUnbound = (typeSel == 1);
                     boolean canNext = (currentPage + 1) * pageSize < totalFilteredCount && !noMoreData;
                     if (!canNext) {
                         refreshLayout.finishLoadMoreWithNoMoreData();
@@ -188,7 +190,7 @@ public class LogInfoFragment extends Fragment {
                         return;
                     }
                     currentPage++;
-                    java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
+                    java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
                     if (next != null && !next.isEmpty()) {
                         displayedLogs.addAll(next);
                         recalcAndSubmit(displayedLogs);
@@ -412,8 +414,9 @@ public class LogInfoFragment extends Fragment {
         String startStr = selectedStartTime;
         String endStr = selectedEndTime;
         currentPage = 0;
-        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, false);
-        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, false, pageSize, currentPage);
+        boolean includeUnbound = (typeSel == 1);
+        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, includeUnbound);
+        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
         displayedLogs.clear();
         if (out != null) displayedLogs.addAll(out);
         recalcAndSubmit(displayedLogs);

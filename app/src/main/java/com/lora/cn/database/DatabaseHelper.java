@@ -1499,6 +1499,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator() == null ? "" : logInfo.getOperator());
         values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime() == null ? "" : logInfo.getOperationTime());
         values.put(COLUMN_LOG_ACTION, logInfo.getAction());
+        String ct = logInfo.getCreateTime();
+        if (ct == null || ct.trim().isEmpty()) {
+            ct = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        }
+        values.put(COLUMN_LOG_CREATE_TIME, ct);
         values.put("handle_user", logInfo.getHandleUser());
         values.put("handle_time", logInfo.getHandleTime());
         values.put("handle_remark", logInfo.getHandleRemark());
@@ -1585,12 +1590,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                      frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
                  // 正常（取走）
                  statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
-            }  else if (frame.stPowerLockOn == 1) {
+            }  else if (frame.stPowerLockOn == 0) {
                  // 开锁
                  if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code)) {
                      statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
                  }
-            } else if (frame.stPowerLockOn == 0) {
+            } else if (frame.stPowerLockOn == 1) {
                  // 上锁
                  if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code)) {
                      statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
@@ -2070,6 +2075,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private String buildLogWhereClause(String startTime, String endTime, int typeSel, int policeSel) {
+        LogUtils.e("buildLogWhereClause ==" + typeSel + "======" + policeSel  + "=====" + startTime +  "--" + endTime);
         java.util.List<String> conds = new java.util.ArrayList<>();
         if (startTime != null && !startTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " >= '" + startTime + "' ");
         if (endTime != null && !endTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " <= '" + endTime + "' ");
@@ -2099,7 +2105,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             }
         }
         if (conds.isEmpty()) return "";
-        return " WHERE " + android.text.TextUtils.join(" AND ", conds);
+        String  json  =" WHERE " + android.text.TextUtils.join(" AND ", conds);
+        LogUtils.e("buildLogWhereClause ==" + json);
+        return json;
     }
 
     public java.util.List<com.lora.cn.ui.model.LogInfo> getLogsByTerminalId(String terminalId) {

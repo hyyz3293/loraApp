@@ -252,11 +252,11 @@ public class TerminalDetailDialog extends Dialog {
                 logInfo.setTerminalId(info.deviceId);
                 logInfo.setTerminalName(info.deviceName);
                 logInfo.setDeviceId(info.deviceId);
-                    logInfo.setStatusCode(0);
+                logInfo.setStatusCode(com.lora.cn.ui.constants.LogStatus.ONLINE.code);
                 logInfo.setOperator("");
                 logInfo.setOperationTime("");
-                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-                logInfo.setAction("更新" + fieldName + "为: " + newValue);
+                logInfo.setCreateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                logInfo.setAction("设置" + fieldName + "为: " + newValue);
                 
                 databaseHelper.addLog(logInfo);
                 
@@ -270,11 +270,11 @@ public class TerminalDetailDialog extends Dialog {
                 logInfo.setTerminalId(info.deviceId);
                 logInfo.setTerminalName(info.deviceName);
                 logInfo.setDeviceId(info.deviceId);
-                    logInfo.setStatusCode(0);
+                logInfo.setStatusCode(0);
                 logInfo.setOperator("");
                 logInfo.setOperationTime("");
-                logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-                logInfo.setAction("更新" + fieldName + "失败");
+                logInfo.setCreateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                logInfo.setAction("设置" + fieldName + "失败");
                 
                 databaseHelper.addLog(logInfo);
             }
@@ -289,8 +289,8 @@ public class TerminalDetailDialog extends Dialog {
             logInfo.setStatusCode(0);
             logInfo.setOperator("");
             logInfo.setOperationTime("");
-            logInfo.setCreateTime(String.valueOf(System.currentTimeMillis()));
-            logInfo.setAction("更新" + fieldName + "异常: " + e.getMessage());
+            logInfo.setCreateTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+            logInfo.setAction("设置" + fieldName + "异常: " + e.getMessage());
             
             databaseHelper.addLog(logInfo);
         }

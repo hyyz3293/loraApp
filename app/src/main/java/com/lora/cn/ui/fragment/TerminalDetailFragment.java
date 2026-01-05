@@ -261,7 +261,9 @@ public class TerminalDetailFragment extends Fragment {
             int finalMaintenanceCount = maintenanceCount;
             int finalSt = st;
 
-            mainHandler.post(() -> {
+            Handler h = mainHandler;
+            if (h == null) return;
+            h.post(() -> {
                 if (!isAdded()) return;
                 if (token != bindSeq.get()) return;
                 if (tvTitle != null) tvTitle.setText(finalTitle);
@@ -327,7 +329,9 @@ public class TerminalDetailFragment extends Fragment {
                     t = dao.getTerminalByDeviceId(deviceId);
                 } catch (Exception ignored) {}
                 com.lora.cn.ui.model.Terminal finalT = t;
-                mainHandler.post(() -> {
+                Handler h2 = mainHandler;
+                if (h2 == null) return;
+                h2.post(() -> {
                     if (!isAdded()) return;
                     if (finalT == null) {
                         Toast.makeText(requireContext(), "未找到终端", Toast.LENGTH_SHORT).show();
@@ -352,7 +356,9 @@ public class TerminalDetailFragment extends Fragment {
                     if (ioExecutor == null || mainHandler == null) return;
                     ioExecutor.execute(() -> {
                         boolean ok = deleteTerminal(deviceId);
-                        mainHandler.post(() -> {
+                        Handler h3 = mainHandler;
+                        if (h3 == null) return;
+                        h3.post(() -> {
                             if (!isAdded()) return;
                             if (ok) {
                                 Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show();
@@ -394,7 +400,9 @@ public class TerminalDetailFragment extends Fragment {
                     } else {
                         dbHelper.updateTerminalFavoriteStatus(deviceId, target);
                     }
-                    mainHandler.post(() -> {
+                    Handler h4 = mainHandler;
+                    if (h4 == null) return;
+                    h4.post(() -> {
                         if (!isAdded()) return;
                         ivFavorite.setImageResource(target ? R.mipmap.ic_star_yeollw : R.mipmap.ic_start);
                         if (target) {
@@ -407,7 +415,9 @@ public class TerminalDetailFragment extends Fragment {
                         ivFavorite.invalidate();
                     });
                 } catch (Exception e) {
-                    mainHandler.post(() -> {
+                    Handler h5 = mainHandler;
+                    if (h5 == null) return;
+                    h5.post(() -> {
                         if (!isAdded()) return;
                         Toast.makeText(requireContext(), "收藏操作异常: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     });
@@ -466,7 +476,9 @@ public class TerminalDetailFragment extends Fragment {
                 }
             } catch (Exception ignored) {}
             int finalCount = count;
-            mainHandler.post(() -> {
+            Handler h6 = mainHandler;
+            if (h6 == null) return;
+            h6.post(() -> {
                 if (!isAdded()) return;
                 if (token != maintenanceSeq.get()) return;
                 btnSetMaintenance.setText("设置维护(" + finalCount + ")");
@@ -543,7 +555,9 @@ public class TerminalDetailFragment extends Fragment {
             java.util.Set<Long> finalAllowedIds = allowedIds;
             java.util.Map<Long, String> finalHandledLabels = handledLabels;
             String finalErr = err;
-            mainHandler.post(() -> {
+            Handler h7 = mainHandler;
+            if (h7 == null) return;
+            h7.post(() -> {
                 if (!isAdded()) return;
                 if (token != logsSeq.get()) return;
                 if (finalErr != null) {
@@ -570,7 +584,9 @@ public class TerminalDetailFragment extends Fragment {
                                 String devHex = item.getDeviceId() != null ? item.getDeviceId() : "";
                                 int finalMask = mask;
                                 String finalDevHex = devHex;
-                                mainHandler.post(() -> {
+                                Handler h8 = mainHandler;
+                                if (h8 == null) return;
+                                h8.post(() -> {
                                     try {
                                         android.app.Activity a = getActivity();
                                         if (a instanceof com.lora.cn.ui.activity.MainActivity) {
@@ -579,7 +595,9 @@ public class TerminalDetailFragment extends Fragment {
                                     } catch (Exception ignored) {}
                                 });
                             }
-                            mainHandler.post(() -> {
+                            Handler h9 = mainHandler;
+                            if (h9 == null) return;
+                            h9.post(() -> {
                                 loadLogs();
                                 try {
                                     android.app.Activity a = getActivity();
