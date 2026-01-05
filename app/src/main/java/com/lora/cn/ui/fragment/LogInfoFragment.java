@@ -455,7 +455,10 @@ public class LogInfoFragment extends Fragment {
             String ct = li != null ? li.getCreateTime() : null;
             long t = parseMillis(ct);
             int s = li.getStatusCode();
-            if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+            String hu = li.getHandleUser();
+            String htStr = li.getHandleTime();
+            boolean isHandled = (hu != null && hu.trim().length() > 0) || (htStr != null && htStr.trim().length() > 0);
+            if (isHandled) {
                 Long prevH = lastHandledTime.get(li.getTerminalId());
                 if (prevH == null || t >= prevH) lastHandledTime.put(li.getTerminalId(), t);
                 continue;

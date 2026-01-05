@@ -2093,9 +2093,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (policeSel == 1 || policeSel == 2) {
             if (policeSel == 1) {
-                conds.add("(handle_user IS NOT NULL AND TRIM(handle_user) <> '')");
+                conds.add("((handle_user IS NOT NULL AND TRIM(handle_user) <> '') OR (handle_time IS NOT NULL AND TRIM(handle_time) <> ''))");
             } else {
-                conds.add("(handle_user IS NULL OR TRIM(handle_user) = '')");
+                conds.add("((handle_user IS NULL OR TRIM(handle_user) = '') AND (handle_time IS NULL OR TRIM(handle_time) = ''))");
             }
         }
         if (conds.isEmpty()) return "";

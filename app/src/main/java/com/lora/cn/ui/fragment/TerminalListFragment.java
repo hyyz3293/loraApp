@@ -606,6 +606,7 @@ public class TerminalListFragment extends Fragment {
 
     private void minimizePending() {
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
         updatePendingBadge();
     }
 
