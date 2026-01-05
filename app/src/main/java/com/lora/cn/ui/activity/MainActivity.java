@@ -2033,6 +2033,13 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setCurrentItem(tabIndex, false); // false表示无动画切换
     }
 
+    public void showMaintenanceTab() {
+        try {
+            hideDeviceList();
+        } catch (Exception ignored) {}
+        viewPager.setCurrentItem(3, false);
+    }
+
     private void updateTabSelection(int tabIndex) {
         currentTabIndex = tabIndex;
         

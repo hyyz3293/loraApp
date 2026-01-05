@@ -379,25 +379,33 @@ public class TerminalListFragment extends Fragment {
         terminalStatusAdapter.setOnItemClickListener((adapter1, view1, position1) -> {
             TerminalStatus item = (TerminalStatus) terminalStatusAdapter.getItem(position1);
             if (item == null) return;
-            androidx.fragment.app.Fragment fragment;
-            String backStackTag;
-            if ("维护列表".equals(item.getTitle())) {
-                fragment = MaintenanceHomeListFragment.newInstance();
-                backStackTag = "maintenance_home_list";
+            if ("维护列表".equals(item.getTitle()) || "需维修".equals(item.getTitle())) {
+                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
+                    mainActivity.showMaintenanceTab();
+                    return;
+                }
+                androidx.fragment.app.Fragment fragment = MaintenanceHomeListFragment.newInstance();
+                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                if (a != null) {
+                    a.getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_device_list_container, fragment)
+                            .addToBackStack("maintenance_home_list")
+                            .commit();
+                }
             } else {
-                fragment = TerminalStatusListFragment.newInstance(item.getTitle());
-                backStackTag = "terminal_status_filter";
-            }
-            if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
-                com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
-                mainActivity.showOverlayOnly();
-            }
-            androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
-            if (a != null) {
-                a.getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_device_list_container, fragment)
-                        .addToBackStack(backStackTag)
-                        .commit();
+                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    com.lora.cn.ui.activity.MainActivity mainActivity = (com.lora.cn.ui.activity.MainActivity) getActivity();
+                    mainActivity.showOverlayOnly();
+                }
+                androidx.fragment.app.Fragment fragment = TerminalStatusListFragment.newInstance(item.getTitle());
+                androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+                if (a != null) {
+                    a.getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_device_list_container, fragment)
+                            .addToBackStack("terminal_status_filter")
+                            .commit();
+                }
             }
         });
 
