@@ -447,6 +447,7 @@ public class MainActivity extends AppCompatActivity {
                             dX = v.getX() - (downRawX - loc[0]);
                             dY = v.getY() - (downRawY - loc[1]);
                             moved = false;
+                            v.animate().alpha(0.6f).setDuration(0).start();
                             return true;
                         case android.view.MotionEvent.ACTION_MOVE: {
                             float rawX = event.getRawX();
@@ -477,8 +478,10 @@ public class MainActivity extends AppCompatActivity {
                                 com.blankj.utilcode.util.SPUtils.getInstance().put("alert_small_last_x", (int) v.getX());
                                 com.blankj.utilcode.util.SPUtils.getInstance().put("alert_small_last_y", (int) v.getY());
                             }
+                            v.animate().alpha(1f).setDuration(0).start();
                             return true;
                         default:
+                            v.animate().alpha(1f).setDuration(0).start();
                             return false;
                     }
                 }
@@ -505,6 +508,8 @@ public class MainActivity extends AppCompatActivity {
         }
         if (ivErrorClose != null) {
             ivErrorClose.setOnClickListener(v -> {
+                v.setPressed(true);
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 180);
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 if (llAlertPendingSmall != null) setSmallVisible(true);
 
@@ -515,7 +520,11 @@ public class MainActivity extends AppCompatActivity {
             tvErrorVoiceNo.setOnClickListener(this::toggleGlobalMute);
         }
         if (tvErrorComplete != null) {
-            tvErrorComplete.setOnClickListener(v -> showImmediateHandleDialog());
+            tvErrorComplete.setOnClickListener(v -> {
+                v.setPressed(true);
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 180);
+                showImmediateHandleDialog();
+            });
             tvErrorComplete.setText("确认处理");
         }
         updateAlertMutedUI();
@@ -1194,7 +1203,7 @@ public class MainActivity extends AppCompatActivity {
                 if (a.ring && !alertMuted) startAlertRinging30s();
             }
             boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
-            if (result.queuedAny && smallVisible && newKey != null && newKey.equals(lastSmallKey)) {
+            if (result.queuedAny && smallVisible && (newKey == null || newKey.equals(lastSmallKey))) {
                 if (llAlertPendingSmall != null) setSmallVisible(true);
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 lastSmallKey = newKey;
