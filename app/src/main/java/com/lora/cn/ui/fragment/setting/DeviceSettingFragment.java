@@ -119,7 +119,7 @@ public class DeviceSettingFragment extends Fragment {
         }
         if (hasPermission("setting_sleep_interval")) {
             int sleepMin = SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-            settingList.add(new SettingItem("设备休眠间隔(分钟) " + sleepMin, 2, 7, String.valueOf(sleepMin)));
+            settingList.add(new SettingItem("设备休眠间隔(分钟)", 2, 7, String.valueOf(sleepMin)));
         }
 
         // 设置RecyclerView

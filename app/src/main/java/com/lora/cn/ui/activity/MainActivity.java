@@ -984,6 +984,8 @@ public class MainActivity extends AppCompatActivity {
         boolean touchedDb;
     }
 
+    private String lastSmallKey;
+
     private EvaluateResult computeAlertOverlay(com.lora.cn.database.DatabaseHelper db,
                                               java.util.Map<String, Integer> lastTypes,
                                               java.util.Map<String, Long> lastLogIds) {
@@ -1174,6 +1176,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (!result.actions.isEmpty()) {
+            String newKey = null;
             for (AlertAction a : result.actions) {
                 if (a == null || a.item == null) continue;
                 String devId = a.item.code;
@@ -1182,11 +1185,24 @@ public class MainActivity extends AppCompatActivity {
                     if (!existsInQueue(devId, title)) {
                         alertQueue.addLast(a.item);
                         queueChanged = true;
+                        newKey = devId + ":" + title;
                     }
                     int sc = getStatusCodeForTitle(title);
                     if (sc != 0) lastAlertTypes.put(devId, sc);
                 }
                 if (a.ring && !alertMuted) startAlertRinging30s();
+            }
+            boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
+            if (result.queuedAny && smallVisible && newKey != null && newKey.equals(lastSmallKey)) {
+                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                lastSmallKey = newKey;
+                updatePendingBadge();
+                int afterQueueSize2 = alertQueue.size();
+                if (result.queuedAny || result.touchedDb || queueChanged || beforeQueueSize != afterQueueSize2) {
+                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+                }
+                return;
             }
         }
 
@@ -1200,8 +1216,8 @@ public class MainActivity extends AppCompatActivity {
                 if (!bigVisible) {
                     showLatestPending();
                 } else {
-                    if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
-                    LogUtils.e("llAlertPendingSmall=Visibility===8===" + llAlertPendingSmall.getVisibility());
+                    if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                    LogUtils.e("llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
@@ -1442,6 +1458,7 @@ public class MainActivity extends AppCompatActivity {
         if (tvErrorComplete != null) tvErrorComplete.setVisibility(needConfirm ? View.VISIBLE : View.VISIBLE);
         refreshHandledStatusFromDBAsync(currentAlert.code, sc);
         lastShownKey = key;
+        lastSmallKey = null;
     }
 
     private void minimizePending() {
@@ -1466,6 +1483,16 @@ public class MainActivity extends AppCompatActivity {
                     llAlertPendingSmall.bringToFront();
                 }
             });
+        }
+        if (currentAlert != null) {
+            String key = (currentAlert.code == null ? "" : currentAlert.code) + ":" + (currentAlert.title == null ? "" : currentAlert.title);
+            lastSmallKey = key;
+        } else if (!alertQueue.isEmpty()) {
+            AlertItem ai = alertQueue.peekLast();
+            if (ai != null) {
+                String key = (ai.code == null ? "" : ai.code) + ":" + (ai.title == null ? "" : ai.title);
+                lastSmallKey = key;
+            }
         }
         updatePendingBadge();
     }
@@ -1698,6 +1725,13 @@ public class MainActivity extends AppCompatActivity {
                         llAlertPendingSmall.bringToFront();
                     }
                 });
+                if (!alertQueue.isEmpty()) {
+                    AlertItem ai = alertQueue.peekLast();
+                    if (ai != null) {
+                        String key = (ai.code == null ? "" : ai.code) + ":" + (ai.title == null ? "" : ai.title);
+                        lastSmallKey = key;
+                    }
+                }
             }
             LogUtils.e("llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + llAlertPendingSmall.getVisibility());
         }
@@ -1951,22 +1985,34 @@ public class MainActivity extends AppCompatActivity {
                     lastAlertTypes.remove(devId);
                 }
             }
-            if (queuedAny) {
-                showLatestPending();
+        if (queuedAny) {
+            boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
+            String keyCandidate = null;
+            if (!alertQueue.isEmpty()) {
+                AlertItem ai = alertQueue.peekLast();
+                if (ai != null) keyCandidate = (ai.code == null ? "" : ai.code) + ":" + (ai.title == null ? "" : ai.title);
+            }
+            if (smallVisible && keyCandidate != null && keyCandidate.equals(lastSmallKey)) {
+                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                lastSmallKey = keyCandidate;
             } else {
-                boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-                if (!alertQueue.isEmpty()) {
-                    if (!bigVisible) {
-                        showLatestPending();
-                    } else {
-                        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
-                        LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
-                    }
+                showLatestPending();
+            }
+        } else {
+            boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
+            if (!alertQueue.isEmpty()) {
+                if (!bigVisible) {
+                    showLatestPending();
                 } else {
                     if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
-                    LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
+                    LogUtils.e("llAlertPendingSmall=Visibility===5===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
+            } else {
+                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
             }
+        }
             updatePendingBadge();
             int afterQueueSize = alertQueue.size();
             if (queuedAny || touchedDb || beforeQueueSize != afterQueueSize) {
