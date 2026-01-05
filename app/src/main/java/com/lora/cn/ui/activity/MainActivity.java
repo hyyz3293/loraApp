@@ -828,7 +828,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                         int mask = 0;
                         if ("异常取走".equals(finalTarget.title)) mask |= 0x00000001;
-                        if ("设备低电量".equals(finalTarget.title)) mask |= 0x00000002;
                         if (mask != 0) {
                             try { sendHandleDownlink(devHex, mask); } catch (Exception ignored) {}
                         }

@@ -106,6 +106,27 @@ public class DownlinkMessageHelper {
                     ", HEX长度=" + payloadHex.length() +
                     ", Base64长度=" + base64.length() +
                     ", HEX串=" + payloadHex);
+            StringBuilder desc = new StringBuilder();
+            desc.append("下行8001字段描述:\n");
+            desc.append("1 数据产生时间(本地)=").append(utcText).append("\n");
+            desc.append("2 保留(4B)=").append(String.format(java.util.Locale.US, "0x%08X", 0xFFFFFFFF)).append("\n");
+            desc.append("3 保留(4B)=").append(String.format(java.util.Locale.US, "0x%08X", 0xFFFFFFFF)).append("\n");
+            desc.append("4 保留(2B)=").append(String.format(java.util.Locale.US, "0x%04X", 0xFFFF)).append("\n");
+            desc.append("5 设置低电量报警预值(%)=").append(lowBatteryPercent).append("\n");
+            desc.append("6 应答结果=").append(ackResult).append(" (").append(ackText).append(")").append("\n");
+            desc.append("7 设置所属的科室或护士站编号=").append(departmentId).append("\n");
+            desc.append("8 设置台车编号=").append(cartId).append("\n");
+            desc.append("9 保留(1B)=").append(String.format(java.util.Locale.US, "0x%02X", 0xFF)).append("\n");
+            desc.append("10 保留(1B)=").append(String.format(java.util.Locale.US, "0x%02X", 0xFF)).append("\n");
+            desc.append("11 护士站操作指令=").append(String.format(java.util.Locale.US, "0x%02X", queryOp)).append(" (").append(opText).append(")").append("\n");
+            desc.append("12 护士站操作指令参数=").append(String.format(java.util.Locale.US, "0x%08X", clearMask))
+                    .append(" [Bit0清异常取走=").append(pBit0 ? "1" : "0")
+                    .append(", Bit1开启定时维护=").append(pBit1 ? "1" : "0")
+                    .append(", Bit2清主动维护标识=").append(pBit2 ? "1" : "0").append("]").append("\n");
+            desc.append("13 设置休眠间隔(分钟)=").append(Math.max(3, Math.min(1440, reportIntervalMin))).append("\n");
+            desc.append("14 设置闹钟数量=").append(alarmCount).append("\n");
+            desc.append("15 设置闹钟时刻点列表(分钟)=").append(java.util.Arrays.toString(alarmMinutes));
+            Log.i(TAG, desc.toString());
             mqttClient.publishDownlinkByDevEuiTopic(
                 DOWNLINK_TOPIC_BASE,
                 deviceIdHex,
