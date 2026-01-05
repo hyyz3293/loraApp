@@ -430,6 +430,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         
         // 创建终端表
         db.execSQL(CREATE_TABLE_TERMINALS);
+        try {
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_MAINTENANCE_ACTIVE + " INTEGER DEFAULT 0");
+        } catch (Exception ignored) {}
+        try {
+            db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_MAINTENANCE_TIME + " INTEGER DEFAULT 0");
+        } catch (Exception ignored) {}
         
         // 创建日志表
         db.execSQL(CREATE_TABLE_LOGS);
