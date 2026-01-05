@@ -508,7 +508,7 @@ public class MainActivity extends AppCompatActivity {
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 if (llAlertPendingSmall != null) setSmallVisible(true);
 
-                LogUtils.e("llAlertPendingSmall=Visibility===7===" + llAlertPendingSmall.getVisibility());
+                //LogUtils.e("llAlertPendingSmall=Visibility===7===" + llAlertPendingSmall.getVisibility());
             });
         }
         if (tvErrorVoiceNo != null) {
@@ -1230,11 +1230,11 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else {
                     if (llAlertPendingSmall != null) setSmallVisible(false);
-                    LogUtils.e("llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
+                    //LogUtils.e("llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                LogUtils.e("llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
+                //LogUtils.e("llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
             }
         }
         updatePendingBadge();
@@ -1410,12 +1410,12 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             } else {
                                 if (llAlertPendingSmall != null) setSmallVisible(false);
-                                LogUtils.e("llAlertPendingSmall=Visibility===10===" + llAlertPendingSmall.getVisibility());
+                                //LogUtils.e("llAlertPendingSmall=Visibility===10===" + llAlertPendingSmall.getVisibility());
                             }
                         } else {
                             updatePendingBadge();
                             if (llAlertPendingSmall != null && pendingAlertCount > 0) setSmallVisible(true);
-                            LogUtils.e("llAlertPendingSmall=Visibility===11===" + llAlertPendingSmall.getVisibility());
+                            //LogUtils.e("llAlertPendingSmall=Visibility===11===" + llAlertPendingSmall.getVisibility());
                         }
                     } else {
                         if (devId != null) {
@@ -1432,7 +1432,7 @@ public class MainActivity extends AppCompatActivity {
                             if (pendingAlertCount == 0) {
                                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                                 // 不主动在此隐藏小窗，让徽标逻辑决定是否展示，避免闪烁
-                                LogUtils.e("llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
+                                //LogUtils.e("llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
                             } else {
                                 boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
                                 String keyCandidate = (devId == null ? "" : devId) + ":" + (finalMsg == null ? "" : finalMsg);
@@ -1468,7 +1468,7 @@ public class MainActivity extends AppCompatActivity {
         if (lastShownKey != null && lastShownKey.equals(key)) {
             updatePendingBadge();
             if (llAlertPendingSmall != null) setSmallVisible(false);
-            LogUtils.e("llAlertPendingSmall=Visibility===13===" + llAlertPendingSmall.getVisibility());
+            //LogUtils.e("llAlertPendingSmall=Visibility===13===" + llAlertPendingSmall.getVisibility());
             if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
             return;
         }
@@ -1478,7 +1478,7 @@ public class MainActivity extends AppCompatActivity {
         if (tvErrorTime != null) tvErrorTime.setText(currentAlert.time);
         updatePendingBadge();
         if (llAlertPendingSmall != null) setSmallVisible(false);
-        LogUtils.e("llAlertPendingSmall=Visibility===14===" + llAlertPendingSmall.getVisibility());
+        //LogUtils.e("llAlertPendingSmall=Visibility===14===" + llAlertPendingSmall.getVisibility());
         if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
         int sc = getStatusCodeForTitle(currentAlert.title);
         Integer handled = lastHandledTypes.get(currentAlert.code);
@@ -1548,12 +1548,12 @@ public class MainActivity extends AppCompatActivity {
         if (!alertQueue.isEmpty()) {
             if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
             if (llAlertPendingSmall != null) setSmallVisible(true);
-            LogUtils.e("llAlertPendingSmall=Visibility===2===" + llAlertPendingSmall.getVisibility());
+            //LogUtils.e("llAlertPendingSmall=Visibility===2===" + llAlertPendingSmall.getVisibility());
             updatePendingBadge();
         } else {
             if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
             if (llAlertPendingSmall != null) setSmallVisible(false);
-            LogUtils.e("llAlertPendingSmall=Visibility===3===" + llAlertPendingSmall.getVisibility());
+            //LogUtils.e("llAlertPendingSmall=Visibility===3===" + llAlertPendingSmall.getVisibility());
         }
     }
 
@@ -1655,59 +1655,67 @@ public class MainActivity extends AppCompatActivity {
                 int count = 0;
                 try {
                     com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
-                    java.util.List<com.lora.cn.ui.model.LogInfo> allLogs = db.getAllLogsBoundToTerminals();
-                    java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
+                    try { db.syncLowBatteryFlags(); } catch (Exception ignored) {}
+                    java.util.List<com.lora.cn.ui.model.LogInfo> all = db.getAllLogsBoundToTerminals();
+                    java.util.Map<String, com.lora.cn.ui.model.LogInfo> latest = new java.util.HashMap<>();
+                    for (com.lora.cn.ui.model.LogInfo li : all) {
+                        if (li == null) continue;
+                        int s = li.getStatusCode();
+                        boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                                || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                                || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                        if (!candidate) continue;
+                        String key = (li.getTerminalId() == null ? "" : li.getTerminalId()) + ":" + s;
+                        com.lora.cn.ui.model.LogInfo prev = latest.get(key);
+                        long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
+                        long curT = parseMillis(li.getCreateTime());
+                        if (prev == null || curT >= prevT) latest.put(key, li);
+                    }
                     java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
-                    if (allLogs != null) {
-                        for (com.lora.cn.ui.model.LogInfo li : allLogs) {
-                            if (li == null) continue;
-                            String dev = li.getTerminalId();
-                            int s = li.getStatusCode();
+                    for (com.lora.cn.ui.model.LogInfo li : all) {
+                        if (li == null) continue;
+                        String hu = li.getHandleUser();
+                        String htStr = li.getHandleTime();
+                        if ((hu != null && !hu.trim().isEmpty()) || (htStr != null && !htStr.trim().isEmpty())) {
                             long t = parseMillis(li.getCreateTime());
-                            String hu = li.getHandleUser();
-                            String htStr = li.getHandleTime();
-                            boolean isHandled = (hu != null && hu.trim().length() > 0) || (htStr != null && htStr.trim().length() > 0);
-                            if (isHandled) {
-                                String hk = (dev == null ? "" : dev) + ":" + s;
-                                Long prev = lastHandledTime.get(hk);
-                                if (prev == null || t >= prev) lastHandledTime.put(hk, t);
-                                continue;
-                            }
-                            boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                                    || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
-                                    || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
-                            if (!candidate) continue;
-                            String key = (dev == null ? "" : dev) + ":" + s;
-                            com.lora.cn.ui.model.LogInfo prevLog = latestByDeviceStatus.get(key);
-                            long prevT = prevLog != null ? parseMillis(prevLog.getCreateTime()) : -1L;
-                            if (prevLog == null || t >= prevT) latestByDeviceStatus.put(key, li);
+                            String key = li.getTerminalId();
+                            Long prev = lastHandledTime.get(key);
+                            if (prev == null || t >= prev) lastHandledTime.put(key, t);
                         }
                     }
-                    java.util.Map<String, com.lora.cn.ui.model.Terminal> termMap = new java.util.HashMap<>();
+                    java.util.Map<String, com.lora.cn.ui.model.Terminal> terminalById = new java.util.HashMap<>();
                     java.util.List<com.lora.cn.ui.model.Terminal> allTerms = db.getAllTerminals();
                     if (allTerms != null) {
                         for (com.lora.cn.ui.model.Terminal t : allTerms) {
                             if (t == null) continue;
-                            termMap.put(t.getTerminalId(), t);
+                            terminalById.put(t.getTerminalId(), t);
                         }
                     }
                     int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                     int c = 0;
-                    for (com.lora.cn.ui.model.LogInfo v : latestByDeviceStatus.values()) {
-                        if (v == null) continue;
-                        String dev = v.getTerminalId();
-                        String hk = (dev == null ? "" : dev) + ":" + v.getStatusCode();
-                        Long ht = lastHandledTime.get(hk);
-                        long at = parseMillis(v.getCreateTime());
-                        boolean skipByHandled = (ht != null && at <= ht);
-                        if (skipByHandled) continue;
-                        if (v.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                            com.lora.cn.ui.model.Terminal tt = termMap.get(dev);
-                            if (tt == null) continue;
-                            boolean isLowNow = tt.getBatteryLevel() <= lowTh;
-                            if (!isLowNow) continue;
+                    for (com.lora.cn.ui.model.LogInfo li : latest.values()) {
+                        if (li == null) continue;
+                        Long ht = lastHandledTime.get(li.getTerminalId());
+                        long at = parseMillis(li.getCreateTime());
+                        int s = li.getStatusCode();
+                        if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                            com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                            if (t != null) {
+                                boolean isLowNow = t.getBatteryLevel() <= lowTh;
+                                boolean afterHandled = ht == null || at > ht;
+                                if (isLowNow && afterHandled) c++;
+                            }
+                        } else {
+                            com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                            boolean isOfflineCase = s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                            boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                            boolean afterHandled = ht == null || at > ht;
+                            if (isOfflineCase) {
+                                if (devStillOffline && afterHandled) c++;
+                            } else {
+                                if (afterHandled) c++;
+                            }
                         }
-                        c++;
                     }
                     count = c;
                 } catch (Exception ignored) {}
@@ -1734,7 +1742,7 @@ public class MainActivity extends AppCompatActivity {
             boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0 || hasTypes);
             setSmallVisible(shouldShowSmall);
             boolean currentSmall = llAlertPendingSmall.getVisibility() == View.VISIBLE;
-            LogUtils.e("llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + (currentSmall ? View.VISIBLE : View.GONE));
+            //LogUtils.e("llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + (currentSmall ? View.VISIBLE : View.GONE));
         }
         int queueSize = alertQueue.size();
         if (count != lastBadgeCount || queueSize != lastBadgeQueueSize) {
@@ -2042,11 +2050,11 @@ public class MainActivity extends AppCompatActivity {
                     showLatestPending();
                 } else {
                     if (llAlertPendingSmall != null) setSmallVisible(false);
-                    LogUtils.e("llAlertPendingSmall=Visibility===5===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
+                    //LogUtils.e("llAlertPendingSmall=Visibility===5===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
                 if (llAlertPendingSmall != null) setSmallVisible(false);
-                LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
+                //LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
             }
         }
             updatePendingBadge();
@@ -2071,7 +2079,7 @@ public class MainActivity extends AppCompatActivity {
             rvMenuTabs.setVisibility(View.INVISIBLE);
             viewPager.setVisibility(View.GONE);
 
-            LogUtils.e("llAlertPendingSmall=Visibility===6===" + llAlertPendingSmall.getVisibility());
+            //LogUtils.e("llAlertPendingSmall=Visibility===6===" + llAlertPendingSmall.getVisibility());
         } catch (Exception e) {
             android.util.Log.e(TAG, "打开报警处理页面失败", e);
         }
