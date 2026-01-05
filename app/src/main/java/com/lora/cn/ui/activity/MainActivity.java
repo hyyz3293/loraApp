@@ -506,7 +506,7 @@ public class MainActivity extends AppCompatActivity {
         if (ivErrorClose != null) {
             ivErrorClose.setOnClickListener(v -> {
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                if (llAlertPendingSmall != null) setSmallVisible(true);
 
                 LogUtils.e("llAlertPendingSmall=Visibility===7===" + llAlertPendingSmall.getVisibility());
             });
@@ -985,6 +985,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String lastSmallKey;
+    private boolean lastSmallVisible;
 
     private EvaluateResult computeAlertOverlay(com.lora.cn.database.DatabaseHelper db,
                                               java.util.Map<String, Integer> lastTypes,
@@ -1194,7 +1195,7 @@ public class MainActivity extends AppCompatActivity {
             }
             boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
             if (result.queuedAny && smallVisible && newKey != null && newKey.equals(lastSmallKey)) {
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                if (llAlertPendingSmall != null) setSmallVisible(true);
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 lastSmallKey = newKey;
                 updatePendingBadge();
@@ -1216,12 +1217,12 @@ public class MainActivity extends AppCompatActivity {
                 if (!bigVisible) {
                     showLatestPending();
                 } else {
-                    if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                    if (llAlertPendingSmall != null) setSmallVisible(false);
                     LogUtils.e("llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null) setSmallVisible(false);
                 LogUtils.e("llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
             }
         }
@@ -1389,12 +1390,12 @@ public class MainActivity extends AppCompatActivity {
                             if (!bigVisible) {
                                 showLatestPending();
                             } else {
-                                if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                                if (llAlertPendingSmall != null) setSmallVisible(false);
                                 LogUtils.e("llAlertPendingSmall=Visibility===10===" + llAlertPendingSmall.getVisibility());
                             }
                         } else {
                             updatePendingBadge();
-                            if (llAlertPendingSmall != null && pendingAlertCount > 0) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                            if (llAlertPendingSmall != null && pendingAlertCount > 0) setSmallVisible(true);
                             LogUtils.e("llAlertPendingSmall=Visibility===11===" + llAlertPendingSmall.getVisibility());
                         }
                     } else {
@@ -1411,7 +1412,7 @@ public class MainActivity extends AppCompatActivity {
                             updatePendingBadge();
                             if (pendingAlertCount == 0) {
                                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                                if (llAlertPendingSmall != null) setSmallVisible(false);
                                 LogUtils.e("llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
                             } else {
                                 showLatestPending();
@@ -1439,7 +1440,7 @@ public class MainActivity extends AppCompatActivity {
         String key = (currentAlert.code == null ? "" : currentAlert.code) + ":" + (currentAlert.title == null ? "" : currentAlert.title);
         if (lastShownKey != null && lastShownKey.equals(key)) {
             updatePendingBadge();
-            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) setSmallVisible(false);
             LogUtils.e("llAlertPendingSmall=Visibility===13===" + llAlertPendingSmall.getVisibility());
             if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
             return;
@@ -1449,7 +1450,7 @@ public class MainActivity extends AppCompatActivity {
         if (tvErrorCode != null) tvErrorCode.setText(currentAlert.code);
         if (tvErrorTime != null) tvErrorTime.setText(currentAlert.time);
         updatePendingBadge();
-        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+        if (llAlertPendingSmall != null) setSmallVisible(false);
         LogUtils.e("llAlertPendingSmall=Visibility===14===" + llAlertPendingSmall.getVisibility());
         if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
         int sc = getStatusCodeForTitle(currentAlert.title);
@@ -1463,7 +1464,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void minimizePending() {
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-        if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+        if (llAlertPendingSmall != null) setSmallVisible(true);
         if (llAlertPendingSmall != null) {
             llAlertPendingSmall.post(() -> {
                 android.view.View parent = (android.view.View) llAlertPendingSmall.getParent();
@@ -1502,7 +1503,7 @@ public class MainActivity extends AppCompatActivity {
 //            showLatestPending();
 //        } else {
 //            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-//            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+//            if (llAlertPendingSmall != null) setSmallVisible(false);
 //        }
         openAlertPendingList();
     }
@@ -1519,12 +1520,12 @@ public class MainActivity extends AppCompatActivity {
         pendingAlertCount = alertQueue.size();
         if (!alertQueue.isEmpty()) {
             if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+            if (llAlertPendingSmall != null) setSmallVisible(true);
             LogUtils.e("llAlertPendingSmall=Visibility===2===" + llAlertPendingSmall.getVisibility());
             updatePendingBadge();
         } else {
             if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-            if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) setSmallVisible(false);
             LogUtils.e("llAlertPendingSmall=Visibility===3===" + llAlertPendingSmall.getVisibility());
         }
     }
@@ -1704,42 +1705,50 @@ public class MainActivity extends AppCompatActivity {
             int queueSizeLocal = alertQueue != null ? alertQueue.size() : 0;
             boolean hasTypes = lastAlertTypes != null && !lastAlertTypes.isEmpty();
             boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0 || hasTypes);
-            llAlertPendingSmall.setVisibility(shouldShowSmall ? View.VISIBLE : View.GONE);
-            if (shouldShowSmall) {
-                llAlertPendingSmall.setAlpha(1f);
-                llAlertPendingSmall.post(() -> {
-                    android.view.View parent = (android.view.View) llAlertPendingSmall.getParent();
-                    if (parent != null) {
-                        int parentWidth = parent.getWidth();
-                        int parentHeight = parent.getHeight();
-                        int vWidth = llAlertPendingSmall.getWidth();
-                        int vHeight = llAlertPendingSmall.getHeight();
-                        float x = llAlertPendingSmall.getX();
-                        float y = llAlertPendingSmall.getY();
-                        if (parentWidth > 0 && parentHeight > 0 && vWidth > 0 && vHeight > 0) {
-                            float nx = Math.max(0, Math.min(parentWidth - vWidth, x));
-                            float ny = Math.max(0, Math.min(parentHeight - vHeight, y));
-                            llAlertPendingSmall.setX(nx);
-                            llAlertPendingSmall.setY(ny);
-                        }
-                        llAlertPendingSmall.bringToFront();
-                    }
-                });
-                if (!alertQueue.isEmpty()) {
-                    AlertItem ai = alertQueue.peekLast();
-                    if (ai != null) {
-                        String key = (ai.code == null ? "" : ai.code) + ":" + (ai.title == null ? "" : ai.title);
-                        lastSmallKey = key;
-                    }
-                }
-            }
-            LogUtils.e("llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + llAlertPendingSmall.getVisibility());
+            setSmallVisible(shouldShowSmall);
+            boolean currentSmall = llAlertPendingSmall.getVisibility() == View.VISIBLE;
+            LogUtils.e("llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + (currentSmall ? View.VISIBLE : View.GONE));
         }
         int queueSize = alertQueue.size();
         if (count != lastBadgeCount || queueSize != lastBadgeQueueSize) {
             lastBadgeCount = count;
             lastBadgeQueueSize = queueSize;
             android.util.Log.d(TAG, "updatePendingBadge count=" + count + ", queueSize=" + queueSize);
+        }
+    }
+
+    private void setSmallVisible(boolean show) {
+        if (llAlertPendingSmall == null) return;
+        boolean currently = llAlertPendingSmall.getVisibility() == View.VISIBLE;
+        if (show == currently) return;
+        llAlertPendingSmall.setVisibility(show ? View.VISIBLE : View.GONE);
+        lastSmallVisible = show;
+        if (show) {
+            llAlertPendingSmall.post(() -> {
+                android.view.View parent = (android.view.View) llAlertPendingSmall.getParent();
+                if (parent != null) {
+                    int parentWidth = parent.getWidth();
+                    int parentHeight = parent.getHeight();
+                    int vWidth = llAlertPendingSmall.getWidth();
+                    int vHeight = llAlertPendingSmall.getHeight();
+                    float x = llAlertPendingSmall.getX();
+                    float y = llAlertPendingSmall.getY();
+                    if (parentWidth > 0 && parentHeight > 0 && vWidth > 0 && vHeight > 0) {
+                        float nx = Math.max(0, Math.min(parentWidth - vWidth, x));
+                        float ny = Math.max(0, Math.min(parentHeight - vHeight, y));
+                        llAlertPendingSmall.setX(nx);
+                        llAlertPendingSmall.setY(ny);
+                    }
+                    llAlertPendingSmall.bringToFront();
+                }
+            });
+            if (!alertQueue.isEmpty()) {
+                AlertItem ai = alertQueue.peekLast();
+                if (ai != null) {
+                    String key = (ai.code == null ? "" : ai.code) + ":" + (ai.title == null ? "" : ai.title);
+                    lastSmallKey = key;
+                }
+            }
         }
     }
 
@@ -1993,7 +2002,7 @@ public class MainActivity extends AppCompatActivity {
                 if (ai != null) keyCandidate = (ai.code == null ? "" : ai.code) + ":" + (ai.title == null ? "" : ai.title);
             }
             if (smallVisible && keyCandidate != null && keyCandidate.equals(lastSmallKey)) {
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.VISIBLE);
+                if (llAlertPendingSmall != null) setSmallVisible(true);
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 lastSmallKey = keyCandidate;
             } else {
@@ -2005,11 +2014,11 @@ public class MainActivity extends AppCompatActivity {
                 if (!bigVisible) {
                     showLatestPending();
                 } else {
-                    if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                    if (llAlertPendingSmall != null) setSmallVisible(false);
                     LogUtils.e("llAlertPendingSmall=Visibility===5===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
-                if (llAlertPendingSmall != null) llAlertPendingSmall.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null) setSmallVisible(false);
                 LogUtils.e("llAlertPendingSmall=Visibility===5===" + llAlertPendingSmall.getVisibility());
             }
         }
@@ -2028,7 +2037,7 @@ public class MainActivity extends AppCompatActivity {
                     .replace(R.id.fragment_device_list_container, fragment)
                     .addToBackStack("alert_pending")
                     .commit();
-            llAlertPendingSmall.setVisibility(View.VISIBLE);
+            setSmallVisible(true);
             llAlertPending.setVisibility(View.GONE);
 
             fragmentDeviceListContainer.setVisibility(View.VISIBLE);
