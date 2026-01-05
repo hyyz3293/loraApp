@@ -1213,9 +1213,21 @@ public class MainActivity extends AppCompatActivity {
         } else {
             boolean hasQueue = !alertQueue.isEmpty();
             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-                    if (hasQueue) {
+            if (hasQueue) {
                 if (!bigVisible) {
-                    showLatestPending();
+                    boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
+                    String keyCandidate = null;
+                    if (!alertQueue.isEmpty()) {
+                        AlertItem ai = alertQueue.peekLast();
+                        if (ai != null) keyCandidate = (ai.code == null ? "" : ai.code) + ":" + (ai.title == null ? "" : ai.title);
+                    }
+                    if (smallVisible && keyCandidate != null && keyCandidate.equals(lastSmallKey)) {
+                        if (llAlertPendingSmall != null) setSmallVisible(true);
+                        if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                        lastSmallKey = keyCandidate;
+                    } else {
+                        showLatestPending();
+                    }
                 } else {
                     if (llAlertPendingSmall != null) setSmallVisible(false);
                     LogUtils.e("llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
