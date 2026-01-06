@@ -2081,7 +2081,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     private String buildLogWhereClause(String startTime, String endTime, int typeSel, int policeSel) {
-        LogUtils.e("buildLogWhereClause ==" + typeSel + "======" + policeSel  + "=====" + startTime +  "--" + endTime);
+        //LogUtils.e("buildLogWhereClause ==" + typeSel + "======" + policeSel  + "=====" + startTime +  "--" + endTime);
         java.util.List<String> conds = new java.util.ArrayList<>();
         if (startTime != null && !startTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " >= '" + startTime + "' ");
         if (endTime != null && !endTime.isEmpty()) conds.add(COLUMN_LOG_CREATE_TIME + " <= '" + endTime + "' ");
@@ -2112,7 +2112,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (conds.isEmpty()) return "";
         String  json  =" WHERE " + android.text.TextUtils.join(" AND ", conds);
-        LogUtils.e("buildLogWhereClause ==" + json);
+        //LogUtils.e("buildLogWhereClause ==" + json);
         return json;
     }
 
