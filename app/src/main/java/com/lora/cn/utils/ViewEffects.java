@@ -48,40 +48,8 @@ public final class ViewEffects {
             boolean candidate = (v instanceof Button) || (v instanceof TextView) || (v instanceof ImageView);
             if (!candidate) continue;
             if (!v.isClickable()) continue;
-            Object tag = v.getTag(TAG_ID);
-            if (tag != null) continue;
-            v.setTag(TAG_ID, Boolean.TRUE);
             ensureRipple(v);
-            v.setOnTouchListener(new View.OnTouchListener() {
-                boolean pressed;
-                @Override
-                public boolean onTouch(View view, MotionEvent event) {
-                    switch (event.getActionMasked()) {
-                        case MotionEvent.ACTION_DOWN:
-                            pressed = true;
-                            view.animate().scaleX(0.92f).scaleY(0.92f).alpha(0.6f).setDuration(70).start();
-                            break;
-                        case MotionEvent.ACTION_UP:
-                            float x = event.getX();
-                            float y = event.getY();
-                            boolean inside = x >= 0 && y >= 0 && x <= view.getWidth() && y <= view.getHeight();
-                            view.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(110).withEndAction(() -> {
-                                if (pressed && inside) {
-                                    view.animate().scaleX(1.08f).scaleY(1.08f).setDuration(70).withEndAction(() ->
-                                            view.animate().scaleX(1f).scaleY(1f).setDuration(70).start()
-                                    ).start();
-                                }
-                            }).start();
-                            pressed = false;
-                            break;
-                        case MotionEvent.ACTION_CANCEL:
-                            view.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(90).start();
-                            pressed = false;
-                            break;
-                    }
-                    return false;
-                }
-            });
+            applyPressedAnimator(v);
         }
     }
 
@@ -95,6 +63,37 @@ public final class ViewEffects {
                         v.setForeground(ContextCompat.getDrawable(v.getContext(), tv.resourceId));
                     }
                 }
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private static void applyPressedAnimator(View v) {
+        try {
+            if (Build.VERSION.SDK_INT >= 21) {
+                if (v.getStateListAnimator() != null && v.getTag(TAG_ID) != null) return;
+                android.animation.StateListAnimator sla = new android.animation.StateListAnimator();
+                android.animation.ObjectAnimator pressX = android.animation.ObjectAnimator.ofFloat(v, "scaleX", 0.90f);
+                android.animation.ObjectAnimator pressY = android.animation.ObjectAnimator.ofFloat(v, "scaleY", 0.90f);
+                android.animation.ObjectAnimator pressA = android.animation.ObjectAnimator.ofFloat(v, "alpha", 0.6f);
+                pressX.setDuration(80);
+                pressY.setDuration(80);
+                pressA.setDuration(80);
+                android.animation.AnimatorSet pressSet = new android.animation.AnimatorSet();
+                pressSet.playTogether(pressX, pressY, pressA);
+                sla.addState(new int[]{android.R.attr.state_pressed}, pressSet);
+
+                android.animation.ObjectAnimator normalX = android.animation.ObjectAnimator.ofFloat(v, "scaleX", 1f);
+                android.animation.ObjectAnimator normalY = android.animation.ObjectAnimator.ofFloat(v, "scaleY", 1f);
+                android.animation.ObjectAnimator normalA = android.animation.ObjectAnimator.ofFloat(v, "alpha", 1f);
+                normalX.setDuration(120);
+                normalY.setDuration(120);
+                normalA.setDuration(120);
+                android.animation.AnimatorSet normalSet = new android.animation.AnimatorSet();
+                normalSet.playTogether(normalX, normalY, normalA);
+                sla.addState(new int[]{}, normalSet);
+
+                v.setStateListAnimator(sla);
+                v.setTag(TAG_ID, Boolean.TRUE);
             }
         } catch (Throwable ignored) {}
     }
