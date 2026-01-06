@@ -40,6 +40,10 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         setTextOrPlaceholder(logTime, item.getCreateTime());
 
         String displayStatus = com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode());
+        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+            String src = handledSourceLabels.get(item.getId());
+            if (src != null && src.length() > 0) displayStatus = src;
+        }
         setStatusWithDot(logStatus, displayStatus);
 
         // 设置名称字段 - 使用终端名称

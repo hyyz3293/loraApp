@@ -1781,6 +1781,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
                     } catch (Exception ignored) {}
+                    try {
+                        String lbKeyReset = "low_battery_flag_device_" + deviceId;
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKeyReset, false);
+                    } catch (Exception ignored) {}
+                } else if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                    int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                    android.util.Log.d("DatabaseHelper", "按日志状态更新终端为异常取走 deviceId=" + deviceId + ", rows=" + rows);
+                    try {
+                        String autoUser = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code
+                        });
+                    } catch (Exception ignored) {}
+                    try {
+                        String lbKeyReset3 = "low_battery_flag_device_" + deviceId;
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKeyReset3, false);
+                    } catch (Exception ignored) {}
                 } else if (statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
                         || statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
                         || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
@@ -1792,6 +1809,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                                 com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
+                    } catch (Exception ignored) {}
+                    try {
+                        String lbKeyReset2 = "low_battery_flag_device_" + deviceId;
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKeyReset2, false);
                     } catch (Exception ignored) {}
                 } else {
                     android.util.Log.d("DatabaseHelper", "日志状态不触发终端状态变更 deviceId=" + deviceId + ", statusCode=" + statusCode);
@@ -2095,7 +2116,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put(COLUMN_LOG_OPERATION_TIME, nowStr);
         v.put(COLUMN_LOG_ACTION, "设备低电量");
         v.put(COLUMN_LOG_CREATE_TIME, nowStr);
-        return db.insert(targetTable, null, v);
+        long nid = db.insert(targetTable, null, v);
+        try {
+            String handleTimeNow = nowStr;
+            String handleUserNow = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+            if (handleUserNow == null || handleUserNow.trim().isEmpty()) handleUserNow = "系统自动";
+            markAlertLogsHandled(deviceId, handleTimeNow, handleUserNow, new int[]{
+                    com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code,
+                    com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+            });
+        } catch (Exception ignored) {}
+        return nid;
     }
 
     /**

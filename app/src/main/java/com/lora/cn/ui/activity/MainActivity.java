@@ -1129,10 +1129,15 @@ public class MainActivity extends AppCompatActivity {
                 boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
                 if (newly) {
                     try {
-                        long nid = db.addLowBatteryLog(devId, t.getTerminalName());
-                        if (nid > 0) {
-                            out.logIdUpdates.put(devId + ":设备低电量", nid);
-                            out.touchedDb = true;
+                        String lbKey2 = "low_battery_flag_device_" + devId;
+                        boolean flagged2 = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(lbKey2, false);
+                        if (!flagged2) {
+                            long nid = db.addLowBatteryLog(devId, t.getTerminalName());
+                            if (nid > 0) {
+                                out.logIdUpdates.put(devId + ":设备低电量", nid);
+                                out.touchedDb = true;
+                                com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey2, true);
+                            }
                         }
                     } catch (Exception ignored) {}
                 }
