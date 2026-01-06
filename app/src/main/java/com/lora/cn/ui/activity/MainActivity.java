@@ -262,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
             alertEvaluateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         }
         alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
-        alertEvaluateHandler.postDelayed(alertEvaluateRunnable, 1000);
+        evaluateAlertsOnce();
 
     } 
 
@@ -329,12 +329,12 @@ public class MainActivity extends AppCompatActivity {
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
     public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
-        try { pendingCountOverride = null; updatePendingBadge(); updateMaintenanceBadge(); } catch (Exception ignored) {}
+        try { pendingCountOverride = null; updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
     public void onAlertPendingCountEvent(com.lora.cn.event.AlertPendingCountEvent event) {
-        try { pendingCountOverride = event != null ? event.count : null; pendingCountOverrideTs = System.currentTimeMillis(); updatePendingBadge(); } catch (Exception ignored) {}
+        try { pendingCountOverride = event != null ? event.count : null; pendingCountOverrideTs = System.currentTimeMillis(); } catch (Exception ignored) {}
     }
 
     private void startTestTimer() {
@@ -488,7 +488,7 @@ public class MainActivity extends AppCompatActivity {
             ivErrorClose.setOnClickListener(v -> {
                 v.setPressed(true);
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 180);
-                allowAutoHideBig = true;
+                allowAutoHideBig = false;
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 if (llAlertPendingSmall != null) setSmallVisible(true);
 
@@ -821,6 +821,8 @@ public class MainActivity extends AppCompatActivity {
                         if (mask != 0) {
                             try { sendHandleDownlink(devHex, mask); } catch (Exception ignored) {}
                         }
+                        allowAutoHideBig = false;
+                        try { lastHandledTimes.put(devHex, System.currentTimeMillis()); } catch (Exception ignored) {}
                         handleAlertHandled(devHex, 0);
                     } catch (Exception ignored) {}
                 }
@@ -831,7 +833,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        try { updatePendingBadge(); } catch (Exception ignored) {}
         try { updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
@@ -856,6 +857,7 @@ public class MainActivity extends AppCompatActivity {
     private android.media.MediaPlayer alertPlayer;
     private final java.util.Map<String, Integer> lastAlertTypes = new java.util.HashMap<>();
     private final java.util.Map<String, Integer> lastHandledTypes = new java.util.HashMap<>();
+    private final java.util.Map<String, Long> lastHandledTimes = new java.util.HashMap<>();
     private final java.util.Set<String> offlineAlertedKeys = new java.util.HashSet<>();
     private android.os.Handler alertEvaluateHandler;
     private final Runnable alertEvaluateRunnable = new Runnable() {
@@ -889,6 +891,31 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+    private void evaluateAlertsOnce() {
+        try {
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            java.util.Map<String, Integer> typesSnapshot = new java.util.HashMap<>(lastAlertTypes);
+            java.util.Map<String, Long> logIdsSnapshot = new java.util.HashMap<>(lastAlertLogIds);
+            android.content.Context appCtx = getApplicationContext();
+            ioExecutor.execute(() -> {
+                EvaluateResult res = null;
+                try {
+                    com.lora.cn.database.DatabaseHelper db = databaseHelper != null
+                            ? databaseHelper
+                            : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                    try { db.checkAndLogOfflineDevices(); } catch (Exception ignored) {}
+                    res = computeAlertOverlay(db, typesSnapshot, logIdsSnapshot);
+                } catch (Exception ignored) {}
+                EvaluateResult finalRes = res;
+                if (mainHandler != null) {
+                    mainHandler.post(() -> {
+                        try { applyAlertOverlayResult(finalRes); } catch (Exception ignored) {}
+                    });
+                }
+            });
+        } catch (Exception ignored) {}
+    }
 
     private android.os.Handler maintenanceEvaluateHandler;
     private final Runnable maintenanceEvaluateRunnable = new Runnable() {
@@ -1169,23 +1196,28 @@ public class MainActivity extends AppCompatActivity {
 
         if (!result.actions.isEmpty()) {
             String newKey = null;
+            boolean allowPopup = computePendingCountSync() > 0;
             for (AlertAction a : result.actions) {
                 if (a == null || a.item == null) continue;
                 String devId = a.item.code;
                 String title = a.item.title;
                 if (devId != null && title != null) {
-                    if (!existsInQueue(devId, title)) {
+                    int sc = getStatusCodeForTitle(title);
+                    Long ht = lastHandledTimes.get(devId);
+                    Integer handledType = lastHandledTypes.get(devId);
+                    long at = parseMillis(a.item.time);
+                    boolean suppress = handledType != null && handledType == sc && ht != null && at >= 0 && ht >= at;
+                    if (!existsInQueue(devId, title) && !suppress && allowPopup) {
                         alertQueue.addLast(a.item);
                         queueChanged = true;
                         newKey = devId + ":" + title;
                     }
-                    int sc = getStatusCodeForTitle(title);
                     if (sc != 0) lastAlertTypes.put(devId, sc);
                 }
                 if (a.ring && !alertMuted) startAlertRinging30s();
             }
             boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
-            if (result.queuedAny && smallVisible && (newKey == null || newKey.equals(lastSmallKey))) {
+            if (result.queuedAny && allowPopup && smallVisible && (newKey == null || newKey.equals(lastSmallKey))) {
                 if (llAlertPendingSmall != null) setSmallVisible(true);
                 if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 lastSmallKey = newKey;
@@ -1199,7 +1231,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         pendingAlertCount = alertQueue.size();
-        if (result.queuedAny) {
+        if (result.queuedAny && computePendingCountSync() > 0) {
             showLatestPending();
         } else {
             boolean hasQueue = !alertQueue.isEmpty();
@@ -1379,7 +1411,12 @@ public class MainActivity extends AppCompatActivity {
                     if (finalStatusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                             || finalStatusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                         Integer last = lastAlertTypes.get(devId);
-                        if (last == null || last != finalStatusCode) {
+                        Long ht = lastHandledTimes.get(devId);
+                        Integer handledType = lastHandledTypes.get(devId);
+                        long at = parseMillis(finalItem != null ? finalItem.time : null);
+                        boolean suppress = handledType != null && handledType == finalStatusCode && ht != null && at >= 0 && ht >= at;
+                        boolean allowPopup = computePendingCountSync() > 0;
+                        if ((last == null || last != finalStatusCode) && !suppress && allowPopup) {
                             lastShownKey = null;
                             boolean alreadyInQueue = existsInQueue(devId, finalMsg);
                             if (!alreadyInQueue && finalItem != null) {
@@ -1484,7 +1521,7 @@ public class MainActivity extends AppCompatActivity {
     
 
     private void minimizePending() {
-        allowAutoHideBig = true;
+        allowAutoHideBig = false;
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
         if (llAlertPendingSmall != null) setSmallVisible(true);
         if (llAlertPendingSmall != null) {
@@ -1544,6 +1581,7 @@ public class MainActivity extends AppCompatActivity {
             android.content.Context appCtx = getApplicationContext();
             ioExecutor.execute(() -> {
                 Integer handledCode = null;
+                Long handledTs = null;
                 try {
                     com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
                     java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(devId);
@@ -1552,15 +1590,23 @@ public class MainActivity extends AppCompatActivity {
                             String hu = li.getHandleUser();
                             if (hu != null && !hu.trim().isEmpty()) {
                                 handledCode = li.getStatusCode();
+                                String htStr = li.getHandleTime();
+                                if (htStr != null && !htStr.trim().isEmpty()) {
+                                    handledTs = parseMillis(htStr.trim());
+                                } else {
+                                    handledTs = parseMillis(li.getCreateTime());
+                                }
                                 break;
                             }
                         }
                     }
                 } catch (Exception ignored) {}
                 Integer finalHandledCode = handledCode;
+                Long finalHandledTs = handledTs;
                 mainHandler.post(() -> {
                     try {
                         if (finalHandledCode != null) lastHandledTypes.put(devId, finalHandledCode);
+                        if (finalHandledTs != null) lastHandledTimes.put(devId, finalHandledTs);
                         boolean stillCurrent = currentAlert != null && devId.equalsIgnoreCase(currentAlert.code);
                         if (!stillCurrent) return;
                         Integer handled = lastHandledTypes.get(devId);
@@ -1570,6 +1616,93 @@ public class MainActivity extends AppCompatActivity {
                 });
             });
         } catch (Exception ignored) {}
+    }
+
+    private int computePendingCountSync() {
+        int count = 0;
+        try {
+            android.content.Context appCtx = getApplicationContext();
+            com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+            java.util.List<com.lora.cn.ui.model.LogInfo> all = db.getAllLogsBoundToTerminals();
+            java.util.Map<String, com.lora.cn.ui.model.LogInfo> latest = new java.util.HashMap<>();
+            for (com.lora.cn.ui.model.LogInfo li : all) {
+                if (li == null) continue;
+                String hu0 = li.getHandleUser();
+                String ht0 = li.getHandleTime();
+                boolean unhandled0 = (hu0 == null || hu0.trim().isEmpty()) && (ht0 == null || ht0.trim().isEmpty());
+                if (!unhandled0) continue;
+                int s = li.getStatusCode();
+                boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                if (!candidate) continue;
+                String key = (li.getTerminalId() == null ? "" : li.getTerminalId()) + ":" + s;
+                com.lora.cn.ui.model.LogInfo prev = latest.get(key);
+                long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
+                long curT = parseMillis(li.getCreateTime());
+                if (prev == null || curT >= prevT) latest.put(key, li);
+            }
+            java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
+            for (com.lora.cn.ui.model.LogInfo li : all) {
+                if (li == null) continue;
+                String hu = li.getHandleUser();
+                String htStr = li.getHandleTime();
+                if ((hu != null && !hu.trim().isEmpty()) || (htStr != null && !htStr.trim().isEmpty())) {
+                    long t = parseMillis(li.getCreateTime());
+                    String key = li.getTerminalId();
+                    Long prev = lastHandledTime.get(key);
+                    if (prev == null || t >= prev) lastHandledTime.put(key, t);
+                }
+            }
+            java.util.Map<String, com.lora.cn.ui.model.Terminal> terminalById = new java.util.HashMap<>();
+            java.util.List<com.lora.cn.ui.model.Terminal> allTerms = db.getAllTerminals();
+            if (allTerms != null) {
+                for (com.lora.cn.ui.model.Terminal t : allTerms) {
+                    if (t == null) continue;
+                    terminalById.put(t.getTerminalId(), t);
+                }
+            }
+            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int c = 0;
+            for (com.lora.cn.ui.model.LogInfo li : latest.values()) {
+                if (li == null) continue;
+                String hu1 = li.getHandleUser();
+                String ht1 = li.getHandleTime();
+                boolean unhandled1 = (hu1 == null || hu1.trim().isEmpty()) && (ht1 == null || ht1.trim().isEmpty());
+                if (!unhandled1) continue;
+                Long ht = lastHandledTime.get(li.getTerminalId());
+                long at = parseMillis(li.getCreateTime());
+                int s = li.getStatusCode();
+                if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                    com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                    if (t != null) {
+                        boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                        boolean isLowNow = t.getBatteryLevel() <= lowTh;
+                        boolean afterHandled = ht == null || at > ht;
+                        if (!devStillOffline && isLowNow && afterHandled) c++;
+                    }
+                } else {
+                    com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                    boolean isOfflineCase = s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                    boolean isAbnormalCase = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
+                    boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                    boolean devStillAbnormal = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
+                    boolean afterHandled = ht == null || at > ht;
+                    if (isOfflineCase) {
+                        if (devStillOffline && afterHandled) c++;
+                    } else if (isAbnormalCase) {
+                        if (!devStillOffline) {
+                            if (devStillAbnormal) c++;
+                            else if (afterHandled) c++;
+                        }
+                    } else {
+                        if (afterHandled) c++;
+                    }
+                }
+            }
+            count = c;
+        } catch (Exception ignored) {}
+        return count;
     }
 
     public void updatePendingBadge() {
@@ -1587,18 +1720,6 @@ public class MainActivity extends AppCompatActivity {
             }
             if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-            long now = android.os.SystemClock.uptimeMillis();
-            long delta = now - lastBadgeRequestMs;
-            if (delta < 800) {
-                long delay = 800 - delta;
-                if (!badgeRequestDelayed) {
-                    badgeRequestDelayed = true;
-                    mainHandler.removeCallbacks(badgeRequestRunnable);
-                    mainHandler.postDelayed(badgeRequestRunnable, delay);
-                }
-                return;
-            }
-            lastBadgeRequestMs = now;
             android.content.Context appCtx = getApplicationContext();
             int token = badgeSeq.incrementAndGet();
             ioExecutor.execute(() -> {
@@ -1877,7 +1998,7 @@ public class MainActivity extends AppCompatActivity {
                     .addToBackStack("alert_pending")
                     .commit();
             setSmallVisible(true);
-            allowAutoHideBig = true;
+            allowAutoHideBig = false;
             llAlertPending.setVisibility(View.GONE);
 
             fragmentDeviceListContainer.setVisibility(View.VISIBLE);
