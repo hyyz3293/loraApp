@@ -70,27 +70,6 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
             addByCategoryId.accept(item.getRoomId());
             addByCategoryId.accept(item.getNursingGroupId());
             addByCategoryId.accept(item.getOtherId());
-//            String ids = item.getGroupIdsText();
-//            if (ids != null && !ids.isEmpty()) {
-//                String[] toks = ids.split(",");
-//                for (String tk : toks) {
-//                    if (tk == null || tk.trim().isEmpty()) continue;
-//                    String[] pr = tk.trim().split(":");
-//                    if (pr.length == 2) {
-//                        long gid = 0L, cid = 0L;
-//                        try { gid = Long.parseLong(pr[0]); cid = Long.parseLong(pr[1]); } catch (Exception ignored) {}
-//                        String key = gid + ":" + cid;
-//                        if (cid > 0 && !seen.contains(key)) {
-//                            com.lora.cn.database.entity.Group g = dm.getGroupById(gid);
-//                            Category c = dm.getCategoryById(cid);
-//                            String gname = g != null ? g.getGroupName() : pr[0];
-//                            String cname = c != null ? c.getCategoryName() : pr[1];
-//                            allTokens.add(gname + "-" + cname);
-//                            seen.add(key);
-//                        }
-//                    }
-//                }
-//            }
             if (allTokens.isEmpty()) {
                 String names = item.getGroupNamesText();
                 if (names != null && !names.isEmpty()) {
@@ -225,12 +204,12 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 anim.setDuration(800);
                 anim.setRepeatCount(android.view.animation.Animation.INFINITE);
                 anim.setRepeatMode(android.view.animation.Animation.REVERSE);
-                ivMaintenance.startAnimation(anim);
+                //ivMaintenance.startAnimation(anim);
             }
         } else {
             if (ivMaintenance != null) {
                 ivMaintenance.setVisibility(View.GONE);
-                ivMaintenance.clearAnimation();
+                //ivMaintenance.clearAnimation();
             }
         }
     }

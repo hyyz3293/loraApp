@@ -873,11 +873,28 @@ public class TerminalListFragment extends Fragment {
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
                 java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = com.lora.cn.database.DatabaseHelper.getInstance(appCtx).getMaintenanceRecords(uid);
                 java.util.Set<String> pendingDevSet = new java.util.HashSet<>();
+                long now = System.currentTimeMillis();
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                 if (list != null) {
                     for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
                         if (mi == null) continue;
+                        if (mi.getStatus() != 0) continue;
                         String c = mi.getContent();
-                        if ("设备维护：需要维护".equals(c) && mi.getStatus() == 0) {
+                        boolean isAuto = "设备维护：需要维护".equals(c);
+                        boolean pending = false;
+                        if (isAuto) {
+                            pending = true;
+                        } else {
+                            String ct = mi.getCreateTime();
+                            if (ct != null && !ct.trim().isEmpty()) {
+                                try {
+                                    java.util.Date dt = sdf.parse(ct.trim());
+                                    pending = dt != null && dt.getTime() <= now && mi.getStatus() == 0;
+
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                        if (pending) {
                             String dev = mi.getTerminalId();
                             if (dev != null && dev.length() > 0) pendingDevSet.add(dev);
                         }
@@ -1027,7 +1044,7 @@ public class TerminalListFragment extends Fragment {
                             if (ct == null || ct.trim().isEmpty()) continue;
                             try {
                                 java.util.Date dt = sdf.parse(ct.trim());
-                                if (dt != null && dt.getTime() <= now) maintenanceCount++;
+                                if (dt != null && dt.getTime() <= now && mi.getStatus() == 0) maintenanceCount++;
                             } catch (Exception ignored) {}
                         }
                     }
