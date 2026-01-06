@@ -1683,7 +1683,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));
 
         long lockResult = -1L;
-        if (lockChangeStatusCode > 0) {
+        if (lockChangeStatusCode > 0 && statusCode != lockChangeStatusCode) {
             boolean skipLockDuplicate = false;
             android.database.Cursor cLock = db.rawQuery(
                     "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
@@ -1887,8 +1887,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             if (c1 != null && c1.moveToFirst()) {
                 int st = c1.getInt(0);
-                last = (st == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code) ? 1 :
-                        (st == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) ? 0 : -1;
+                last = (st == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code) ? 0 :
+                        (st == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) ? 1 : -1;
             }
         } finally {
             if (c1 != null) c1.close();
@@ -1902,8 +1902,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             if (c2 != null && c2.moveToFirst()) {
                 int st = c2.getInt(0);
-                last = (st == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code) ? 1 :
-                        (st == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) ? 0 : -1;
+                last = (st == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code) ? 0 :
+                        (st == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) ? 1 : -1;
             }
         } finally {
             if (c2 != null) c2.close();

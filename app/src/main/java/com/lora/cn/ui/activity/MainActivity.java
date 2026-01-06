@@ -98,16 +98,16 @@ public class MainActivity extends AppCompatActivity {
                 if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
                 android.content.Context appCtx = getApplicationContext();
                 ioExecutor.execute(() -> {
-                    try {
-                        com.lora.cn.database.DatabaseHelper db = databaseHelper != null
-                                ? databaseHelper
-                                : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
-                        long result = db.addUplinkLog(hex);
-                        Log.d(TAG, "自动测试上行写入日志库结果: " + result);
-                        EventBus.getDefault().post(new UplinkDataEvent(time, hex));
-                    } catch (Exception e) {
-                        Log.e(TAG, "自动测试上行失败", e);
-                    }
+//                    try {
+//                        com.lora.cn.database.DatabaseHelper db = databaseHelper != null
+//                                ? databaseHelper
+//                                : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+//                        long result = db.addUplinkLog(hex);
+//                        Log.d(TAG, "自动测试上行写入日志库结果: " + result);
+//                        EventBus.getDefault().post(new UplinkDataEvent(time, hex));
+//                    } catch (Exception e) {
+//                        Log.e(TAG, "自动测试上行失败", e);
+//                    }
                 });
             } catch (Exception e) {
                 Log.e(TAG, "自动测试上行失败", e);
@@ -2369,41 +2369,13 @@ public class MainActivity extends AppCompatActivity {
                                     Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
                                     com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
                                     wroteAny = true;
-                                    
-//                                    // 同时存储到日志信息表
-//                                    try {
-//                                        long logResult = databaseHelper.addLog(
-//                                            devEui,
-//                                            "上行数据设备",
-//                                            devEui,
-//                                            "数据接收",
-//                                            "",
-//                                            "",
-//                                            "接收上行数据: " + hex
-//                                        );
-//                                        Log.d(TAG, "上行数据存储到日志信息表，结果: " + logResult);
-//                                    } catch (Exception e) {
-//                                        Log.e(TAG, "存储上行数据到日志信息表失败: " + e.getMessage());
-//                                    }
-                                    
                                     // 通过EventBus广播（UplinkDataEvent暂时不可用）
                                     UplinkDataEvent event = new UplinkDataEvent(time, hex);
                                     EventBus.getDefault().post(event);
                                     Log.d(TAG, "上行数据准备广播: time=" + time + ", hex=" + hex);
-
-//                                    D  上行数据存储到上行日志表，结果: 25
-//                                    2025-11-15 21:25:18.642  4652-4652  MainActivity            com.lora.cn                          D  上行数据存储到日志信息表，结果: 26
-//                                    2025-11-15 21:25:18.666  4652-4652  MainActivity            com.lora.cn                          D  上行数据准备广播: time=2025-11-08T13:31:32.660661Z, hex=A528E2000100012509000105001820250926081049000000040000007E016964720000000000855A
-//                                    2025-11-15 21:25:18.680  4652-4652  MainActivity            com.lora.cn                          D  ==>>stPowerLockOn>: 0
-//                                    2025-11-15 21:25:18.680  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer1NotInPlace>: 1
-//                                    2025-11-15 21:25:18.680  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer2NotInPlace>: 1
-//                                    2025-11-15 21:25:18.681  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer3NotInPlace>: 1
-//                                    2025-11-15 21:25:18.681  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer4NotInPlace>: 1
-//                                    2025-11-15 21:25:18.681  4652-4652  MainActivity            com.lora.cn                          D  ==>>stLayer5NotInPlace>: 1
-
                                 }
-                                
-                                Log.i(TAG,
+
+                                LogUtils.i(TAG,
                                         "UPLINK devEUI=" + devEui +
                                         " devAddr=" + devAddr +
                                         " fport=" + fport +
@@ -2414,7 +2386,7 @@ public class MainActivity extends AppCompatActivity {
                                         " dr=" + dr +
                                         " time=" + time +
                                         " hex=" + hex);
-                                com.lora.cn.utils.LogUtils.i(TAG,
+                                LogUtils.i(TAG,
                                         "UPLINK devEUI=" + devEui +
                                         " devAddr=" + devAddr +
                                         " fport=" + fport +
