@@ -1663,7 +1663,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));
 
-        if (lockChangeStatusCode > 0 && statusCode == 0) {
+        long lockResult = -1L;
+        if (lockChangeStatusCode > 0 && (statusCode == 0 || lastLockStateSnapshot == -1)) {
             boolean skipLockDuplicate = false;
             android.database.Cursor cLock = db.rawQuery(
                     "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
@@ -1689,7 +1690,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 vLock.put(COLUMN_LOG_OPERATION_TIME, nowStr2);
                 vLock.put(COLUMN_LOG_ACTION, action);
                 vLock.put(COLUMN_LOG_CREATE_TIME, nowStr2);
-                db.insert(targetTable, null, vLock);
+                lockResult = db.insert(targetTable, null, vLock);
                 LogUtils.e("开关锁 写入");
             }
         }
@@ -1762,7 +1763,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             android.util.Log.e("DatabaseHelper", "更新终端电量/信号/状态失败", e);
         }
 
-        return result;
+        return (result > 0L) ? result : lockResult;
     }
 
     private void markOfflineLogsHandled(String deviceId, String handleTime, String handleUser) {
