@@ -67,6 +67,12 @@ public class TerminalDetailFragment extends Fragment {
     private RecyclerView rvLogs;
     private TextView tvNoLogs;
     private LogDetailInfoAdapter logAdapter;
+    private com.scwang.smart.refresh.layout.SmartRefreshLayout refreshLayout;
+    private int pageSize = 20;
+    private int currentPage = 0;
+    private int totalLogCount = 0;
+    private java.util.List<com.lora.cn.ui.model.LogInfo> displayedLogs = new java.util.ArrayList<>();
+    private boolean noMoreData = false;
 
     private TextView terminal_detail_type;
     private TextView terminal_detail_code;
@@ -121,6 +127,7 @@ public class TerminalDetailFragment extends Fragment {
         tvBattery = v.findViewById(R.id.tv_battery);
         rvLogs = v.findViewById(R.id.rv_logs);
         tvNoLogs = v.findViewById(R.id.tv_no_logs);
+        refreshLayout = v.findViewById(R.id.refreshLayout);
         rvLogs.setLayoutManager(new LinearLayoutManager(requireContext()));
         logAdapter = new LogDetailInfoAdapter();
         rvLogs.setAdapter(logAdapter);
@@ -510,6 +517,56 @@ public class TerminalDetailFragment extends Fragment {
                 btnSetMaintenance.setText("设置维护(" + finalCount + ")");
             });
         });
+        if (refreshLayout != null) {
+            refreshLayout.setEnableRefresh(true);
+            refreshLayout.setEnableLoadMore(true);
+            refreshLayout.setOnRefreshListener(layout -> {
+                currentPage = 0;
+                noMoreData = false;
+                loadLogs();
+                layout.finishRefresh(true);
+            });
+            refreshLayout.setOnLoadMoreListener(layout -> {
+                //String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+                boolean canNext = (currentPage + 1) * pageSize < totalLogCount && !noMoreData;
+                if (!canNext) {
+                    layout.finishLoadMoreWithNoMoreData();
+                    noMoreData = true;
+                    refreshLayout.setEnableLoadMore(false);
+                    return;
+                }
+                int nextPage = currentPage + 1;
+                if (ioExecutor == null || mainHandler == null) {
+                    layout.finishLoadMore(false);
+                    return;
+                }
+                ioExecutor.execute(() -> {
+                    java.util.List<com.lora.cn.ui.model.LogInfo> next = null;
+                    try {
+                        next = dbHelper.queryLogsByTerminalPaged(deviceId, pageSize, nextPage);
+                    } catch (Exception ignored) {}
+                    java.util.List<com.lora.cn.ui.model.LogInfo> finalNext = next;
+                    Handler h = mainHandler;
+                    if (h == null) return;
+                    h.post(() -> {
+                        if (!isAdded()) return;
+                        if (finalNext != null && !finalNext.isEmpty()) {
+                            displayedLogs.addAll(finalNext);
+                            logAdapter.submitList(new java.util.ArrayList<>(displayedLogs));
+                            layout.finishLoadMore(true);
+                            currentPage = nextPage;
+                            boolean noMore = (currentPage + 1) * pageSize >= totalLogCount || finalNext.size() < pageSize;
+                            noMoreData = noMore;
+                            refreshLayout.setEnableLoadMore(!noMoreData);
+                        } else {
+                            layout.finishLoadMoreWithNoMoreData();
+                            noMoreData = true;
+                            refreshLayout.setEnableLoadMore(false);
+                        }
+                    });
+                });
+            });
+        }
     }
 
     private void loadLogs() {
@@ -519,7 +576,8 @@ public class TerminalDetailFragment extends Fragment {
         ioExecutor.execute(() -> {
             List<LogInfo> logs;
             try {
-                logs = dbHelper.getLogsByTerminalId(deviceId);
+                totalLogCount = dbHelper.queryLogsByTerminalCount(deviceId);
+                logs = dbHelper.queryLogsByTerminalPaged(deviceId, pageSize, 0);
             } catch (Exception e) {
                 logs = null;
             }
@@ -530,9 +588,10 @@ public class TerminalDetailFragment extends Fragment {
 
             if (logs != null && !logs.isEmpty()) {
                 try {
+                    java.util.List<LogInfo> allLogs = dbHelper.getLogsByTerminalId(deviceId);
                     java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
                     java.util.Map<String, LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
-                    for (LogInfo li : logs) {
+                    for (LogInfo li : allLogs) {
                         long t = parseMillis(li.getCreateTime());
                         int s = li.getStatusCode();
                         if (s == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
@@ -555,12 +614,12 @@ public class TerminalDetailFragment extends Fragment {
                         long at = parseMillis(v.getCreateTime());
                         if (ht == null || at > ht) allowedIds.add(v.getId());
                     }
-                    for (LogInfo li : logs) {
+                    for (LogInfo li : allLogs) {
                         if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
                             long ref = parseMillis(li.getHandleTime());
                             if (ref <= 0) ref = parseMillis(li.getCreateTime());
                             LogInfo src = null;
-                            for (LogInfo x : logs) {
+                            for (LogInfo x : allLogs) {
                                 int s2 = x.getStatusCode();
                                 boolean candidate2 = s2 == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                                         || s2 == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
@@ -624,6 +683,8 @@ public class TerminalDetailFragment extends Fragment {
                             Handler h9 = mainHandler;
                             if (h9 == null) return;
                             h9.post(() -> {
+                                currentPage = 0;
+                                noMoreData = false;
                                 loadLogs();
                                 try {
                                     android.app.Activity a = getActivity();
@@ -634,9 +695,14 @@ public class TerminalDetailFragment extends Fragment {
                             });
                         });
                     }));
-                    logAdapter.submitList(finalLogs);
+                    displayedLogs.clear();
+                    displayedLogs.addAll(finalLogs);
+                    logAdapter.submitList(new java.util.ArrayList<>(displayedLogs));
                     rvLogs.setVisibility(View.VISIBLE);
                     tvNoLogs.setVisibility(View.GONE);
+                    boolean noMore = (currentPage + 1) * pageSize >= totalLogCount || finalLogs.size() < pageSize;
+                    noMoreData = noMore;
+                    if (refreshLayout != null) refreshLayout.setEnableLoadMore(!noMoreData);
                 } else {
                     rvLogs.setVisibility(View.GONE);
                     tvNoLogs.setVisibility(View.VISIBLE);

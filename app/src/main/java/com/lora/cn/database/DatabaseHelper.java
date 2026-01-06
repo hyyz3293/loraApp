@@ -2363,6 +2363,47 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         return logs;
     }
+
+    public int queryLogsByTerminalCount(String terminalId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        int count = 0;
+        android.database.Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_LOGS + " WHERE " + COLUMN_LOG_TERMINAL_ID + " = ?", new String[]{terminalId});
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0);
+        }
+        cursor.close();
+        return count;
+    }
+
+    public java.util.List<com.lora.cn.ui.model.LogInfo> queryLogsByTerminalPaged(String terminalId, int pageSize, int pageIndex) {
+        java.util.List<com.lora.cn.ui.model.LogInfo> logs = new java.util.ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        int offset = Math.max(0, pageIndex) * Math.max(1, pageSize);
+        String sql = "SELECT * FROM " + TABLE_LOGS + " WHERE " + COLUMN_LOG_TERMINAL_ID + " = ? ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT " + pageSize + " OFFSET " + offset;
+        android.database.Cursor cursor = db.rawQuery(sql, new String[]{terminalId});
+        while (cursor.moveToNext()) {
+            com.lora.cn.ui.model.LogInfo log = new com.lora.cn.ui.model.LogInfo();
+            log.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_LOG_ID)));
+            log.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_ID)));
+            log.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_TERMINAL_NAME)));
+            log.setDeviceId(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_DEVICE_ID)));
+            int st = cursor.getInt(cursor.getColumnIndex(COLUMN_LOG_STATUS));
+            log.setStatusCode(st);
+            log.setOperator(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATOR)));
+            log.setOperationTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_OPERATION_TIME)));
+            log.setAction(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_ACTION)));
+            log.setCreateTime(cursor.getString(cursor.getColumnIndex(COLUMN_LOG_CREATE_TIME)));
+            int hUserIdx = cursor.getColumnIndex("handle_user");
+            int hTimeIdx = cursor.getColumnIndex("handle_time");
+            int hRemarkIdx = cursor.getColumnIndex("handle_remark");
+            if (hUserIdx != -1) log.setHandleUser(cursor.getString(hUserIdx));
+            if (hTimeIdx != -1) log.setHandleTime(cursor.getString(hTimeIdx));
+            if (hRemarkIdx != -1) log.setHandleRemark(cursor.getString(hRemarkIdx));
+            logs.add(log);
+        }
+        cursor.close();
+        return logs;
+    }
     
     // 初始化示例日志数据
 //    public void initSampleLogData() {
