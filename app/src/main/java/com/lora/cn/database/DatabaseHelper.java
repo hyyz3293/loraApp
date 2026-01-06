@@ -1661,18 +1661,39 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         long result = -1L;
         boolean skipBySameStatus = false;
         boolean suppressAbnormalRepeat = false;
-        android.database.Cursor c = db.rawQuery(
-                "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+        Integer lastStatusGlobal = null;
+        String lastTimeGlobal = null;
+        android.database.Cursor c1 = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + ", " + COLUMN_LOG_CREATE_TIME + " FROM " + TABLE_LOGS +
                         " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
-                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                        " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT 1",
                 new String[]{deviceId != null ? deviceId : ""});
         try {
-            if (c != null && c.moveToFirst()) {
-                int lastSt = c.getInt(0);
-                if (lastSt == statusCode) skipBySameStatus = true;
+            if (c1 != null && c1.moveToFirst()) {
+                lastStatusGlobal = c1.getInt(0);
+                lastTimeGlobal = c1.getString(1);
             }
         } finally {
-            if (c != null) c.close();
+            if (c1 != null) c1.close();
+        }
+        android.database.Cursor c2 = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + ", " + COLUMN_LOG_CREATE_TIME + " FROM " + TABLE_LOGS_UNBOUND +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                        " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT 1",
+                new String[]{deviceId != null ? deviceId : ""});
+        try {
+            if (c2 != null && c2.moveToFirst()) {
+                String t2 = c2.getString(1);
+                if (lastTimeGlobal == null || (t2 != null && t2.compareTo(lastTimeGlobal) > 0)) {
+                    lastStatusGlobal = c2.getInt(0);
+                    lastTimeGlobal = t2;
+                }
+            }
+        } finally {
+            if (c2 != null) c2.close();
+        }
+        if (lastStatusGlobal != null && lastStatusGlobal == statusCode) {
+            skipBySameStatus = true;
         }
         if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
             try {
@@ -1694,6 +1715,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         if (!skipBySameStatus && !suppressAbnormalRepeat && !skipByTerminalStateSame) {
             result = db.insert(targetTable, null, values);
+            LogUtils.e("上行数据库插入=\n" + targetTable + "-----result：" + result);
+            LogUtils.e("上行数据库插入=\n" + values);
         }
 
         LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));
