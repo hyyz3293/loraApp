@@ -241,7 +241,24 @@ public class TerminalDetailFragment extends Fragment {
 
             try {
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                maintenanceCount = dbHelper.getMaintenanceCountByTerminal(deviceId, uid);
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = dbHelper.getMaintenanceRecordsByTerminal(deviceId, uid);
+                int cnt = 0;
+                if (list != null) {
+                    long now = System.currentTimeMillis();
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
+                        String c = mi != null ? mi.getContent() : null;
+                        String ct = mi != null ? mi.getCreateTime() : null;
+                        if (ct == null || ct.trim().isEmpty()) continue;
+                        boolean isAuto = "设备维护：需要维护".equals(c);
+                        try {
+                            java.util.Date dt = sdf.parse(ct.trim());
+                            if (dt != null && dt.getTime() > now)
+                                if (!isAuto && mi.getStatus() == 0) cnt++;
+                        } catch (Exception ignored) {}
+                    }
+                }
+                maintenanceCount = cnt;
             } catch (Exception ignored) {}
 
             String finalTitle = title;
@@ -468,10 +485,19 @@ public class TerminalDetailFragment extends Fragment {
             try {
                 java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = dbHelper.getMaintenanceRecordsByTerminal(deviceId, uid);
                 if (list != null) {
+                    long now = System.currentTimeMillis();
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                     for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
                         String c = mi != null ? mi.getContent() : null;
+                        String ct = mi != null ? mi.getCreateTime() : null;
+                        if (ct == null || ct.trim().isEmpty()) continue;
                         boolean isAuto = "设备维护：需要维护".equals(c);
-                        if (!isAuto && mi.getStatus() == 0) count++;
+                        try {
+                            java.util.Date dt = sdf.parse(ct.trim());
+                            if (dt != null && dt.getTime() > now)
+                                if (!isAuto && mi.getStatus() == 0) count++;;
+                        } catch (Exception ignored) {}
+
                     }
                 }
             } catch (Exception ignored) {}

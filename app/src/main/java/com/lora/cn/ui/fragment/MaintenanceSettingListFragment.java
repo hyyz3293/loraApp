@@ -138,7 +138,7 @@ public class MaintenanceSettingListFragment extends Fragment {
                     if (ct == null || ct.trim().isEmpty()) continue;
                     try {
                         java.util.Date dt = sdf.parse(ct.trim());
-                        if (dt != null && dt.getTime() > now) futureOnly.add(mi);
+                        if (dt != null && dt.getTime() > now && mi.getStatus() == 0) futureOnly.add(mi);
                     } catch (Exception ignored) {}
                 }
                 list = futureOnly;
