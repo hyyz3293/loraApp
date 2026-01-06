@@ -1841,25 +1841,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 }
                 int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                 String lbKey = "low_battery_flag_device_" + deviceId;
-                boolean flagged = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(lbKey, false);
                 if (frame.batteryLevel <= lowTh) {
-                    if (!flagged) {
-                        ContentValues v2 = new ContentValues();
-                        v2.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
-                        v2.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
-                        v2.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
-                        v2.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
-                        v2.put(COLUMN_LOG_OPERATOR, "");
-                        v2.put(COLUMN_LOG_OPERATION_TIME, nowStr);
-                        v2.put(COLUMN_LOG_ACTION, "设备低电量");
-                        v2.put(COLUMN_LOG_CREATE_TIME, nowStr);
-                        db.insert(targetTable, null, v2);
+                    long nid2 = addLowBatteryLog(deviceId, terminalName);
+                    if (nid2 > 0) {
                         com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, true);
                     }
                 } else {
-                    if (flagged) {
-                        com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, false);
-                    }
+                    com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, false);
                 }
             }
         } catch (Exception e) {
@@ -2091,20 +2079,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public long addLowBatteryLog(String deviceId, String terminalName) {
         SQLiteDatabase db = this.getWritableDatabase();
         boolean exists = deviceId != null && isTerminalExists(deviceId);
-        if (!exists) return -1L;
+        if (!exists) {
+            android.util.Log.w("DatabaseHelper", "低电量入库失败：终端不存在 deviceId=" + (deviceId == null ? "" : deviceId));
+            return -1L;
+        }
         String targetTable = TABLE_LOGS;
-        android.database.Cursor c = db.rawQuery(
-                "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
-                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
-                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
-                new String[]{deviceId != null ? deviceId : ""});
-        try {
-            if (c != null && c.moveToFirst()) {
-                int lastSt = c.getInt(0);
-                if (lastSt == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) return -1L;
-            }
-        } finally {
-            if (c != null) c.close();
+        String lbKey = "low_battery_flag_device_" + deviceId;
+        boolean flagged = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(lbKey, false);
+        if (flagged) {
+            android.util.Log.i("DatabaseHelper", "低电量入库跳过：标记为已存在低电量 deviceId=" + deviceId);
+            return -1L;
         }
         String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
         ContentValues v = new ContentValues();
@@ -2117,15 +2101,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put(COLUMN_LOG_ACTION, "设备低电量");
         v.put(COLUMN_LOG_CREATE_TIME, nowStr);
         long nid = db.insert(targetTable, null, v);
-        try {
-            String handleTimeNow = nowStr;
-            String handleUserNow = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
-            if (handleUserNow == null || handleUserNow.trim().isEmpty()) handleUserNow = "系统自动";
-            markAlertLogsHandled(deviceId, handleTimeNow, handleUserNow, new int[]{
-                    com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code,
-                    com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
-            });
-        } catch (Exception ignored) {}
+        if (nid > 0) {
+            android.util.Log.d("DatabaseHelper", "低电量入库成功 deviceId=" + deviceId + ", id=" + nid);
+            try { com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey, true); } catch (Exception ignored) {}
+        } else {
+            android.util.Log.w("DatabaseHelper", "低电量入库失败 deviceId=" + deviceId);
+        }
         return nid;
     }
 
