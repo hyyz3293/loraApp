@@ -161,7 +161,7 @@ public class LogInfoFragment extends Fragment {
                     String endStr = selectedEndTime;
                     int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
                     int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-                    boolean includeUnbound = (typeSel == 1);
+                    boolean includeUnbound = false;
                     totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, includeUnbound);
                     java.util.List<LogInfo> first = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
                     displayedLogs.clear();
@@ -266,9 +266,7 @@ public class LogInfoFragment extends Fragment {
             java.util.List<LogInfo> all = new java.util.ArrayList<>();
             try {
                 java.util.List<LogInfo> a = databaseHelper.getAllLogs();
-                java.util.List<LogInfo> b = databaseHelper.getAllUnboundLogs();
                 if (a != null) all.addAll(a);
-                if (b != null) all.addAll(b);
             } catch (Exception ignored) {}
             java.util.Collections.sort(all, (o1, o2) -> {
                 long t1 = parseMillis(o1 != null ? o1.getCreateTime() : null);
@@ -414,7 +412,7 @@ public class LogInfoFragment extends Fragment {
         String startStr = selectedStartTime;
         String endStr = selectedEndTime;
         currentPage = 0;
-        boolean includeUnbound = (typeSel == 1);
+        boolean includeUnbound = false;
         totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, includeUnbound);
         out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
         displayedLogs.clear();
