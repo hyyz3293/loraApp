@@ -1558,6 +1558,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 for (com.lora.cn.ui.model.Terminal t : terminals) {
                     if (deviceId.equalsIgnoreCase(t.getTerminalId())) {
                         terminalName = t.getTerminalName();
+                        try {
+                            int tsCode = t.getStatus();
+                            // 将终端状态码映射为日志状态码
+                            // CODE_OFFLINE(0) -> DEVICE_OFFLINE, CODE_ONLINE(1) -> ONLINE
+                            // CODE_ABNORMAL_TAKEN(2) -> DEVICE_LOST, CODE_NORMAL_TAKEN(3) -> DEVICE_ON
+                            int mappedLogFromTerminal =
+                                    (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE)
+                                            ? com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code
+                                            : (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE)
+                                            ? com.lora.cn.ui.constants.LogStatus.ONLINE.code
+                                            : (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN)
+                                            ? com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                                            : (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN)
+                                            ? com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
+                                            : 0;
+                            // 暂存为 ContentValues 额外字段以便后续比较
+                            values.put("terminal_status_log_mapped", mappedLogFromTerminal);
+                        } catch (Exception ignored) {}
                         break;
                     }
                 }
@@ -1676,7 +1694,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 }
             } catch (Exception ignored) {}
         }
-        if (!skipBySameStatus && !suppressAbnormalRepeat) {
+        boolean skipByTerminalStateSame = false;
+        try {
+            int mappedLogFromTerminal = values.getAsInteger("terminal_status_log_mapped") != null
+                    ? values.getAsInteger("terminal_status_log_mapped") : 0;
+            skipByTerminalStateSame = (statusCode != 0 && mappedLogFromTerminal == statusCode);
+        } catch (Exception ignored) {}
+
+        if (!skipBySameStatus && !suppressAbnormalRepeat && !skipByTerminalStateSame) {
             result = db.insert(targetTable, null, values);
         }
 

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -94,7 +95,7 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
             logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
             logOperation.setTextColor(android.graphics.Color.parseColor("#383B40"));
             logOperation.setOnClickListener(null);
-            logOperation.setVisibility(android.view.View.VISIBLE);
+            logOperation.setVisibility(View.GONE);
         } else if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
             setTextOrPlaceholder(logOperation, act);
             logOperation.setOnClickListener(null);
