@@ -1749,18 +1749,26 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext());
                     java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = db.getMaintenanceRecords(uid);
-                    java.util.Set<String> pendingDevSet = new java.util.HashSet<>();
+                    long now = System.currentTimeMillis();
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                     if (list != null) {
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
                             if (mi == null) continue;
+                            if (mi.getStatus() != 0) continue;
                             String c = mi.getContent();
-                            if ("设备维护：需要维护".equals(c) && mi.getStatus() == 0) {
-                                String dev = mi.getTerminalId();
-                                if (dev != null && dev.length() > 0) pendingDevSet.add(dev);
+                            boolean isAuto = "设备维护：需要维护".equals(c);
+                            if (isAuto) {
+                                count++;
+                            } else {
+                                String ct = mi.getCreateTime();
+                                if (ct == null || ct.trim().isEmpty()) continue;
+                                try {
+                                    java.util.Date dt = sdf.parse(ct.trim());
+                                    if (dt != null && dt.getTime() <= now) count++;
+                                } catch (Exception ignored) {}
                             }
                         }
                     }
-                    count = pendingDevSet.size();
                 } catch (Exception ignored) {}
                 final int finalCount = count;
                 if (mainHandler != null) {
