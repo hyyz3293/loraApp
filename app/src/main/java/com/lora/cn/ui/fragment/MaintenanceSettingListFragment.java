@@ -130,7 +130,18 @@ public class MaintenanceSettingListFragment extends Fragment {
                     boolean isAuto = "设备维护：需要维护".equals(c);
                     if (!isAuto) filtered.add(mi);
                 }
-                list = filtered;
+                long now = System.currentTimeMillis();
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                List<MaintenanceInfo> futureOnly = new ArrayList<>();
+                for (MaintenanceInfo mi : filtered) {
+                    String ct = mi != null ? mi.getCreateTime() : null;
+                    if (ct == null || ct.trim().isEmpty()) continue;
+                    try {
+                        java.util.Date dt = sdf.parse(ct.trim());
+                        if (dt != null && dt.getTime() > now) futureOnly.add(mi);
+                    } catch (Exception ignored) {}
+                }
+                list = futureOnly;
             } catch (Exception e) {
                 list = null;
             }

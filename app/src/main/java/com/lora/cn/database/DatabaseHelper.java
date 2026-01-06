@@ -1683,7 +1683,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));
 
         long lockResult = -1L;
-        if (lockChangeStatusCode > 0 && (statusCode == 0 || lastLockStateSnapshot == -1)) {
+        if (lockChangeStatusCode > 0) {
             boolean skipLockDuplicate = false;
             android.database.Cursor cLock = db.rawQuery(
                     "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +

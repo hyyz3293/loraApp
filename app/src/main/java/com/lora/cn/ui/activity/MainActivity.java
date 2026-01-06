@@ -1019,6 +1019,7 @@ public class MainActivity extends AppCompatActivity {
             boolean isLow = t.getBatteryLevel() <= lowTh;
 
             if (isAbnormal) {
+                out.clearDevs.add(devId);
                 boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
                 long latestId = -1L;
                 String latestTime = null;
@@ -1037,17 +1038,15 @@ public class MainActivity extends AppCompatActivity {
                 String key = devId + ":异常取走";
                 Long prev = lastLogIds != null ? lastLogIds.get(key) : null;
                 boolean newLogDetected = latestId > 0 && (prev == null || prev != latestId);
-                if (newLogDetected || (newly && latestId <= 0)) {
-                    if (newly) {
-                        AlertItem item = new AlertItem();
-                        item.title = "异常取走";
-                        item.name = t.getTerminalName();
-                        item.code = devId;
-                        item.time = latestTime != null ? latestTime : nowStr;
-                        item.logId = latestId;
-                        out.actions.add(new AlertAction(item, true));
-                        out.queuedAny = true;
-                    }
+                {
+                    AlertItem item = new AlertItem();
+                    item.title = "异常取走";
+                    item.name = t.getTerminalName();
+                    item.code = devId;
+                    item.time = latestTime != null ? latestTime : nowStr;
+                    item.logId = latestId;
+                    out.actions.add(new AlertAction(item, newly));
+                    if (newly) out.queuedAny = true;
                     if (latestId > 0) out.logIdUpdates.put(key, latestId);
                     out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
                     if (newly) {
