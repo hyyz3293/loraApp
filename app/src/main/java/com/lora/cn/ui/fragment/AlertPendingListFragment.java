@@ -115,9 +115,10 @@ public class AlertPendingListFragment extends Fragment {
                 if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                     com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                     if (t != null) {
+                        boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
                         boolean isLowNow = t.getBatteryLevel() <= lowTh;
                         boolean afterHandled = ht == null || at > ht;
-                        if (isLowNow && afterHandled) filtered.add(li);
+                        if (!devStillOffline && isLowNow && afterHandled) filtered.add(li);
                     }
                 } else {
                     com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
@@ -128,8 +129,10 @@ public class AlertPendingListFragment extends Fragment {
                     if (isOfflineCase) {
                         if (devStillOffline && afterHandled) filtered.add(li);
                     } else if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
-                        if (devStillAbnormal) filtered.add(li);
-                        else if (afterHandled) filtered.add(li);
+                        if (!devStillOffline) {
+                            if (devStillAbnormal) filtered.add(li);
+                            else if (afterHandled) filtered.add(li);
+                        }
                     } else {
                         if (afterHandled) filtered.add(li);
                     }
@@ -152,7 +155,9 @@ public class AlertPendingListFragment extends Fragment {
                 boolean devStillAbnormal2 = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
                 boolean canHandle = (ht2 == null || at2 > ht2) && (!isOfflineCase2 || devStillOffline2);
                 if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
-                    canHandle = devStillAbnormal2 || canHandle;
+                    canHandle = (!devStillOffline2) && (devStillAbnormal2 || canHandle);
+                } else if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                    canHandle = (!devStillOffline2) && canHandle;
                 }
                 if (canHandle) allowedIds.add(li.getId());
             }
