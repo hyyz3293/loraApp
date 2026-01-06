@@ -14,6 +14,8 @@ public class TerminalStatusConstants {
     public static final String STATUS_LOW_BATTERY = "设备低电量";
     public static final String STATUS_OFFLINE = "设备离线";
 
+    public static final String STATUS_MAINTENANCE = "需维修";
+
     public static final int CODE_OFFLINE = 0;
     public static final int CODE_ONLINE = 1;
     public static final int CODE_ABNORMAL_TAKEN = 2;
