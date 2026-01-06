@@ -1474,6 +1474,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
         values.put(COLUMN_LOG_DEVICE_ID, deviceId);
         int statusCode = com.lora.cn.ui.constants.LogStatus.fromText(status);
+        if (statusCode == 0) {
+            return -1;
+        }
         values.put(COLUMN_LOG_STATUS, statusCode);
         values.put(COLUMN_LOG_OPERATOR, operator == null ? "" : operator);
         values.put(COLUMN_LOG_OPERATION_TIME, operationTime == null ? "" : operationTime);
@@ -1495,7 +1498,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_TERMINAL_ID, logInfo.getTerminalId());
         values.put(COLUMN_LOG_TERMINAL_NAME, logInfo.getTerminalName());
         values.put(COLUMN_LOG_DEVICE_ID, logInfo.getDeviceId());
-        values.put(COLUMN_LOG_STATUS, logInfo.getStatusCode());
+        int stCodeObj = logInfo.getStatusCode();
+        if (stCodeObj == 0) {
+            return -1;
+        }
+        values.put(COLUMN_LOG_STATUS, stCodeObj);
         values.put(COLUMN_LOG_OPERATOR, logInfo.getOperator() == null ? "" : logInfo.getOperator());
         values.put(COLUMN_LOG_OPERATION_TIME, logInfo.getOperationTime() == null ? "" : logInfo.getOperationTime());
         values.put(COLUMN_LOG_ACTION, logInfo.getAction());
@@ -1713,7 +1720,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         boolean skipByTerminalStateSame = (statusCode != 0 && mappedLogFromTerminal == statusCode);
 
-        if (!skipBySameStatus && !suppressAbnormalRepeat && !skipByTerminalStateSame) {
+        if (statusCode != 0 && !skipBySameStatus && !suppressAbnormalRepeat && !skipByTerminalStateSame) {
             result = db.insert(targetTable, null, values);
             LogUtils.e("上行数据库插入=\n" + targetTable + "-----result：" + result);
             LogUtils.e("上行数据库插入=\n" + values);
@@ -2337,37 +2344,37 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     
     // 初始化示例日志数据
-    public void initSampleLogData() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        android.database.Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_LOGS, null);
-        cursor.moveToFirst();
-        int count = cursor.getInt(0);
-        cursor.close();
-        
-        // 如果日志表为空，则添加示例数据
-        if (count == 0) {
-            addLog("1", "终端设备001", "DEV001", "正常在线", "张三", "2024-01-15 10:35:00", "数据上传");
-            addLog("2", "终端设备002", "DEV002", "低电量", "李四", "", "电量检测");
-            addLog("3", "终端设备003", "DEV003", "异常取走", "王五", "", "设备检查");
-            addLog("4", "终端设备004", "DEV004", "正常在线", "赵六", "2024-01-15 07:20:00", "状态更新");
-            addLog("5", "终端设备005", "DEV005", "异常丢失", "孙七", "", "异常处理");
-            addLog("1", "终端设备001", "DEV001", "离线", "张三", "2024-01-15 11:00:00", "设备维护");
-            addLog("6", "终端设备006", "DEV006", "正常在线", "周八", "2024-01-15 08:15:30", "定期检查");
-            addLog("7", "终端设备007", "DEV007", "低电量", "吴九", "", "电池更换");
-            addLog("2", "终端设备002", "DEV002", "正常在线", "李四", "2024-01-15 12:30:45", "电量恢复");
-            addLog("8", "终端设备008", "DEV008", "异常取走", "郑十", "", "紧急查找");
-        }
-    }
+//    public void initSampleLogData() {
+//        SQLiteDatabase db = this.getReadableDatabase();
+//        android.database.Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_LOGS, null);
+//        cursor.moveToFirst();
+//        int count = cursor.getInt(0);
+//        cursor.close();
+//
+//        // 如果日志表为空，则添加示例数据
+//        if (count == 0) {
+//            addLog("1", "终端设备001", "DEV001", "正常在线", "张三", "2024-01-15 10:35:00", "数据上传");
+//            addLog("2", "终端设备002", "DEV002", "低电量", "李四", "", "电量检测");
+//            addLog("3", "终端设备003", "DEV003", "异常取走", "王五", "", "设备检查");
+//            addLog("4", "终端设备004", "DEV004", "正常在线", "赵六", "2024-01-15 07:20:00", "状态更新");
+//            addLog("5", "终端设备005", "DEV005", "异常丢失", "孙七", "", "异常处理");
+//            addLog("1", "终端设备001", "DEV001", "离线", "张三", "2024-01-15 11:00:00", "设备维护");
+//            addLog("6", "终端设备006", "DEV006", "正常在线", "周八", "2024-01-15 08:15:30", "定期检查");
+//            addLog("7", "终端设备007", "DEV007", "低电量", "吴九", "", "电池更换");
+//            addLog("2", "终端设备002", "DEV002", "正常在线", "李四", "2024-01-15 12:30:45", "电量恢复");
+//            addLog("8", "终端设备008", "DEV008", "异常取走", "郑十", "", "紧急查找");
+//        }
+//    }
 
-    // 清理示例日志数据：删除 device_id 为 DEV00X 的记录或示例人员
-    public int cleanSampleLogData() {
-        SQLiteDatabase db = this.getWritableDatabase();
-        // 通过设备ID模式和示例操作者名称进行清理
-        String whereClause = COLUMN_LOG_DEVICE_ID + " LIKE 'DEV00%' OR " + COLUMN_LOG_OPERATOR + " IN (?,?,?,?,?,?,?,?)";
-        String[] whereArgs = new String[]{"张三","李四","王五","赵六","孙七","周八","吴九","郑十"};
-        int deleted = db.delete(TABLE_LOGS, whereClause, whereArgs);
-        return deleted;
-    }
+//    // 清理示例日志数据：删除 device_id 为 DEV00X 的记录或示例人员
+//    public int cleanSampleLogData() {
+//        SQLiteDatabase db = this.getWritableDatabase();
+//        // 通过设备ID模式和示例操作者名称进行清理
+//        String whereClause = COLUMN_LOG_DEVICE_ID + " LIKE 'DEV00%' OR " + COLUMN_LOG_OPERATOR + " IN (?,?,?,?,?,?,?,?)";
+//        String[] whereArgs = new String[]{"张三","李四","王五","赵六","孙七","周八","吴九","郑十"};
+//        int deleted = db.delete(TABLE_LOGS, whereClause, whereArgs);
+//        return deleted;
+//    }
 
     /**
      * 更新终端收藏状态
@@ -2386,57 +2393,57 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new String[]{terminalId});
     }
 
-    public java.util.List<com.lora.cn.ui.model.Terminal> getTerminalsPaged(int limit, int offset) {
-        java.util.List<com.lora.cn.ui.model.Terminal> terminals = new java.util.ArrayList<>();
-        SQLiteDatabase db = this.getReadableDatabase();
-        String sql = "SELECT * FROM " + TABLE_TERMINALS + " ORDER BY " + COLUMN_TERMINAL_UPDATE_TIME + " DESC LIMIT ? OFFSET ?";
-        android.database.Cursor cursor = db.rawQuery(sql, new String[]{String.valueOf(limit), String.valueOf(offset)});
-        if (cursor.moveToFirst()) {
-            do {
-                com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
-                terminal.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_ID)));
-                terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_ID)));
-                terminal.setDeviceCode(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_CODE)));
-                terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_NAME)));
-                String stText = cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS));
-                terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.textToCode(stText));
-                terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
-                terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
-                terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
-                terminal.setDepartmentId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT_ID)));
-                terminal.setRoomId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_ROOM_ID)));
-                terminal.setNursingGroupId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_NURSING_GROUP_ID)));
-                terminal.setOtherId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_OTHER_ID)));
-                int batteryLevelIndex = cursor.getColumnIndex(COLUMN_TERMINAL_BATTERY_LEVEL);
-                if (batteryLevelIndex != -1) {
-                    terminal.setBatteryLevel(cursor.getInt(batteryLevelIndex));
-                } else {
-                    terminal.setBatteryLevel(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
-                }
-                terminal.setExtension(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_EXTENSION)));
-                terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
-                terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
-                long nowMs = System.currentTimeMillis();
-                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 3 * 60 * 1000L) {
-                    terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
-                }
-                terminals.add(terminal);
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
-        return terminals;
-    }
-
-    public int getTerminalsCount() {
-        SQLiteDatabase db = this.getReadableDatabase();
-        android.database.Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_TERMINALS, null);
-        int count = 0;
-        if (cursor.moveToFirst()) {
-            count = cursor.getInt(0);
-        }
-        cursor.close();
-        return count;
-    }
+//    public java.util.List<com.lora.cn.ui.model.Terminal> getTerminalsPaged(int limit, int offset) {
+//        java.util.List<com.lora.cn.ui.model.Terminal> terminals = new java.util.ArrayList<>();
+//        SQLiteDatabase db = this.getReadableDatabase();
+//        String sql = "SELECT * FROM " + TABLE_TERMINALS + " ORDER BY " + COLUMN_TERMINAL_UPDATE_TIME + " DESC LIMIT ? OFFSET ?";
+//        android.database.Cursor cursor = db.rawQuery(sql, new String[]{String.valueOf(limit), String.valueOf(offset)});
+//        if (cursor.moveToFirst()) {
+//            do {
+//                com.lora.cn.ui.model.Terminal terminal = new com.lora.cn.ui.model.Terminal();
+//                terminal.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_ID)));
+//                terminal.setTerminalId(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_ID)));
+//                terminal.setDeviceCode(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEVICE_CODE)));
+//                terminal.setTerminalName(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_NAME)));
+//                String stText = cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_STATUS));
+//                terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.textToCode(stText));
+//                terminal.setSignalStrength(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+//                terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
+//                terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
+//                terminal.setDepartmentId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT_ID)));
+//                terminal.setRoomId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_ROOM_ID)));
+//                terminal.setNursingGroupId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_NURSING_GROUP_ID)));
+//                terminal.setOtherId(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_OTHER_ID)));
+//                int batteryLevelIndex = cursor.getColumnIndex(COLUMN_TERMINAL_BATTERY_LEVEL);
+//                if (batteryLevelIndex != -1) {
+//                    terminal.setBatteryLevel(cursor.getInt(batteryLevelIndex));
+//                } else {
+//                    terminal.setBatteryLevel(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
+//                }
+//                terminal.setExtension(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_EXTENSION)));
+//                terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
+//                terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
+//                long nowMs = System.currentTimeMillis();
+//                if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > 3 * 60 * 1000L) {
+//                    terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
+//                }
+//                terminals.add(terminal);
+//            } while (cursor.moveToNext());
+//        }
+//        cursor.close();
+//        return terminals;
+//    }
+//
+//    public int getTerminalsCount() {
+//        SQLiteDatabase db = this.getReadableDatabase();
+//        android.database.Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_TERMINALS, null);
+//        int count = 0;
+//        if (cursor.moveToFirst()) {
+//            count = cursor.getInt(0);
+//        }
+//        cursor.close();
+//        return count;
+//    }
     
     /**
      * 更新终端名称

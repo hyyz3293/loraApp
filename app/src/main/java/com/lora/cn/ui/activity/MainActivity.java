@@ -1478,6 +1478,8 @@ public class MainActivity extends AppCompatActivity {
         lastSmallKey = null;
     }
 
+    
+
     private void minimizePending() {
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
         if (llAlertPendingSmall != null) setSmallVisible(true);
