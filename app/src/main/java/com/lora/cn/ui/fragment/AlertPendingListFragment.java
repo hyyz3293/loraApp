@@ -123,9 +123,13 @@ public class AlertPendingListFragment extends Fragment {
                     com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                     boolean isOfflineCase = li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
                     boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                    boolean devStillAbnormal = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
                     boolean afterHandled = ht == null || at > ht;
                     if (isOfflineCase) {
                         if (devStillOffline && afterHandled) filtered.add(li);
+                    } else if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                        if (devStillAbnormal) filtered.add(li);
+                        else if (afterHandled) filtered.add(li);
                     } else {
                         if (afterHandled) filtered.add(li);
                     }
@@ -145,7 +149,11 @@ public class AlertPendingListFragment extends Fragment {
                 com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                 boolean isOfflineCase2 = s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
                 boolean devStillOffline2 = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                boolean devStillAbnormal2 = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
                 boolean canHandle = (ht2 == null || at2 > ht2) && (!isOfflineCase2 || devStillOffline2);
+                if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                    canHandle = devStillAbnormal2 || canHandle;
+                }
                 if (canHandle) allowedIds.add(li.getId());
             }
             adapter.setAllowedHandleIds(allowedIds);

@@ -151,29 +151,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-//    private android.os.Handler startupLogHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-//    private final Runnable startupLogRunnable = new Runnable() {
-//        @Override
-//        public void run() {
-//            try {
-//                com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(MainActivity.this);
-//                db.updateTerminalStatusByDeviceId("SIM_DEV", com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
-//                db.addLog(
-//                        "SIM_DEV",
-//                        "模拟设备",
-//                        "SIM_DEV",
-//                        "异常丢失",
-//                        "",
-//                        "",
-//                        "接收上行数据: 模拟异常取走"
-//                );
-//                Log.i(TAG, "已发送启动2分钟后的异常取走日志");
-//            } catch (Exception e) {
-//                Log.e(TAG, "发送异常取走日志失败: " + e.getMessage());
-//            }
-//        }
-//    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -1724,10 +1701,15 @@ public class MainActivity extends AppCompatActivity {
                         } else {
                             com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                             boolean isOfflineCase = s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                            boolean isAbnormalCase = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
                             boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                            boolean devStillAbnormal = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
                             boolean afterHandled = ht == null || at > ht;
                             if (isOfflineCase) {
                                 if (devStillOffline && afterHandled) c++;
+                            } else if (isAbnormalCase) {
+                                if (devStillAbnormal) c++;
+                                else if (afterHandled) c++;
                             } else {
                                 if (afterHandled) c++;
                             }
