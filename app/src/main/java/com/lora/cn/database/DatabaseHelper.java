@@ -1618,10 +1618,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
         values.put(COLUMN_LOG_STATUS, statusCode);
         String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        String bcdStr;
+        try {
+            bcdStr = (frame != null && frame.dataTime != null)
+                    ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(frame.dataTime)
+                    : nowStr;
+        } catch (Exception e) {
+            bcdStr = nowStr;
+        }
         values.put(COLUMN_LOG_OPERATOR, operator);
-        values.put(COLUMN_LOG_OPERATION_TIME, nowStr);
+        values.put(COLUMN_LOG_OPERATION_TIME, bcdStr);
         values.put(COLUMN_LOG_ACTION, action);
-        values.put(COLUMN_LOG_CREATE_TIME, nowStr);
+        values.put(COLUMN_LOG_CREATE_TIME, bcdStr);
+
+        String handleTimeNow = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        String handleUserNow = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+        if (handleUserNow == null || handleUserNow.trim().isEmpty()) handleUserNow = "系统自动";
+        try {
+            if (deviceId != null && !deviceId.trim().isEmpty()) {
+                markOfflineLogsHandled(deviceId, handleTimeNow, handleUserNow);
+            }
+        } catch (Exception ignored) {
+            LogUtils.e("markOfflineLogsHandled:" + ignored);
+        }
 
         boolean exists = deviceId != null && isTerminalExists(deviceId);
         String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
@@ -1685,7 +1704,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 vLock.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
                 vLock.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
                 vLock.put(COLUMN_LOG_STATUS, lockChangeStatusCode);
-                String nowStr2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                String nowStr2 = bcdStr;
                 vLock.put(COLUMN_LOG_OPERATOR, operator);
                 vLock.put(COLUMN_LOG_OPERATION_TIME, nowStr2);
                 vLock.put(COLUMN_LOG_ACTION, action);
@@ -1709,8 +1728,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
                     android.util.Log.d("DatabaseHelper", "按日志状态更新终端为正常在线 deviceId=" + deviceId + ", rows=" + rows);
                     try {
-                        String autoUser = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
-                        markAlertLogsHandled(deviceId, nowStr, autoUser, new int[]{
+                        String autoUser = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
                                 com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
@@ -1721,8 +1740,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
                         || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code) {
                     try {
-                        String autoUser = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
-                        markAlertLogsHandled(deviceId, nowStr, autoUser, new int[]{
+                        String autoUser = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
                                 com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
@@ -1776,10 +1795,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)});
         while (c1.moveToNext()) {
             long id = c1.getLong(0);
-            String hu = c1.getString(1);
-            String ht = c1.getString(2);
-            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
-            if (unhandled) ids.add(id);
+            ids.add(id);
         }
         c1.close();
         android.database.Cursor c2 = db.rawQuery(
@@ -1789,10 +1805,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         java.util.List<Long> idsUnbound = new java.util.ArrayList<>();
         while (c2.moveToNext()) {
             long id = c2.getLong(0);
-            String hu = c2.getString(1);
-            String ht = c2.getString(2);
-            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
-            if (unhandled) idsUnbound.add(id);
+            idsUnbound.add(id);
         }
         c2.close();
         if (ids.isEmpty() && idsUnbound.isEmpty()) return;
@@ -1804,12 +1817,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put("handle_user", user2);
         v.put("handle_time", handleTime == null ? "" : handleTime);
         v.put("handle_remark", "自动处理");
+        android.util.Log.d("DatabaseHelper", "离线处理准备 deviceId=" + deviceId + ", ids=" + ids.size() + ", idsUnbound=" + idsUnbound.size() + ", user=" + user2 + ", time=" + (handleTime == null ? "" : handleTime));
+        int updated1 = 0;
         for (Long id : ids) {
-            db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+            try { updated1 += db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
         }
+        int updated2 = 0;
         for (Long id : idsUnbound) {
-            db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+            try { updated2 += db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
         }
+        android.util.Log.d("DatabaseHelper", "离线处理完成 deviceId=" + deviceId + ", updatedLogs=" + updated1 + ", updatedUnbound=" + updated2);
         try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("自动处理离线:" + deviceId)); } catch (Exception ignored) {}
     }
 
@@ -1826,10 +1843,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     new String[]{deviceId, String.valueOf(s)});
             while (c1.moveToNext()) {
                 long id = c1.getLong(0);
-                String hu = c1.getString(1);
-                String ht = c1.getString(2);
-                boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
-                if (unhandled) ids.add(id);
+                ids.add(id);
             }
             c1.close();
             android.database.Cursor c2 = db.rawQuery(
@@ -1838,10 +1852,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     new String[]{deviceId, String.valueOf(s)});
             while (c2.moveToNext()) {
                 long id = c2.getLong(0);
-                String hu = c2.getString(1);
-                String ht = c2.getString(2);
-                boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
-                if (unhandled) idsUnbound.add(id);
+                idsUnbound.add(id);
             }
             c2.close();
         }
@@ -2819,6 +2830,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("ALTER TABLE " + table + " ADD COLUMN " + column + " " + (sqlTypeAndDefault == null ? "TEXT" : sqlTypeAndDefault));
         } catch (Exception ignored) {}
     }
+
+    // 移除插入处理日志，改为仅更新现有异常/离线/低电量日志的处理人、时间、备注
 
     private boolean hasColumn(SQLiteDatabase db, String table, String column) {
         android.database.Cursor c = null;
