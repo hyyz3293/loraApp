@@ -210,17 +210,17 @@ public class DeviceSettingFragment extends Fragment {
             SPUtils.getInstance().put("inventory_schedule_enabled", true);
             //scheduleInventory(hourOfDay, minute);
             try {
-                com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(ctx.getApplicationContext());
-                com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
-                li.setTerminalId("SYS");
-                li.setTerminalName("系统设置");
-                li.setDeviceId("SYS");
-                li.setStatusCode(0);
-                li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
-                String ts = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                li.setOperationTime(ts);
-                li.setCreateTime(ts);
-                li.setAction("设置: 定时清点=" + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
+//                com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(ctx.getApplicationContext());
+//                com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+//                li.setTerminalId("SYS");
+//                li.setTerminalName("系统设置");
+//                li.setDeviceId("SYS");
+//                li.setStatusCode(0);
+//                li.setOperator(com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""));
+//                String ts = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+//                li.setOperationTime(ts);
+//                li.setCreateTime(ts);
+//                li.setAction("设置: 定时清点=" + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute));
                 //db.addLog(li);
             } catch (Exception ignored) {}
             Toast.makeText(ctx, "已设置定时清点: " + String.format(java.util.Locale.getDefault(), "%02d:%02d", hourOfDay, minute), Toast.LENGTH_SHORT).show();

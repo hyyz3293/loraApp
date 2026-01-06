@@ -187,7 +187,7 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                                     li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                                     li.setAction("设置: 清点次数=" + out);
                                     li.setCreateTime(li.getOperationTime());
-                                    db.addLog(li);
+                                    //db.addLog(li);
                                 } catch (Exception ignored) {}
                             } catch (Exception ignored) {}
                         } else if (item.getIndex() == 4) {
@@ -206,7 +206,7 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                                     li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                                     li.setAction("设置: 低电量报警值=" + out + "%");
                                     li.setCreateTime(li.getOperationTime());
-                                    db.addLog(li);
+                                    //db.addLog(li);
                                 } catch (Exception ignored) {}
                             } catch (Exception ignored) {}
                         } else if (item.getIndex() == 5) {
@@ -226,7 +226,7 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                                     li.setOperationTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                                     li.setAction("设置: 回到首页时间=" + out + "秒");
                                     li.setCreateTime(li.getOperationTime());
-                                    db.addLog(li);
+                                    //db.addLog(li);
                                 } catch (Exception ignored) {}
                             } catch (Exception ignored) {}
                         } else if (item.getIndex() == 7) {
