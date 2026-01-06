@@ -263,6 +263,7 @@ public class MainActivity extends AppCompatActivity {
         }
         alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
         evaluateAlertsOnce();
+        alertEvaluateHandler.postDelayed(alertEvaluateRunnable, 5000);
 
     } 
 
@@ -503,6 +504,8 @@ public class MainActivity extends AppCompatActivity {
                 v.setPressed(true);
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 180);
                 showImmediateHandleDialog();
+                llAlertPending.setVisibility(View.GONE);
+                llAlertPendingSmall.setVisibility(View.VISIBLE);
             });
             tvErrorComplete.setText("确认处理");
         }
@@ -821,8 +824,13 @@ public class MainActivity extends AppCompatActivity {
                         if (mask != 0) {
                             try { sendHandleDownlink(devHex, mask); } catch (Exception ignored) {}
                         }
-                        allowAutoHideBig = false;
-                        try { lastHandledTimes.put(devHex, System.currentTimeMillis()); } catch (Exception ignored) {}
+                        allowAutoHideBig = true;
+                        try {
+                            int sc = getStatusCodeForTitle(finalTarget.title);
+                            long nowTs = System.currentTimeMillis();
+                            lastHandledTypes.put(devHex, sc);
+                            lastHandledTimes.put(devHex, nowTs);
+                        } catch (Exception ignored) {}
                         handleAlertHandled(devHex, 0);
                     } catch (Exception ignored) {}
                 }
@@ -887,7 +895,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             } finally {
-                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 1000);
+                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 5000);
             }
         }
     };
@@ -1586,18 +1594,28 @@ public class MainActivity extends AppCompatActivity {
                     com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
                     java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(devId);
                     if (logs != null) {
+                        long maxTs = -1L;
+                        int codeAtMax = 0;
                         for (com.lora.cn.ui.model.LogInfo li : logs) {
+                            if (li == null) continue;
                             String hu = li.getHandleUser();
-                            if (hu != null && !hu.trim().isEmpty()) {
-                                handledCode = li.getStatusCode();
-                                String htStr = li.getHandleTime();
-                                if (htStr != null && !htStr.trim().isEmpty()) {
-                                    handledTs = parseMillis(htStr.trim());
-                                } else {
-                                    handledTs = parseMillis(li.getCreateTime());
-                                }
-                                break;
+                            String htStr = li.getHandleTime();
+                            boolean handled = (hu != null && !hu.trim().isEmpty()) || (htStr != null && !htStr.trim().isEmpty());
+                            if (!handled) continue;
+                            long ts = -1L;
+                            if (htStr != null && !htStr.trim().isEmpty()) {
+                                ts = parseMillis(htStr.trim());
+                            } else {
+                                ts = parseMillis(li.getCreateTime());
                             }
+                            if (ts > maxTs) {
+                                maxTs = ts;
+                                codeAtMax = li.getStatusCode();
+                            }
+                        }
+                        if (maxTs >= 0) {
+                            handledTs = maxTs;
+                            handledCode = codeAtMax;
                         }
                     }
                 } catch (Exception ignored) {}
