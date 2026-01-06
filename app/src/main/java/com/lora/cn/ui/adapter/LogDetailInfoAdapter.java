@@ -51,12 +51,14 @@ public class LogDetailInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHol
         // 设置ID字段 - 使用设备ID
         setTextOrPlaceholder(logId, item.getDeviceId());
 
-        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+        boolean isHandled = (item.getHandleUser() != null && item.getHandleUser().trim().length() > 0)
+                || (item.getHandleTime() != null && item.getHandleTime().trim().length() > 0);
+        if (isHandled) {
             setTextOrPlaceholder(logComplete, item.getHandleUser());
             setTextOrPlaceholder(logCompleteTime, item.getHandleTime());
         } else {
-            setTextOrPlaceholder(logComplete, "");
-            setTextOrPlaceholder(logCompleteTime, "");
+            setTextOrPlaceholder(logComplete, item.getOperator());
+            logCompleteTime.setText("");
             logCompleteTime.setBackground(null);
         }
 
@@ -69,7 +71,7 @@ public class LogDetailInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHol
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                 || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
         boolean isLatestAllowed = allowedHandleIds.contains(item.getId());
-        if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
+        if (isHandled) {
             logOperation.setText("查看备注");
             logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
             logOperation.setTextColor(android.graphics.Color.parseColor("#383B40"));
@@ -88,16 +90,15 @@ public class LogDetailInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHol
             logOperation.setTextColor(android.graphics.Color.WHITE);
             logOperation.setOnClickListener(v -> { if (onHandleClickListener != null) onHandleClickListener.onHandleClick(item); });
             logOperation.setVisibility(android.view.View.VISIBLE);
+        } else if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
+                || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) {
+            String label = com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode());
+            setTextOrPlaceholder(logOperation, label);
+            logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
+            logOperation.setTextColor(android.graphics.Color.parseColor("#383B40"));
+            logOperation.setOnClickListener(null);
+            logOperation.setVisibility(android.view.View.GONE);
         }
-//        else if (item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
-//                || item.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code) {
-//            String label = com.lora.cn.ui.constants.LogStatus.toText(item.getStatusCode());
-//            setTextOrPlaceholder(logOperation, label);
-//            logOperation.setBackgroundResource(R.drawable.bg_btn_voice);
-//            logOperation.setTextColor(android.graphics.Color.parseColor("#383B40"));
-//            logOperation.setOnClickListener(null);
-//            logOperation.setVisibility(android.view.View.VISIBLE);
-//        }
         else if (act != null && (act.startsWith("发送下行数据") || act.contains("下行"))) {
             setTextOrPlaceholder(logOperation, act);
             logOperation.setOnClickListener(null);

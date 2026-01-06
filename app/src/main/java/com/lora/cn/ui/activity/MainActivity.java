@@ -488,10 +488,11 @@ public class MainActivity extends AppCompatActivity {
             ivErrorClose.setOnClickListener(v -> {
                 v.setPressed(true);
                 new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> v.setPressed(false), 180);
+                allowAutoHideBig = true;
                 if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 if (llAlertPendingSmall != null) setSmallVisible(true);
 
-                //LogUtils.e("llAlertPendingSmall=Visibility===7===" + llAlertPendingSmall.getVisibility());
+                Log.d("", "llAlertPendingSmall=Visibility===7===" + llAlertPendingSmall.getVisibility());
             });
         }
         if (tvErrorVoiceNo != null) {
@@ -972,6 +973,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String lastSmallKey;
+    private boolean allowAutoHideBig = false;
     private boolean lastSmallVisible;
 
     private EvaluateResult computeAlertOverlay(com.lora.cn.database.DatabaseHelper db,
@@ -1185,7 +1187,7 @@ public class MainActivity extends AppCompatActivity {
             boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
             if (result.queuedAny && smallVisible && (newKey == null || newKey.equals(lastSmallKey))) {
                 if (llAlertPendingSmall != null) setSmallVisible(true);
-                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 lastSmallKey = newKey;
                 updatePendingBadge();
                 int afterQueueSize2 = alertQueue.size();
@@ -1212,18 +1214,18 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (smallVisible && keyCandidate != null && keyCandidate.equals(lastSmallKey)) {
                         if (llAlertPendingSmall != null) setSmallVisible(true);
-                        if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                        if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                         lastSmallKey = keyCandidate;
                     } else {
                         showLatestPending();
                     }
                 } else {
                     if (llAlertPendingSmall != null) setSmallVisible(false);
-                    //LogUtils.e("llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
+                    Log.d("", "llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
-                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                //LogUtils.e("llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
+                if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                Log.d("", "llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
             }
         }
         updatePendingBadge();
@@ -1392,19 +1394,19 @@ public class MainActivity extends AppCompatActivity {
                                 String keyCandidate = (devId == null ? "" : devId) + ":" + (finalMsg == null ? "" : finalMsg);
                                 if (smallVisible && keyCandidate.equals(lastSmallKey)) {
                                     if (llAlertPendingSmall != null) setSmallVisible(true);
-                                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                                    if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                                     lastSmallKey = keyCandidate;
                                 } else {
                                     showLatestPending();
                                 }
                             } else {
                                 if (llAlertPendingSmall != null) setSmallVisible(false);
-                                //LogUtils.e("llAlertPendingSmall=Visibility===10===" + llAlertPendingSmall.getVisibility());
+                                Log.d("", "llAlertPendingSmall=Visibility===10===" + llAlertPendingSmall.getVisibility());
                             }
                         } else {
                             updatePendingBadge();
                             if (llAlertPendingSmall != null && pendingAlertCount > 0) setSmallVisible(true);
-                            //LogUtils.e("llAlertPendingSmall=Visibility===11===" + llAlertPendingSmall.getVisibility());
+                            Log.d("", "llAlertPendingSmall=Visibility===11===" + llAlertPendingSmall.getVisibility());
                         }
                     } else {
                         if (devId != null) {
@@ -1419,15 +1421,15 @@ public class MainActivity extends AppCompatActivity {
                             lastAlertTypes.remove(devId);
                             updatePendingBadge();
                             if (pendingAlertCount == 0) {
-                                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                                if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                                 // 不主动在此隐藏小窗，让徽标逻辑决定是否展示，避免闪烁
-                                //LogUtils.e("llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
+                                Log.d("", "llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
                             } else {
                                 boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
                                 String keyCandidate = (devId == null ? "" : devId) + ":" + (finalMsg == null ? "" : finalMsg);
                                 if (smallVisible && keyCandidate.equals(lastSmallKey)) {
                                     if (llAlertPendingSmall != null) setSmallVisible(true);
-                                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                                    if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                                     lastSmallKey = keyCandidate;
                                 } else {
                                     showLatestPending();
@@ -1457,7 +1459,7 @@ public class MainActivity extends AppCompatActivity {
         if (lastShownKey != null && lastShownKey.equals(key)) {
             updatePendingBadge();
             if (llAlertPendingSmall != null) setSmallVisible(false);
-            //LogUtils.e("llAlertPendingSmall=Visibility===13===" + llAlertPendingSmall.getVisibility());
+            Log.d("", "llAlertPendingSmall=Visibility===13===" + llAlertPendingSmall.getVisibility());
             if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
             return;
         }
@@ -1467,8 +1469,9 @@ public class MainActivity extends AppCompatActivity {
         if (tvErrorTime != null) tvErrorTime.setText(currentAlert.time);
         updatePendingBadge();
         if (llAlertPendingSmall != null) setSmallVisible(false);
-        //LogUtils.e("llAlertPendingSmall=Visibility===14===" + llAlertPendingSmall.getVisibility());
+        Log.d("", "llAlertPendingSmall=Visibility===14===" + llAlertPendingSmall.getVisibility());
         if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
+        allowAutoHideBig = false;
         int sc = getStatusCodeForTitle(currentAlert.title);
         Integer handled = lastHandledTypes.get(currentAlert.code);
         boolean needConfirm = handled == null || handled != sc;
@@ -1481,6 +1484,7 @@ public class MainActivity extends AppCompatActivity {
     
 
     private void minimizePending() {
+        allowAutoHideBig = true;
         if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
         if (llAlertPendingSmall != null) setSmallVisible(true);
         if (llAlertPendingSmall != null) {
@@ -1704,7 +1708,7 @@ public class MainActivity extends AppCompatActivity {
             boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0 || hasTypes);
             setSmallVisible(shouldShowSmall);
             boolean currentSmall = llAlertPendingSmall.getVisibility() == View.VISIBLE;
-            //LogUtils.e("llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + (currentSmall ? View.VISIBLE : View.GONE));
+            Log.d("", "llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + (currentSmall ? View.VISIBLE : View.GONE));
         }
         int queueSize = alertQueue.size();
         if (count != lastBadgeCount || queueSize != lastBadgeQueueSize) {
@@ -1804,7 +1808,7 @@ public class MainActivity extends AppCompatActivity {
             alertQueue.addAll(newQueue);
             lastAlertTypes.remove(devId);
             pendingAlertCount = alertQueue.size();
-            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
             pendingCountOverride = null;
             updatePendingBadge();
         } catch (Exception ignored) {}
@@ -1873,13 +1877,14 @@ public class MainActivity extends AppCompatActivity {
                     .addToBackStack("alert_pending")
                     .commit();
             setSmallVisible(true);
+            allowAutoHideBig = true;
             llAlertPending.setVisibility(View.GONE);
 
             fragmentDeviceListContainer.setVisibility(View.VISIBLE);
             rvMenuTabs.setVisibility(View.INVISIBLE);
             viewPager.setVisibility(View.GONE);
 
-            //LogUtils.e("llAlertPendingSmall=Visibility===6===" + llAlertPendingSmall.getVisibility());
+            Log.d("", "llAlertPendingSmall=Visibility===6===" + llAlertPendingSmall.getVisibility());
         } catch (Exception e) {
             android.util.Log.e(TAG, "打开报警处理页面失败", e);
         }
