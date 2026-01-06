@@ -110,6 +110,10 @@ public class AlertPendingListFragment extends Fragment {
             int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             java.util.List<LogInfo> filtered = new java.util.ArrayList<>();
             for (LogInfo li : pending) {
+                String huLi = li.getHandleUser();
+                String htLi = li.getHandleTime();
+                boolean unhandledLi = (huLi == null || huLi.trim().isEmpty()) && (htLi == null || htLi.trim().isEmpty());
+                if (!unhandledLi) continue;
                 Long ht = lastHandledTime.get(li.getTerminalId());
                 long at = parseMillis(li.getCreateTime());
                 if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {

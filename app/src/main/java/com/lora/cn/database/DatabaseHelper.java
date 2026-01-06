@@ -2019,19 +2019,40 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         boolean exists = deviceId != null && isTerminalExists(deviceId);
         if (!exists) return -1L;
         String targetTable = TABLE_LOGS;
+        Integer lastStatus = null;
         android.database.Cursor c = db.rawQuery(
-                "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+                "SELECT " + COLUMN_LOG_STATUS + ", " + COLUMN_LOG_CREATE_TIME + " FROM " + TABLE_LOGS +
                         " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
-                        " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                        " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT 1",
                 new String[]{deviceId != null ? deviceId : ""});
         try {
             if (c != null && c.moveToFirst()) {
-                int lastSt = c.getInt(0);
-                if (lastSt == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) return -1L;
+                lastStatus = c.getInt(0);
             }
         } finally {
             if (c != null) c.close();
         }
+        android.database.Cursor cU = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + ", " + COLUMN_LOG_CREATE_TIME + " FROM " + TABLE_LOGS_UNBOUND +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                        " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT 1",
+                new String[]{deviceId != null ? deviceId : ""});
+        try {
+            if (cU != null && cU.moveToFirst()) {
+                int st2 = cU.getInt(0);
+                String t2 = cU.getString(1);
+                if (lastStatus == null) {
+                    lastStatus = st2;
+                } else {
+                    // 若未绑定的时间更晚，则以其为准
+                    // 简化处理：仅依据状态是否为离线来去重
+                    if (st2 == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) lastStatus = st2;
+                }
+            }
+        } finally {
+            if (cU != null) cU.close();
+        }
+        if (lastStatus != null && lastStatus == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) return -1L;
 
         String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
         ContentValues v = new ContentValues();

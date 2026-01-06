@@ -1606,6 +1606,10 @@ public class MainActivity extends AppCompatActivity {
                     java.util.Map<String, com.lora.cn.ui.model.LogInfo> latest = new java.util.HashMap<>();
                     for (com.lora.cn.ui.model.LogInfo li : all) {
                         if (li == null) continue;
+                        String hu0 = li.getHandleUser();
+                        String ht0 = li.getHandleTime();
+                        boolean unhandled0 = (hu0 == null || hu0.trim().isEmpty()) && (ht0 == null || ht0.trim().isEmpty());
+                        if (!unhandled0) continue;
                         int s = li.getStatusCode();
                         boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                                 || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
@@ -1641,6 +1645,10 @@ public class MainActivity extends AppCompatActivity {
                     int c = 0;
                     for (com.lora.cn.ui.model.LogInfo li : latest.values()) {
                         if (li == null) continue;
+                        String hu1 = li.getHandleUser();
+                        String ht1 = li.getHandleTime();
+                        boolean unhandled1 = (hu1 == null || hu1.trim().isEmpty()) && (ht1 == null || ht1.trim().isEmpty());
+                        if (!unhandled1) continue;
                         Long ht = lastHandledTime.get(li.getTerminalId());
                         long at = parseMillis(li.getCreateTime());
                         int s = li.getStatusCode();
