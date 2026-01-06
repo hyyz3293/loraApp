@@ -1766,6 +1766,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 } else {
                     android.util.Log.d("DatabaseHelper", "日志状态不触发终端状态变更 deviceId=" + deviceId + ", statusCode=" + statusCode);
                 }
+                // 兜底：如果上一终端状态为异常取走，而本次状态属于“恢复正常”的事件，则无条件自动处理异常/离线/低电量日志
+                try {
+                    boolean wasAbnormal = (mappedLogFromTerminal == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
+                    boolean isRecoveryEvent = statusCode == com.lora.cn.ui.constants.LogStatus.ONLINE.code
+                            || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
+//                            || statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
+//                            || statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
+//                            || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
+                    if (wasAbnormal && isRecoveryEvent) {
+                        String autoUser2 = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser2, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
+                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        });
+                    }
+                } catch (Exception ignored) {}
                 try {
                     org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId));
                 } catch (Exception ignored) {
