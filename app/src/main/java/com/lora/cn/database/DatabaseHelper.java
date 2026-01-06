@@ -1865,12 +1865,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put("handle_user", user2);
         v.put("handle_time", handleTime == null ? "" : handleTime);
         v.put("handle_remark", "自动处理");
+        android.util.Log.d("DatabaseHelper", "异常/低电量/离线 自动处理准备 deviceId=" + deviceId + ", ids=" + ids.size() + ", idsUnbound=" + idsUnbound.size() + ", user=" + user2 + ", time=" + (handleTime == null ? "" : handleTime));
+        int updated1 = 0;
         for (Long id : ids) {
-            db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+            try { updated1 += db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
         }
+        int updated2 = 0;
         for (Long id : idsUnbound) {
-            db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+            try { updated2 += db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
         }
+        android.util.Log.d("DatabaseHelper", "异常/低电量/离线 自动处理完成 deviceId=" + deviceId + ", updatedLogs=" + updated1 + ", updatedUnbound=" + updated2);
         try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("自动处理恢复:" + deviceId)); } catch (Exception ignored) {}
     }
 
