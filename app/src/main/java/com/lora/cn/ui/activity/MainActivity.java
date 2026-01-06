@@ -1423,8 +1423,7 @@ public class MainActivity extends AppCompatActivity {
                         Integer handledType = lastHandledTypes.get(devId);
                         long at = parseMillis(finalItem != null ? finalItem.time : null);
                         boolean suppress = handledType != null && handledType == finalStatusCode && ht != null && at >= 0 && ht >= at;
-                        boolean allowPopup = computePendingCountSync() > 0;
-                        if ((last == null || last != finalStatusCode) && !suppress && allowPopup) {
+                        if ((last == null || last != finalStatusCode) && !suppress) {
                             lastShownKey = null;
                             boolean alreadyInQueue = existsInQueue(devId, finalMsg);
                             if (!alreadyInQueue && finalItem != null) {
@@ -2249,7 +2248,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             android.util.Log.i(TAG, "使用本地MQTT Broker: " + brokerUrl);
-            final String clientId = "android-main";
+            String cachedId = sp.getString("mqtt_client_id_main", "");
+            if (cachedId == null || cachedId.trim().isEmpty()) {
+                String gen = "android-main-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+                sp.put("mqtt_client_id_main", gen);
+                cachedId = gen;
+            }
+            final String clientId = cachedId;
             String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
             String username = sp.getString("mqtt_username", "");
             String password = sp.getString("mqtt_password", "");

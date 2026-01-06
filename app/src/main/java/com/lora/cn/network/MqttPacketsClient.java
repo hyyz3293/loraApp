@@ -94,6 +94,9 @@ public class MqttPacketsClient {
             return;
         }
         try {
+            if (clientId == null || clientId.trim().isEmpty()) {
+                clientId = "android-" + java.util.UUID.randomUUID().toString().replace("-", "");
+            }
             if (client != null && client.isConnected()) {
                 if (listener != null) listener.onStatus("复用已有MQTT连接，继续订阅：" + topicFilter);
                 android.util.Log.i(TAG, "复用MQTT连接: url=" + brokerUrl + ", clientId=" + clientId);
@@ -117,6 +120,16 @@ public class MqttPacketsClient {
                 opts.setSocketFactory(buildUnsafeSocketFactory());
             }
 
+            if (client != null) {
+                try {
+                    client.unregisterResources();
+                    client.close();
+                } catch (Exception ignore) {}
+                client = null;
+                connecting = false;
+                subscribeRetry = 0;
+            }
+            final String effClientId = clientId;
             client = new MqttAndroidClient(context.getApplicationContext(), brokerUrl, clientId);
             client.setCallback(new MqttCallback() {
                 @Override
@@ -145,7 +158,7 @@ public class MqttPacketsClient {
             });
 
             if (listener != null) listener.onStatus("MQTT连接：" + brokerUrl);
-            android.util.Log.i(TAG, "准备连接MQTT: url=" + brokerUrl + ", clientId=" + clientId + ", mqttVersion=3.1.1, topicFilter=" + topicFilter);
+            android.util.Log.i(TAG, "准备连接MQTT: url=" + brokerUrl + ", clientId=" + effClientId + ", mqttVersion=3.1.1, topicFilter=" + topicFilter);
             connecting = true;
             client.connect(opts, null, new IMqttActionListener() {
                     @Override
@@ -154,7 +167,7 @@ public class MqttPacketsClient {
                         if (listener != null) listener.onStatus("MQTT连接成功，订阅：" + topicFilter);
                         subscribeRetry = 0;
                         scheduleSubscribe(topicFilter);
-                        android.util.Log.i(TAG, "MQTT连接成功: url=" + brokerUrl + ", clientId=" + clientId);
+                        android.util.Log.i(TAG, "MQTT连接成功: url=" + brokerUrl + ", clientId=" + effClientId);
                         flushPendingIfConnected();
                     }
 
@@ -165,13 +178,13 @@ public class MqttPacketsClient {
                         boolean already = msg != null && (msg.contains("已连接客户机") || msg.contains("Client is connected"));
                         if (already) {
                             if (listener != null) listener.onStatus("MQTT已连接，复用并订阅：" + topicFilter);
-                            android.util.Log.w(TAG, "MQTT已连接（服务端返回32100），继续订阅: url=" + brokerUrl + ", clientId=" + clientId);
+                            android.util.Log.w(TAG, "MQTT已连接（服务端返回32100），继续订阅: url=" + brokerUrl + ", clientId=" + effClientId);
                             scheduleSubscribe(topicFilter);
                             flushPendingIfConnected();
                             return;
                         }
                         if (listener != null) listener.onError("MQTT连接失败：" + msg);
-                        android.util.Log.e(TAG, "MQTT连接失败: url=" + brokerUrl + ", clientId=" + clientId + ", err=" + msg, exception);
+                        android.util.Log.e(TAG, "MQTT连接失败: url=" + brokerUrl + ", clientId=" + effClientId + ", err=" + msg, exception);
                     }
                 });
         } catch (Exception e) {
