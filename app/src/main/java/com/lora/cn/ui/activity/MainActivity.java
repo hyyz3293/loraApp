@@ -122,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
     // 自动返回首页计时
     private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private java.lang.Integer pendingCountOverride = null;
+    private long pendingCountOverrideTs = 0L;
     private long lastNonHomeStartMs = 0L;
     private volatile long lastInteractionMs = System.currentTimeMillis();
     private volatile boolean autoReturnBusy = false;
@@ -351,12 +352,12 @@ public class MainActivity extends AppCompatActivity {
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
     public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
-        try { updatePendingBadge(); updateMaintenanceBadge(); } catch (Exception ignored) {}
+        try { pendingCountOverride = null; updatePendingBadge(); updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
     @org.greenrobot.eventbus.Subscribe(threadMode = org.greenrobot.eventbus.ThreadMode.MAIN)
     public void onAlertPendingCountEvent(com.lora.cn.event.AlertPendingCountEvent event) {
-        try { pendingCountOverride = event != null ? event.count : null; updatePendingBadge(); } catch (Exception ignored) {}
+        try { pendingCountOverride = event != null ? event.count : null; pendingCountOverrideTs = System.currentTimeMillis(); updatePendingBadge(); } catch (Exception ignored) {}
     }
 
     private void startTestTimer() {
@@ -1035,7 +1036,8 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception ignored) {}
                 String key = devId + ":异常取走";
                 Long prev = lastLogIds != null ? lastLogIds.get(key) : null;
-                if (latestId > 0 && (prev == null || prev != latestId)) {
+                boolean newLogDetected = latestId > 0 && (prev == null || prev != latestId);
+                if (newLogDetected || (newly && latestId <= 0)) {
                     if (newly) {
                         AlertItem item = new AlertItem();
                         item.title = "异常取走";
@@ -1046,7 +1048,7 @@ public class MainActivity extends AppCompatActivity {
                         out.actions.add(new AlertAction(item, true));
                         out.queuedAny = true;
                     }
-                    out.logIdUpdates.put(key, latestId);
+                    if (latestId > 0) out.logIdUpdates.put(key, latestId);
                     out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
                     if (newly) {
                         try {
@@ -1641,8 +1643,14 @@ public class MainActivity extends AppCompatActivity {
         try {
             Integer override = pendingCountOverride;
             if (override != null) {
-                applyPendingBadgeUi(override);
-                return;
+                long nowTs = System.currentTimeMillis();
+                long age = nowTs - pendingCountOverrideTs;
+                if (age <= 3000) {
+                    applyPendingBadgeUi(override);
+                    return;
+                } else {
+                    pendingCountOverride = null;
+                }
             }
             if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -1844,6 +1852,7 @@ public class MainActivity extends AppCompatActivity {
             lastAlertTypes.remove(devId);
             pendingAlertCount = alertQueue.size();
             if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            pendingCountOverride = null;
             updatePendingBadge();
         } catch (Exception ignored) {}
     }
@@ -1949,19 +1958,20 @@ public class MainActivity extends AppCompatActivity {
                     }
                     String key = devId + ":异常取走";
                     Long prev = lastAlertLogIds.get(key);
-                    if (latestId > 0 && (prev == null || prev != latestId)) {
+                boolean newLogDetected = latestId > 0 && (prev == null || prev != latestId);
+                if (newLogDetected || (newly && latestId <= 0)) {
+                    if (newly) {
+                        AlertItem item = new AlertItem(); item.title = "异常取走"; item.name = t.getTerminalName(); item.code = devId; item.time = latestTime != null ? latestTime : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                        if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
+                        pendingAlertCount = alertQueue.size();
+                        startAlertRinging30s(); queuedAny = true;
+                    }
+                    if (latestId > 0) lastAlertLogIds.put(key, latestId);
+                    lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
+                    try {
                         if (newly) {
-                            AlertItem item = new AlertItem(); item.title = "异常取走"; item.name = t.getTerminalName(); item.code = devId; item.time = latestTime != null ? latestTime : new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                            if (!existsInQueue(devId, item.title)) alertQueue.addLast(item);
-                            pendingAlertCount = alertQueue.size();
-                            startAlertRinging30s(); queuedAny = true;
-                        }
-                        lastAlertLogIds.put(key, latestId);
-                        lastAlertTypes.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
-                        try {
-                            if (newly) {
-                                databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
-                                touchedDb = true;
+                            databaseHelper.updateTerminalStatusByDeviceId(devId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                            touchedDb = true;
                             }
                         } catch (Exception ignored) {}
                     }

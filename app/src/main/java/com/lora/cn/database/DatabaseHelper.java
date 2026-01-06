@@ -1627,6 +1627,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
         long result = -1L;
         boolean skipBySameStatus = false;
+        boolean suppressAbnormalRepeat = false;
         android.database.Cursor c = db.rawQuery(
                 "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
                         " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
@@ -1640,25 +1641,57 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } finally {
             if (c != null) c.close();
         }
-        if (!skipBySameStatus) {
+        if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+            try {
+                java.util.List<com.lora.cn.ui.model.Terminal> terminals2 = getAllTerminals();
+                if (deviceId != null && terminals2 != null) {
+                    for (com.lora.cn.ui.model.Terminal t2 : terminals2) {
+                        if (t2 != null && deviceId.equalsIgnoreCase(t2.getTerminalId())) {
+                            int st2 = t2.getStatus();
+                            if (st2 == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
+                                suppressAbnormalRepeat = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        if (!skipBySameStatus && !suppressAbnormalRepeat) {
             result = db.insert(targetTable, null, values);
         }
 
         LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));
 
-        if (lockChangeStatusCode > 0 && statusCode != lockChangeStatusCode) {
-            ContentValues vLock = new ContentValues();
-            vLock.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
-            vLock.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
-            vLock.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
-            vLock.put(COLUMN_LOG_STATUS, lockChangeStatusCode);
-            String nowStr2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-            vLock.put(COLUMN_LOG_OPERATOR, operator);
-            vLock.put(COLUMN_LOG_OPERATION_TIME, nowStr2);
-            vLock.put(COLUMN_LOG_ACTION, action);
-            vLock.put(COLUMN_LOG_CREATE_TIME, nowStr2);
-            db.insert(targetTable, null, vLock);
-            LogUtils.e("开关锁 写入");
+        if (lockChangeStatusCode > 0 && statusCode == 0) {
+            boolean skipLockDuplicate = false;
+            android.database.Cursor cLock = db.rawQuery(
+                    "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                            " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                    new String[]{deviceId != null ? deviceId : ""});
+            try {
+                if (cLock != null && cLock.moveToFirst()) {
+                    int lastSt2 = cLock.getInt(0);
+                    if (lastSt2 == lockChangeStatusCode) skipLockDuplicate = true;
+                }
+            } finally {
+                if (cLock != null) cLock.close();
+            }
+            if (!skipLockDuplicate) {
+                ContentValues vLock = new ContentValues();
+                vLock.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+                vLock.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
+                vLock.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+                vLock.put(COLUMN_LOG_STATUS, lockChangeStatusCode);
+                String nowStr2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                vLock.put(COLUMN_LOG_OPERATOR, operator);
+                vLock.put(COLUMN_LOG_OPERATION_TIME, nowStr2);
+                vLock.put(COLUMN_LOG_ACTION, action);
+                vLock.put(COLUMN_LOG_CREATE_TIME, nowStr2);
+                db.insert(targetTable, null, vLock);
+                LogUtils.e("开关锁 写入");
+            }
         }
 
         // 同步更新终端设备的电量、信号强度，并依据上面得到的 statusCode 更新终端状态
@@ -1676,7 +1709,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     android.util.Log.d("DatabaseHelper", "按日志状态更新终端为正常在线 deviceId=" + deviceId + ", rows=" + rows);
                     try {
                         String autoUser = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
-                        markOfflineLogsHandled(deviceId, nowStr, autoUser);
+                        markAlertLogsHandled(deviceId, nowStr, autoUser, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
+                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        });
+                    } catch (Exception ignored) {}
+                } else if (statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
+                        || statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
+                        || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
+                        || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code) {
+                    try {
+                        String autoUser = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
+                        markAlertLogsHandled(deviceId, nowStr, autoUser, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
+                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        });
                     } catch (Exception ignored) {}
                 } else {
                     android.util.Log.d("DatabaseHelper", "日志状态不触发终端状态变更 deviceId=" + deviceId + ", statusCode=" + statusCode);
@@ -1719,20 +1768,33 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private void markOfflineLogsHandled(String deviceId, String handleTime, String handleUser) {
         if (deviceId == null || deviceId.trim().isEmpty()) return;
         SQLiteDatabase db = this.getWritableDatabase();
-        android.database.Cursor c = db.rawQuery(
+        java.util.List<Long> ids = new java.util.ArrayList<>();
+        android.database.Cursor c1 = db.rawQuery(
                 "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS +
                         " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
                 new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)});
-        java.util.List<Long> ids = new java.util.ArrayList<>();
-        while (c.moveToNext()) {
-            long id = c.getLong(0);
-            String hu = c.getString(1);
-            String ht = c.getString(2);
+        while (c1.moveToNext()) {
+            long id = c1.getLong(0);
+            String hu = c1.getString(1);
+            String ht = c1.getString(2);
             boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
             if (unhandled) ids.add(id);
         }
-        c.close();
-        if (ids.isEmpty()) return;
+        c1.close();
+        android.database.Cursor c2 = db.rawQuery(
+                "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS_UNBOUND +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
+                new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)});
+        java.util.List<Long> idsUnbound = new java.util.ArrayList<>();
+        while (c2.moveToNext()) {
+            long id = c2.getLong(0);
+            String hu = c2.getString(1);
+            String ht = c2.getString(2);
+            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+            if (unhandled) idsUnbound.add(id);
+        }
+        c2.close();
+        if (ids.isEmpty() && idsUnbound.isEmpty()) return;
         ContentValues v = new ContentValues();
         String user2 = handleUser;
         if (user2 == null || user2.trim().isEmpty()) {
@@ -1744,6 +1806,60 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         for (Long id : ids) {
             db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
         }
+        for (Long id : idsUnbound) {
+            db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+        }
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("自动处理离线:" + deviceId)); } catch (Exception ignored) {}
+    }
+
+    private void markAlertLogsHandled(String deviceId, String handleTime, String handleUser, int[] statuses) {
+        if (deviceId == null || deviceId.trim().isEmpty()) return;
+        if (statuses == null || statuses.length == 0) return;
+        SQLiteDatabase db = this.getWritableDatabase();
+        java.util.List<Long> ids = new java.util.ArrayList<>();
+        java.util.List<Long> idsUnbound = new java.util.ArrayList<>();
+        for (int s : statuses) {
+            android.database.Cursor c1 = db.rawQuery(
+                    "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS +
+                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
+                    new String[]{deviceId, String.valueOf(s)});
+            while (c1.moveToNext()) {
+                long id = c1.getLong(0);
+                String hu = c1.getString(1);
+                String ht = c1.getString(2);
+                boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                if (unhandled) ids.add(id);
+            }
+            c1.close();
+            android.database.Cursor c2 = db.rawQuery(
+                    "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS_UNBOUND +
+                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
+                    new String[]{deviceId, String.valueOf(s)});
+            while (c2.moveToNext()) {
+                long id = c2.getLong(0);
+                String hu = c2.getString(1);
+                String ht = c2.getString(2);
+                boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                if (unhandled) idsUnbound.add(id);
+            }
+            c2.close();
+        }
+        if (ids.isEmpty() && idsUnbound.isEmpty()) return;
+        ContentValues v = new ContentValues();
+        String user2 = handleUser;
+        if (user2 == null || user2.trim().isEmpty()) {
+            user2 = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
+        }
+        v.put("handle_user", user2);
+        v.put("handle_time", handleTime == null ? "" : handleTime);
+        v.put("handle_remark", "自动处理");
+        for (Long id : ids) {
+            db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+        }
+        for (Long id : idsUnbound) {
+            db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)});
+        }
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("自动处理恢复:" + deviceId)); } catch (Exception ignored) {}
     }
 
     private int getLastLockStateByDeviceId(String deviceId) {
@@ -2627,6 +2743,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String idCol = resolveMaintenanceIdColumn(db);
         ContentValues v = new ContentValues();
         v.put(COLUMN_MAINTENANCE_CONTENT, content == null ? "" : content);
+        return db.update(TABLE_MAINTENANCE, v, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
+    }
+
+    public int updateMaintenanceCreateTimeAndContent(long maintenanceId, String content, String createTime) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ensureMaintenanceSchema(db);
+        String idCol = resolveMaintenanceIdColumn(db);
+        ContentValues v = new ContentValues();
+        v.put(COLUMN_MAINTENANCE_CONTENT, content == null ? "" : content);
+        v.put(COLUMN_MAINTENANCE_CREATE_TIME, createTime == null ? "" : createTime);
         return db.update(TABLE_MAINTENANCE, v, idCol + "=?", new String[]{String.valueOf(maintenanceId)});
     }
 

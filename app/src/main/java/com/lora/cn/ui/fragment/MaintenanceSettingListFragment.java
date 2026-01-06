@@ -278,27 +278,47 @@ public class MaintenanceSettingListFragment extends Fragment {
 
     private void showEditDialog(MaintenanceInfo item) {
         if (item == null) return;
-        EditText et = new EditText(requireContext());
-        et.setMinLines(3);
-        et.setText(item.getContent() == null ? "" : item.getContent());
-        et.setSelection(et.getText().length());
+        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_maintenance, null);
+        Spinner spinner = view.findViewById(R.id.spinner_terminal);
+        View terminalLabel = view.findViewById(R.id.tv_select_terminal_label);
+        EditText etContent = view.findViewById(R.id.et_content);
+        TextView tvTime = view.findViewById(R.id.tv_maintenance_time);
+
+        if (terminalLabel != null) terminalLabel.setVisibility(View.GONE);
+        if (spinner != null) spinner.setVisibility(View.GONE);
+
+        if (etContent != null) {
+            etContent.setText(item.getContent() == null ? "" : item.getContent());
+            etContent.setSelection(etContent.getText().length());
+        }
+        if (tvTime != null) {
+            String ct = item.getCreateTime();
+            tvTime.setText(TextUtils.isEmpty(ct) ? nowStr() : ct);
+            tvTime.setOnClickListener(v -> pickDateTimeInto(tvTime));
+        }
+
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("编辑维护")
-                .setView(et)
+                .setView(view)
                 .setPositiveButton("保存", null)
                 .setNegativeButton("取消", null)
                 .create();
         dialog.setOnShowListener(dlg -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String content = et.getText() != null ? et.getText().toString().trim() : "";
+            String content = etContent != null && etContent.getText() != null ? etContent.getText().toString().trim() : "";
             if (TextUtils.isEmpty(content)) {
                 Toast.makeText(requireContext(), "请输入维护内容", Toast.LENGTH_SHORT).show();
                 return;
             }
+            String createTime = tvTime != null && tvTime.getText() != null ? tvTime.getText().toString().trim() : "";
+            if (TextUtils.isEmpty(createTime)) {
+                createTime = nowStr();
+            }
+            final String createTimeFinal = createTime;
             if (ioExecutor == null || mainHandler == null) return;
             ioExecutor.execute(() -> {
                 int r;
                 try {
-                    r = db.updateMaintenanceContent(item.getId(), content);
+                    r = db.updateMaintenanceCreateTimeAndContent(item.getId(), content, createTimeFinal);
                 } catch (Exception e) {
                     r = 0;
                 }
