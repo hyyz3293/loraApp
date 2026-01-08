@@ -1129,15 +1129,10 @@ public class MainActivity extends AppCompatActivity {
                 boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
                 if (newly) {
                     try {
-                        String lbKey2 = "low_battery_flag_device_" + devId;
-                        boolean flagged2 = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(lbKey2, false);
-                        if (!flagged2) {
-                            long nid = db.addLowBatteryLog(devId, t.getTerminalName());
-                            if (nid > 0) {
-                                out.logIdUpdates.put(devId + ":设备低电量", nid);
-                                out.touchedDb = true;
-                                com.blankj.utilcode.util.SPUtils.getInstance().put(lbKey2, true);
-                            }
+                        long nid = db.addLowBatteryLog(devId, t.getTerminalName());
+                        if (nid > 0) {
+                            out.logIdUpdates.put(devId + ":设备低电量", nid);
+                            out.touchedDb = true;
                         }
                     } catch (Exception ignored) {}
                 }
@@ -1269,7 +1264,8 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("", "llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
-                if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (allowAutoHideBig)
+                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                 Log.d("", "llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
             }
         }
@@ -1470,7 +1466,8 @@ public class MainActivity extends AppCompatActivity {
                             lastAlertTypes.remove(devId);
                             updatePendingBadge();
                             if (pendingAlertCount == 0) {
-                                if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                                if (allowAutoHideBig)
+                                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
                                 // 不主动在此隐藏小窗，让徽标逻辑决定是否展示，避免闪烁
                                 Log.d("", "llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
                             } else {
@@ -1847,8 +1844,7 @@ public class MainActivity extends AppCompatActivity {
         if (llAlertPendingSmall != null) {
             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
             int queueSizeLocal = alertQueue != null ? alertQueue.size() : 0;
-            boolean hasTypes = lastAlertTypes != null && !lastAlertTypes.isEmpty();
-            boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0 || hasTypes);
+            boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0);
             setSmallVisible(shouldShowSmall);
             boolean currentSmall = llAlertPendingSmall.getVisibility() == View.VISIBLE;
             Log.d("", "llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + (currentSmall ? View.VISIBLE : View.GONE));
