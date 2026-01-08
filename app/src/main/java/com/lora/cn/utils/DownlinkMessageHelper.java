@@ -180,14 +180,7 @@ public class DownlinkMessageHelper {
         Log.i(TAG, "原始HEX下行已调用publish: devEUI=" + deviceIdHex);
     }
 
-    private int getGlobalAlarmMinute() {
-        int h = SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
-        int m = SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
-        int minutes = h * 60 + m;
-        if (minutes < 0) minutes = 0;
-        if (minutes > 1440) minutes = 1440;
-        return minutes;
-    }
+
 
     private byte[] hexToBytesLocal(String hex) {
         if (hex == null) return null;

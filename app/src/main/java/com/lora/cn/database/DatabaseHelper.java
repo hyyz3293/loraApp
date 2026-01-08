@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import com.blankj.utilcode.util.LogUtils;
+import com.blankj.utilcode.util.SPUtils;
 
 /**
  * 数据库帮助类
@@ -2619,7 +2620,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void checkAndLogOfflineDevices() {
         SQLiteDatabase db = this.getWritableDatabase();
         long now = System.currentTimeMillis();
-        long timeout = 3 * 60 * 1000L;
+        int sleepMin = SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+        long timeout = sleepMin * 2 * 60 * 1000L;
         long threshold = now - timeout;
         
         String sql = "SELECT " + COLUMN_TERMINAL_DEVICE_ID + ", " + COLUMN_TERMINAL_NAME + 
