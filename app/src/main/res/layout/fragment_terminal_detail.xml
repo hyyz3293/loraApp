@@ -300,9 +300,8 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
-    <!-- 日志列表 -->
-
     <LinearLayout
+        android:id="@+id/layout_maintenance_block"
         android:paddingTop="12dp"
         android:paddingBottom="12dp"
         android:paddingRight="12dp"
@@ -311,16 +310,146 @@
         android:layout_marginBottom="20dp"
         android:background="@drawable/bg_white_12"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <TextView
-            android:text="日志"
-            android:textStyle="bold"
-            android:textColor="@color/black"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="维护日志"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/btn_toggle_maintenance"
+                android:src="@drawable/ic_chevron_up"
+                android:layout_width="24dp"
+                android:layout_height="24dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/maintenance_header_row"
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="50dp" >
+
+            <TextView
+                android:text="时间"
+                android:gravity="center_vertical"
+                android:paddingLeft="5dp"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="188"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:text="状态"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="138"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:text="处理人"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="168"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:text="维护内容"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="168"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:text="维护时间"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="182"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:text="操作"
+                android:gravity="center_vertical"
+                android:textColor="#333333"
+                android:textSize="12dp"
+                android:textStyle="bold"
+                android:layout_weight="107"
+                android:layout_width="0dp"
+                android:layout_height="match_parent" />
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_maintenance_logs"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/tv_no_maintenance"
+            android:text="暂无维护记录"
+            android:visibility="gone"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <!-- 日志列表 -->
+
+    <LinearLayout
+        android:id="@+id/layout_logs_block"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:paddingRight="12dp"
+        android:paddingLeft="12dp"
+        android:orientation="vertical"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/bg_white_12"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                android:text="日志"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content" />
+            <ImageView
+                android:id="@+id/btn_toggle_logs"
+                android:src="@drawable/ic_chevron_up"
+                android:layout_width="24dp"
+                android:layout_height="24dp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/logs_header_row"
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="50dp" >

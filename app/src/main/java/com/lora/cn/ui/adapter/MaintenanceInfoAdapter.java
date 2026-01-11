@@ -17,7 +17,7 @@ import com.lora.cn.R;
 import com.lora.cn.ui.model.MaintenanceInfo;
 
 public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, QuickViewHolder> {
-    public enum Mode { HOME, SETTING }
+    public enum Mode { HOME, SETTING, DETAIL }
     public interface OnConfirmClickListener { void onConfirmClick(MaintenanceInfo item); }
     public interface OnViewClickListener { void onViewClick(MaintenanceInfo item); }
     public interface OnEditClickListener { void onEditClick(MaintenanceInfo item); }
@@ -49,7 +49,12 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         TextView logTime = root.findViewById(R.id.log_time);
         TextView logStatus = root.findViewById(R.id.log_statu);
         TextView logName = root.findViewById(R.id.log_name);
+        TextView logGroup = root.findViewById(R.id.log_group);
         TextView logId = root.findViewById(R.id.log_id);
+        View containerName = root.findViewById(R.id.container_log_name);
+        View containerGroup = root.findViewById(R.id.container_log_group);
+        View containerId = root.findViewById(R.id.container_log_id);
+        TextView logUser = root.findViewById(R.id.log_user);
         TextView logContent = root.findViewById(R.id.log_complute);
         TextView logHandleTime = root.findViewById(R.id.log_complute_time);
         TextView logOperation = root.findViewById(R.id.log_operation);
@@ -71,13 +76,8 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
 
         String name = item.getTerminalName();
         String group = item.getTerminalGroup();
-        String displayName;
-        if (!TextUtils.isEmpty(group)) {
-            displayName = "终端：" + (name == null ? "" : name) + "（" + group + "）";
-        } else {
-            displayName = "终端：" + (name == null ? "" : name);
-        }
-        if (logName != null) setTextOrDash(logName, displayName);
+        if (logName != null) setTextOrDash(logName, name == null ? "" : name);
+        if (logGroup != null) setTextOrDash(logGroup, group == null ? "" : group);
 
         String tid = item.getTerminalId();
         if (logId != null) setTextOrDash(logId, "终端ID：" + (tid == null ? "" : tid));
@@ -88,12 +88,18 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
                 logHandleTime.setText("");
                 logHandleTime.setVisibility(View.GONE);
             }
+            if (logUser != null) {
+                logUser.setText("");
+            }
         } else {
             if (logContent != null) setTextOrDash(logContent, item.getContent());
             if (logContent != null) {
                 logContent.setOnClickListener(v -> {
                     if (onViewClickListener != null) onViewClickListener.onViewClick(item);
                 });
+            }
+            if (logUser != null) {
+                setTextOrDash(logUser, item.getHandleUser());
             }
             if (logHandleTime != null) {
                 logHandleTime.setVisibility(View.VISIBLE);
@@ -105,7 +111,7 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
             }
         }
 
-        if (mode == Mode.HOME) {
+        if (mode == Mode.HOME || mode == Mode.DETAIL) {
             if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
             if (btnEdit != null) {
                 btnEdit.setVisibility(View.GONE);
@@ -146,7 +152,7 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         }
 
         if (logOperation != null) {
-            if (mode == Mode.HOME) {
+            if (mode == Mode.HOME || mode == Mode.DETAIL) {
                 logOperation.setVisibility(View.GONE);
                 logOperation.setEnabled(false);
             } else {
@@ -175,6 +181,15 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
                     });
                 }
             }
+        }
+        if (mode == Mode.DETAIL) {
+            if (containerName != null) containerName.setVisibility(View.GONE);
+            if (containerGroup != null) containerGroup.setVisibility(View.GONE);
+            if (containerId != null) containerId.setVisibility(View.GONE);
+        } else {
+            if (logName != null) logName.setVisibility(View.VISIBLE);
+            if (logGroup != null) logGroup.setVisibility(View.VISIBLE);
+            if (logId != null) logId.setVisibility(View.VISIBLE);
         }
     }
 

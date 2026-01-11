@@ -104,13 +104,33 @@
             android:layout_height="wrap_content"
             android:layout_weight="156"
             android:gravity="center_vertical"
-            android:text="终端"
+            android:text="设备名称"
             android:textColor="#333333"
             android:textSize="12dp"
             android:textStyle="bold" />
 
         <TextView
-            android:text="终端ID"
+            android:text="终端编号"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="168"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:text="分组"
+            android:gravity="center_vertical"
+            android:textColor="#333333"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            android:layout_weight="168"
+            android:layout_width="0dp"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:text="处理人"
             android:gravity="center_vertical"
             android:textColor="#333333"
             android:textSize="12dp"

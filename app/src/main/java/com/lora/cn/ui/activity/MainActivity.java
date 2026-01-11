@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private long lastBadgeRequestMs = 0L;
     private boolean badgeRequestDelayed = false;
     private int mqttReadyRetry = 0;
+    private int mqttConnectRetry = 0;
     private final Runnable badgeRequestRunnable = new Runnable() {
         @Override
         public void run() {
@@ -2250,6 +2251,9 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onStatus(String msg) {
                             Log.d(TAG, "MQTT状态 onStatus: " + msg);
+                            if (msg != null && (msg.contains("连接成功") || msg.contains("订阅成功"))) {
+                                mqttConnectRetry = 0;
+                            }
                         }
                         @Override
                         public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {
@@ -2258,6 +2262,7 @@ public class MainActivity extends AppCompatActivity {
                                 return;
                             }
                             Log.e(TAG, "收到上行数据条数: " + records.size());
+                            mqttConnectRetry = 0;
                             
                             // 获取当前时间
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
@@ -2320,6 +2325,14 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onError(String error) {
                             Log.e(TAG, "MQTT错误: " + error);
+                            try {
+                                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
+                                if (mqttClient != null) {
+                                    mqttClient.disconnect();
+                                }
+                                mainHandler.postDelayed(MainActivity.this::startGlobalMqttLogging, delay);
+                            } catch (Exception ignored) {}
                         }
                         @Override
                         public void onComplete() {

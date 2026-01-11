@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Button;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -73,6 +74,10 @@ public class TerminalDetailFragment extends Fragment {
     private int totalLogCount = 0;
     private java.util.List<com.lora.cn.ui.model.LogInfo> displayedLogs = new java.util.ArrayList<>();
     private boolean noMoreData = false;
+    private androidx.recyclerview.widget.RecyclerView rvMaintenanceLogs;
+    private android.widget.TextView tvNoMaintenance;
+    private com.lora.cn.ui.adapter.MaintenanceInfoAdapter maintenanceAdapter;
+    private final java.util.concurrent.atomic.AtomicInteger maintenanceLogsSeq = new java.util.concurrent.atomic.AtomicInteger(0);
 
     private TextView terminal_detail_type;
     private TextView terminal_detail_code;
@@ -89,6 +94,14 @@ public class TerminalDetailFragment extends Fragment {
     private final AtomicInteger bindSeq = new AtomicInteger(0);
     private final AtomicInteger logsSeq = new AtomicInteger(0);
     private final AtomicInteger maintenanceSeq = new AtomicInteger(0);
+    private View layoutMaintenanceBlock;
+    private View layoutLogsBlock;
+    private ImageView btnToggleMaintenance;
+    private ImageView btnToggleLogs;
+    private View maintenanceHeaderRow;
+    private View logsHeaderRow;
+    private boolean maintenanceCollapsed = false;
+    private boolean logsCollapsed = false;
 
     @Nullable
     @Override
@@ -101,6 +114,7 @@ public class TerminalDetailFragment extends Fragment {
         setupListeners();
         bindData();
         loadLogs();
+        loadMaintenanceLogs();
         return v;
     }
 
@@ -131,6 +145,34 @@ public class TerminalDetailFragment extends Fragment {
         rvLogs.setLayoutManager(new LinearLayoutManager(requireContext()));
         logAdapter = new LogDetailInfoAdapter();
         rvLogs.setAdapter(logAdapter);
+        rvMaintenanceLogs = v.findViewById(R.id.rv_maintenance_logs);
+        tvNoMaintenance = v.findViewById(R.id.tv_no_maintenance);
+        if (rvMaintenanceLogs != null) {
+            rvMaintenanceLogs.setLayoutManager(new LinearLayoutManager(requireContext()));
+            maintenanceAdapter = new com.lora.cn.ui.adapter.MaintenanceInfoAdapter(com.lora.cn.ui.adapter.MaintenanceInfoAdapter.Mode.DETAIL);
+            maintenanceAdapter.setOnConfirmClickListener(item -> {
+                if (ioExecutor == null || mainHandler == null) return;
+                ioExecutor.execute(() -> {
+                    long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                    String time = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                    try {
+                        dbHelper.updateMaintenanceHandled(item.getId(), uid, user, time, "");
+                    } catch (Exception ignored) {}
+                    Handler h = mainHandler;
+                    if (h == null) return;
+                    h.post(this::loadMaintenanceLogs);
+                });
+            });
+            maintenanceAdapter.setOnViewClickListener(item -> {
+                android.app.AlertDialog.Builder b1 = new android.app.AlertDialog.Builder(requireContext());
+                b1.setTitle("维护内容");
+                b1.setMessage(item.getContent() == null ? "" : item.getContent());
+                b1.setPositiveButton("关闭", (d, w) -> d.dismiss());
+                b1.show();
+            });
+            rvMaintenanceLogs.setAdapter(maintenanceAdapter);
+        }
 
         terminal_detail_type = v.findViewById(R.id.terminal_detail_type);
         terminal_detail_code = v.findViewById(R.id.terminal_detail_code);
@@ -142,6 +184,25 @@ public class TerminalDetailFragment extends Fragment {
         btnHandleNow = v.findViewById(R.id.btn_handle_now);
         btnSetMaintenance = v.findViewById(R.id.btn_set_maintenance);
 
+        layoutMaintenanceBlock = v.findViewById(R.id.layout_maintenance_block);
+        layoutLogsBlock = v.findViewById(R.id.layout_logs_block);
+        btnToggleMaintenance = v.findViewById(R.id.btn_toggle_maintenance);
+        btnToggleLogs = v.findViewById(R.id.btn_toggle_logs);
+        maintenanceHeaderRow = v.findViewById(R.id.maintenance_header_row);
+        logsHeaderRow = v.findViewById(R.id.logs_header_row);
+        if (btnToggleMaintenance != null) {
+            btnToggleMaintenance.setOnClickListener(view -> {
+                maintenanceCollapsed = !maintenanceCollapsed;
+                applyToggleUi();
+            });
+        }
+        if (btnToggleLogs != null) {
+            btnToggleLogs.setOnClickListener(view -> {
+                logsCollapsed = !logsCollapsed;
+                applyToggleUi();
+            });
+        }
+        applyToggleUi();
     }
 
     private void bindData() {
@@ -275,6 +336,26 @@ public class TerminalDetailFragment extends Fragment {
             String finalStatusPercent = statusPercent;
             String finalTopBattery = topBattery;
             String finalGroupNames = groupNames;
+            String finalGroupChildren;
+            {
+                java.util.List<String> toks = new java.util.ArrayList<>();
+                if (finalGroupNames != null && !finalGroupNames.trim().isEmpty()) {
+                    String[] arr = finalGroupNames.split(",");
+                    for (String tk : arr) {
+                        if (tk == null) continue;
+                        String raw = tk.trim();
+                        if (raw.isEmpty()) continue;
+                        int p = raw.lastIndexOf('-');
+                        toks.add(p >= 0 ? raw.substring(p + 1) : raw);
+                    }
+                }
+                StringBuilder sb = new StringBuilder();
+                for (int i2 = 0; i2 < toks.size(); i2++) {
+                    if (i2 > 0) sb.append("  ");
+                    sb.append(toks.get(i2));
+                }
+                finalGroupChildren = sb.toString();
+            }
             String finalCode = code;
             String finalWifiText = wifiText;
             String finalBatteryText = batteryText;
@@ -300,7 +381,7 @@ public class TerminalDetailFragment extends Fragment {
                     terminal_detail_type.setSingleLine(false);
                     terminal_detail_type.setEllipsize(null);
                     terminal_detail_type.setMaxLines(20);
-                    terminal_detail_type.setText(finalGroupNames);
+                    terminal_detail_type.setText(finalGroupChildren);
                 }
                 if (terminal_detail_code != null) terminal_detail_code.setText(finalCode);
                 if (terminal_detail_wifi != null) terminal_detail_wifi.setText(finalWifiText);
@@ -709,6 +790,77 @@ public class TerminalDetailFragment extends Fragment {
                 }
             });
         });
+    }
+
+    private void loadMaintenanceLogs() {
+        if (ioExecutor == null || mainHandler == null) return;
+        String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+        int token = maintenanceLogsSeq.incrementAndGet();
+        ioExecutor.execute(() -> {
+            java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = null;
+            String err = null;
+            try {
+                long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                list = dbHelper.getMaintenanceRecordsByTerminal(deviceId, uid);
+            } catch (Exception e) {
+                err = "加载维护日志失败";
+            }
+            java.util.List<com.lora.cn.ui.model.MaintenanceInfo> finalList = list;
+            String finalErr = err;
+            Handler h = mainHandler;
+            if (h == null) return;
+            h.post(() -> {
+                if (!isAdded()) return;
+                if (token != maintenanceLogsSeq.get()) return;
+                if (finalErr != null) {
+                    if (rvMaintenanceLogs != null) rvMaintenanceLogs.setVisibility(View.GONE);
+                    if (tvNoMaintenance != null) {
+                        tvNoMaintenance.setVisibility(View.VISIBLE);
+                        tvNoMaintenance.setText(finalErr);
+                    }
+                    return;
+                }
+                if (finalList != null && !finalList.isEmpty()) {
+                    if (rvMaintenanceLogs != null) rvMaintenanceLogs.setVisibility(View.VISIBLE);
+                    if (tvNoMaintenance != null) tvNoMaintenance.setVisibility(View.GONE);
+                    if (maintenanceAdapter != null) {
+                        maintenanceAdapter.submitList(new java.util.ArrayList<>(finalList));
+                        maintenanceAdapter.notifyDataSetChanged();
+                    }
+                } else {
+                    if (rvMaintenanceLogs != null) rvMaintenanceLogs.setVisibility(View.GONE);
+                    if (tvNoMaintenance != null) {
+                        tvNoMaintenance.setVisibility(View.VISIBLE);
+                        tvNoMaintenance.setText("暂无维护记录");
+                    }
+                }
+            });
+        });
+    }
+
+    private void applyToggleUi() {
+        try {
+            if (btnToggleMaintenance != null) btnToggleMaintenance.setImageResource(maintenanceCollapsed ? R.drawable.ic_chevron_down : R.drawable.ic_chevron_up);
+            if (btnToggleLogs != null) btnToggleLogs.setImageResource(logsCollapsed ? R.drawable.ic_chevron_down : R.drawable.ic_chevron_up);
+            if (maintenanceHeaderRow != null) maintenanceHeaderRow.setVisibility(maintenanceCollapsed ? View.GONE : View.VISIBLE);
+            if (rvMaintenanceLogs != null) rvMaintenanceLogs.setVisibility(maintenanceCollapsed ? View.GONE : View.VISIBLE);
+            if (tvNoMaintenance != null) tvNoMaintenance.setVisibility(maintenanceCollapsed ? View.GONE : tvNoMaintenance.getVisibility());
+            if (logsHeaderRow != null) logsHeaderRow.setVisibility(logsCollapsed ? View.GONE : View.VISIBLE);
+            if (refreshLayout != null) refreshLayout.setVisibility(logsCollapsed ? View.GONE : View.VISIBLE);
+            if (tvNoLogs != null) tvNoLogs.setVisibility(logsCollapsed ? View.GONE : tvNoLogs.getVisibility());
+            if (layoutMaintenanceBlock != null) {
+                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) layoutMaintenanceBlock.getLayoutParams();
+                lp.height = maintenanceCollapsed ? ViewGroup.LayoutParams.WRAP_CONTENT : 0;
+                lp.weight = maintenanceCollapsed ? 0f : 1f;
+                layoutMaintenanceBlock.setLayoutParams(lp);
+            }
+            if (layoutLogsBlock != null) {
+                LinearLayout.LayoutParams lp2 = (LinearLayout.LayoutParams) layoutLogsBlock.getLayoutParams();
+                lp2.height = logsCollapsed ? ViewGroup.LayoutParams.WRAP_CONTENT : 0;
+                lp2.weight = logsCollapsed ? 0f : 1f;
+                layoutLogsBlock.setLayoutParams(lp2);
+            }
+        } catch (Exception ignored) {}
     }
 
     private long parseMillis(String time) {

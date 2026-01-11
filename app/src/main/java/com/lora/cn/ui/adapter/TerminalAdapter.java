@@ -60,10 +60,8 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 long gid = c.getGroupId();
                 String key = gid + ":" + cid;
                 if (seen.contains(key)) return;
-                com.lora.cn.database.entity.Group g = dm.getGroupById(gid);
-                String gname = g != null ? g.getGroupName() : String.valueOf(gid);
                 String cname = c.getCategoryName();
-                allTokens.add(gname + "-" + cname);
+                allTokens.add(cname);
                 seen.add(key);
             };
             addByCategoryId.accept(item.getDepartmentId());
@@ -76,7 +74,9 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                     String[] toks = names.split(",");
                     for (String tk : toks) {
                         if (tk == null || tk.trim().isEmpty()) continue;
-                        allTokens.add(tk.trim());
+                        String raw = tk.trim();
+                        int p = raw.lastIndexOf('-');
+                        allTokens.add(p >= 0 ? raw.substring(p + 1) : raw);
                     }
                 }
             }
