@@ -80,28 +80,27 @@ public class MaintenanceHomeListFragment extends Fragment {
         adapter.setOnDeleteClickListener(this::showDeleteDialog);
         rv.setAdapter(adapter);
 
-        View tvAll = v.findViewById(R.id.tv_filter_all);
-        View tvPending = v.findViewById(R.id.tv_filter_pending);
-        View tvDone = v.findViewById(R.id.tv_filter_done);
-        if (tvAll != null) {
-            tvAll.setOnClickListener(view -> {
-                filterStatus = -1;
-                currentPage = 0;
-                loadList();
-            });
-        }
-        if (tvPending != null) {
-            tvPending.setOnClickListener(view -> {
-                filterStatus = 0;
-                currentPage = 0;
-                loadList();
-            });
-        }
-        if (tvDone != null) {
-            tvDone.setOnClickListener(view -> {
-                filterStatus = 1;
-                currentPage = 0;
-                loadList();
+        android.widget.Spinner spinnerStatus = v.findViewById(R.id.spinner_status);
+        if (spinnerStatus != null) {
+            java.util.List<String> opts = new java.util.ArrayList<>();
+            opts.add("全部");
+            opts.add("待维护");
+            opts.add("已维护");
+            android.widget.ArrayAdapter<String> adapterSpinner = new android.widget.ArrayAdapter<>(requireContext(), R.layout.spinner_item_12dp, opts);
+            adapterSpinner.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+            spinnerStatus.setAdapter(adapterSpinner);
+            spinnerStatus.setSelection(0, false);
+            spinnerStatus.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(android.widget.AdapterView<?> parent, View view1, int position, long id) {
+                    if (position == 0) filterStatus = -1;
+                    else if (position == 1) filterStatus = 0;
+                    else filterStatus = 1;
+                    currentPage = 0;
+                    loadList();
+                }
+                @Override
+                public void onNothingSelected(android.widget.AdapterView<?> parent) {}
             });
         }
 
