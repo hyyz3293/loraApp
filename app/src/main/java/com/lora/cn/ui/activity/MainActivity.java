@@ -960,19 +960,19 @@ public class MainActivity extends AppCompatActivity {
                                     int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                                     int mins = Math.max(0, Math.min(1440, h * 60 + m));
                                     int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                                    helper.sendDownlink8001(
-                                            dev,
-                                            0,
-                                            0,
-                                            0,
-                                            0,
-                                            0,
-                                            0,
-                                            Math.max(3, Math.min(1440, interval)),
-                                            1,
-                                            new int[]{mins},
-                                            true
-                                    );
+//                                    helper.sendDownlink8001(
+//                                            dev,
+//                                            0,
+//                                            0,
+//                                            0,
+//                                            0,
+//                                            0,
+//                                            0,
+//                                            Math.max(3, Math.min(1440, interval)),
+//                                            1,
+//                                            new int[]{mins},
+//                                            true
+//                                    );
                                     String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                                     db.updateMaintenanceSent(mi.getId(), sentTime);
                                     android.util.Log.i(TAG, "已下发维护提醒: dev=" + dev + " recordId=" + mi.getId() + " time=" + ct);
@@ -1298,23 +1298,6 @@ public class MainActivity extends AppCompatActivity {
                 com.lora.cn.network.MqttPacketsClient client = mqttClient != null ? mqttClient : com.lora.cn.network.MqttPacketsClient.getShared();
                 com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
                 java.util.List<com.lora.cn.ui.model.Terminal> terms = db.getAllTerminals();
-                long depId = 0L;
-                long roomId = 0L;
-                if (terms != null) {
-                    for (com.lora.cn.ui.model.Terminal t : terms) {
-                        if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
-                            depId = t.getDepartmentId();
-                            roomId = t.getRoomId();
-                            break;
-                        }
-                    }
-                }
-                int dep = (int) Math.max(0, Math.min(255, depId));
-                int cart = (int) Math.max(0, Math.min(255, roomId));
-                int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
-                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
-                int mins = Math.max(0, Math.min(1440, h * 60 + m));
                 boolean maintenanceNeeded = false;
                 try {
                     if (frame.statusFlags != null) {
@@ -1378,7 +1361,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     } catch (Exception ignored) {}
                 }
-                helper.sendDownlink8001(frame.deviceId, 1, 0, dep, cart, 0, 0, intervalMin, 1, new int[]{mins}, true);
+                helper.evaluateAndSend8001IfNeeded(frame, db);
             } catch (Exception ignored) {}
 
             int statusCode = 0;
@@ -2533,19 +2516,19 @@ public class MainActivity extends AppCompatActivity {
                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int mins = Math.max(0, Math.min(1440, h * 60 + m));
                 int interval = Math.max(3, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3)));
-                helper.sendDownlink8001(
-                        devHex,
-                        1,
-                        1,
-                        0,
-                        0,
-                        0,
-                        mask,
-                        interval,
-                        1,
-                        new int[]{mins},
-                        true
-                );
+//                helper.sendDownlink8001(
+//                        devHex,
+//                        1,
+//                        1,
+//                        0,
+//                        0,
+//                        0,
+//                        mask,
+//                        interval,
+//                        1,
+//                        new int[]{mins},
+//                        true
+//                );
             }
         } catch (Exception e) {
             android.util.Log.e(TAG, "下发处理下行失败 devEUI=" + devHex + ", mask=" + mask, e);

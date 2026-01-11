@@ -180,6 +180,50 @@ public class DownlinkMessageHelper {
         Log.i(TAG, "原始HEX下行已调用publish: devEUI=" + deviceIdHex);
     }
 
+    public void evaluateAndSend8001IfNeeded(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame,
+                                            com.lora.cn.database.DatabaseHelper db) {
+        try {
+            if (frame == null || frame.deviceId == null || frame.deviceId.isEmpty()) return;
+            int depId = 0;
+            int cartId = 0;
+            try {
+                java.util.List<com.lora.cn.ui.model.Terminal> terms = db != null ? db.getAllTerminals() : null;
+                if (terms != null) {
+                    for (com.lora.cn.ui.model.Terminal t : terms) {
+                        if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                            depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
+                            cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+            int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+            int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+            int mins = Math.max(0, Math.min(1440, h * 60 + m));
+            int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
+            int lowBattery = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            boolean needDownlink = isNeedDownlink(frame, normalizedInterval, mins, lowBattery);
+            if (needDownlink) {
+                sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, 0, normalizedInterval, 1, new int[]{mins}, true);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static boolean isNeedDownlink(LoRaFrameParser.ParsedFrame frame, int normalizedInterval, int mins, int lowBattery) {
+        boolean intervalMatch = (frame.sleepIntervalMin > 0) && (frame.sleepIntervalMin == normalizedInterval);
+        boolean scheduleMatch = false;
+        boolean isLow = (frame.evLowBattery > 0) && (frame.evLowBattery == lowBattery);
+        if (frame.alarmCount >= 0) {
+            if (frame.alarmCount == 1 && frame.alarmMinutes != null && frame.alarmMinutes.length >= 1) {
+                scheduleMatch = (frame.alarmMinutes[0] == mins);
+            } else if (frame.alarmCount == 0 && mins <= 0) {
+                scheduleMatch = true;
+            }
+        }
+        return !(intervalMatch && scheduleMatch);
+    }
 
 
     private byte[] hexToBytesLocal(String hex) {

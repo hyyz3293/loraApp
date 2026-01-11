@@ -53,6 +53,7 @@ public class MaintenanceHomeListFragment extends Fragment {
     private int pageSize = 20;
     private int currentPage = 0;
     private boolean loadingMore = false;
+    private int filterStatus = -1;
 
     public static MaintenanceHomeListFragment newInstance() {
         return new MaintenanceHomeListFragment();
@@ -78,6 +79,31 @@ public class MaintenanceHomeListFragment extends Fragment {
         adapter.setOnEditClickListener(this::showEditDialog);
         adapter.setOnDeleteClickListener(this::showDeleteDialog);
         rv.setAdapter(adapter);
+
+        View tvAll = v.findViewById(R.id.tv_filter_all);
+        View tvPending = v.findViewById(R.id.tv_filter_pending);
+        View tvDone = v.findViewById(R.id.tv_filter_done);
+        if (tvAll != null) {
+            tvAll.setOnClickListener(view -> {
+                filterStatus = -1;
+                currentPage = 0;
+                loadList();
+            });
+        }
+        if (tvPending != null) {
+            tvPending.setOnClickListener(view -> {
+                filterStatus = 0;
+                currentPage = 0;
+                loadList();
+            });
+        }
+        if (tvDone != null) {
+            tvDone.setOnClickListener(view -> {
+                filterStatus = 1;
+                currentPage = 0;
+                loadList();
+            });
+        }
 
         if (swipe != null) {
             swipe.setEnableRefresh(true);
@@ -152,7 +178,15 @@ public class MaintenanceHomeListFragment extends Fragment {
                     if (ct == null || ct.trim().isEmpty()) continue;
                     try {
                         Date dt = sdf.parse(ct.trim());
-                        if (dt != null && dt.getTime() <= now) filtered.add(mi);
+                        if (dt != null && dt.getTime() <= now) {
+                            if (filterStatus == -1) {
+                                filtered.add(mi);
+                            } else if (filterStatus == 0) {
+                                if (mi.getStatus() == 0) filtered.add(mi);
+                            } else if (filterStatus == 1) {
+                                if (mi.getStatus() == 1) filtered.add(mi);
+                            }
+                        }
                     } catch (Exception ignored) {}
                 }
                 allFiltered.clear();
@@ -246,19 +280,19 @@ public class MaintenanceHomeListFragment extends Fragment {
                 int m = SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int mins = Math.max(0, Math.min(1440, h * 60 + m));
                 int interval = SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                helper.sendDownlink8001(
-                        dev,
-                        0,
-                        1,
-                        0,
-                        0,
-                        0,
-                        (1 << 1),
-                        Math.max(3, Math.min(1440, interval)),
-                        1,
-                        new int[]{mins},
-                        true
-                );
+//                helper.sendDownlink8001(
+//                        dev,
+//                        0,
+//                        1,
+//                        0,
+//                        0,
+//                        0,
+//                        (1 << 1),
+//                        Math.max(3, Math.min(1440, interval)),
+//                        1,
+//                        new int[]{mins},
+//                        true
+//                );
                 db.updateMaintenanceSent(mi.getId(), nowStr());
                 EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("maintenance_updated"));
             } catch (Exception ignored) {}
@@ -298,19 +332,19 @@ public class MaintenanceHomeListFragment extends Fragment {
                                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                                 int mins = Math.max(0, Math.min(1440, h * 60 + m));
                                 int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                                helper.sendDownlink8001(
-                                        devId,
-                                        1,
-                                        1,
-                                        dep,
-                                        cart,
-                                        0,
-                                        (1 << 2),
-                                        Math.max(3, Math.min(1440, interval)),
-                                        1,
-                                        new int[]{mins},
-                                        true
-                                );
+//                                helper.sendDownlink8001(
+//                                        devId,
+//                                        1,
+//                                        1,
+//                                        dep,
+//                                        cart,
+//                                        0,
+//                                        (1 << 2),
+//                                        Math.max(3, Math.min(1440, interval)),
+//                                        1,
+//                                        new int[]{mins},
+//                                        true
+//                                );
                             } catch (Exception ignored) {}
                         }
                         int finalR = r;

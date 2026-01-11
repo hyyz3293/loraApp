@@ -211,19 +211,19 @@ public class AlertPendingListFragment extends Fragment {
                             int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                             int mins = Math.max(0, Math.min(1440, h * 60 + m));
                             int interval = Math.max(3, Math.min(1440, com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3)));
-                            helper.sendDownlink8001(
-                                    devHex,
-                                    1,
-                                    1,
-                                    0,
-                                    0,
-                                    0,
-                                    mask,
-                                    interval,
-                                    1,
-                                    new int[]{mins},
-                                    true
-                            );
+//                            helper.sendDownlink8001(
+//                                    devHex,
+//                                    1,
+//                                    1,
+//                                    0,
+//                                    0,
+//                                    0,
+//                                    mask,
+//                                    interval,
+//                                    1,
+//                                    new int[]{mins},
+//                                    true
+//                            );
                         } catch (Exception ignored) {}
                     }
                     loadAlerts();

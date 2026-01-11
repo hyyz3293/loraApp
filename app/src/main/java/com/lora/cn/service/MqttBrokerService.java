@@ -70,19 +70,19 @@ public class MqttBrokerService extends Service {
                                     int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                                     int mins = Math.max(0, Math.min(1440, h * 60 + m));
                                     int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                                    helper.sendDownlink8001(
-                                            dev,
-                                            0,
-                                            1,
-                                            0,
-                                            0,
-                                            0,
-                                            (1 << 1),
-                                            Math.max(3, Math.min(1440, interval)),
-                                            1,
-                                            new int[]{mins},
-                                            true
-                                    );
+//                                    helper.sendDownlink8001(
+//                                            dev,
+//                                            0,
+//                                            1,
+//                                            0,
+//                                            0,
+//                                            0,
+//                                            (1 << 1),
+//                                            Math.max(3, Math.min(1440, interval)),
+//                                            1,
+//                                            new int[]{mins},
+//                                            true
+//                                    );
                                     String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                                     db.updateMaintenanceSent(mi.getId(), sentTime);
                                 } catch (Exception ignored) {}
@@ -358,18 +358,18 @@ public class MqttBrokerService extends Service {
                     if (dev.length() != 16) continue;
                     int dep = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
                     int cart = (int) Math.max(0, Math.min(255, t.getRoomId()));
-                    helper.sendDownlink8001(
-                            dev,
-                            1,
-                            0,
-                            dep,
-                            cart,
-                            0,
-                            0,
-                            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
-                            1,
-                            new int[]{mins},
-                            true);
+//                    helper.sendDownlink8001(
+//                            dev,
+//                            1,
+//                            0,
+//                            dep,
+//                            cart,
+//                            0,
+//                            0,
+//                            com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3),
+//                            1,
+//                            new int[]{mins},
+//                            true);
                     try {
                         com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
                         li.setTerminalId(t.getTerminalId());
