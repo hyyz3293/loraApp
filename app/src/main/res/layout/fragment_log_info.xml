@@ -24,7 +24,7 @@
             android:orientation="horizontal">
 
             <TextView
-                android:textSize="11dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="日志类型："
                 android:textStyle="bold"
@@ -34,7 +34,7 @@
             <LinearLayout
                 android:background="@drawable/spinner_background"
                 android:layout_width="102dp"
-                android:layout_height="38dp" >
+                android:layout_height="30dp" >
 
                 <Spinner
                     android:id="@+id/log_type"
@@ -47,7 +47,7 @@
 
             <TextView
                 android:layout_marginLeft="10dp"
-                android:textSize="11dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="报警处理："
                 android:textStyle="bold"
@@ -57,7 +57,7 @@
             <LinearLayout
                 android:background="@drawable/spinner_background"
                 android:layout_width="102dp"
-                android:layout_height="32dp" >
+                android:layout_height="30dp" >
 
                 <Spinner
                     android:id="@+id/spinner_police"
@@ -71,7 +71,7 @@
             <LinearLayout
                 android:background="@drawable/spinner_background"
                 android:layout_width="50dp"
-                android:layout_height="32dp" >
+                android:layout_height="30dp" >
 
                 <Spinner
                     android:id="@+id/spinner_ts"
@@ -84,7 +84,7 @@
             </LinearLayout>
 
             <TextView
-                android:textSize="11dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="日志时间："
                 android:textStyle="bold"
@@ -105,7 +105,7 @@
                     android:layout_centerVertical="true"
                     android:text="开始时间"
                     android:textColor="#767676"
-                    android:textSize="11dp"
+                    android:textSize="10dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 
@@ -138,7 +138,7 @@
                     android:layout_centerVertical="true"
                     android:text="结束时间"
                     android:textColor="#767676"
-                    android:textSize="11dp"
+                    android:textSize="10dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 
@@ -167,7 +167,7 @@
                     android:layout_centerVertical="true"
                     android:text="重置"
                     android:textColor="#383B40"
-                    android:textSize="14dp"
+                    android:textSize="12dp"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp" />
 
@@ -180,7 +180,7 @@
                     android:layout_centerVertical="true"
                     android:text="导出"
                     android:textColor="#383B40"
-                    android:textSize="14dp"
+                    android:textSize="12dp"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp" />
 
