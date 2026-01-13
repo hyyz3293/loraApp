@@ -16,7 +16,7 @@ import com.blankj.utilcode.util.SPUtils;
 public class DatabaseHelper extends SQLiteOpenHelper {
     
     private static final String DATABASE_NAME = "lora_app.db";
-    private static final int DATABASE_VERSION = 23;
+    private static final int DATABASE_VERSION = 24;
     
     // 分组表
     public static final String TABLE_GROUPS = "groups";
@@ -161,6 +161,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_TERMINAL_UPDATE_TIME = "update_time";
     public static final String COLUMN_TERMINAL_MAINTENANCE_ACTIVE = "maintenance_active";
     public static final String COLUMN_TERMINAL_MAINTENANCE_TIME = "maintenance_time";
+    public static final String COLUMN_TERMINAL_MAINTENANCE_CLEAR_PENDING = "maintenance_clear_pending";
     
     // 用户关注映射表
     public static final String TABLE_USER_FAVORITES = "user_favorites";
@@ -595,6 +596,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 23) {
             try { ensureMaintenanceSchema(db); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 24) {
+            try { db.execSQL("ALTER TABLE " + TABLE_TERMINALS + " ADD COLUMN " + COLUMN_TERMINAL_MAINTENANCE_CLEAR_PENDING + " INTEGER DEFAULT 0"); } catch (Exception ignored) {}
         }
         
         // 如果需要完全重建数据库，可以取消注释以下代码
@@ -1457,6 +1461,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 int maintTimeIdx = cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_TIME);
                 if (maintTimeIdx != -1) {
                     terminal.setMaintenanceTime(cursor.getLong(maintTimeIdx));
+                }
+                int maintClearIdx = cursor.getColumnIndex(COLUMN_TERMINAL_MAINTENANCE_CLEAR_PENDING);
+                if (maintClearIdx != -1) {
+                    terminal.setMaintenanceClearPending(cursor.getInt(maintClearIdx) == 1);
                 }
                 
                 terminals.add(terminal);
@@ -2703,9 +2711,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         ensureColumnIfMissing(db, TABLE_TERMINALS, COLUMN_TERMINAL_MAINTENANCE_ACTIVE, "INTEGER DEFAULT 0");
         ensureColumnIfMissing(db, TABLE_TERMINALS, COLUMN_TERMINAL_MAINTENANCE_TIME, "INTEGER DEFAULT 0");
+        ensureColumnIfMissing(db, TABLE_TERMINALS, COLUMN_TERMINAL_MAINTENANCE_CLEAR_PENDING, "INTEGER DEFAULT 0");
         ContentValues values = new ContentValues();
         values.put(COLUMN_TERMINAL_MAINTENANCE_ACTIVE, active ? 1 : 0);
         values.put(COLUMN_TERMINAL_MAINTENANCE_TIME, Math.max(0L, timeMs));
+        values.put(COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
+        return db.update(TABLE_TERMINALS, values,
+                COLUMN_TERMINAL_DEVICE_ID + "=?",
+                new String[]{terminalId == null ? "" : terminalId});
+    }
+
+    public int setTerminalMaintenanceClearPending(String terminalId, boolean pending) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ensureColumnIfMissing(db, TABLE_TERMINALS, COLUMN_TERMINAL_MAINTENANCE_CLEAR_PENDING, "INTEGER DEFAULT 0");
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_TERMINAL_MAINTENANCE_CLEAR_PENDING, pending ? 1 : 0);
         values.put(COLUMN_TERMINAL_UPDATE_TIME, System.currentTimeMillis());
         return db.update(TABLE_TERMINALS, values,
                 COLUMN_TERMINAL_DEVICE_ID + "=?",

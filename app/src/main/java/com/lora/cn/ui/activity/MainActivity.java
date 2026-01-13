@@ -975,7 +975,6 @@ public class MainActivity extends AppCompatActivity {
                 if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
                 if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                 android.content.Context appCtx = getApplicationContext();
                 ioExecutor.execute(() -> {
                     try {
@@ -987,41 +986,74 @@ public class MainActivity extends AppCompatActivity {
                             com.lora.cn.network.MqttPacketsClient client = mqttClient != null ? mqttClient : com.lora.cn.network.MqttPacketsClient.getShared();
                             com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
                             long now = System.currentTimeMillis();
+                            java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                            java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                            java.util.List<com.lora.cn.ui.model.Terminal> terms = null;
+                            try { terms = db.getAllTerminals(); } catch (Exception ignored) {}
+                            java.util.HashMap<String, java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo>> dueByDev = new java.util.HashMap<>();
+                            java.util.HashMap<String, Long> latestTsByDev = new java.util.HashMap<>();
+                            java.util.HashMap<String, Integer> latestMinsByDev = new java.util.HashMap<>();
                             for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
                                 if (mi == null) continue;
                                 if (mi.getStatus() != 0) continue;
-                                String ct = mi.getCreateTime();
-                                if (ct == null || ct.trim().isEmpty()) continue;
-                                long ts = now;
-                                try { java.util.Date dt = sdf.parse(ct.trim()); if (dt != null) ts = dt.getTime(); } catch (Exception ignored) {}
-                                if (ts > now) continue;
                                 if (mi.getSentFlag() == 1) continue;
                                 String dev = mi.getTerminalId();
                                 if (dev == null || dev.isEmpty()) continue;
+                                String ct = mi.getCreateTime();
+                                if (ct == null || ct.trim().isEmpty()) continue;
+                                java.util.Date dt = null;
+                                try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
+                                if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
+                                if (dt == null) continue;
+                                long ts = dt.getTime();
+                                if (ts > now) continue;
+                                java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> bucket = dueByDev.get(dev);
+                                if (bucket == null) { bucket = new java.util.ArrayList<>(); dueByDev.put(dev, bucket); }
+                                bucket.add(mi);
+                                int mins = 0;
                                 try {
-                                    int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
-                                    int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
-                                    int mins = Math.max(0, Math.min(1440, h * 60 + m));
-                                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-//                                    helper.sendDownlink8001(
-//                                            dev,
-//                                            0,
-//                                            0,
-//                                            0,
-//                                            0,
-//                                            0,
-//                                            0,
-//                                            Math.max(3, Math.min(1440, interval)),
-//                                            1,
-//                                            new int[]{mins},
-//                                            true
-//                                    );
-                                    String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                                    db.updateMaintenanceSent(mi.getId(), sentTime);
-                                    android.util.Log.i(TAG, "已下发维护提醒: dev=" + dev + " recordId=" + mi.getId() + " time=" + ct);
-                                } catch (Exception e) {
-                                    android.util.Log.e(TAG, "下发维护失败: " + e.getMessage());
+                                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                                    cal.setTime(dt);
+                                    mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
+                                } catch (Exception ignored) {}
+                                Long prevTs = latestTsByDev.get(dev);
+                                if (prevTs == null || ts >= prevTs) {
+                                    latestTsByDev.put(dev, ts);
+                                    latestMinsByDev.put(dev, mins);
                                 }
+                            }
+                            for (java.util.Map.Entry<String, java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo>> entry : dueByDev.entrySet()) {
+                                String dev = entry.getKey();
+                                java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> bucket = entry.getValue();
+                                if (dev == null || bucket == null || bucket.isEmpty()) continue;
+                                try {
+                                    int depId = 0;
+                                    int cartId = 0;
+                                    boolean clearActivePending = false;
+                                    if (terms != null) {
+                                        for (com.lora.cn.ui.model.Terminal t : terms) {
+                                            if (t != null && dev.equalsIgnoreCase(t.getTerminalId())) {
+                                                depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
+                                                cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
+                                                clearActivePending = t.isMaintenanceClearPending();
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    int interval = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                                    int normalizedInterval = Math.max(3, Math.min(1440, interval));
+                                    Integer minsObj = latestMinsByDev.get(dev);
+                                    int mins = minsObj != null ? minsObj : 0;
+                                    int clearMask = (1 << 1) | (clearActivePending ? (1 << 2) : 0);
+                                    helper.sendDownlink8001(dev, 1, 0, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{mins}, true);
+                                    String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                                    for (com.lora.cn.ui.model.MaintenanceInfo mi : bucket) {
+                                        try { db.updateMaintenanceSent(mi.getId(), sentTime); } catch (Exception ignored) {}
+                                    }
+                                    if (clearActivePending) {
+                                        try { db.setTerminalMaintenanceClearPending(dev, false); } catch (Exception ignored) {}
+                                    }
+                                } catch (Exception ignored) {}
                             }
                         }
                     } catch (Exception ignored) {}
@@ -1076,7 +1108,7 @@ public class MainActivity extends AppCompatActivity {
             boolean isLow = t.getBatteryLevel() <= lowTh;
 
             if (isAbnormal) {
-                out.clearDevs.add(devId);
+                if (last != null && last != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) out.clearDevs.add(devId);
                 boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
                 long latestId = -1L;
                 String latestTime = null;
@@ -1096,14 +1128,16 @@ public class MainActivity extends AppCompatActivity {
                 Long prev = lastLogIds != null ? lastLogIds.get(key) : null;
                 boolean newLogDetected = latestId > 0 && (prev == null || prev != latestId);
                 {
-                    AlertItem item = new AlertItem();
-                    item.title = "异常取走";
-                    item.name = t.getTerminalName();
-                    item.code = devId;
-                    item.time = latestTime != null ? latestTime : nowStr;
-                    item.logId = latestId;
-                    out.actions.add(new AlertAction(item, newly));
-                    if (newly) out.queuedAny = true;
+                    if (newly || newLogDetected) {
+                        AlertItem item = new AlertItem();
+                        item.title = "异常取走";
+                        item.name = t.getTerminalName();
+                        item.code = devId;
+                        item.time = latestTime != null ? latestTime : nowStr;
+                        item.logId = latestId;
+                        out.actions.add(new AlertAction(item, newly));
+                        if (newly) out.queuedAny = true;
+                    }
                     if (latestId > 0) out.logIdUpdates.put(key, latestId);
                     out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code);
                     if (newly) {
@@ -1118,7 +1152,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (isOffline) {
                 out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code);
-                out.clearDevs.add(devId);
+                if (last != null && last != com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) out.clearDevs.add(devId);
                 boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
                 if (newly) {
                     try {
@@ -1169,6 +1203,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (isLow) {
+                if (last != null && last != com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) out.clearDevs.add(devId);
                 boolean newly = last == null || last != com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
                 if (newly) {
                     try {
@@ -1209,7 +1244,7 @@ public class MainActivity extends AppCompatActivity {
                 continue;
             }
 
-            out.clearDevs.add(devId);
+            if (last != null) out.clearDevs.add(devId);
         }
         return out;
     }
@@ -1242,6 +1277,14 @@ public class MainActivity extends AppCompatActivity {
                 alertQueue.addAll(newQueue);
                 lastAlertTypes.remove(devId);
             }
+        }
+        if (queueChanged && alertQueue.isEmpty()) {
+            currentAlert = null;
+            lastShownKey = null;
+            lastSmallKey = null;
+            try { stopAlertRinging(); } catch (Exception ignored) {}
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) setSmallVisible(false);
         }
 
         if (!result.actions.isEmpty()) {
@@ -1415,7 +1458,122 @@ public class MainActivity extends AppCompatActivity {
                         }
                     } catch (Exception ignored) {}
                 }
-                helper.evaluateAndSend8001IfNeeded(frame, db);
+                java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> dueMaint = new java.util.ArrayList<>();
+                try {
+                    java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allM = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
+                    if (allM != null) {
+                        long now = System.currentTimeMillis();
+                        java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                        java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                        for (com.lora.cn.ui.model.MaintenanceInfo mi : allM) {
+                            if (mi == null) continue;
+                            if (mi.getStatus() != 0) continue;
+                            if (mi.getSentFlag() == 1) continue;
+                            String ct = mi.getCreateTime();
+                            if (ct == null || ct.trim().isEmpty()) continue;
+                            long ts = now;
+                            try {
+                                java.util.Date dt = sdf1.parse(ct.trim());
+                                if (dt == null) dt = sdf2.parse(ct.trim());
+                                if (dt != null) ts = dt.getTime();
+                            } catch (Exception ignored) {}
+                            if (ts > now) continue;
+                            dueMaint.add(mi);
+                        }
+                    }
+                } catch (Exception ignored) {}
+                if (!dueMaint.isEmpty()) {
+                    int depId = 0;
+                    int cartId = 0;
+                    boolean clearActivePending = false;
+                    try {
+                        if (terms != null) {
+                            for (com.lora.cn.ui.model.Terminal t : terms) {
+                                if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                                    depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
+                                    cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
+                                    clearActivePending = t.isMaintenanceClearPending();
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                    int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                    int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
+                    java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                    java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                    int latestMins = -1;
+                    long latestTs = -1L;
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
+                        try {
+                            String ct = mi.getCreateTime();
+                            if (ct == null || ct.trim().isEmpty()) continue;
+                            java.util.Date dt = null;
+                            try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
+                            if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
+                            long ts = dt != null ? dt.getTime() : -1L;
+                            int mins = 0;
+                            if (dt != null) {
+                                java.util.Calendar cal = java.util.Calendar.getInstance();
+                                cal.setTime(dt);
+                                mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
+                            } else {
+                                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                                mins = Math.max(0, Math.min(1440, h * 60 + m));
+                            }
+                            if (ts >= latestTs) {
+                                latestTs = ts;
+                                latestMins = mins;
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    if (latestMins < 0) {
+                        int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                        int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                        latestMins = Math.max(0, Math.min(1440, h * 60 + m));
+                    }
+                    int clearMask = (1 << 1) | (clearActivePending ? (1 << 2) : 0);
+                    try {
+                        helper.sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{latestMins}, true);
+                        String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                        for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
+                            try { db.updateMaintenanceSent(mi.getId(), sentTime); } catch (Exception ignored) {}
+                        }
+                        if (clearActivePending) {
+                            try { db.setTerminalMaintenanceClearPending(frame.deviceId, false); } catch (Exception ignored) {}
+                        }
+                    } catch (Exception ignored) {}
+                } else {
+                    int depId = 0;
+                    int cartId = 0;
+                    boolean clearActivePending = false;
+                    try {
+                        if (terms != null) {
+                            for (com.lora.cn.ui.model.Terminal t : terms) {
+                                if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                                    depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
+                                    cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
+                                    clearActivePending = t.isMaintenanceClearPending();
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                    if (clearActivePending) {
+                        int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                        int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
+                        int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                        int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                        int mins = Math.max(0, Math.min(1440, h * 60 + m));
+                        try {
+                            helper.sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, (1 << 2), normalizedInterval, 1, new int[]{mins}, true);
+                            try { db.setTerminalMaintenanceClearPending(frame.deviceId, false); } catch (Exception ignored) {}
+                        } catch (Exception ignored) {}
+                    } else {
+                        helper.evaluateAndSend8001IfNeeded(frame, db);
+                    }
+                }
             } catch (Exception ignored) {}
         } catch (Exception ignored) {}
     }

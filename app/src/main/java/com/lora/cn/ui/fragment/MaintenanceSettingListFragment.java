@@ -270,6 +270,12 @@ public class MaintenanceSettingListFragment extends Fragment {
                         } catch (Exception e) {
                             r = 0;
                         }
+                        try {
+                            String c = item.getContent();
+                            if (r > 0 && c != null && c.startsWith("设备维护：")) {
+                                db.setTerminalMaintenanceClearPending(item.getTerminalId(), true);
+                            }
+                        } catch (Exception ignored) {}
                         int finalR = r;
                         mainHandler.post(() -> {
                             if (!isAdded()) return;

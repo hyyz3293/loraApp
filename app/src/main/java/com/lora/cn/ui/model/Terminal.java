@@ -33,6 +33,7 @@ public class Terminal {
     private int rssi; // 原始RSSI (0~138 对应 -138~0dBm)
     private boolean maintenanceActive;
     private long maintenanceTime;
+    private boolean maintenanceClearPending;
 
     public Terminal() {
     }
@@ -290,5 +291,13 @@ public class Terminal {
 
     public void setMaintenanceTime(long maintenanceTime) {
         this.maintenanceTime = maintenanceTime;
+    }
+
+    public boolean isMaintenanceClearPending() {
+        return maintenanceClearPending;
+    }
+
+    public void setMaintenanceClearPending(boolean maintenanceClearPending) {
+        this.maintenanceClearPending = maintenanceClearPending;
     }
 }
