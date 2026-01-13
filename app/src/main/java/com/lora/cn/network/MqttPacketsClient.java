@@ -140,11 +140,16 @@ public class MqttPacketsClient {
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
                     String payload = new String(message.getPayload(), java.nio.charset.StandardCharsets.UTF_8);
-                    // 将 payload 转为 hex 格式
-                    String payloadHex = bytesToHex(message.getPayload());
-                    android.util.Log.e(TAG, "messageArrived topic=" + topic + ", payload=" + payload);
-                    //android.util.Log.e(TAG, "messageArrived payloadHex=" + payloadHex);
-                    android.util.Log.e(TAG, "messageArrived topic=" + topic + ", messageInfo=" + message.toString());
+                    boolean verbose = false;
+                    try { verbose = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("mqtt_verbose_log", false); } catch (Exception ignored) {}
+                    if (verbose) {
+                        android.util.Log.d(TAG, "messageArrived topic=" + topic + ", payload=" + payload);
+                        try {
+                            String payloadHex = bytesToHex(message.getPayload());
+                            android.util.Log.d(TAG, "messageArrived payloadHex=" + payloadHex);
+                        } catch (Exception ignored) {}
+                        android.util.Log.d(TAG, "messageArrived messageInfo=" + message);
+                    }
 
                     if (listener != null) listener.onStatus("收到消息：" + topic);
                     java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records = parseToRecords(topic, payload);

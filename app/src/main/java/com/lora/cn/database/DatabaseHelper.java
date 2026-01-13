@@ -1973,27 +1973,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private void markOfflineLogsHandled(String deviceId, String handleTime, String handleUser) {
         if (deviceId == null || deviceId.trim().isEmpty()) return;
         SQLiteDatabase db = this.getWritableDatabase();
-        java.util.List<Long> ids = new java.util.ArrayList<>();
-        android.database.Cursor c1 = db.rawQuery(
-                "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS +
-                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
-                new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)});
-        while (c1.moveToNext()) {
-            long id = c1.getLong(0);
-            ids.add(id);
-        }
-        c1.close();
-        android.database.Cursor c2 = db.rawQuery(
-                "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS_UNBOUND +
-                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
-                new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)});
-        java.util.List<Long> idsUnbound = new java.util.ArrayList<>();
-        while (c2.moveToNext()) {
-            long id = c2.getLong(0);
-            idsUnbound.add(id);
-        }
-        c2.close();
-        if (ids.isEmpty() && idsUnbound.isEmpty()) return;
         ContentValues v = new ContentValues();
         String user2 = handleUser;
         if (user2 == null || user2.trim().isEmpty()) {
@@ -2002,15 +1981,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put("handle_user", user2);
         v.put("handle_time", handleTime == null ? "" : handleTime);
         v.put("handle_remark", "自动处理");
-        android.util.Log.d("DatabaseHelper", "离线处理准备 deviceId=" + deviceId + ", ids=" + ids.size() + ", idsUnbound=" + idsUnbound.size() + ", user=" + user2 + ", time=" + (handleTime == null ? "" : handleTime));
+        String where = COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=? AND " +
+                "((handle_user IS NULL OR TRIM(handle_user)='') AND (handle_time IS NULL OR TRIM(handle_time)=''))";
+        android.util.Log.d("DatabaseHelper", "离线处理准备 deviceId=" + deviceId + ", user=" + user2 + ", time=" + (handleTime == null ? "" : handleTime));
         int updated1 = 0;
-        for (Long id : ids) {
-            try { updated1 += db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
-        }
+        try { updated1 = db.update(TABLE_LOGS, v, where, new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)}); } catch (Exception ignored) {}
         int updated2 = 0;
-        for (Long id : idsUnbound) {
-            try { updated2 += db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
-        }
+        try { updated2 = db.update(TABLE_LOGS_UNBOUND, v, where, new String[]{deviceId, String.valueOf(com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code)}); } catch (Exception ignored) {}
         android.util.Log.d("DatabaseHelper", "离线处理完成 deviceId=" + deviceId + ", updatedLogs=" + updated1 + ", updatedUnbound=" + updated2);
         try {
             long now = System.currentTimeMillis();
@@ -2025,29 +2002,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (deviceId == null || deviceId.trim().isEmpty()) return;
         if (statuses == null || statuses.length == 0) return;
         SQLiteDatabase db = this.getWritableDatabase();
-        java.util.List<Long> ids = new java.util.ArrayList<>();
-        java.util.List<Long> idsUnbound = new java.util.ArrayList<>();
-        for (int s : statuses) {
-            android.database.Cursor c1 = db.rawQuery(
-                    "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS +
-                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
-                    new String[]{deviceId, String.valueOf(s)});
-            while (c1.moveToNext()) {
-                long id = c1.getLong(0);
-                ids.add(id);
-            }
-            c1.close();
-            android.database.Cursor c2 = db.rawQuery(
-                    "SELECT " + COLUMN_LOG_ID + ", handle_user, handle_time FROM " + TABLE_LOGS_UNBOUND +
-                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=?",
-                    new String[]{deviceId, String.valueOf(s)});
-            while (c2.moveToNext()) {
-                long id = c2.getLong(0);
-                idsUnbound.add(id);
-            }
-            c2.close();
-        }
-        if (ids.isEmpty() && idsUnbound.isEmpty()) return;
         ContentValues v = new ContentValues();
         String user2 = handleUser;
         if (user2 == null || user2.trim().isEmpty()) {
@@ -2056,15 +2010,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         v.put("handle_user", user2);
         v.put("handle_time", handleTime == null ? "" : handleTime);
         v.put("handle_remark", "自动处理");
-        android.util.Log.d("DatabaseHelper", "异常/低电量/离线 自动处理准备 deviceId=" + deviceId + ", ids=" + ids.size() + ", idsUnbound=" + idsUnbound.size() + ", user=" + user2 + ", time=" + (handleTime == null ? "" : handleTime));
+        StringBuilder in = new StringBuilder();
+        for (int i = 0; i < statuses.length; i++) {
+            if (i > 0) in.append(",");
+            in.append("?");
+        }
+        String where = COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + " IN (" + in + ") AND " +
+                "((handle_user IS NULL OR TRIM(handle_user)='') AND (handle_time IS NULL OR TRIM(handle_time)=''))";
+        String[] args = new String[1 + statuses.length];
+        args[0] = deviceId;
+        for (int i = 0; i < statuses.length; i++) args[i + 1] = String.valueOf(statuses[i]);
+        android.util.Log.d("DatabaseHelper", "异常/低电量/离线 自动处理准备 deviceId=" + deviceId + ", user=" + user2 + ", time=" + (handleTime == null ? "" : handleTime));
         int updated1 = 0;
-        for (Long id : ids) {
-            try { updated1 += db.update(TABLE_LOGS, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
-        }
+        try { updated1 = db.update(TABLE_LOGS, v, where, args); } catch (Exception ignored) {}
         int updated2 = 0;
-        for (Long id : idsUnbound) {
-            try { updated2 += db.update(TABLE_LOGS_UNBOUND, v, COLUMN_LOG_ID + "=?", new String[]{String.valueOf(id)}); } catch (Exception ignored) {}
-        }
+        try { updated2 = db.update(TABLE_LOGS_UNBOUND, v, where, args); } catch (Exception ignored) {}
         android.util.Log.d("DatabaseHelper", "异常/低电量/离线 自动处理完成 deviceId=" + deviceId + ", updatedLogs=" + updated1 + ", updatedUnbound=" + updated2);
         try {
             long now = System.currentTimeMillis();

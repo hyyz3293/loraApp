@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.concurrent.atomic.AtomicInteger badgeSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.atomic.AtomicInteger alertEvalSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.ConcurrentHashMap<String, Long> lastUplinkStoreByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
+    private volatile long lastAlertEvalTriggerMs = 0L;
     private int lastBadgeCount = -1;
     private int lastBadgeQueueSize = -1;
     private volatile int lastComputedPendingCount = -1;
@@ -2451,11 +2452,14 @@ public class MainActivity extends AppCompatActivity {
                                                 UplinkDataEvent event = new UplinkDataEvent(broadcastTime, broadcastHex);
                                                 EventBus.getDefault().post(event);
                                             } catch (Exception ignored) {}
-                                            if (result > 0 && mainHandler != null) {
-                                                mainHandler.post(() -> {
-                                                    try { evaluateAlertsOnce(); } catch (Exception ignored) {}
-                                                });
-                                            }
+                                            try {
+                                                long nowEval = System.currentTimeMillis();
+                                                if (nowEval - lastAlertEvalTriggerMs >= 300) {
+                                                    lastAlertEvalTriggerMs = nowEval;
+                                                    if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                                    mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
+                                                }
+                                            } catch (Exception ignored) {}
                                         });
                                         wroteAny = true;
                                     } else {
@@ -2475,9 +2479,11 @@ public class MainActivity extends AppCompatActivity {
                                                     org.greenrobot.eventbus.EventBus.getDefault().post(event);
                                                 } catch (Exception ignored) {}
                                                 try {
-                                                    Integer lastType = lastAlertTypes != null ? lastAlertTypes.get(did) : null;
-                                                    if (lastType != null && lastType == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
-                                                        if (mainHandler != null) mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
+                                                    long nowEval = System.currentTimeMillis();
+                                                    if (nowEval - lastAlertEvalTriggerMs >= 300) {
+                                                        lastAlertEvalTriggerMs = nowEval;
+                                                        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                                        mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
                                                     }
                                                 } catch (Exception ignored) {}
                                             }
@@ -2485,28 +2491,23 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 }
 
-                                LogUtils.i(TAG,
-                                        "UPLINK devEUI=" + devEui +
-                                        " devAddr=" + devAddr +
-                                        " fport=" + fport +
-                                        " fcnt=" + fcnt +
-                                        " rssi=" + rssi +
-                                        " snr=" + snr +
-                                        " freq=" + freq +
-                                        " dr=" + dr +
-                                        " time=" + time +
-                                        " hex=" + hex);
-                                LogUtils.i(TAG,
-                                        "UPLINK devEUI=" + devEui +
-                                        " devAddr=" + devAddr +
-                                        " fport=" + fport +
-                                        " fcnt=" + fcnt +
-                                        " rssi=" + rssi +
-                                        " snr=" + snr +
-                                        " freq=" + freq +
-                                        " dr=" + dr +
-                                        " time=" + time +
-                                        " hex=" + hex);
+                                boolean verboseUplink = false;
+                                try { verboseUplink = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("uplink_verbose_log", false); } catch (Exception ignored) {}
+                                if (verboseUplink) {
+                                    LogUtils.i(TAG,
+                                            "UPLINK devEUI=" + devEui +
+                                            " devAddr=" + devAddr +
+                                            " fport=" + fport +
+                                            " fcnt=" + fcnt +
+                                            " rssi=" + rssi +
+                                            " snr=" + snr +
+                                            " freq=" + freq +
+                                            " dr=" + dr +
+                                            " time=" + time +
+                                            " hex=" + hex);
+                                } else {
+                                    Log.d(TAG, "UPLINK devEUI=" + devEui + ", fcnt=" + fcnt + ", fport=" + fport);
+                                }
                             }
                             // 刷新事件已在后台入库完成后投递，此处不再重复投递
                         }
