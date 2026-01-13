@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.concurrent.atomic.AtomicInteger badgeSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.atomic.AtomicInteger alertEvalSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.ConcurrentHashMap<String, Long> lastUplinkStoreByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> lastMaintenanceEvalByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, SleepCycleState> sleepCycleStateByDev = new java.util.concurrent.ConcurrentHashMap<>();
     private volatile long lastAlertEvalTriggerMs = 0L;
     private int lastBadgeCount = -1;
@@ -200,6 +201,16 @@ public class MainActivity extends AppCompatActivity {
         }
         if (!st.firstDropped) {
             st.firstDropped = true;
+            if (!"-".equals(hex) && hex != null && hex.length() > 0) {
+                try {
+                    if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                    final String t = time;
+                    final String h = hex;
+                    ioExecutor.execute(() -> {
+                        try { onUplinkDataEvent(new UplinkDataEvent(t, h)); } catch (Exception ignored) {}
+                    });
+                } catch (Exception ignored) {}
+            }
             return;
         }
         processUplinkPacket(p);
@@ -1595,12 +1606,20 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception ignored) { return; }
 
             try {
+                long nowDedup = System.currentTimeMillis();
+                Long last = lastMaintenanceEvalByDevMs.get(frame.deviceId);
+                if (last != null && nowDedup - last < 800L) return;
+                lastMaintenanceEvalByDevMs.put(frame.deviceId, nowDedup);
+            } catch (Exception ignored) {}
+
+            try {
                 com.lora.cn.network.MqttPacketsClient client = mqttClient != null ? mqttClient : com.lora.cn.network.MqttPacketsClient.getShared();
                 com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
                 java.util.List<com.lora.cn.ui.model.Terminal> terms = db.getAllTerminals();
                 int depId = 0;
                 int cartId = 0;
                 boolean clearActivePending = false;
+                boolean maintenanceTouched = false;
                 try {
                     if (terms != null) {
                         for (com.lora.cn.ui.model.Terminal t : terms) {
@@ -1627,7 +1646,7 @@ public class MainActivity extends AppCompatActivity {
                         if (existingAll != null) {
                             for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
                                 String c = x != null ? x.getContent() : null;
-                                if ("设备维护：需要维护".equals(c) && x.getStatus() == 0) {
+                                if ("主动维护".equals(c) && x.getStatus() == 0) {
                                     existsPendingAuto = true;
                                     break;
                                 }
@@ -1650,13 +1669,14 @@ public class MainActivity extends AppCompatActivity {
                             mi.setTerminalName(name == null ? "" : name);
                             mi.setTerminalGroup(groups == null ? "" : groups);
                             mi.setStatus(0);
-                            mi.setContent("设备维护：需要维护");
+                            mi.setContent("主动维护");
                             long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
                             String uname = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
                             mi.setCreateUserId(uid > 0 ? uid : 0L);
                             mi.setCreateUser(uname == null ? "" : uname);
                             mi.setCreateTime(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                             try { databaseHelper.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
+                            maintenanceTouched = true;
                         }
                     } catch (Exception ignored) {}
                 } else {
@@ -1669,13 +1689,15 @@ public class MainActivity extends AppCompatActivity {
                             String autoRemark = "设备恢复：自动标记已维护";
                             for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
                                 String c = x != null ? x.getContent() : null;
-                                if ("设备维护：需要维护".equals(c) && x.getStatus() == 0) {
+                                if ("主动维护".equals(c) && x.getStatus() == 0) {
                                     try { databaseHelper.updateMaintenanceHandled(x.getId(), 0L, autoUser, autoTime, autoRemark); } catch (Exception ignored2) {}
+                                    maintenanceTouched = true;
                                 }
                             }
                         }
                     } catch (Exception ignored) {}
                 }
+                int latestTimedUnsentMins = -1;
                 java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> dueMaint = new java.util.ArrayList<>();
                 try {
                     java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allM = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
@@ -1683,21 +1705,41 @@ public class MainActivity extends AppCompatActivity {
                         long now = System.currentTimeMillis();
                         java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                         java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                        int latestUnsentMins = -1;
+                        long latestUnsentTs = -1L;
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : allM) {
                             if (mi == null) continue;
                             if (mi.getStatus() != 0) continue;
                             if (mi.getSentFlag() == 1) continue;
+                            String c = mi.getContent();
+                            boolean isTimedCandidate = true;
+                            if (c != null) {
+                                if ("主动维护".equals(c)) isTimedCandidate = false;
+                                if (c.startsWith("设备维护：")) isTimedCandidate = false;
+                            }
+                            if (!isTimedCandidate) continue;
                             String ct = mi.getCreateTime();
                             if (ct == null || ct.trim().isEmpty()) continue;
                             long ts = now;
                             try {
-                                java.util.Date dt = sdf1.parse(ct.trim());
-                                if (dt == null) dt = sdf2.parse(ct.trim());
-                                if (dt != null) ts = dt.getTime();
+                                java.util.Date dt = null;
+                                try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
+                                if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
+                                if (dt != null) {
+                                    ts = dt.getTime();
+                                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                                    cal.setTime(dt);
+                                    int mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
+                                    if (ts >= latestUnsentTs) {
+                                        latestUnsentTs = ts;
+                                        latestUnsentMins = mins;
+                                    }
+                                }
                             } catch (Exception ignored) {}
                             if (ts > now) continue;
                             dueMaint.add(mi);
                         }
+                        if (latestUnsentMins >= 0) latestTimedUnsentMins = latestUnsentMins;
                     }
                 } catch (Exception ignored) {}
                 boolean need8001ByConfig = false;
@@ -1706,40 +1748,18 @@ public class MainActivity extends AppCompatActivity {
                 boolean shouldSend = clearActivePending || timedMaintenanceDue || need8001ByConfig;
                 LogUtils.e(frame.deviceId + "==>8001是否需要下行：" + need8001ByConfig + "，定时维护到期：" + timedMaintenanceDue + "，清除主动维护pending：" + clearActivePending);
                 LogUtils.e(frame.deviceId + "==>是否下指令：" + shouldSend);
-                if (!shouldSend) return;
+                if (!shouldSend) {
+                    if (maintenanceTouched) {
+                        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("维护刷新:" + frame.deviceId)); } catch (Exception ignored) {}
+                    }
+                    return;
+                }
                 int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
                 int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
                 int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int fallbackMins = Math.max(0, Math.min(1440, h * 60 + m));
-                int sendMins = fallbackMins;
-                if (timedMaintenanceDue) {
-                    java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
-                    java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-                    int latestMins = -1;
-                    long latestTs = -1L;
-                    for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
-                        try {
-                            String ct = mi.getCreateTime();
-                            if (ct == null || ct.trim().isEmpty()) continue;
-                            java.util.Date dt = null;
-                            try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
-                            if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
-                            long ts = dt != null ? dt.getTime() : -1L;
-                            int mins = fallbackMins;
-                            if (dt != null) {
-                                java.util.Calendar cal = java.util.Calendar.getInstance();
-                                cal.setTime(dt);
-                                mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
-                            }
-                            if (ts >= latestTs) {
-                                latestTs = ts;
-                                latestMins = mins;
-                            }
-                        } catch (Exception ignored) {}
-                    }
-                    if (latestMins >= 0) sendMins = latestMins;
-                }
+                int sendMins = latestTimedUnsentMins >= 0 ? latestTimedUnsentMins : fallbackMins;
                 int clearMask = (timedMaintenanceDue ? (1 << 1) : 0) | (clearActivePending ? (1 << 2) : 0);
                 try {
                     helper.sendDownlink8001(frame.deviceId, 1, 1, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{sendMins}, true);
@@ -1748,12 +1768,16 @@ public class MainActivity extends AppCompatActivity {
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
                             try { db.updateMaintenanceSent(mi.getId(), sentTime); } catch (Exception ignored) {}
                         }
+                        maintenanceTouched = true;
                     }
                 } catch (Exception ignored) {
                     LogUtils.e(frame.deviceId + "==>ignored：" + ignored);
                 }
                 if (clearActivePending) {
                     try { db.setTerminalMaintenanceClearPending(frame.deviceId, false); } catch (Exception ignored) {}
+                }
+                if (maintenanceTouched) {
+                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("维护刷新:" + frame.deviceId)); } catch (Exception ignored) {}
                 }
             } catch (Exception ignored) {}
         } catch (Exception ignored) {}
@@ -2214,7 +2238,7 @@ public class MainActivity extends AppCompatActivity {
                             if (mi == null) continue;
                             if (mi.getStatus() != 0) continue;
                             String c = mi.getContent();
-                            boolean isAuto = "设备维护：需要维护".equals(c);
+                            boolean isAuto = "主动维护".equals(c);
                             if (isAuto) {
                                 count++;
                             } else {
