@@ -1958,6 +1958,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         lastRecoveredLb = com.blankj.utilcode.util.SPUtils.getInstance().getLong(keyRecLb, 0L);
                     } catch (Exception ignored) {}
                     boolean allowLb = (lastLoggedLb <= 0L) || (lastRecoveredLb > lastLoggedLb);
+                    if (!allowLb) {
+                        android.database.Cursor cLbAny = null;
+                        try {
+                            cLbAny = db.rawQuery(
+                                    "SELECT 1 FROM " + TABLE_LOGS +
+                                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=? LIMIT 1",
+                                    new String[]{deviceId != null ? deviceId : "", String.valueOf(com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code)});
+                            boolean hasAny = cLbAny != null && cLbAny.moveToFirst();
+                            if (!hasAny) allowLb = true;
+                        } catch (Exception ignored) {
+                        } finally {
+                            try { if (cLbAny != null) cLbAny.close(); } catch (Exception ignored) {}
+                        }
+                    }
                     if (allowLb) {
                         long nid2 = addLowBatteryLog(deviceId, terminalName);
                         if (nid2 > 0) {
@@ -2196,7 +2210,21 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             lastLoggedLb2 = com.blankj.utilcode.util.SPUtils.getInstance().getLong(keyLogLb2, 0L);
             lastRecoveredLb2 = com.blankj.utilcode.util.SPUtils.getInstance().getLong(keyRecLb2, 0L);
         } catch (Exception ignored) {}
-        if (lastLoggedLb2 > 0L && (lastRecoveredLb2 <= 0L || lastRecoveredLb2 <= lastLoggedLb2)) return -1L;
+        if (lastLoggedLb2 > 0L && (lastRecoveredLb2 <= 0L || lastRecoveredLb2 <= lastLoggedLb2)) {
+            android.database.Cursor cAny = null;
+            try {
+                cAny = db.rawQuery(
+                        "SELECT 1 FROM " + targetTable +
+                                " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=? LIMIT 1",
+                        new String[]{deviceId != null ? deviceId : "", String.valueOf(com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code)});
+                boolean hasAny = cAny != null && cAny.moveToFirst();
+                if (hasAny) return -1L;
+            } catch (Exception ignored) {
+                return -1L;
+            } finally {
+                try { if (cAny != null) cAny.close(); } catch (Exception ignored) {}
+            }
+        }
         boolean skip = false;
         android.database.Cursor c = db.rawQuery(
                 "SELECT handle_user, handle_time FROM " + targetTable +
@@ -2286,7 +2314,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             SQLiteDatabase db = this.getWritableDatabase();
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 String deviceId = t.getTerminalId();
-                if (t.getBatteryLevel() <= lowTh) {
+                int level = t.getBatteryLevel();
+                if (level <= lowTh) {
                     long lastLoggedLb3 = 0L, lastRecoveredLb3 = 0L;
                     String keyLogLb3 = "low_batt_last_logged_ms:" + (deviceId != null ? deviceId : "");
                     String keyRecLb3 = "low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : "");
@@ -2294,9 +2323,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         lastLoggedLb3 = com.blankj.utilcode.util.SPUtils.getInstance().getLong(keyLogLb3, 0L);
                         lastRecoveredLb3 = com.blankj.utilcode.util.SPUtils.getInstance().getLong(keyRecLb3, 0L);
                     } catch (Exception ignored) {}
-                    if (lastLoggedLb3 > 0L && (lastRecoveredLb3 <= 0L || lastRecoveredLb3 <= lastLoggedLb3)) continue;
                     android.database.Cursor c = db.rawQuery(
-                            "SELECT handle_user, handle_time FROM " + TABLE_LOGS +
+                            "SELECT handle_user, handle_time, handle_remark FROM " + TABLE_LOGS +
                                     " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=? " +
                                     " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC LIMIT 1",
                             new String[]{deviceId != null ? deviceId : "", String.valueOf(com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code)});
@@ -2305,8 +2333,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         if (c != null && c.moveToFirst()) {
                             String hu = c.getString(0);
                             String ht = c.getString(1);
+                            String hr = c.getString(2);
                             boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
-                            if (unhandled) canInsert = false;
+                            if (unhandled) {
+                                canInsert = false;
+                            } else {
+                                boolean blockByCycle = lastLoggedLb3 > 0L && (lastRecoveredLb3 <= 0L || lastRecoveredLb3 <= lastLoggedLb3);
+                                boolean autoHandled = "系统自动".equals(hu) || "自动处理".equals(hr);
+                                if (blockByCycle && !autoHandled) canInsert = false;
+                            }
                         }
                     } finally {
                         if (c != null) c.close();
@@ -2325,7 +2360,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyLogLb3, System.currentTimeMillis()); } catch (Exception ignored) {}
                     }
                 }
-                if (t.getBatteryLevel() > lowTh) {
+                if (level > lowTh) {
                     try { com.blankj.utilcode.util.SPUtils.getInstance().put("low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : ""), System.currentTimeMillis()); } catch (Exception ignored) {}
                 }
             }
@@ -2492,9 +2527,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public java.util.List<com.lora.cn.ui.model.LogInfo> getLogsByTerminalId(String terminalId) {
         java.util.List<com.lora.cn.ui.model.LogInfo> logs = new java.util.ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        
-        String query = "SELECT * FROM " + TABLE_LOGS + " WHERE " + COLUMN_LOG_TERMINAL_ID + " = ? ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC";
-        android.database.Cursor cursor = db.rawQuery(query, new String[]{terminalId});
+        String query = "SELECT * FROM " + TABLE_LOGS + " WHERE " + COLUMN_LOG_TERMINAL_ID + " = ? " +
+                " UNION ALL " +
+                " SELECT * FROM " + TABLE_LOGS_UNBOUND + " WHERE " + COLUMN_LOG_TERMINAL_ID + " = ? " +
+                " ORDER BY " + COLUMN_LOG_CREATE_TIME + " DESC";
+        android.database.Cursor cursor = db.rawQuery(query, new String[]{terminalId, terminalId});
         
         while (cursor.moveToNext()) {
             com.lora.cn.ui.model.LogInfo log = new com.lora.cn.ui.model.LogInfo();

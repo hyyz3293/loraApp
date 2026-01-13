@@ -70,14 +70,25 @@ public class AlertPendingListFragment extends Fragment {
         final int token = loadSeq.incrementAndGet();
         final android.content.Context appCtx = requireContext().getApplicationContext();
         final android.os.Handler handler = mainHandler;
+        final java.util.List<LogInfo> queueSnapshot = getPendingAlertLogSnapshotSafely();
         ioExecutor.execute(() -> {
             try {
                 DatabaseHelper db = DatabaseHelper.getInstance(appCtx);
                 try { db.syncLowBatteryFlags(); } catch (Exception ignored) {}
                 List<LogInfo> all = db.getAllLogsBoundToTerminals();
+                if (queueSnapshot != null && !queueSnapshot.isEmpty()) {
+                    java.util.ArrayList<LogInfo> merged = new java.util.ArrayList<>(all != null ? all.size() + queueSnapshot.size() : queueSnapshot.size());
+                    if (all != null) merged.addAll(all);
+                    merged.addAll(queueSnapshot);
+                    all = merged;
+                }
                 java.util.Map<String, LogInfo> latest = new java.util.HashMap<>();
                 for (LogInfo li : all) {
                     if (li == null) continue;
+                    String hu0 = li.getHandleUser();
+                    String ht0 = li.getHandleTime();
+                    boolean unhandled0 = (hu0 == null || hu0.trim().isEmpty()) && (ht0 == null || ht0.trim().isEmpty());
+                    if (!unhandled0) continue;
                     int s = li.getStatusCode();
                     if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                             || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
@@ -119,14 +130,17 @@ public class AlertPendingListFragment extends Fragment {
                     if (!unhandledLi) continue;
                     Long ht = lastHandledTime.get(li.getTerminalId());
                     long at = parseMillis(li.getCreateTime());
-                if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                    com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
-                    if (t != null) {
-                        boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                        boolean isLowNow = t.getBatteryLevel() <= lowTh;
-                        if (!devStillOffline && isLowNow) filtered.add(li);
-                    }
-                } else {
+                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                        com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                        boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                        boolean showByBattery = true;
+                        if (t != null) {
+                            int level = t.getBatteryLevel();
+                            boolean levelKnown = level >= 0 && level <= 100;
+                            if (levelKnown) showByBattery = level <= lowTh;
+                        }
+                        if (t == null || devStillOffline || showByBattery) filtered.add(li);
+                    } else {
                         com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                         boolean isOfflineCase = li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
                         boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
@@ -162,7 +176,7 @@ public class AlertPendingListFragment extends Fragment {
                     if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
                         canHandle = (!devStillOffline2) && (devStillAbnormal2 || canHandle);
                     } else if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                        canHandle = (!devStillOffline2) && canHandle;
+                        canHandle = !devStillOffline2;
                     }
                     if (canHandle) allowedIds.add(li.getId());
                 }
@@ -182,6 +196,17 @@ public class AlertPendingListFragment extends Fragment {
                 });
             }
         });
+    }
+
+    @Nullable
+    private java.util.List<LogInfo> getPendingAlertLogSnapshotSafely() {
+        try {
+            androidx.fragment.app.FragmentActivity a = getActivity();
+            if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                return ((com.lora.cn.ui.activity.MainActivity) a).getPendingAlertLogSnapshot();
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     private void showHandleDialogForLog(LogInfo item) {
@@ -240,9 +265,14 @@ public class AlertPendingListFragment extends Fragment {
 
     private long parseMillis(String time) {
         if (time == null || time.length() == 0) return -1L;
+        String s = time.trim();
+        if (s.length() == 0) return -1L;
+        int dot = s.indexOf('.');
+        if (dot > 0) s = s.substring(0, dot);
+        if (s.indexOf('/') >= 0) s = s.replace('/', '-');
         try {
             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-            java.util.Date d = sdf.parse(time);
+            java.util.Date d = sdf.parse(s);
             return d != null ? d.getTime() : -1L;
         } catch (Exception e) {
             return -1L;

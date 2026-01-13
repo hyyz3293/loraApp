@@ -129,7 +129,12 @@
                 android:layout_height="28dp" />
         </LinearLayout>
     </LinearLayout>
-
+    <View
+        android:layout_marginRight="30dp"
+        android:layout_marginLeft="30dp"
+        android:background="#AEAEAE"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp" />
     <LinearLayout
         android:layout_marginRight="30dp"
         android:layout_marginLeft="30dp"

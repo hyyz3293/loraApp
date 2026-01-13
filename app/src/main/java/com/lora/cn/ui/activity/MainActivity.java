@@ -1681,11 +1681,44 @@ public class MainActivity extends AppCompatActivity {
         return 0;
     }
 
+    public java.util.List<com.lora.cn.ui.model.LogInfo> getPendingAlertLogSnapshot() {
+        java.util.ArrayList<com.lora.cn.ui.model.LogInfo> out = new java.util.ArrayList<>();
+        try {
+            for (AlertItem ai : alertQueue) {
+                if (ai == null) continue;
+                String title = ai.title;
+                String devId = ai.code;
+                int sc = getStatusCodeForTitle(title);
+                if (sc == 0) continue;
+                com.lora.cn.ui.model.LogInfo li = new com.lora.cn.ui.model.LogInfo();
+                li.setId(ai.logId);
+                li.setTerminalId(devId != null ? devId : "");
+                li.setTerminalName(ai.name != null ? ai.name : "");
+                li.setDeviceId(devId != null ? devId : "");
+                li.setStatusCode(sc);
+                li.setOperator("");
+                li.setOperationTime(ai.time != null ? ai.time : "");
+                li.setAction(title != null ? title : "");
+                li.setCreateTime(ai.time != null ? ai.time : "");
+                li.setHandleUser("");
+                li.setHandleTime("");
+                li.setHandleRemark("");
+                out.add(li);
+            }
+        } catch (Exception ignored) {}
+        return out;
+    }
+
     private long parseMillis(String time) {
         if (time == null || time.length() == 0) return -1L;
+        String s = time.trim();
+        if (s.length() == 0) return -1L;
+        int dot = s.indexOf('.');
+        if (dot > 0) s = s.substring(0, dot);
+        if (s.indexOf('/') >= 0) s = s.replace('/', '-');
         try {
             java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-            java.util.Date d = sdf.parse(time);
+            java.util.Date d = sdf.parse(s);
             return d != null ? d.getTime() : -1L;
         } catch (Exception e) { return -1L; }
     }
@@ -1908,11 +1941,14 @@ public class MainActivity extends AppCompatActivity {
                         int s = li.getStatusCode();
                         if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                             com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                            boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                            boolean showByBattery = true;
                             if (t != null) {
-                                boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                                boolean isLowNow = t.getBatteryLevel() <= lowTh;
-                                if (!devStillOffline && isLowNow) c++;
+                                int level = t.getBatteryLevel();
+                                boolean levelKnown = level >= 0 && level <= 100;
+                                if (levelKnown) showByBattery = level <= lowTh;
                             }
+                            if (t == null || devStillOffline || showByBattery) c++;
                         } else {
                             com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                             boolean isOfflineCase = s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
@@ -1948,20 +1984,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyPendingBadgeUi(int count) {
-        pendingAlertCount = count;
-        lastComputedPendingCount = count;
-        if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(count));
+        int queueSizeLocal = alertQueue != null ? alertQueue.size() : 0;
+        int displayCount = Math.max(count, queueSizeLocal);
+        pendingAlertCount = displayCount;
+        lastComputedPendingCount = displayCount;
+        if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(displayCount));
         if (llAlertPendingSmall != null) {
             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-            int queueSizeLocal = alertQueue != null ? alertQueue.size() : 0;
-            boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0);
+            boolean shouldShowSmall = !bigVisible && displayCount > 0;
             setSmallVisible(shouldShowSmall);
         }
         int queueSize = alertQueue.size();
-        if (count != lastBadgeCount || queueSize != lastBadgeQueueSize) {
-            lastBadgeCount = count;
+        if (displayCount != lastBadgeCount || queueSize != lastBadgeQueueSize) {
+            lastBadgeCount = displayCount;
             lastBadgeQueueSize = queueSize;
-            android.util.Log.d(TAG, "updatePendingBadge count=" + count + ", queueSize=" + queueSize);
+            android.util.Log.d(TAG, "updatePendingBadge count=" + displayCount + ", queueSize=" + queueSize);
         }
     }
 
