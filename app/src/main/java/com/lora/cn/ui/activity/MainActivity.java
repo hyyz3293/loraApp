@@ -1616,28 +1616,28 @@ public class MainActivity extends AppCompatActivity {
                     int latestUnsentMins = -1;
                     long latestUnsentTs = -1L;
                     for (com.lora.cn.ui.model.MaintenanceInfo mi : allM) {
-                        Log.e("", "--- :" + new Gson().toJson(mi));
+                        ////Log.e("", "--- :" + new Gson().toJson(mi));
                         if (mi == null) {
                             Log.e("", "--- : 0 ");
                             continue;
                         }
 
                         if (mi.getStatus() != 0)  {
-                            Log.e("", "--- : 1 ==mi.getStatus() != 0");
+                            //Log.e("", "--- : 1 ==mi.getStatus() != 0");
                             continue;
                         }
                         String c = mi.getContent();
                         if ("主动维护".equals(c))  {
-                            Log.e("", "--- : 3 == 主动维护.equals(c)");
+                            //Log.e("", "--- : 3 == 主动维护.equals(c)");
                             continue;
                         };
-                        if (!StringUtils.isEmpty(mi.getHandleTime()) && !StringUtils.isEmpty(mi.getHandleUser()))  {
-                            Log.e("", "--- : 4 ===mi.getSentFlag() == 1");
+                        if (mi.getSentFlag() == 1 || !StringUtils.isEmpty(mi.getSentTime()))  {
+                            //Log.e("", "--- : 4 ===mi.getSentFlag() == 1");
                             continue;
                         }
                         String ct = mi.getCreateTime();
                         if (ct == null || ct.trim().isEmpty()) {
-                            Log.e("", "--- : 5 ===mi.getCreateTime() == 1");
+                            ///Log.e("", "--- : 5 ===mi.getCreateTime() == 1");
                             continue;
                         };
                         try {

@@ -3217,6 +3217,43 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ensureColumnIfMissing(db, TABLE_MAINTENANCE, "handle_remark", "TEXT");
 
             try {
+                boolean hasLegacySentFlag = hasColumn(db, TABLE_MAINTENANCE, "sentFlag") || hasColumn(db, TABLE_MAINTENANCE, "sentflag");
+                boolean hasLegacySentTime = hasColumn(db, TABLE_MAINTENANCE, "sentTime") || hasColumn(db, TABLE_MAINTENANCE, "senttime");
+                if (hasLegacySentFlag || hasLegacySentTime) {
+                    String key = "maintenance_sent_backfilled_v1";
+                    boolean done = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(key, false);
+                    if (!done) {
+                        if (hasLegacySentFlag) {
+                            String legacy = hasColumn(db, TABLE_MAINTENANCE, "sentFlag") ? "sentFlag" : "sentflag";
+                            db.execSQL(
+                                    "UPDATE " + TABLE_MAINTENANCE +
+                                            " SET " + COLUMN_MAINTENANCE_SENT_FLAG + "=CASE" +
+                                            " WHEN " + COLUMN_MAINTENANCE_SENT_FLAG + " IS NULL OR " + COLUMN_MAINTENANCE_SENT_FLAG + "=0" +
+                                            " THEN " + legacy +
+                                            " ELSE " + COLUMN_MAINTENANCE_SENT_FLAG +
+                                            " END" +
+                                            " WHERE " + legacy + " IS NOT NULL");
+                        }
+                        if (hasLegacySentTime) {
+                            String legacy = hasColumn(db, TABLE_MAINTENANCE, "sentTime") ? "sentTime" : "senttime";
+                            db.execSQL(
+                                    "UPDATE " + TABLE_MAINTENANCE +
+                                            " SET " + COLUMN_MAINTENANCE_SENT_TIME + "=CASE" +
+                                            " WHEN " + COLUMN_MAINTENANCE_SENT_TIME + " IS NULL OR " + COLUMN_MAINTENANCE_SENT_TIME + "=''" +
+                                            " THEN " + legacy +
+                                            " ELSE " + COLUMN_MAINTENANCE_SENT_TIME +
+                                            " END" +
+                                            " WHERE " + legacy + " IS NOT NULL AND " + legacy + "<>''");
+                        }
+                        db.execSQL(
+                                "UPDATE " + TABLE_MAINTENANCE +
+                                        " SET " + COLUMN_MAINTENANCE_SENT_FLAG + "=1" +
+                                        " WHERE (" + COLUMN_MAINTENANCE_SENT_FLAG + " IS NULL OR " + COLUMN_MAINTENANCE_SENT_FLAG + "=0)" +
+                                        " AND " + COLUMN_MAINTENANCE_SENT_TIME + " IS NOT NULL AND " + COLUMN_MAINTENANCE_SENT_TIME + "<>''");
+                        com.blankj.utilcode.util.SPUtils.getInstance().put(key, true);
+                    }
+                }
+
                 maintenanceHasDeviceIdColumn = hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_DEVICE_ID);
                 if (maintenanceHasDeviceIdColumn && hasColumn(db, TABLE_MAINTENANCE, COLUMN_MAINTENANCE_TERMINAL_ID)) {
                     String key = "maintenance_device_id_backfilled_v1";

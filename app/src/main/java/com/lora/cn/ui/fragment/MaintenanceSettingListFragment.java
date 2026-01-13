@@ -284,6 +284,7 @@ public class MaintenanceSettingListFragment extends Fragment {
             mi.setCreateTime(TextUtils.isEmpty(createTime) ? nowStr() : createTime);
             mi.setHandleUserId(0);
             mi.setHandleUser("");
+            mi.setSentFlag(0);
             mi.setHandleTime("");
             if (ioExecutor == null || mainHandler == null) return;
             ioExecutor.execute(() -> {
