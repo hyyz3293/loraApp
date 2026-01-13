@@ -4,6 +4,10 @@ import android.util.Log;
 import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.network.MqttPacketsClient;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 下行报文调用辅助类
  * 根据下行报文规则编写调用函数
@@ -18,6 +22,7 @@ public class DownlinkMessageHelper {
     // 下行主题配置
     private static final String DOWNLINK_TOPIC_BASE = "/milesight/downlink";
     private static final int DEFAULT_FPORT = 85;
+    private static final Map<String, Long> lastNeed8001LogMsByDev = new ConcurrentHashMap<>();
     
     public DownlinkMessageHelper(MqttPacketsClient mqttClient) {
         this.mqttClient = mqttClient;
@@ -198,7 +203,23 @@ public class DownlinkMessageHelper {
             int mins = Math.max(0, Math.min(1440, h * 60 + m));
             int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
             int lowBattery = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-            return isNeedDownlink(frame, normalizedInterval, mins, lowBattery);
+            boolean debug = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("debug_need_downlink_8001", false);
+            Need8001Decision d = evaluateNeed8001(frame, normalizedInterval, mins);
+            if (shouldLogNeed8001(frame.deviceId, debug, d.need)) {
+                Log.e(TAG,
+                        "isNeedDownlink8001 dev=" + (frame.deviceId == null ? "" : frame.deviceId) +
+                                " need=" + d.need +
+                                " interval=" + frame.sleepIntervalMin + " desiredInterval=" + normalizedInterval +
+                                " intervalKnown=" + d.intervalKnown + " intervalMatch=" + d.intervalMatch +
+                                " alarmCount=" + frame.alarmCount +
+                                " alarmMinutes=" + (frame.alarmMinutes == null ? "null" : Arrays.toString(frame.alarmMinutes)) +
+                                " desiredMins=" + mins + "(h=" + h + ",m=" + m + ")" +
+                                " scheduleKnown=" + d.scheduleKnown + " scheduleMatch=" + d.scheduleMatch +
+                                " lowBatteryTh=" + lowBattery +
+                                " evLowBattery=" + frame.evLowBattery +
+                                " batteryLevel=" + frame.batteryLevel);
+            }
+            return d.need;
         } catch (Exception ignored) {
             return false;
         }
@@ -231,18 +252,47 @@ public class DownlinkMessageHelper {
 //        } catch (Exception ignored) {}
 //    }
 
-    private static boolean isNeedDownlink(LoRaFrameParser.ParsedFrame frame, int normalizedInterval, int mins, int lowBattery) {
-        boolean intervalMatch = (frame.sleepIntervalMin > 0) && (frame.sleepIntervalMin == normalizedInterval);
+    private static Need8001Decision evaluateNeed8001(LoRaFrameParser.ParsedFrame frame, int normalizedInterval, int mins) {
+        boolean intervalKnown = frame.sleepIntervalMin > 0;
+        boolean intervalMatch = intervalKnown && (frame.sleepIntervalMin == normalizedInterval);
+        boolean scheduleKnown = frame.alarmCount >= 0;
         boolean scheduleMatch = false;
-        boolean isLow = (frame.evLowBattery > 0) && (frame.evLowBattery == lowBattery);
-        if (frame.alarmCount >= 0) {
+        if (scheduleKnown) {
             if (frame.alarmCount == 1 && frame.alarmMinutes != null && frame.alarmMinutes.length >= 1) {
                 scheduleMatch = (frame.alarmMinutes[0] == mins);
             } else if (frame.alarmCount == 0 && mins <= 0) {
                 scheduleMatch = true;
             }
         }
-        return !(intervalMatch && scheduleMatch);
+        boolean need = !(intervalMatch && scheduleMatch);
+        return new Need8001Decision(need, intervalKnown, intervalMatch, scheduleKnown, scheduleMatch);
+    }
+
+    private static boolean shouldLogNeed8001(String deviceId, boolean debug, boolean need) {
+        if (!debug && !need) return false;
+        String dev = deviceId == null ? "" : deviceId.trim();
+        long now = System.currentTimeMillis();
+        Long last = lastNeed8001LogMsByDev.get(dev);
+        long minGap = debug ? 1500L : 8000L;
+        if (last != null && now - last < minGap) return false;
+        lastNeed8001LogMsByDev.put(dev, now);
+        return true;
+    }
+
+    private static final class Need8001Decision {
+        final boolean need;
+        final boolean intervalKnown;
+        final boolean intervalMatch;
+        final boolean scheduleKnown;
+        final boolean scheduleMatch;
+
+        Need8001Decision(boolean need, boolean intervalKnown, boolean intervalMatch, boolean scheduleKnown, boolean scheduleMatch) {
+            this.need = need;
+            this.intervalKnown = intervalKnown;
+            this.intervalMatch = intervalMatch;
+            this.scheduleKnown = scheduleKnown;
+            this.scheduleMatch = scheduleMatch;
+        }
     }
 
 

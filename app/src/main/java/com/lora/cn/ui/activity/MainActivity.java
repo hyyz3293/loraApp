@@ -1812,10 +1812,10 @@ public class MainActivity extends AppCompatActivity {
                 int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
                 int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
                 int fallbackMins = Math.max(0, Math.min(1440, h * 60 + m));
-                int sendMins = latestTimedUnsentMins >= 0 ? latestTimedUnsentMins : fallbackMins;
+                //int sendMins = latestTimedUnsentMins >= 0 ? latestTimedUnsentMins : fallbackMins;
                 int clearMask = (timedMaintenanceDue ? (1 << 1) : 0) | (clearActivePending ? (1 << 2) : 0);
                 try {
-                    helper.sendDownlink8001(frame.deviceId, 1, 1, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{sendMins}, true);
+                    helper.sendDownlink8001(frame.deviceId, 1, 1, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{fallbackMins}, true);
                     if (timedMaintenanceDue) {
                         String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
