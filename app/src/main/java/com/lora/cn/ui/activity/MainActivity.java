@@ -1815,7 +1815,7 @@ public class MainActivity extends AppCompatActivity {
                 int sendMins = latestTimedUnsentMins >= 0 ? latestTimedUnsentMins : fallbackMins;
                 int clearMask = (timedMaintenanceDue ? (1 << 1) : 0) | (clearActivePending ? (1 << 2) : 0);
                 try {
-                    //helper.sendDownlink8001(frame.deviceId, 1, 1, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{sendMins}, true);
+                    helper.sendDownlink8001(frame.deviceId, 1, 1, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{sendMins}, true);
                     if (timedMaintenanceDue) {
                         String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
