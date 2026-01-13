@@ -27,6 +27,10 @@ import com.lora.cn.database.DatabaseHelper;
 import com.lora.cn.ui.adapter.MaintenanceInfoDetailAdapter;
 import com.lora.cn.ui.model.MaintenanceInfo;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -50,6 +54,9 @@ public class MaintenanceSettingListFragment extends Fragment {
     private ExecutorService ioExecutor;
     private Handler mainHandler;
     private final AtomicInteger loadSeq = new AtomicInteger(0);
+    private final Runnable dueRefreshRunnable = () -> {
+        try { loadList(); } catch (Exception ignored) {}
+    };
 
     public static MaintenanceSettingListFragment newInstance(String terminalId) {
         MaintenanceSettingListFragment f = new MaintenanceSettingListFragment();
@@ -103,10 +110,30 @@ public class MaintenanceSettingListFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         try {
+            if (mainHandler != null) mainHandler.removeCallbacks(dueRefreshRunnable);
             if (ioExecutor != null) ioExecutor.shutdownNow();
         } catch (Exception ignored) {}
         ioExecutor = null;
         mainHandler = null;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        try {
+            if (!EventBus.getDefault().isRegistered(this)) EventBus.getDefault().register(this);
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onStop() {
+        try {
+            if (EventBus.getDefault().isRegistered(this)) EventBus.getDefault().unregister(this);
+        } catch (Exception ignored) {}
+        try {
+            if (mainHandler != null) mainHandler.removeCallbacks(dueRefreshRunnable);
+        } catch (Exception ignored) {}
+        super.onStop();
     }
 
     @Override
@@ -115,11 +142,26 @@ public class MaintenanceSettingListFragment extends Fragment {
         loadList();
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
+        if (event == null) return;
+        String msg = null;
+        try { msg = event.getMessage(); } catch (Exception ignored) {}
+        if (msg == null || !msg.startsWith("维护刷新")) return;
+        if (TextUtils.isEmpty(terminalId)) return;
+        String target = null;
+        int idx = msg.indexOf(':');
+        if (idx >= 0 && idx + 1 < msg.length()) target = msg.substring(idx + 1).trim();
+        if (!TextUtils.isEmpty(target) && !terminalId.equalsIgnoreCase(target)) return;
+        loadList();
+    }
+
     private void loadList() {
         if (ioExecutor == null || mainHandler == null) return;
         int token = loadSeq.incrementAndGet();
         ioExecutor.execute(() -> {
             List<MaintenanceInfo> list;
+            long nextDueMs = -1L;
             try {
                 if (TextUtils.isEmpty(terminalId)) list = new ArrayList<>();
                 else list = db.getMaintenanceRecordsByTerminal(terminalId, currentUserId);
@@ -133,19 +175,25 @@ public class MaintenanceSettingListFragment extends Fragment {
                 long now = System.currentTimeMillis();
                 java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                 List<MaintenanceInfo> futureOnly = new ArrayList<>();
+                long minFutureMs = Long.MAX_VALUE;
                 for (MaintenanceInfo mi : filtered) {
                     String ct = mi != null ? mi.getCreateTime() : null;
                     if (ct == null || ct.trim().isEmpty()) continue;
                     try {
                         java.util.Date dt = sdf.parse(ct.trim());
-                        if (dt != null && dt.getTime() > now && mi.getStatus() == 0) futureOnly.add(mi);
+                        if (dt != null && dt.getTime() > now && mi.getStatus() == 0) {
+                            futureOnly.add(mi);
+                            if (dt.getTime() < minFutureMs) minFutureMs = dt.getTime();
+                        }
                     } catch (Exception ignored) {}
                 }
                 list = futureOnly;
+                if (minFutureMs != Long.MAX_VALUE) nextDueMs = minFutureMs;
             } catch (Exception e) {
                 list = null;
             }
             List<MaintenanceInfo> finalList = list;
+            long finalNextDueMs = nextDueMs;
             mainHandler.post(() -> {
                 if (!isAdded()) return;
                 if (token != loadSeq.get()) return;
@@ -155,8 +203,18 @@ public class MaintenanceSettingListFragment extends Fragment {
                 }
                 adapter.submitList(finalList);
                 adapter.notifyDataSetChanged();
+                scheduleNextDueRefresh(finalNextDueMs);
             });
         });
+    }
+
+    private void scheduleNextDueRefresh(long dueAtMs) {
+        if (mainHandler == null) return;
+        try { mainHandler.removeCallbacks(dueRefreshRunnable); } catch (Exception ignored) {}
+        if (dueAtMs <= 0) return;
+        long now = System.currentTimeMillis();
+        long delay = Math.max(0L, dueAtMs - now) + 300L;
+        try { mainHandler.postDelayed(dueRefreshRunnable, delay); } catch (Exception ignored) {}
     }
 
     private void showAddDialogForTerminal(String terminalId) {
