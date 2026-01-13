@@ -880,7 +880,7 @@ public class TerminalListFragment extends Fragment {
                         if (mi == null) continue;
                         if (mi.getStatus() != 0) continue;
                         String c = mi.getContent();
-                        boolean isAuto = "设备维护：需要维护".equals(c);
+                        boolean isAuto = "主动维护".equals(c);
                         boolean pending = false;
                         if (isAuto) {
                             pending = true;
@@ -1030,25 +1030,35 @@ public class TerminalListFragment extends Fragment {
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
                 java.util.List<com.lora.cn.ui.model.MaintenanceInfo> list = com.lora.cn.database.DatabaseHelper.getInstance(requireContext()).getMaintenanceRecords(uid);
                 long now = System.currentTimeMillis();
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                java.util.Set<String> pendingDevSet = new java.util.HashSet<>();
+                java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
                 if (list != null) {
                     for (com.lora.cn.ui.model.MaintenanceInfo mi : list) {
                         if (mi == null) continue;
                         if (mi.getStatus() != 0) continue;
+                        String dev = mi.getTerminalId();
+                        if (dev == null || dev.trim().isEmpty()) continue;
                         String c = mi.getContent();
-                        boolean isAuto = "设备维护：需要维护".equals(c);
+                        boolean isAuto = "主动维护".equals(c);
+                        boolean pending = false;
                         if (isAuto) {
-                            maintenanceCount++;
+                            pending = true;
                         } else {
                             String ct = mi.getCreateTime();
-                            if (ct == null || ct.trim().isEmpty()) continue;
-                            try {
-                                java.util.Date dt = sdf.parse(ct.trim());
-                                if (dt != null && dt.getTime() <= now && mi.getStatus() == 0) maintenanceCount++;
-                            } catch (Exception ignored) {}
+                            if (ct != null && !ct.trim().isEmpty()) {
+                                try {
+                                    java.util.Date dt = null;
+                                    try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
+                                    if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
+                                    pending = dt != null && dt.getTime() <= now;
+                                } catch (Exception ignored) {}
+                            }
                         }
+                        if (pending) pendingDevSet.add(dev.trim());
                     }
                 }
+                maintenanceCount = pendingDevSet.size();
             } catch (Exception ignored) {}
 
             List<TerminalStatus> statusList = new ArrayList<>();

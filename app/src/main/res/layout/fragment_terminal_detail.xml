@@ -12,7 +12,7 @@
         android:paddingRight="12dp"
         android:paddingLeft="12dp"
         android:orientation="vertical"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/bg_white_12"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -104,7 +104,7 @@
 
 
         <LinearLayout
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="10dp"
             android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" >
@@ -307,7 +307,7 @@
         android:paddingRight="12dp"
         android:paddingLeft="12dp"
         android:orientation="vertical"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="10dp"
         android:background="@drawable/bg_white_12"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -335,7 +335,7 @@
             android:id="@+id/maintenance_header_row"
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="50dp" >
+            android:layout_height="40dp" >
 
             <TextView
                 android:text="时间"

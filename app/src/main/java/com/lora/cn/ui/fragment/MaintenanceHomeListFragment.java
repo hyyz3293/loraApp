@@ -82,6 +82,7 @@ public class MaintenanceHomeListFragment extends Fragment {
         adapter = new MaintenanceInfoAdapter(MaintenanceInfoAdapter.Mode.HOME);
         adapter.setOnConfirmClickListener(this::showConfirmDialog);
         adapter.setOnViewClickListener(this::showViewDialog);
+        adapter.setOnViewRemarkClickListener(this::showRemarkDialog);
         adapter.setOnEditClickListener(this::showEditDialog);
         adapter.setOnDeleteClickListener(this::showDeleteDialog);
         rv.setAdapter(adapter);
@@ -570,6 +571,17 @@ public class MaintenanceHomeListFragment extends Fragment {
         new AlertDialog.Builder(requireContext())
                 .setTitle("维护内容")
                 .setMessage(sb.toString())
+                .setPositiveButton("确定", null)
+                .create()
+                .show();
+    }
+
+    private void showRemarkDialog(MaintenanceInfo item) {
+        if (item == null) return;
+        String remark = item.getHandleRemark();
+        new AlertDialog.Builder(requireContext())
+                .setTitle("备注")
+                .setMessage(TextUtils.isEmpty(remark) ? "暂无备注" : remark)
                 .setPositiveButton("确定", null)
                 .create()
                 .show();

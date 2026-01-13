@@ -1416,6 +1416,21 @@ public class MainActivity extends AppCompatActivity {
                 com.lora.cn.network.MqttPacketsClient client = mqttClient != null ? mqttClient : com.lora.cn.network.MqttPacketsClient.getShared();
                 com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
                 java.util.List<com.lora.cn.ui.model.Terminal> terms = db.getAllTerminals();
+                int depId = 0;
+                int cartId = 0;
+                boolean clearActivePending = false;
+                try {
+                    if (terms != null) {
+                        for (com.lora.cn.ui.model.Terminal t : terms) {
+                            if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                                depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
+                                cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
+                                clearActivePending = t.isMaintenanceClearPending();
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
                 boolean maintenanceNeeded = false;
                 try {
                     if (frame.statusFlags != null) {
@@ -1503,24 +1518,20 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 } catch (Exception ignored) {}
-                if (!dueMaint.isEmpty()) {
-                    int depId = 0;
-                    int cartId = 0;
-                    boolean clearActivePending = false;
-                    try {
-                        if (terms != null) {
-                            for (com.lora.cn.ui.model.Terminal t : terms) {
-                                if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
-                                    depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
-                                    cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
-                                    clearActivePending = t.isMaintenanceClearPending();
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                    int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                    int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
+                boolean need8001ByConfig = false;
+                try { need8001ByConfig = helper.isNeedDownlink8001(frame); } catch (Exception ignored) {}
+                boolean timedMaintenanceDue = !dueMaint.isEmpty();
+                boolean shouldSend = clearActivePending || timedMaintenanceDue || need8001ByConfig;
+                LogUtils.e(frame.deviceId + "==>8001是否需要下行：" + need8001ByConfig + "，定时维护到期：" + timedMaintenanceDue + "，清除主动维护pending：" + clearActivePending);
+                LogUtils.e(frame.deviceId + "==>是否下指令：" + shouldSend);
+                if (!shouldSend) return;
+                int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
+                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+                int fallbackMins = Math.max(0, Math.min(1440, h * 60 + m));
+                int sendMins = fallbackMins;
+                if (timedMaintenanceDue) {
                     java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                     java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
                     int latestMins = -1;
@@ -1533,15 +1544,11 @@ public class MainActivity extends AppCompatActivity {
                             try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
                             if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
                             long ts = dt != null ? dt.getTime() : -1L;
-                            int mins = 0;
+                            int mins = fallbackMins;
                             if (dt != null) {
                                 java.util.Calendar cal = java.util.Calendar.getInstance();
                                 cal.setTime(dt);
                                 mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
-                            } else {
-                                int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
-                                int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
-                                mins = Math.max(0, Math.min(1440, h * 60 + m));
                             }
                             if (ts >= latestTs) {
                                 latestTs = ts;
@@ -1549,51 +1556,22 @@ public class MainActivity extends AppCompatActivity {
                             }
                         } catch (Exception ignored) {}
                     }
-                    if (latestMins < 0) {
-                        int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
-                        int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
-                        latestMins = Math.max(0, Math.min(1440, h * 60 + m));
-                    }
-                    int clearMask = (1 << 1) | (clearActivePending ? (1 << 2) : 0);
-                    try {
-                        //helper.sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{latestMins}, true);
+                    if (latestMins >= 0) sendMins = latestMins;
+                }
+                int clearMask = (timedMaintenanceDue ? (1 << 1) : 0) | (clearActivePending ? (1 << 2) : 0);
+                try {
+                    helper.sendDownlink8001(frame.deviceId, 1, 1, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{sendMins}, true);
+                    if (timedMaintenanceDue) {
                         String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
                             try { db.updateMaintenanceSent(mi.getId(), sentTime); } catch (Exception ignored) {}
                         }
-                        if (clearActivePending) {
-                            try { db.setTerminalMaintenanceClearPending(frame.deviceId, false); } catch (Exception ignored) {}
-                        }
-                    } catch (Exception ignored) {}
-                } else {
-                    int depId = 0;
-                    int cartId = 0;
-                    boolean clearActivePending = false;
-                    try {
-                        if (terms != null) {
-                            for (com.lora.cn.ui.model.Terminal t : terms) {
-                                if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
-                                    depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
-                                    cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
-                                    clearActivePending = t.isMaintenanceClearPending();
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                    if (clearActivePending) {
-                        int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                        int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
-                        int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
-                        int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
-                        int mins = Math.max(0, Math.min(1440, h * 60 + m));
-                        try {
-                            helper.sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, (1 << 2), normalizedInterval, 1, new int[]{mins}, true);
-                            try { db.setTerminalMaintenanceClearPending(frame.deviceId, false); } catch (Exception ignored) {}
-                        } catch (Exception ignored) {}
-                    } else {
-                        helper.evaluateAndSend8001IfNeeded(frame, db);
                     }
+                } catch (Exception ignored) {
+                    LogUtils.e(frame.deviceId + "==>ignored：" + ignored);
+                }
+                if (clearActivePending) {
+                    try { db.setTerminalMaintenanceClearPending(frame.deviceId, false); } catch (Exception ignored) {}
                 }
             } catch (Exception ignored) {}
         } catch (Exception ignored) {}

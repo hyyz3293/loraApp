@@ -184,6 +184,30 @@ public class DownlinkMessageHelper {
                                             com.lora.cn.database.DatabaseHelper db) {
         try {
             if (frame == null || frame.deviceId == null || frame.deviceId.isEmpty()) return;
+            if (!isNeedDownlink8001(frame)) return;
+            sendDownlink8001WithCurrentConfig(frame, db);
+        } catch (Exception ignored) {}
+    }
+
+    public boolean isNeedDownlink8001(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame) {
+        try {
+            if (frame == null) return false;
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+            int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+            int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+            int mins = Math.max(0, Math.min(1440, h * 60 + m));
+            int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
+            int lowBattery = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            return isNeedDownlink(frame, normalizedInterval, mins, lowBattery);
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    public void sendDownlink8001WithCurrentConfig(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame,
+                                                 com.lora.cn.database.DatabaseHelper db) {
+        try {
+            if (frame == null || frame.deviceId == null || frame.deviceId.isEmpty()) return;
             int depId = 0;
             int cartId = 0;
             try {
@@ -203,11 +227,7 @@ public class DownlinkMessageHelper {
             int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
             int mins = Math.max(0, Math.min(1440, h * 60 + m));
             int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
-            int lowBattery = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-            boolean needDownlink = isNeedDownlink(frame, normalizedInterval, mins, lowBattery);
-            if (needDownlink) {
-                sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, 0, normalizedInterval, 1, new int[]{mins}, true);
-            }
+            sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, 0, normalizedInterval, 1, new int[]{mins}, true);
         } catch (Exception ignored) {}
     }
 

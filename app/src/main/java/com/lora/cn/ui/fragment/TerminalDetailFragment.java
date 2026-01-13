@@ -150,24 +150,19 @@ public class TerminalDetailFragment extends Fragment {
         if (rvMaintenanceLogs != null) {
             rvMaintenanceLogs.setLayoutManager(new LinearLayoutManager(requireContext()));
             maintenanceAdapter = new com.lora.cn.ui.adapter.MaintenanceInfoAdapter(com.lora.cn.ui.adapter.MaintenanceInfoAdapter.Mode.DETAIL);
-            maintenanceAdapter.setOnConfirmClickListener(item -> {
-                if (ioExecutor == null || mainHandler == null) return;
-                ioExecutor.execute(() -> {
-                    long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                    String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
-                    String time = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    try {
-                        dbHelper.updateMaintenanceHandled(item.getId(), uid, user, time, "");
-                    } catch (Exception ignored) {}
-                    Handler h = mainHandler;
-                    if (h == null) return;
-                    h.post(this::loadMaintenanceLogs);
-                });
-            });
+            maintenanceAdapter.setOnConfirmClickListener(this::showMaintenanceConfirmDialog);
             maintenanceAdapter.setOnViewClickListener(item -> {
                 android.app.AlertDialog.Builder b1 = new android.app.AlertDialog.Builder(requireContext());
                 b1.setTitle("维护内容");
                 b1.setMessage(item.getContent() == null ? "" : item.getContent());
+                b1.setPositiveButton("关闭", (d, w) -> d.dismiss());
+                b1.show();
+            });
+            maintenanceAdapter.setOnViewRemarkClickListener(item -> {
+                android.app.AlertDialog.Builder b1 = new android.app.AlertDialog.Builder(requireContext());
+                b1.setTitle("备注");
+                String remark = item.getHandleRemark();
+                b1.setMessage(android.text.TextUtils.isEmpty(remark) ? "暂无备注" : remark);
                 b1.setPositiveButton("关闭", (d, w) -> d.dismiss());
                 b1.show();
             });
@@ -318,7 +313,7 @@ public class TerminalDetailFragment extends Fragment {
                         String c = mi != null ? mi.getContent() : null;
                         String ct = mi != null ? mi.getCreateTime() : null;
                         if (ct == null || ct.trim().isEmpty()) continue;
-                        boolean isAuto = "设备维护：需要维护".equals(c);
+                        boolean isAuto = "主动维护".equals(c);
                         try {
                             java.util.Date dt = sdf.parse(ct.trim());
                             if (dt != null && dt.getTime() > now)
@@ -579,7 +574,7 @@ public class TerminalDetailFragment extends Fragment {
                         String c = mi != null ? mi.getContent() : null;
                         String ct = mi != null ? mi.getCreateTime() : null;
                         if (ct == null || ct.trim().isEmpty()) continue;
-                        boolean isAuto = "设备维护：需要维护".equals(c);
+                        boolean isAuto = "主动维护".equals(c);
                         try {
                             java.util.Date dt = sdf.parse(ct.trim());
                             if (dt != null && dt.getTime() > now)
@@ -801,7 +796,23 @@ public class TerminalDetailFragment extends Fragment {
             String err = null;
             try {
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                list = dbHelper.getMaintenanceRecordsByTerminal(deviceId, uid);
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> all = dbHelper.getMaintenanceRecords(uid);
+                java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> filtered = new java.util.ArrayList<>();
+                long now = System.currentTimeMillis();
+                if (all != null) {
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : all) {
+                        if (mi == null) continue;
+                        String tid = mi.getTerminalId();
+                        if (tid == null || !tid.equalsIgnoreCase(deviceId)) continue;
+                        String ct = mi.getCreateTime();
+                        if (ct == null || ct.trim().isEmpty()) continue;
+                        long tm = parseMillis(ct);
+                        if (tm < 0) continue;
+                        if (tm > now) continue;
+                        filtered.add(mi);
+                    }
+                }
+                list = filtered;
             } catch (Exception e) {
                 err = "加载维护日志失败";
             }
@@ -838,6 +849,46 @@ public class TerminalDetailFragment extends Fragment {
         });
     }
 
+    private void showMaintenanceConfirmDialog(com.lora.cn.ui.model.MaintenanceInfo item) {
+        if (item == null) return;
+        android.widget.EditText et = new android.widget.EditText(requireContext());
+        et.setMinLines(3);
+        et.setHint("请输入备注");
+        try {
+            et.setText("确认维护");
+            et.setSelection(et.getText().length());
+        } catch (Exception ignored) {}
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle("确认维护")
+                .setView(et)
+                .setPositiveButton("确认", (d, w) -> {
+                    String remark = et.getText() != null ? et.getText().toString().trim() : "";
+                    if (ioExecutor == null || mainHandler == null) return;
+                    ioExecutor.execute(() -> {
+                        long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                        String user = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
+                        String time = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                        int r;
+                        try {
+                            r = dbHelper.updateMaintenanceHandled(item.getId(), uid, user, time, remark);
+                        } catch (Exception ignored) {
+                            r = 0;
+                        }
+                        try {
+                            String c = item.getContent();
+                            if (r > 0 && c != null && c.startsWith("设备维护：")) {
+                                dbHelper.setTerminalMaintenanceClearPending(item.getTerminalId(), true);
+                            }
+                        } catch (Exception ignored) {}
+                        Handler h = mainHandler;
+                        if (h == null) return;
+                        h.post(this::loadMaintenanceLogs);
+                    });
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
     private void applyToggleUi() {
         try {
             if (btnToggleMaintenance != null) btnToggleMaintenance.setImageResource(maintenanceCollapsed ? R.drawable.ic_chevron_down : R.drawable.ic_chevron_up);
@@ -864,14 +915,18 @@ public class TerminalDetailFragment extends Fragment {
     }
 
     private long parseMillis(String time) {
-        if (time == null || time.length() == 0) return -1L;
-        try {
-            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-            java.util.Date d = sdf.parse(time);
-            return d != null ? d.getTime() : -1L;
-        } catch (Exception e) {
-            return -1L;
+        if (time == null || time.trim().isEmpty()) return -1L;
+        String raw = time.trim();
+        java.util.List<java.text.SimpleDateFormat> formats = new java.util.ArrayList<>();
+        formats.add(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()));
+        formats.add(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()));
+        for (java.text.SimpleDateFormat f : formats) {
+            try {
+                java.util.Date d = f.parse(raw);
+                if (d != null) return d.getTime();
+            } catch (Exception ignored) {}
         }
+        return -1L;
     }
 
     private boolean deleteTerminal(String deviceId) {

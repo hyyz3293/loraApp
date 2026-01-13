@@ -127,7 +127,7 @@ public class MaintenanceSettingListFragment extends Fragment {
                 List<MaintenanceInfo> filtered = new ArrayList<>();
                 for (MaintenanceInfo mi : list) {
                     String c = mi != null ? mi.getContent() : null;
-                    boolean isAuto = "设备维护：需要维护".equals(c);
+                    boolean isAuto = "主动维护".equals(c);
                     if (!isAuto) filtered.add(mi);
                 }
                 long now = System.currentTimeMillis();

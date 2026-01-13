@@ -20,10 +20,12 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
     public enum Mode { HOME, SETTING, DETAIL }
     public interface OnConfirmClickListener { void onConfirmClick(MaintenanceInfo item); }
     public interface OnViewClickListener { void onViewClick(MaintenanceInfo item); }
+    public interface OnViewRemarkClickListener { void onViewRemarkClick(MaintenanceInfo item); }
     public interface OnEditClickListener { void onEditClick(MaintenanceInfo item); }
     public interface OnDeleteClickListener { void onDeleteClick(MaintenanceInfo item); }
     private OnConfirmClickListener onConfirmClickListener;
     private OnViewClickListener onViewClickListener;
+    private OnViewRemarkClickListener onViewRemarkClickListener;
     private OnEditClickListener onEditClickListener;
     private OnDeleteClickListener onDeleteClickListener;
     private final Mode mode;
@@ -40,6 +42,7 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
 
     public void setOnConfirmClickListener(OnConfirmClickListener l) { this.onConfirmClickListener = l; }
     public void setOnViewClickListener(OnViewClickListener l) { this.onViewClickListener = l; }
+    public void setOnViewRemarkClickListener(OnViewRemarkClickListener l) { this.onViewRemarkClickListener = l; }
     public void setOnEditClickListener(OnEditClickListener l) { this.onEditClickListener = l; }
     public void setOnDeleteClickListener(OnDeleteClickListener l) { this.onDeleteClickListener = l; }
 
@@ -62,7 +65,17 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         TextView btnDelete = root.findViewById(R.id.btn_maintenance_delete);
         TextView btnEdit = root.findViewById(R.id.btn_maintenance_edit);
 
-        if (logTime != null) setTextOrDash(logTime, item.getCreateTime());
+        if (logTime != null)
+            try {
+                String createTime = item.getCreateTime();
+                String[] create = createTime.split(" ");
+                setTextOrDash(logTime, create[0] + "\n" + create[1]);
+            }catch (Exception e) {
+                e.getMessage();
+                setTextOrDash(logTime, item.getCreateTime());
+            }
+
+//            setTextOrDash(logTime, item.getCreateTime());
 
         boolean done = item.getStatus() == 1;
         if (mode == Mode.SETTING) {
@@ -137,7 +150,15 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
             if (logHandleTime != null) {
                 logHandleTime.setVisibility(View.VISIBLE);
                 if (done) {
-                    setTextOrDash(logHandleTime, item.getHandleTime());
+                    try {
+                        String handleTime = item.getHandleTime();
+                        String[] handler = handleTime.split(" ");
+                        setTextOrDash(logHandleTime, handler[0] + "\n" + handler[1]);
+                    }catch (Exception e) {
+                        e.getMessage();
+                        setTextOrDash(logHandleTime, item.getHandleTime());
+                    }
+
                 } else {
                     logHandleTime.setText("");
                 }
@@ -147,13 +168,20 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         if (mode == Mode.HOME || mode == Mode.DETAIL) {
             if (layoutOps != null) layoutOps.setVisibility(View.VISIBLE);
             if (btnEdit != null) {
-                btnEdit.setVisibility(View.GONE);
-                btnEdit.setText(done ? "维护内容" : "维护内容");
-                btnEdit.setBackgroundResource(R.drawable.bg_btn_voice);
-                btnEdit.setTextColor(Color.parseColor("#383B40"));
-                btnEdit.setOnClickListener(v -> {
-                    if (onViewClickListener != null) onViewClickListener.onViewClick(item);
-                });
+                String remark = "";
+                try { remark = item.getHandleRemark(); } catch (Exception ignored) {}
+                boolean hasRemark = remark != null && !remark.trim().isEmpty();
+                if (done && hasRemark) {
+                    btnEdit.setVisibility(View.VISIBLE);
+                    btnEdit.setText("查看备注");
+                    btnEdit.setBackgroundResource(R.drawable.bg_btn_voice);
+                    btnEdit.setTextColor(Color.parseColor("#383B40"));
+                    btnEdit.setOnClickListener(v -> {
+                        if (onViewRemarkClickListener != null) onViewRemarkClickListener.onViewRemarkClick(item);
+                    });
+                } else {
+                    btnEdit.setVisibility(View.GONE);
+                }
             }
             if (btnDelete != null) {
                 if (done) {
