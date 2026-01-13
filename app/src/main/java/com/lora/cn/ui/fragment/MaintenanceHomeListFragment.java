@@ -122,6 +122,7 @@ public class MaintenanceHomeListFragment extends Fragment {
                 try {
                     selectedStartTime = "";
                     selectedEndTime = "";
+                    filterStatus = -1;
                     if (tvStart != null) tvStart.setText("开始时间");
                     if (tvEnd != null) tvEnd.setText("结束时间");
                     if (spinnerStatus != null) spinnerStatus.setSelection(0, false);
@@ -135,12 +136,14 @@ public class MaintenanceHomeListFragment extends Fragment {
         if (rlEnd != null) rlEnd.setOnClickListener(v13 -> showEndPicker());
         if (rlStart != null) rlStart.setOnLongClickListener(v14 -> {
             selectedStartTime = "";
+            currentPage = 0;
             if (tvStart != null) tvStart.setText("开始时间");
             loadList();
             return true;
         });
         if (rlEnd != null) rlEnd.setOnLongClickListener(v15 -> {
             selectedEndTime = "";
+            currentPage = 0;
             if (tvEnd != null) tvEnd.setText("结束时间");
             loadList();
             return true;
@@ -229,7 +232,6 @@ public class MaintenanceHomeListFragment extends Fragment {
 
     private List<MaintenanceInfo> filterByStatusAndTime(List<MaintenanceInfo> source) {
         List<MaintenanceInfo> out = new ArrayList<>();
-        long now = System.currentTimeMillis();
         long startMs = parseMillis(selectedStartTime);
         long endMs = parseMillis(selectedEndTime);
         for (MaintenanceInfo mi : (source != null ? source : new ArrayList<MaintenanceInfo>())) {
@@ -238,7 +240,6 @@ public class MaintenanceHomeListFragment extends Fragment {
             if (ct == null || ct.trim().isEmpty()) continue;
             long tm = parseMillis(ct);
             if (tm < 0) continue;
-            if (tm > now) continue;
             if (startMs > 0 && tm < startMs) continue;
             if (endMs > 0 && tm > endMs) continue;
             if (filterStatus == -1) {

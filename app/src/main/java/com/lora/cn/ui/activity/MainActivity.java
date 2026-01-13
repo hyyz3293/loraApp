@@ -1660,22 +1660,30 @@ public class MainActivity extends AppCompatActivity {
                                 latestUnsentMins = mins;
                             }
                             dueMaint.add(mi);
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                            Log.e("", "--- : 6 ===mi.getTime() == 1");
+                        }
                     }
                     if (latestUnsentMins >= 0) latestTimedUnsentMins = latestUnsentMins;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                Log.e("", "--- : 7 ===mi.getTime() == 1");
+            }
             try {
                 int cnt = dueMaint.size();
                 LogUtils.e(frame.deviceId + "==>到期且未下行(定时维护,sentFlag=0)数量=" + cnt + "，是否>1:" + (cnt > 1));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                Log.e("", "--- : 8 ===mi.getTime() == 1");
+            }
 
             try {
                 long nowDedup = System.currentTimeMillis();
                 Long last = lastMaintenanceEvalByDevMs.get(frame.deviceId);
                 if (last != null && nowDedup - last < 800L) return;
                 lastMaintenanceEvalByDevMs.put(frame.deviceId, nowDedup);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                Log.e("", "--- : 9 ===mi.getTime() == 1");
+            }
 
             try {
                 com.lora.cn.network.MqttPacketsClient client = mqttClient != null ? mqttClient : com.lora.cn.network.MqttPacketsClient.getShared();
