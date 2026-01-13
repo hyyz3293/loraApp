@@ -1556,7 +1556,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     int clearMask = (1 << 1) | (clearActivePending ? (1 << 2) : 0);
                     try {
-                        helper.sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{latestMins}, true);
+                        //helper.sendDownlink8001(frame.deviceId, 1, 0, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{latestMins}, true);
                         String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
                             try { db.updateMaintenanceSent(mi.getId(), sentTime); } catch (Exception ignored) {}
@@ -2763,6 +2763,11 @@ public class MainActivity extends AppCompatActivity {
     showAddDeviceFragment(uiTerminal);
 }
 
+    /**
+     * 注释异常取走 等等/
+     * @param devHex
+     * @param mask
+     */
     public void sendHandleDownlink(String devHex, int mask) {
         try {
             if (mqttClient != null) {

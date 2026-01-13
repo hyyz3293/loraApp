@@ -313,13 +313,23 @@ public class AddDeviceFragment extends Fragment {
         terminal.setTerminalId(terminalId);
         terminal.setDeviceCode(deviceCode);
         terminal.setTerminalName(deviceName);
-        terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE); // 默认状态
+        int initStatus = com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE;
+        if (this.terminal != null) {
+            int st = this.terminal.getStatus();
+            if (st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE
+                    || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE
+                    || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN
+                    || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN) {
+                initStatus = st;
+            }
+        }
+        terminal.setStatus(initStatus);
         // terminal.setSignalStrength(0); // 默认信号强度
         terminal.setDepartment(""); // 默认部门
         terminal.setLocation(""); // 默认位置
         if (this.terminal != null) {
             terminal.setSignalStrength(this.terminal.getSignalStrength());
-            if (this.terminal.getBatteryLevel() > 0) terminal.setBatteryLevel(this.terminal.getBatteryLevel());
+            if (this.terminal.getBatteryLevel() >= 0) terminal.setBatteryLevel(this.terminal.getBatteryLevel());
             if (this.terminal.getBatteryVoltage() > 0) terminal.setBatteryVoltage(this.terminal.getBatteryVoltage());
             if (this.terminal.getRssi() > 0) terminal.setRssi(this.terminal.getRssi());
         }
