@@ -1046,7 +1046,7 @@ public class MainActivity extends AppCompatActivity {
                                     Integer minsObj = latestMinsByDev.get(dev);
                                     int mins = minsObj != null ? minsObj : 0;
                                     int clearMask = (1 << 1) | (clearActivePending ? (1 << 2) : 0);
-                                    helper.sendDownlink8001(dev, 1, 0, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{mins}, true);
+                                    //helper.sendDownlink8001(dev, 1, 0, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{mins}, true);
                                     String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                                     for (com.lora.cn.ui.model.MaintenanceInfo mi : bucket) {
                                         try { db.updateMaintenanceSent(mi.getId(), sentTime); } catch (Exception ignored) {}
