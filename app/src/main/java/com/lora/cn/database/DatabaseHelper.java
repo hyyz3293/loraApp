@@ -1818,6 +1818,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             result = db.insert(targetTable, null, values);
             LogUtils.e("上行数据库插入=\n" + targetTable + "-----result：" + result);
             LogUtils.e("上行数据库插入=\n" + values);
+        } else {
+            try {
+                LogUtils.e(
+                        "上行未入库: deviceId=" + (deviceId == null ? "" : deviceId) +
+                                ", statusCode=" + statusCode +
+                                ", mappedFromTerminal=" + mappedLogFromTerminal +
+                                ", lastStatusGlobal=" + (lastStatusGlobal == null ? "null" : String.valueOf(lastStatusGlobal)) +
+                                ", lastTimeGlobal=" + (lastTimeGlobal == null ? "" : lastTimeGlobal) +
+                                ", skipBySameStatus=" + skipBySameStatus +
+                                ", suppressAbnormalRepeat=" + suppressAbnormalRepeat +
+                                ", skipByTerminalStateSame=" + skipByTerminalStateSame +
+                                ", existsTerminal=" + exists +
+                                ", table=" + targetTable);
+            } catch (Exception ignored) {}
         }
 
         LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));

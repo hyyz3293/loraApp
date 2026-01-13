@@ -1244,7 +1244,7 @@ public class MainActivity extends AppCompatActivity {
                 continue;
             }
 
-            if (last != null) out.clearDevs.add(devId);
+            out.clearDevs.add(devId);
         }
         return out;
     }
@@ -1278,13 +1278,30 @@ public class MainActivity extends AppCompatActivity {
                 lastAlertTypes.remove(devId);
             }
         }
-        if (queueChanged && alertQueue.isEmpty()) {
-            currentAlert = null;
-            lastShownKey = null;
-            lastSmallKey = null;
-            try { stopAlertRinging(); } catch (Exception ignored) {}
-            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-            if (llAlertPendingSmall != null) setSmallVisible(false);
+        if (queueChanged) {
+            boolean currentStillInQueue = false;
+            if (currentAlert != null) {
+                for (AlertItem ai : alertQueue) {
+                    if (ai == null) continue;
+                    if (currentAlert.code != null && !currentAlert.code.equalsIgnoreCase(ai.code)) continue;
+                    if (currentAlert.title != null && !currentAlert.title.equals(ai.title)) continue;
+                    if (currentAlert.logId > 0 && ai.logId > 0 && currentAlert.logId != ai.logId) continue;
+                    currentStillInQueue = true;
+                    break;
+                }
+                if (!currentStillInQueue) {
+                    currentAlert = null;
+                    lastShownKey = null;
+                    lastSmallKey = null;
+                }
+            }
+            if (alertQueue.isEmpty()) {
+                try { stopAlertRinging(); } catch (Exception ignored) {}
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null) setSmallVisible(false);
+            } else if (currentAlert == null) {
+                showLatestPending();
+            }
         }
 
         if (!result.actions.isEmpty()) {
@@ -1328,9 +1345,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         try {
-            pendingCountOverride = alertQueue.size();
-            pendingCountOverrideTs = System.currentTimeMillis();
-            applyPendingBadgeUi(pendingCountOverride);
+            pendingCountOverride = null;
+            applyPendingBadgeUi(alertQueue.size());
         } catch (Exception ignored) {}
 
         pendingAlertCount = alertQueue.size();
@@ -1358,8 +1374,12 @@ public class MainActivity extends AppCompatActivity {
                     if (llAlertPendingSmall != null) setSmallVisible(false);
                 }
             } else {
-                if (allowAutoHideBig)
-                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                currentAlert = null;
+                lastShownKey = null;
+                lastSmallKey = null;
+                try { stopAlertRinging(); } catch (Exception ignored) {}
+                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+                if (llAlertPendingSmall != null) setSmallVisible(false);
             }
         }
         updatePendingBadge();
@@ -2412,10 +2432,21 @@ public class MainActivity extends AppCompatActivity {
                                         if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
                                         final String broadcastTime = time;
                                         final String broadcastHex = hex;
+                                        final String devEuiForLog = devEui;
                                         ioExecutor.execute(() -> {
-                                            long result = databaseHelper.addUplinkLog(broadcastHex);
+                                            try {
+                                                Log.d(TAG, "入库任务开始: devEUI=" + (devEuiForLog == null ? "" : devEuiForLog) + ", time=" + broadcastTime);
+                                            } catch (Exception ignored) {}
+                                            long result = -1L;
+                                            try { result = databaseHelper.addUplinkLog(broadcastHex); } catch (Exception e) { Log.e(TAG, "addUplinkLog异常: " + e.getMessage()); }
                                             Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
                                             com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
+                                            if (result <= 0) {
+                                                try {
+                                                    com.lora.cn.utils.LoRaFrameParser.ParsedFrame f = com.lora.cn.utils.LoRaFrameParser.parseFrame(broadcastHex);
+                                                    Log.w(TAG, "上行未写入日志表: devEUI=" + (devEuiForLog == null ? "" : devEuiForLog) + ", deviceId=" + (f != null ? f.deviceId : "") + ", hex=" + broadcastHex);
+                                                } catch (Exception ignored) {}
+                                            }
                                             try {
                                                 UplinkDataEvent event = new UplinkDataEvent(broadcastTime, broadcastHex);
                                                 EventBus.getDefault().post(event);
@@ -2427,6 +2458,30 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
                                         wroteAny = true;
+                                    } else {
+                                        try {
+                                            com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+                                            String did = frame != null ? frame.deviceId : devEui;
+                                            if (did != null && did.length() > 0 && databaseHelper != null && databaseHelper.isTerminalExists(did)) {
+                                                try {
+                                                    databaseHelper.updateTerminalMetricsByDeviceId(did, frame != null ? frame.batteryLevel : 0, frame != null ? frame.rssi : 0, frame != null ? frame.batteryVoltage : 0);
+                                                } catch (Exception ignored) {}
+                                                try {
+                                                    databaseHelper.updateTerminalStatusByDeviceId(did, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                                                } catch (Exception ignored) {}
+                                                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("uplink_fast")); } catch (Exception ignored) {}
+                                                try {
+                                                    UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                                                    org.greenrobot.eventbus.EventBus.getDefault().post(event);
+                                                } catch (Exception ignored) {}
+                                                try {
+                                                    Integer lastType = lastAlertTypes != null ? lastAlertTypes.get(did) : null;
+                                                    if (lastType != null && lastType == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
+                                                        if (mainHandler != null) mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
+                                                    }
+                                                } catch (Exception ignored) {}
+                                            }
+                                        } catch (Exception ignored) {}
                                     }
                                 }
 

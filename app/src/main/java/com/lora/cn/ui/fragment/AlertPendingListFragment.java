@@ -69,6 +69,7 @@ public class AlertPendingListFragment extends Fragment {
         if (ioExecutor == null || mainHandler == null) return;
         final int token = loadSeq.incrementAndGet();
         final android.content.Context appCtx = requireContext().getApplicationContext();
+        final android.os.Handler handler = mainHandler;
         ioExecutor.execute(() -> {
             try {
                 DatabaseHelper db = DatabaseHelper.getInstance(appCtx);
@@ -166,7 +167,8 @@ public class AlertPendingListFragment extends Fragment {
                     }
                     if (canHandle) allowedIds.add(li.getId());
                 }
-                mainHandler.post(() -> {
+                if (handler == null) return;
+                handler.post(() -> {
                     if (!isAdded()) return;
                     if (token != loadSeq.get()) return;
                     adapter.submitList(filtered);
@@ -174,7 +176,8 @@ public class AlertPendingListFragment extends Fragment {
                     try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.AlertPendingCountEvent(filtered.size())); } catch (Exception ignored) {}
                 });
             } catch (Exception e) {
-                mainHandler.post(() -> {
+                if (handler == null) return;
+                handler.post(() -> {
                     if (!isAdded()) return;
                     Toast.makeText(requireContext(), "加载报警列表失败", Toast.LENGTH_SHORT).show();
                 });
@@ -193,6 +196,7 @@ public class AlertPendingListFragment extends Fragment {
                     if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
                     if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                     final android.content.Context appCtx = requireContext().getApplicationContext();
+                    final android.os.Handler handler = mainHandler;
                     ioExecutor.execute(() -> {
                         try {
                             DatabaseHelper db = DatabaseHelper.getInstance(appCtx);
@@ -211,7 +215,8 @@ public class AlertPendingListFragment extends Fragment {
                                 }
                             } catch (Exception ignored) {}
                         } catch (Exception ignored) {}
-                        mainHandler.post(() -> {
+                        if (handler == null) return;
+                        handler.post(() -> {
                             if (!isAdded()) return;
                             loadAlertsAsync();
                             try {
@@ -231,7 +236,6 @@ public class AlertPendingListFragment extends Fragment {
     public void onDestroyView() {
         try { if (ioExecutor != null) ioExecutor.shutdownNow(); } catch (Exception ignored) {}
         ioExecutor = null;
-        mainHandler = null;
         super.onDestroyView();
     }
 
