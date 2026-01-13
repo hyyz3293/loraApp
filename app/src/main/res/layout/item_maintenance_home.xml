@@ -29,6 +29,7 @@
 
 
         <LinearLayout
+            android:layout_marginLeft="5dp"
             android:layout_weight="138"
             android:layout_width="0dp"
             android:gravity="center_vertical"
@@ -49,6 +50,7 @@
 
         <LinearLayout
             android:id="@+id/container_log_name"
+            android:layout_marginLeft="5dp"
             android:layout_weight="156"
             android:layout_width="0dp"
             android:gravity="center_vertical"
@@ -67,6 +69,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:layout_marginLeft="5dp"
             android:id="@+id/container_log_group"
             android:layout_weight="168"
             android:layout_width="0dp"
@@ -87,6 +90,7 @@
 
 
         <LinearLayout
+            android:layout_marginLeft="5dp"
             android:id="@+id/container_log_id"
             android:layout_weight="168"
             android:layout_width="0dp"
@@ -106,6 +110,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:layout_marginLeft="5dp"
             android:layout_weight="168"
             android:layout_width="0dp"
             android:gravity="center_vertical"
@@ -124,6 +129,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:layout_marginLeft="5dp"
             android:layout_weight="168"
             android:layout_width="0dp"
             android:gravity="center_vertical"
@@ -142,6 +148,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:layout_marginLeft="5dp"
             android:layout_weight="182"
             android:layout_width="0dp"
             android:gravity="center_vertical"
