@@ -1890,7 +1890,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         String autoUser = handleUserNow;
                         markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
-                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
                     } catch (Exception ignored) {}
@@ -1911,7 +1910,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         String autoUser = handleUserNow;
                         markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
-                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
                     } catch (Exception ignored) {}
@@ -1930,7 +1928,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         String autoUser2 = handleUserNow;
                         markAlertLogsHandled(deviceId, handleTimeNow, autoUser2, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
-                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
                     }
@@ -1948,6 +1945,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String keyRecLb = "low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : "");
                 if (frame.batteryLevel > lowTh) {
                     try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyRecLb, nowMsLb); } catch (Exception ignored) {}
+                    try {
+                        String autoUserLb = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUserLb, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                        });
+                    } catch (Exception ignored) {}
                 } else {
                     long lastLoggedLb = 0L, lastRecoveredLb = 0L;
                     try {

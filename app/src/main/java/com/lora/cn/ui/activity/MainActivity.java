@@ -1231,7 +1231,7 @@ public class MainActivity extends AppCompatActivity {
                 } catch (Exception ignored) {}
                 String key = devId + ":设备低电量";
                 Long prev = lastLogIds != null ? lastLogIds.get(key) : null;
-                if (latestId > 0 && (prev == null || prev != latestId)) {
+                if (latestId > 0 && (newly || prev == null || prev != latestId)) {
                     AlertItem item = new AlertItem();
                     item.title = "设备低电量";
                     item.name = t.getTerminalName();
@@ -1317,7 +1317,7 @@ public class MainActivity extends AppCompatActivity {
                     Long ht = lastHandledTimes.get(devId);
                     Integer handledType = lastHandledTypes.get(devId);
                     long at = parseMillis(a.item.time);
-                    boolean suppress = handledType != null && handledType == sc;
+                    boolean suppress = handledType != null && handledType == sc && ht != null && at > 0 && at <= ht;
                     if (!existsInQueue(devId, title) && !suppress && allowPopup) {
                         alertQueue.addLast(a.item);
                         queueChanged = true;
@@ -1911,8 +1911,7 @@ public class MainActivity extends AppCompatActivity {
                             if (t != null) {
                                 boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
                                 boolean isLowNow = t.getBatteryLevel() <= lowTh;
-                                boolean afterHandled = ht == null || at > ht;
-                                if (!devStillOffline && isLowNow && afterHandled) c++;
+                                if (!devStillOffline && isLowNow) c++;
                             }
                         } else {
                             com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());

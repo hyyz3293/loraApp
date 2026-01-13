@@ -104,7 +104,6 @@ public class TerminalStatusListFragment extends Fragment {
             if (ioExecutor != null) ioExecutor.shutdownNow();
         } catch (Exception ignored) {}
         ioExecutor = null;
-        mainHandler = null;
         super.onDestroyView();
     }
 
@@ -303,7 +302,10 @@ public class TerminalStatusListFragment extends Fragment {
     }
 
     private void refreshTerminals() {
-        if (ioExecutor == null || mainHandler == null) return;
+        if (ioExecutor == null) return;
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        final android.os.Handler handler = mainHandler;
+        if (handler == null) return;
         android.content.Context ctx = getContext();
         if (ctx == null) return;
         android.content.Context appCtx = ctx.getApplicationContext();
@@ -341,8 +343,7 @@ public class TerminalStatusListFragment extends Fragment {
                 java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getAllLogsBoundToTerminals();
                 java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestAbnormal = new java.util.HashMap<>();
                 java.util.Map<String, com.lora.cn.ui.model.LogInfo> latestOffline = new java.util.HashMap<>();
-                java.util.Map<String, Long> lastHandled = new java.util.HashMap<>();
-                java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                java.util.Map<String, String> lastHandledTime = new java.util.HashMap<>();
                 if (logs != null) {
                     for (com.lora.cn.ui.model.LogInfo li : logs) {
                         if (li == null) continue;
@@ -351,51 +352,50 @@ public class TerminalStatusListFragment extends Fragment {
                         if (tid == null || tid.isEmpty()) continue;
                         if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
                             com.lora.cn.ui.model.LogInfo prev = latestAbnormal.get(tid);
-                            long pt = 0L;
-                            try { pt = prev != null ? sdf2.parse(prev.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
-                            long ct = 0L;
-                            try { ct = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
-                            if (prev == null || ct >= pt) latestAbnormal.put(tid, li);
+                            String pt = prev != null ? prev.getCreateTime() : null;
+                            String ct = li.getCreateTime();
+                            if (prev == null || (ct != null && pt != null && ct.compareTo(pt) >= 0) || (ct != null && (pt == null || pt.trim().isEmpty()))) {
+                                latestAbnormal.put(tid, li);
+                            }
                         } else if (s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code) {
                             com.lora.cn.ui.model.LogInfo prev2 = latestOffline.get(tid);
-                            long pt2 = 0L;
-                            try { pt2 = prev2 != null ? sdf2.parse(prev2.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
-                            long ct2 = 0L;
-                            try { ct2 = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
-                            if (prev2 == null || ct2 >= pt2) latestOffline.put(tid, li);
+                            String pt2 = prev2 != null ? prev2.getCreateTime() : null;
+                            String ct2 = li.getCreateTime();
+                            if (prev2 == null || (ct2 != null && pt2 != null && ct2.compareTo(pt2) >= 0) || (ct2 != null && (pt2 == null || pt2.trim().isEmpty()))) {
+                                latestOffline.put(tid, li);
+                            }
                         }
                         String hu2 = li.getHandleUser();
                         String ht2 = li.getHandleTime();
                         if ((hu2 != null && !hu2.trim().isEmpty()) || (ht2 != null && !ht2.trim().isEmpty())) {
-                            long ctH2 = 0L;
-                            try { ctH2 = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
-                            Long prevH2 = lastHandled.get(tid);
-                            if (prevH2 == null || ctH2 >= prevH2) lastHandled.put(tid, ctH2);
+                            String ctH2 = li.getCreateTime();
+                            if (ctH2 != null && !ctH2.trim().isEmpty()) {
+                                String prevH2 = lastHandledTime.get(tid);
+                                if (prevH2 == null || prevH2.trim().isEmpty() || ctH2.compareTo(prevH2) >= 0) lastHandledTime.put(tid, ctH2);
+                            }
                         }
                     }
                     for (java.util.Map.Entry<String, com.lora.cn.ui.model.LogInfo> e : latestAbnormal.entrySet()) {
                         String tid = e.getKey();
                         com.lora.cn.ui.model.LogInfo li = e.getValue();
-                        long at = 0L;
-                        try { at = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
-                        Long ht = lastHandled.get(tid);
-                        boolean pending = ht == null || at > ht;
+                        String at = li != null ? li.getCreateTime() : null;
+                        String ht = lastHandledTime.get(tid);
+                        boolean pending = ht == null || ht.trim().isEmpty() || (at != null && !at.trim().isEmpty() && at.compareTo(ht) > 0);
                         if (pending) pa.add(tid);
                     }
                     for (java.util.Map.Entry<String, com.lora.cn.ui.model.LogInfo> e : latestOffline.entrySet()) {
                         String tid = e.getKey();
                         com.lora.cn.ui.model.LogInfo li = e.getValue();
-                        long at = 0L;
-                        try { at = li.getCreateTime() != null ? sdf2.parse(li.getCreateTime()).getTime() : -1L; } catch (Exception ignored) {}
-                        Long ht = lastHandled.get(tid);
-                        boolean pending = ht == null || at > ht;
+                        String at = li != null ? li.getCreateTime() : null;
+                        String ht = lastHandledTime.get(tid);
+                        boolean pending = ht == null || ht.trim().isEmpty() || (at != null && !at.trim().isEmpty() && at.compareTo(ht) > 0);
                         if (pending) po.add(tid);
                     }
                 }
             } catch (Exception ignored) {}
 
             List<Terminal> finalDisplay = display;
-            mainHandler.post(() -> {
+            handler.post(() -> {
                 if (!isAdded()) return;
                 if (token != loadSeq.get()) return;
                 allDisplayTerminals.clear();

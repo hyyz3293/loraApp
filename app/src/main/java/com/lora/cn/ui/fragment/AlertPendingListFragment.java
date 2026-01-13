@@ -119,15 +119,14 @@ public class AlertPendingListFragment extends Fragment {
                     if (!unhandledLi) continue;
                     Long ht = lastHandledTime.get(li.getTerminalId());
                     long at = parseMillis(li.getCreateTime());
-                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                        com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
-                        if (t != null) {
-                            boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                            boolean isLowNow = t.getBatteryLevel() <= lowTh;
-                            boolean afterHandled = ht == null || at > ht;
-                            if (!devStillOffline && isLowNow && afterHandled) filtered.add(li);
-                        }
-                    } else {
+                if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
+                    com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
+                    if (t != null) {
+                        boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                        boolean isLowNow = t.getBatteryLevel() <= lowTh;
+                        if (!devStillOffline && isLowNow) filtered.add(li);
+                    }
+                } else {
                         com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                         boolean isOfflineCase = li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
                         boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
