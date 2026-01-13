@@ -180,14 +180,14 @@ public class DownlinkMessageHelper {
         Log.i(TAG, "原始HEX下行已调用publish: devEUI=" + deviceIdHex);
     }
 
-    public void evaluateAndSend8001IfNeeded(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame,
-                                            com.lora.cn.database.DatabaseHelper db) {
-        try {
-            if (frame == null || frame.deviceId == null || frame.deviceId.isEmpty()) return;
-            if (!isNeedDownlink8001(frame)) return;
-            sendDownlink8001WithCurrentConfig(frame, db);
-        } catch (Exception ignored) {}
-    }
+//    public void evaluateAndSend8001IfNeeded(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame,
+//                                            com.lora.cn.database.DatabaseHelper db) {
+//        try {
+//            if (frame == null || frame.deviceId == null || frame.deviceId.isEmpty()) return;
+//            if (!isNeedDownlink8001(frame)) return;
+//            sendDownlink8001WithCurrentConfig(frame, db);
+//        } catch (Exception ignored) {}
+//    }
 
     public boolean isNeedDownlink8001(com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame) {
         try {
