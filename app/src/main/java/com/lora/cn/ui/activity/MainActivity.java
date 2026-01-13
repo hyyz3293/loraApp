@@ -1646,7 +1646,10 @@ public class MainActivity extends AppCompatActivity {
                         if (existingAll != null) {
                             for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
                                 String c = x != null ? x.getContent() : null;
-                                if ("主动维护".equals(c) && x.getStatus() == 0) {
+                                String hu = x != null ? x.getHandleUser() : null;
+                                String ht = x != null ? x.getHandleTime() : null;
+                                boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                                if ("主动维护".equals(c) && unhandled) {
                                     existsPendingAuto = true;
                                     break;
                                 }
@@ -1689,7 +1692,10 @@ public class MainActivity extends AppCompatActivity {
                             String autoRemark = "设备恢复：自动标记已维护";
                             for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
                                 String c = x != null ? x.getContent() : null;
-                                if ("主动维护".equals(c) && x.getStatus() == 0) {
+                                String hu = x != null ? x.getHandleUser() : null;
+                                String ht = x != null ? x.getHandleTime() : null;
+                                boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                                if ("主动维护".equals(c) && unhandled) {
                                     try { databaseHelper.updateMaintenanceHandled(x.getId(), 0L, autoUser, autoTime, autoRemark); } catch (Exception ignored2) {}
                                     maintenanceTouched = true;
                                 }
@@ -1705,39 +1711,40 @@ public class MainActivity extends AppCompatActivity {
                         long now = System.currentTimeMillis();
                         java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                         java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                        java.text.SimpleDateFormat sdf3 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.getDefault());
+                        java.text.SimpleDateFormat sdf4 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault());
                         int latestUnsentMins = -1;
                         long latestUnsentTs = -1L;
                         for (com.lora.cn.ui.model.MaintenanceInfo mi : allM) {
                             if (mi == null) continue;
                             if (mi.getStatus() != 0) continue;
-                            if (mi.getSentFlag() == 1) continue;
+                            String hu = mi.getHandleUser();
+                            String ht = mi.getHandleTime();
+                            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                            if (!unhandled) continue;
                             String c = mi.getContent();
-                            boolean isTimedCandidate = true;
-                            if (c != null) {
-                                if ("主动维护".equals(c)) isTimedCandidate = false;
-                                if (c.startsWith("设备维护：")) isTimedCandidate = false;
-                            }
-                            if (!isTimedCandidate) continue;
+                            if ("主动维护".equals(c)) continue;
+                            if (mi.getSentFlag() == 1) continue;
                             String ct = mi.getCreateTime();
                             if (ct == null || ct.trim().isEmpty()) continue;
-                            long ts = now;
                             try {
                                 java.util.Date dt = null;
                                 try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
                                 if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
-                                if (dt != null) {
-                                    ts = dt.getTime();
-                                    java.util.Calendar cal = java.util.Calendar.getInstance();
-                                    cal.setTime(dt);
-                                    int mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
-                                    if (ts >= latestUnsentTs) {
-                                        latestUnsentTs = ts;
-                                        latestUnsentMins = mins;
-                                    }
+                                if (dt == null) { try { dt = sdf3.parse(ct.trim()); } catch (Exception ignored) {} }
+                                if (dt == null) { try { dt = sdf4.parse(ct.trim()); } catch (Exception ignored) {} }
+                                if (dt == null) continue;
+                                long ts = dt.getTime();
+                                if (ts > now) continue;
+                                java.util.Calendar cal = java.util.Calendar.getInstance();
+                                cal.setTime(dt);
+                                int mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
+                                if (ts >= latestUnsentTs) {
+                                    latestUnsentTs = ts;
+                                    latestUnsentMins = mins;
                                 }
+                                dueMaint.add(mi);
                             } catch (Exception ignored) {}
-                            if (ts > now) continue;
-                            dueMaint.add(mi);
                         }
                         if (latestUnsentMins >= 0) latestTimedUnsentMins = latestUnsentMins;
                     }

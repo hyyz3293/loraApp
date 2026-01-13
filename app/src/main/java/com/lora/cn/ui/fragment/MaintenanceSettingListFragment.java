@@ -330,7 +330,7 @@ public class MaintenanceSettingListFragment extends Fragment {
                         }
                         try {
                             String c = item.getContent();
-                            if (r > 0 && c != null && c.startsWith("设备维护：")) {
+                            if (r > 0 && c != null && ("主动维护".equals(c) || c.startsWith("设备维护："))) {
                                 db.setTerminalMaintenanceClearPending(item.getTerminalId(), true);
                             }
                         } catch (Exception ignored) {}

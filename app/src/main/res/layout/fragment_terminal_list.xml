@@ -26,7 +26,7 @@
             android:paddingRight="2dp" >
 
             <TextView
-                android:textSize="14dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="分组："
                 android:textStyle="bold"
@@ -37,17 +37,17 @@
                 android:id="@+id/tv_group_category"
                 android:background="@drawable/spinner_background"
                 android:layout_width="140dp"
-                android:layout_height="40dp"
+                android:layout_height="30dp"
                 android:gravity="center_vertical"
                 android:paddingLeft="10dp"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:textColor="@color/black"
                 android:text="全部分组/全部分类" />
 
 
             <TextView
                 android:layout_marginLeft="15dp"
-                android:textSize="14dp"
+                android:textSize="12dp"
                 android:textColor="@color/black"
                 android:text="筛选："
                 android:textStyle="bold"
@@ -57,7 +57,7 @@
             <LinearLayout
                 android:background="@drawable/spinner_background"
                 android:layout_width="100dp"
-                android:layout_height="40dp" >
+                android:layout_height="30dp" >
 
                 <Spinner
                     android:id="@+id/spinner_filter"
@@ -76,12 +76,12 @@
                 android:layout_width="140dp"
                 android:background="@drawable/spinner_background"
                 android:orientation="horizontal"
-                android:layout_height="40dp">
+                android:layout_height="30dp">
 
                 <EditText
                     android:id="@+id/et_search"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="30dp"
                     android:background="@null"
                     android:hint="终端名称搜索"
                     android:padding="8dp"
@@ -141,7 +141,7 @@
                     android:layout_centerVertical="true"
                     android:text="添加终端"
                     android:textColor="#383B40"
-                    android:textSize="16dp"
+                    android:textSize="12dp"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp" />
 
@@ -157,7 +157,7 @@
                     android:layout_marginRight="12dp"
                     android:text="刷新"
                     android:textColor="#383B40"
-                    android:textSize="14dp"
+                    android:textSize="12dp"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp" />
 

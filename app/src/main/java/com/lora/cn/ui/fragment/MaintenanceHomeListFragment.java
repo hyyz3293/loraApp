@@ -429,6 +429,12 @@ public class MaintenanceHomeListFragment extends Fragment {
                         } catch (Exception e) {
                             r = 0;
                         }
+                        try {
+                            String c = item.getContent();
+                            if (r > 0 && c != null && ("主动维护".equals(c) || c.startsWith("设备维护："))) {
+                                db.setTerminalMaintenanceClearPending(devId, true);
+                            }
+                        } catch (Exception ignored) {}
                         if (r > 0 && devId != null && devId.length() > 0) {
                             try {
                                 com.lora.cn.database.dao.TerminalDao tdao = new com.lora.cn.database.dao.TerminalDao(db);
@@ -465,9 +471,10 @@ public class MaintenanceHomeListFragment extends Fragment {
                                 Toast.makeText(requireContext(), "已确认维护", Toast.LENGTH_SHORT).show();
                                 try {
                                     android.app.Activity a = getActivity();
-                                    if (a instanceof com.lora.cn.ui.activity.MainActivity) {
-                                        ((com.lora.cn.ui.activity.MainActivity) a).goHome();
-                                    } else {
+//                                    if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+//                                        ((com.lora.cn.ui.activity.MainActivity) a).goHome();
+//                                    } else
+                                    {
                                         loadList();
                                     }
                                 } catch (Exception ignored2) {}
