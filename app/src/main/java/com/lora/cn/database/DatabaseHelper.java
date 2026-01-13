@@ -1443,7 +1443,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 terminal.setCreateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_CREATE_TIME)));
                 terminal.setUpdateTime(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_UPDATE_TIME)));
                 long nowMs = System.currentTimeMillis();
-                long timeoutMs = 3 * 60 * 1000L;
+                int sleepMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                if (sleepMin <= 0) sleepMin = 3;
+                long timeoutMs = Math.max(60_000L, sleepMin * 2L * 60_000L);
                 if (terminal.getUpdateTime() > 0 && nowMs - terminal.getUpdateTime() > timeoutMs) {
                     terminal.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE);
                 }
@@ -1848,6 +1850,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             if (frame != null && deviceId != null) {
                 updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
+                if (mappedLogFromTerminal == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code
+                        && statusCode != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        && statusCode != com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code) {
+                    try { updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE); } catch (Exception ignored) {}
+                }
                 if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
                     int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
                     android.util.Log.d("DatabaseHelper", "按日志状态更新终端为异常取走 deviceId=" + deviceId + ", rows=" + rows);
@@ -2772,7 +2779,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         long now = System.currentTimeMillis();
         int sleepMin = SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-        long timeout = sleepMin * 2 * 60 * 1000L;
+        if (sleepMin <= 0) sleepMin = 3;
+        long timeout = Math.max(60_000L, sleepMin * 2L * 60_000L);
         long threshold = now - timeout;
         
         String sql = "SELECT " + COLUMN_TERMINAL_DEVICE_ID + ", " + COLUMN_TERMINAL_NAME + 

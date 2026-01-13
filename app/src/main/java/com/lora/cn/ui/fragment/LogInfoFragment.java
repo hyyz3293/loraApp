@@ -52,6 +52,9 @@ public class LogInfoFragment extends Fragment {
     private android.widget.ImageView sxLeft;
     private android.widget.ImageView sxRight;
     private boolean noMoreData = false;
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private android.os.Handler mainHandler;
+    private final java.util.concurrent.atomic.AtomicInteger loadSeq = new java.util.concurrent.atomic.AtomicInteger();
     @Override
     public void onStart() {
         super.onStart();
@@ -89,6 +92,8 @@ public class LogInfoFragment extends Fragment {
         recyclerView.setLayoutManager(lm);
         databaseHelper = DatabaseHelper.getInstance(getContext());
         databaseManager = DatabaseManager.getInstance(requireContext());
+        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         try {
             long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
             if (uid != -1) {
@@ -156,50 +161,14 @@ public class LogInfoFragment extends Fragment {
             refreshLayout.setEnableLoadMore(true);
             refreshLayout.setOnRefreshListener(layout -> {
                 try {
-                    currentPage = 0;
-                    String startStr = selectedStartTime;
-                    String endStr = selectedEndTime;
-                    int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
-                    int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-                    boolean includeUnbound = false;
-                    totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, includeUnbound);
-                    java.util.List<LogInfo> first = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
-                    displayedLogs.clear();
-                    if (first != null) displayedLogs.addAll(first);
-                    recalcAndSubmit(displayedLogs);
-                    refreshLayout.finishRefresh(true);
-                    boolean noMore = (currentPage + 1) * pageSize >= totalFilteredCount || (first == null || first.size() < pageSize);
-                    noMoreData = noMore;
-                    refreshLayout.setEnableLoadMore(!noMoreData);
+                    loadFirstPageAsync(layout);
                 } catch (Exception e) {
                     refreshLayout.finishRefresh(false);
                 }
             });
             refreshLayout.setOnLoadMoreListener(layout -> {
                 try {
-                    String startStr = selectedStartTime;
-                    String endStr = selectedEndTime;
-                    int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
-                    int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-                    boolean includeUnbound = (typeSel == 1);
-                    boolean canNext = (currentPage + 1) * pageSize < totalFilteredCount && !noMoreData;
-                    if (!canNext) {
-                        refreshLayout.finishLoadMoreWithNoMoreData();
-                        noMoreData = true;
-                        refreshLayout.setEnableLoadMore(false);
-                        return;
-                    }
-                    currentPage++;
-                    java.util.List<LogInfo> next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
-                    if (next != null && !next.isEmpty()) {
-                        displayedLogs.addAll(next);
-                        recalcAndSubmit(displayedLogs);
-                        refreshLayout.finishLoadMore(true);
-                    } else {
-                        refreshLayout.finishLoadMoreWithNoMoreData();
-                        noMoreData = true;
-                        refreshLayout.setEnableLoadMore(false);
-                    }
+                    loadNextPageAsync(layout);
                 } catch (Exception e) {
                     refreshLayout.finishLoadMore(false);
                 }
@@ -226,18 +195,14 @@ public class LogInfoFragment extends Fragment {
         if (sxLeft != null) {
             sxLeft.setOnClickListener(v -> {
                 if (currentPage > 0) {
-                    currentPage--;
-                    submitCurrentPage();
-                    updatePaginationControls();
+                    loadSpecificPageAsync(currentPage - 1);
                 }
             });
         }
         if (sxRight != null) {
             sxRight.setOnClickListener(v -> {
                 if ((currentPage + 1) * pageSize < totalFilteredCount) {
-                    currentPage++;
-                    submitCurrentPage();
-                    updatePaginationControls();
+                    loadSpecificPageAsync(currentPage + 1);
                 }
             });
         }
@@ -262,39 +227,8 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void initLogData() {
-        new Thread(() -> {
-            java.util.List<LogInfo> all = new java.util.ArrayList<>();
-            try {
-                java.util.List<LogInfo> a = databaseHelper.getAllLogs();
-                if (a != null) all.addAll(a);
-            } catch (Exception ignored) {}
-            java.util.Collections.sort(all, (o1, o2) -> {
-                long t1 = parseMillis(o1 != null ? o1.getCreateTime() : null);
-                long t2 = parseMillis(o2 != null ? o2.getCreateTime() : null);
-                return Long.compare(t2, t1);
-            });
-            if (getActivity() == null) return;
-            getActivity().runOnUiThread(() -> {
-                logList = all;
-                baseLogs.clear();
-                if (logList != null) baseLogs.addAll(logList);
-                if (logInfoAdapter == null) {
-                    logInfoAdapter = new LogInfoAdapter();
-                    logInfoAdapter.setOnHandleClickListener(item -> showHandleDialogForLog(item));
-                    recyclerView.setAdapter(logInfoAdapter);
-                    logInfoAdapter.setOnItemClickListener((adapter, view, position) -> {
-                        LogInfo log = logList.get(position);
-                    });
-                }
-                applyTimeFilter();
-                try {
-                    android.app.Activity a = getActivity();
-                    if (a instanceof com.lora.cn.ui.activity.MainActivity) {
-                        ((com.lora.cn.ui.activity.MainActivity) a).updatePendingBadge();
-                    }
-                } catch (Exception ignored) {}
-            });
-        }).start();
+        if (ioExecutor == null || mainHandler == null) return;
+        loadFirstPageAsync(null);
     }
 
     private void showHandleDialogForLog(LogInfo item) {
@@ -402,27 +336,7 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void applyTimeFilter() {
-        if (logInfoAdapter == null) return;
-        if (!isAdded() || getActivity() == null) return;
-        List<LogInfo> out = new java.util.ArrayList<>();
-        long startMs = parseMillis(selectedStartTime);
-        long endMs = parseMillis(selectedEndTime);
-        int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
-        int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
-        String startStr = selectedStartTime;
-        String endStr = selectedEndTime;
-        currentPage = 0;
-        boolean includeUnbound = false;
-        totalFilteredCount = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, includeUnbound);
-        out = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, pageSize, currentPage);
-        displayedLogs.clear();
-        if (out != null) displayedLogs.addAll(out);
-        recalcAndSubmit(displayedLogs);
-        if (refreshLayout != null) {
-            boolean noMore = (currentPage + 1) * pageSize >= totalFilteredCount || (out == null || out.size() < pageSize);
-            noMoreData = noMore;
-            refreshLayout.setEnableLoadMore(!noMoreData);
-        }
+        loadFirstPageAsync(null);
     }
 
     private void submitCurrentPage() {
@@ -441,85 +355,235 @@ public class LogInfoFragment extends Fragment {
     }
 
     private void recalcAndSubmit(java.util.List<LogInfo> list) {
-        java.util.Map<String, com.lora.cn.ui.model.Terminal> termMap = new java.util.HashMap<>();
-        try {
-            java.util.List<com.lora.cn.ui.model.Terminal> terms = databaseHelper.getAllTerminals();
-            if (terms != null) {
-                for (com.lora.cn.ui.model.Terminal t : terms) {
-                    termMap.put(t.getTerminalId(), t);
-                }
-            }
-        } catch (Exception ignored) {}
-        java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
-        java.util.Map<String, LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
-        for (LogInfo li : list) {
-            String ct = li != null ? li.getCreateTime() : null;
-            long t = parseMillis(ct);
-            int s = li.getStatusCode();
-            String hu = li.getHandleUser();
-            String htStr = li.getHandleTime();
-            boolean isHandled = (hu != null && hu.trim().length() > 0) || (htStr != null && htStr.trim().length() > 0);
-            if (isHandled) {
-                Long prevH = lastHandledTime.get(li.getTerminalId());
-                if (prevH == null || t >= prevH) lastHandledTime.put(li.getTerminalId(), t);
-                continue;
-            }
-            boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                    || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
-                    || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
-            if (candidate) {
-                String key = (li.getTerminalId() == null ? "" : li.getTerminalId()) + ":" + s;
-                LogInfo prev = latestByDeviceStatus.get(key);
-                long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
-                if (prev == null || t >= prevT) latestByDeviceStatus.put(key, li);
-            }
-        }
-        java.util.Set<Long> allowedIds = new java.util.HashSet<>();
-        for (LogInfo v : latestByDeviceStatus.values()) {
-            Long ht = lastHandledTime.get(v.getTerminalId());
-            long at = parseMillis(v.getCreateTime());
-            boolean afterHandled = ht == null || at > ht;
-            boolean offlineCase = v.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
-            com.lora.cn.ui.model.Terminal tt = termMap.get(v.getTerminalId());
-            boolean devStillOffline = tt != null && tt.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-            if (afterHandled && (!offlineCase || devStillOffline)) allowedIds.add(v.getId());
-        }
-        if (!hasPermission("log_confirm")) allowedIds.clear();
-        if (logInfoAdapter != null) logInfoAdapter.setAllowedHandleIds(allowedIds);
-        java.util.Map<Long, String> handledLabels = new java.util.HashMap<>();
-        try {
-            com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(requireContext());
-            java.util.Map<String, java.util.List<LogInfo>> byDev = new java.util.HashMap<>();
-            for (LogInfo li : list) {
-                String dev = li.getTerminalId();
-                java.util.List<LogInfo> lst = byDev.get(dev);
-                if (lst == null) { lst = new java.util.ArrayList<>(); byDev.put(dev, lst); }
-                lst.add(li);
-            }
-            for (java.util.List<LogInfo> lst : byDev.values()) {
-                for (LogInfo li : lst) {
-                    if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.HANDLED.code) {
-                        long ref = parseMillis(li.getHandleTime());
-                        if (ref <= 0) ref = parseMillis(li.getCreateTime());
-                        java.util.List<LogInfo> logs = db.getLogsByTerminalId(li.getTerminalId());
-                        LogInfo origin = null;
-                        for (LogInfo x : logs) {
-                            int s = x.getStatusCode();
-                            boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                                    || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
-                                    || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
-                            if (!candidate) continue;
-                            long tt = parseMillis(x.getCreateTime());
-                            if (tt > 0 && tt <= ref) { if (origin == null || tt >= parseMillis(origin.getCreateTime())) origin = x; }
-                        }
-                        if (origin != null) handledLabels.put(li.getId(), com.lora.cn.ui.constants.LogStatus.toText(origin.getStatusCode()));
+        if (ioExecutor == null || mainHandler == null) return;
+        int token = loadSeq.incrementAndGet();
+        java.util.List<LogInfo> snapshot = list != null ? new java.util.ArrayList<>(list) : new java.util.ArrayList<>();
+        android.content.Context appCtx = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            java.util.Map<String, com.lora.cn.ui.model.Terminal> termMap = new java.util.HashMap<>();
+            try {
+                java.util.List<com.lora.cn.ui.model.Terminal> terms = databaseHelper.getAllTerminals();
+                if (terms != null) {
+                    for (com.lora.cn.ui.model.Terminal t : terms) {
+                        if (t != null) termMap.put(t.getTerminalId(), t);
                     }
                 }
+            } catch (Exception ignored) {}
+            java.util.Map<String, Long> lastHandledTime = new java.util.HashMap<>();
+            java.util.Map<String, LogInfo> latestByDeviceStatus = new java.util.HashMap<>();
+            java.util.Set<String> handledDevIds = new java.util.HashSet<>();
+            for (LogInfo li : snapshot) {
+                if (li == null) continue;
+                long t = parseMillis(li.getCreateTime());
+                int s = li.getStatusCode();
+                String hu = li.getHandleUser();
+                String htStr = li.getHandleTime();
+                boolean isHandled = (hu != null && hu.trim().length() > 0) || (htStr != null && htStr.trim().length() > 0);
+                if (isHandled) {
+                    String dev = li.getTerminalId();
+                    if (dev != null) handledDevIds.add(dev);
+                    Long prevH = lastHandledTime.get(li.getTerminalId());
+                    if (prevH == null || t >= prevH) lastHandledTime.put(li.getTerminalId(), t);
+                    continue;
+                }
+                boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                        || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                if (candidate) {
+                    String key = (li.getTerminalId() == null ? "" : li.getTerminalId()) + ":" + s;
+                    LogInfo prev = latestByDeviceStatus.get(key);
+                    long prevT = prev != null ? parseMillis(prev.getCreateTime()) : -1L;
+                    if (prev == null || t >= prevT) latestByDeviceStatus.put(key, li);
+                }
             }
+            java.util.Set<Long> allowedIds = new java.util.HashSet<>();
+            for (LogInfo v : latestByDeviceStatus.values()) {
+                if (v == null) continue;
+                Long ht = lastHandledTime.get(v.getTerminalId());
+                long at = parseMillis(v.getCreateTime());
+                boolean afterHandled = ht == null || at > ht;
+                boolean offlineCase = v.getStatusCode() == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                com.lora.cn.ui.model.Terminal tt = termMap.get(v.getTerminalId());
+                boolean devStillOffline = tt != null && tt.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
+                if (afterHandled && (!offlineCase || devStillOffline)) allowedIds.add(v.getId());
+            }
+            if (!hasPermission("log_confirm")) allowedIds.clear();
+
+            java.util.Map<Long, String> handledLabels = new java.util.HashMap<>();
+            try {
+                com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
+                java.util.Map<String, java.util.List<LogInfo>> devLogsCache = new java.util.HashMap<>();
+                for (String dev : handledDevIds) {
+                    try {
+                        java.util.List<LogInfo> logs = db.getLogsByTerminalId(dev);
+                        if (logs != null) devLogsCache.put(dev, logs);
+                    } catch (Exception ignored) {}
+                }
+                for (LogInfo li : snapshot) {
+                    if (li == null) continue;
+                    if (li.getStatusCode() != com.lora.cn.ui.constants.LogStatus.HANDLED.code) continue;
+                    String dev = li.getTerminalId();
+                    java.util.List<LogInfo> logs = dev != null ? devLogsCache.get(dev) : null;
+                    if (logs == null) continue;
+                    long ref = parseMillis(li.getHandleTime());
+                    if (ref <= 0) ref = parseMillis(li.getCreateTime());
+                    LogInfo origin = null;
+                    long originT = -1L;
+                    for (LogInfo x : logs) {
+                        if (x == null) continue;
+                        int s = x.getStatusCode();
+                        boolean candidate = s == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                                || s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                                || s == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code;
+                        if (!candidate) continue;
+                        long tt = parseMillis(x.getCreateTime());
+                        if (tt > 0 && tt <= ref && tt >= originT) {
+                            origin = x;
+                            originT = tt;
+                        }
+                    }
+                    if (origin != null) handledLabels.put(li.getId(), com.lora.cn.ui.constants.LogStatus.toText(origin.getStatusCode()));
+                }
+            } catch (Exception ignored) {}
+
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
+                if (logInfoAdapter != null) {
+                    logInfoAdapter.setAllowedHandleIds(allowedIds);
+                    logInfoAdapter.setHandledSourceLabels(handledLabels);
+                }
+                filteredPageBase = new java.util.ArrayList<>(snapshot);
+                submitCurrentPage();
+            });
+        });
+    }
+
+    private void ensureAdapter() {
+        if (logInfoAdapter != null) return;
+        logInfoAdapter = new LogInfoAdapter();
+        logInfoAdapter.setOnHandleClickListener(item -> showHandleDialogForLog(item));
+        recyclerView.setAdapter(logInfoAdapter);
+    }
+
+    private void loadFirstPageAsync(@Nullable com.scwang.smart.refresh.layout.api.RefreshLayout refreshLayoutToFinish) {
+        if (ioExecutor == null || mainHandler == null || databaseHelper == null) return;
+        int token = loadSeq.incrementAndGet();
+        String startStr = selectedStartTime;
+        String endStr = selectedEndTime;
+        int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
+        int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
+        boolean includeUnbound = (typeSel == 1);
+        int ps = pageSize;
+        ioExecutor.execute(() -> {
+            int total = 0;
+            java.util.List<LogInfo> first = null;
+            try {
+                total = databaseHelper.queryLogsCount(startStr, endStr, typeSel, policeSel, includeUnbound);
+                first = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, ps, 0);
+            } catch (Exception ignored) {}
+            java.util.List<LogInfo> finalFirst = first != null ? first : new java.util.ArrayList<>();
+            int finalTotal = total;
+            boolean noMore = (0 + 1) * ps >= finalTotal || finalFirst.size() < ps;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
+                currentPage = 0;
+                totalFilteredCount = finalTotal;
+                noMoreData = noMore;
+                displayedLogs.clear();
+                displayedLogs.addAll(finalFirst);
+                ensureAdapter();
+                recalcAndSubmit(displayedLogs);
+                updatePaginationControls();
+                if (refreshLayout != null) refreshLayout.setEnableLoadMore(!noMoreData);
+                if (refreshLayoutToFinish != null) refreshLayoutToFinish.finishRefresh(true);
+            });
+        });
+    }
+
+    private void loadNextPageAsync(@Nullable com.scwang.smart.refresh.layout.api.RefreshLayout refreshLayoutToFinish) {
+        if (ioExecutor == null || mainHandler == null || databaseHelper == null) return;
+        if (noMoreData) {
+            if (refreshLayoutToFinish != null) refreshLayoutToFinish.finishLoadMoreWithNoMoreData();
+            return;
+        }
+        int nextPage = currentPage + 1;
+        int token = loadSeq.incrementAndGet();
+        String startStr = selectedStartTime;
+        String endStr = selectedEndTime;
+        int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
+        int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
+        boolean includeUnbound = (typeSel == 1);
+        int ps = pageSize;
+        ioExecutor.execute(() -> {
+            java.util.List<LogInfo> next = null;
+            try {
+                next = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, ps, nextPage);
+            } catch (Exception ignored) {}
+            java.util.List<LogInfo> finalNext = next != null ? next : new java.util.ArrayList<>();
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
+                if (finalNext.isEmpty()) {
+                    noMoreData = true;
+                    if (refreshLayout != null) refreshLayout.setEnableLoadMore(false);
+                    if (refreshLayoutToFinish != null) refreshLayoutToFinish.finishLoadMoreWithNoMoreData();
+                    return;
+                }
+                currentPage = nextPage;
+                displayedLogs.addAll(finalNext);
+                ensureAdapter();
+                recalcAndSubmit(displayedLogs);
+                boolean noMore = (currentPage + 1) * ps >= totalFilteredCount || finalNext.size() < ps;
+                noMoreData = noMore;
+                if (refreshLayout != null) refreshLayout.setEnableLoadMore(!noMoreData);
+                if (refreshLayoutToFinish != null) refreshLayoutToFinish.finishLoadMore(true);
+                updatePaginationControls();
+            });
+        });
+    }
+
+    private void loadSpecificPageAsync(int pageIndex) {
+        if (ioExecutor == null || mainHandler == null || databaseHelper == null) return;
+        int safePage = Math.max(0, pageIndex);
+        int token = loadSeq.incrementAndGet();
+        String startStr = selectedStartTime;
+        String endStr = selectedEndTime;
+        int typeSel = spinnerLogType != null ? spinnerLogType.getSelectedItemPosition() : 0;
+        int policeSel = spinnerPolice != null ? spinnerPolice.getSelectedItemPosition() : 0;
+        boolean includeUnbound = (typeSel == 1);
+        int ps = pageSize;
+        ioExecutor.execute(() -> {
+            java.util.List<LogInfo> page = null;
+            try {
+                page = databaseHelper.queryLogsPaged(startStr, endStr, typeSel, policeSel, includeUnbound, ps, safePage);
+            } catch (Exception ignored) {}
+            java.util.List<LogInfo> finalPage = page != null ? page : new java.util.ArrayList<>();
+            boolean noMore = (safePage + 1) * ps >= totalFilteredCount || finalPage.size() < ps;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (token != loadSeq.get()) return;
+                currentPage = safePage;
+                noMoreData = noMore;
+                displayedLogs.clear();
+                displayedLogs.addAll(finalPage);
+                ensureAdapter();
+                recalcAndSubmit(displayedLogs);
+                updatePaginationControls();
+                if (refreshLayout != null) refreshLayout.setEnableLoadMore(!noMoreData);
+            });
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        try {
+            if (ioExecutor != null) ioExecutor.shutdownNow();
         } catch (Exception ignored) {}
-        if (logInfoAdapter != null) logInfoAdapter.setHandledSourceLabels(handledLabels);
-        filteredPageBase = new java.util.ArrayList<>(list);
-        submitCurrentPage();
+        ioExecutor = null;
+        mainHandler = null;
+        super.onDestroyView();
     }
 
     private boolean hasPermission(String code) {

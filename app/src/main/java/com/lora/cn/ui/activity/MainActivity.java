@@ -46,6 +46,9 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
+    private static final int MQTT_STATE_CONNECTING = 0;
+    private static final int MQTT_STATE_CONNECTED = 1;
+    private static final int MQTT_STATE_STOPPED = 2;
 
     private RecyclerView rvMenuTabs;
     private ViewPager2 viewPager;
@@ -62,6 +65,10 @@ public class MainActivity extends AppCompatActivity {
     private ImageView ivLogo;
     private android.widget.TextView btnShareLogs;
     private android.widget.TextView btnMaintenanceBadge;
+    private android.view.View mqttStatusDot;
+    private android.view.animation.Animation mqttDotBlinkAnim;
+    private volatile int mqttUiState = MQTT_STATE_STOPPED;
+    private final java.util.concurrent.atomic.AtomicBoolean mqttConnectInFlight = new java.util.concurrent.atomic.AtomicBoolean(false);
     
     private int currentTabIndex = 0;
     private boolean isUserInfoVisible = false;
@@ -384,6 +391,7 @@ public class MainActivity extends AppCompatActivity {
         ivLogo = findViewById(R.id.iv_logo);
         btnShareLogs = findViewById(R.id.btn_share_logs);
         btnMaintenanceBadge = findViewById(R.id.btn_maintenance_badge);
+        mqttStatusDot = findViewById(R.id.mqtt_status_dot);
         fragmentUserInfoContainer = findViewById(R.id.fragment_user_info_container);
         fragmentDeviceListContainer = findViewById(R.id.fragment_device_list_container);
         rlAlertIcon = findViewById(R.id.rl_alert_icon);
@@ -401,6 +409,7 @@ public class MainActivity extends AppCompatActivity {
         ivErrorClose = findViewById(R.id.error_close);
         tvErrorVoiceNo = findViewById(R.id.error_voice_no);
         tvErrorComplete = findViewById(R.id.error_complte);
+        updateMqttDotUi(MQTT_STATE_CONNECTING);
 
         if (rlAlertIcon != null) {
             rlAlertIcon.setOnClickListener(this::toggleGlobalMute);
@@ -611,6 +620,35 @@ public class MainActivity extends AppCompatActivity {
         if (btnMaintenanceBadge != null) {
             btnMaintenanceBadge.setOnClickListener(v -> switchToTab(3));
         }
+    }
+
+    private void updateMqttDotUi(int state) {
+        mqttUiState = state;
+        if (mqttStatusDot == null) return;
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        mainHandler.post(() -> {
+            if (mqttStatusDot == null) return;
+            int color = 0xFFFF3B30;
+            if (mqttUiState == MQTT_STATE_CONNECTED) color = 0xFF34C759;
+            android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+            bg.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            bg.setColor(color);
+            mqttStatusDot.setBackground(bg);
+            mqttStatusDot.setVisibility(android.view.View.VISIBLE);
+            if (mqttUiState == MQTT_STATE_CONNECTING) {
+                if (mqttDotBlinkAnim == null) {
+                    android.view.animation.AlphaAnimation anim = new android.view.animation.AlphaAnimation(1.0f, 0.2f);
+                    anim.setDuration(600);
+                    anim.setRepeatMode(android.view.animation.Animation.REVERSE);
+                    anim.setRepeatCount(android.view.animation.Animation.INFINITE);
+                    mqttDotBlinkAnim = anim;
+                }
+                mqttStatusDot.clearAnimation();
+                mqttStatusDot.startAnimation(mqttDotBlinkAnim);
+            } else {
+                mqttStatusDot.clearAnimation();
+            }
+        });
     }
 
     private int secretTapCount = 0;
@@ -2123,6 +2161,10 @@ public class MainActivity extends AppCompatActivity {
     // ---------------- MQTT 全局连接与日志 -----------------
     private void startGlobalMqttLogging() {
         try {
+            if (!mqttConnectInFlight.compareAndSet(false, true)) {
+                return;
+            }
+            updateMqttDotUi(MQTT_STATE_CONNECTING);
             if (mqttClient == null) mqttClient = com.lora.cn.network.MqttPacketsClient.getShared();
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
             int localPort = sp.getInt("mqtt_local_broker_port", 1883);
@@ -2135,6 +2177,7 @@ public class MainActivity extends AppCompatActivity {
                 if (mqttReadyRetry < 40) {
                     mqttReadyRetry++;
                     mainHandler.postDelayed(this::startGlobalMqttLogging, 500);
+                    mqttConnectInFlight.set(false);
                     return;
                 }
             }
@@ -2159,6 +2202,9 @@ public class MainActivity extends AppCompatActivity {
                             Log.d(TAG, "MQTT状态 onStatus: " + msg);
                             if (msg != null && (msg.contains("连接成功") || msg.contains("订阅成功"))) {
                                 mqttConnectRetry = 0;
+                                mqttReadyRetry = 0;
+                                mqttConnectInFlight.set(false);
+                                updateMqttDotUi(MQTT_STATE_CONNECTED);
                             }
                         }
                         @Override
@@ -2169,6 +2215,8 @@ public class MainActivity extends AppCompatActivity {
                             }
                             Log.e(TAG, "收到上行数据条数: " + records.size());
                             mqttConnectRetry = 0;
+                            mqttConnectInFlight.set(false);
+                            updateMqttDotUi(MQTT_STATE_CONNECTED);
                             
                             // 获取当前时间
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
@@ -2253,6 +2301,8 @@ public class MainActivity extends AppCompatActivity {
                         public void onError(String error) {
                             Log.e(TAG, "MQTT错误: " + error);
                             try {
+                                mqttConnectInFlight.set(false);
+                                updateMqttDotUi(MQTT_STATE_CONNECTING);
                                 if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                                 int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
                                 if (mqttClient != null) {
@@ -2264,10 +2314,24 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onComplete() {
                             Log.d(TAG, "MQTT完成/断开");
+                            try {
+                                mqttConnectInFlight.set(false);
+                                updateMqttDotUi(MQTT_STATE_CONNECTING);
+                                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
+                                mainHandler.postDelayed(MainActivity.this::startGlobalMqttLogging, delay);
+                            } catch (Exception ignored) {}
                         }
                     });
         } catch (Exception e) {
             Log.e(TAG, "启动MQTT日志输出失败", e);
+            try {
+                mqttConnectInFlight.set(false);
+                updateMqttDotUi(MQTT_STATE_CONNECTING);
+                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
+                mainHandler.postDelayed(this::startGlobalMqttLogging, delay);
+            } catch (Exception ignored) {}
         }
     }
 
@@ -2279,6 +2343,7 @@ public class MainActivity extends AppCompatActivity {
             if (mqttClient != null) {
                 mqttClient.disconnect();
             }
+            try { updateMqttDotUi(MQTT_STATE_STOPPED); } catch (Exception ignored) {}
             if (brokerReadyReceiver != null) {
                 unregisterReceiver(brokerReadyReceiver);
                 brokerReadyReceiver = null;
