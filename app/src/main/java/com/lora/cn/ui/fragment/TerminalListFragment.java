@@ -538,7 +538,7 @@ public class TerminalListFragment extends Fragment {
     public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
         try {
             autoRefreshHandler.removeCallbacks(terminalRefreshDebounceRunnable);
-            autoRefreshHandler.postDelayed(terminalRefreshDebounceRunnable, 300);
+            autoRefreshHandler.postDelayed(terminalRefreshDebounceRunnable, 1000);
         } catch (Exception ignored) {}
     }
 

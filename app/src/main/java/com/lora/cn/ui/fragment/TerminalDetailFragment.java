@@ -351,7 +351,7 @@ public class TerminalDetailFragment extends Fragment {
                 }
                 StringBuilder sb = new StringBuilder();
                 for (int i2 = 0; i2 < toks.size(); i2++) {
-                    if (i2 > 0) sb.append("  ");
+                    if (i2 > 0) sb.append("、");
                     sb.append(toks.get(i2));
                 }
                 finalGroupChildren = sb.toString();

@@ -418,6 +418,17 @@ public class AddDeviceFragment extends Fragment {
                 
                 Toast.makeText(getContext(), isEdit ? "编辑终端成功" : "添加终端成功", Toast.LENGTH_SHORT).show();
                 
+                if (!isEdit) {
+                    new Thread(() -> {
+                        try {
+                            android.content.Context ctx = getContext();
+                            android.content.Context appCtx = ctx != null ? ctx.getApplicationContext() : null;
+                            DatabaseHelper helper = DatabaseHelper.getInstance(appCtx != null ? appCtx : ctx);
+                            helper.syncUnboundLogsToBound();
+                        } catch (Exception ignored3) {}
+                    }).start();
+                }
+                
                 // 发送EventBus事件通知TerminalListFragment刷新
                 EventBus.getDefault().post(new TerminalRefreshEvent((isEdit ? "编辑终端: " : "新增终端: ") + deviceName));
                 

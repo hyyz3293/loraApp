@@ -73,8 +73,10 @@ public class MainActivity extends AppCompatActivity {
     private android.os.Handler mainHandler;
     private final java.util.concurrent.atomic.AtomicInteger badgeSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.atomic.AtomicInteger alertEvalSeq = new java.util.concurrent.atomic.AtomicInteger();
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> lastUplinkStoreByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
     private int lastBadgeCount = -1;
     private int lastBadgeQueueSize = -1;
+    private volatile int lastComputedPendingCount = -1;
     private long lastBadgeRequestMs = 0L;
     private boolean badgeRequestDelayed = false;
     private int mqttReadyRetry = 0;
@@ -868,6 +870,8 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.Map<String, Integer> lastHandledTypes = new java.util.HashMap<>();
     private final java.util.Map<String, Long> lastHandledTimes = new java.util.HashMap<>();
     private final java.util.Set<String> offlineAlertedKeys = new java.util.HashSet<>();
+    private long lastBadgeQueryMs = 0L;
+    private long lastTerminalRefreshRequestMs = 0L;
     private android.os.Handler alertEvaluateHandler;
     private final Runnable alertEvaluateRunnable = new Runnable() {
         @Override public void run() {
@@ -1163,7 +1167,6 @@ public class MainActivity extends AppCompatActivity {
                     out.actions.add(new AlertAction(item, newly));
                     if (newly) out.queuedAny = true;
                     out.logIdUpdates.put(key, latestId);
-                    out.typeUpdates.put(devId, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
                 }
                 continue;
             }
@@ -1205,7 +1208,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (!result.actions.isEmpty()) {
             String newKey = null;
-            boolean allowPopup = computePendingCountSync() > 0;
+            boolean allowPopup = true;
             for (AlertAction a : result.actions) {
                 if (a == null || a.item == null) continue;
                 String devId = a.item.code;
@@ -1215,7 +1218,7 @@ public class MainActivity extends AppCompatActivity {
                     Long ht = lastHandledTimes.get(devId);
                     Integer handledType = lastHandledTypes.get(devId);
                     long at = parseMillis(a.item.time);
-                    boolean suppress = handledType != null && handledType == sc && ht != null && at >= 0 && ht >= at;
+                    boolean suppress = handledType != null && handledType == sc;
                     if (!existsInQueue(devId, title) && !suppress && allowPopup) {
                         alertQueue.addLast(a.item);
                         queueChanged = true;
@@ -1233,14 +1236,24 @@ public class MainActivity extends AppCompatActivity {
                 updatePendingBadge();
                 int afterQueueSize2 = alertQueue.size();
                 if (result.queuedAny || result.touchedDb || queueChanged || beforeQueueSize != afterQueueSize2) {
-                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+                    long now = System.currentTimeMillis();
+                    if (now - lastTerminalRefreshRequestMs >= 3000) {
+                        lastTerminalRefreshRequestMs = now;
+                        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+                    }
                 }
                 return;
             }
         }
 
+        try {
+            pendingCountOverride = alertQueue.size();
+            pendingCountOverrideTs = System.currentTimeMillis();
+            applyPendingBadgeUi(pendingCountOverride);
+        } catch (Exception ignored) {}
+
         pendingAlertCount = alertQueue.size();
-        if (result.queuedAny && computePendingCountSync() > 0) {
+        if (result.queuedAny && !alertQueue.isEmpty()) {
             showLatestPending();
         } else {
             boolean hasQueue = !alertQueue.isEmpty();
@@ -1262,18 +1275,20 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } else {
                     if (llAlertPendingSmall != null) setSmallVisible(false);
-                    Log.d("", "llAlertPendingSmall=Visibility===8===" + (llAlertPendingSmall != null ? llAlertPendingSmall.getVisibility() : -1));
                 }
             } else {
                 if (allowAutoHideBig)
                     if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                Log.d("", "llAlertPendingSmall=Visibility===9===" + llAlertPendingSmall.getVisibility());
             }
         }
         updatePendingBadge();
         int afterQueueSize = alertQueue.size();
         if (result.queuedAny || result.touchedDb || queueChanged || beforeQueueSize != afterQueueSize) {
-            try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+            long now = System.currentTimeMillis();
+            if (now - lastTerminalRefreshRequestMs >= 3000) {
+                lastTerminalRefreshRequestMs = now;
+                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("离线刷新")); } catch (Exception ignored) {}
+            }
         }
     }
 
@@ -1364,112 +1379,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 helper.evaluateAndSend8001IfNeeded(frame, db);
             } catch (Exception ignored) {}
-
-            int statusCode = 0;
-            try {
-                java.util.List<com.lora.cn.ui.model.LogInfo> logs = db.getLogsByTerminalId(frame.deviceId);
-                if (logs != null && !logs.isEmpty()) statusCode = logs.get(0).getStatusCode();
-            } catch (Exception ignored) {}
-
-            int lowThEvt = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-            boolean isLowEvt = frame.batteryLevel <= lowThEvt;
-            if (isLowEvt) statusCode = com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
-
-            boolean isAlert = statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                    || statusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code;
-            String devId = frame.deviceId;
-            String msg = isAlert
-                    ? (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code ? "异常取走" : "设备低电量")
-                    : null;
-            AlertItem computedItem = null;
-            if (isAlert) {
-                try {
-                    computedItem = buildAlertItem(frame, msg);
-                } catch (Exception ignored) {}
-                if (computedItem == null) {
-                    computedItem = new AlertItem();
-                    computedItem.title = msg;
-                    computedItem.name = "";
-                    computedItem.code = devId;
-                    computedItem.time = event.getTime() != null ? event.getTime() : "";
-                    computedItem.logId = -1L;
-                }
-            }
-
-            int finalStatusCode = statusCode;
-            AlertItem finalItem = computedItem;
-            String finalMsg = msg;
-            mainHandler.post(() -> {
-                try {
-                    if (finalStatusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
-                            || finalStatusCode == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
-                        Integer last = lastAlertTypes.get(devId);
-                        Long ht = lastHandledTimes.get(devId);
-                        Integer handledType = lastHandledTypes.get(devId);
-                        long at = parseMillis(finalItem != null ? finalItem.time : null);
-                        boolean suppress = handledType != null && handledType == finalStatusCode && ht != null && at >= 0 && ht >= at;
-                        if ((last == null || last != finalStatusCode) && !suppress) {
-                            lastShownKey = null;
-                            boolean alreadyInQueue = existsInQueue(devId, finalMsg);
-                            if (!alreadyInQueue && finalItem != null) {
-                                alertQueue.addLast(finalItem);
-                            }
-                            lastAlertTypes.put(devId, finalStatusCode);
-                            updatePendingBadge();
-                            if (!alertMuted) startAlertRinging30s();
-                            boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
-                            if (!bigVisible) {
-                                boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
-                                String keyCandidate = (devId == null ? "" : devId) + ":" + (finalMsg == null ? "" : finalMsg);
-                                if (smallVisible && keyCandidate.equals(lastSmallKey)) {
-                                    if (llAlertPendingSmall != null) setSmallVisible(true);
-                                    if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                                    lastSmallKey = keyCandidate;
-                                } else {
-                                    showLatestPending();
-                                }
-                            } else {
-                                if (llAlertPendingSmall != null) setSmallVisible(false);
-                                Log.d("", "llAlertPendingSmall=Visibility===10===" + llAlertPendingSmall.getVisibility());
-                            }
-                        } else {
-                            updatePendingBadge();
-                            if (llAlertPendingSmall != null && pendingAlertCount > 0) setSmallVisible(true);
-                            Log.d("", "llAlertPendingSmall=Visibility===11===" + llAlertPendingSmall.getVisibility());
-                        }
-                    } else {
-                        if (devId != null) {
-                            java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
-                            for (AlertItem ai : alertQueue) {
-                                boolean sameDev = devId.equalsIgnoreCase(ai.code);
-                                boolean abnormal = "异常取走".equals(ai.title) || "设备低电量".equals(ai.title) || "设备离线".equals(ai.title);
-                                if (!(sameDev && abnormal)) newQueue.addLast(ai);
-                            }
-                            alertQueue.clear();
-                            alertQueue.addAll(newQueue);
-                            lastAlertTypes.remove(devId);
-                            updatePendingBadge();
-                            if (pendingAlertCount == 0) {
-                                if (allowAutoHideBig)
-                                    if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                                // 不主动在此隐藏小窗，让徽标逻辑决定是否展示，避免闪烁
-                                Log.d("", "llAlertPendingSmall=Visibility===12===" + llAlertPendingSmall.getVisibility());
-                            } else {
-                                boolean smallVisible = llAlertPendingSmall != null && llAlertPendingSmall.getVisibility() == View.VISIBLE;
-                                String keyCandidate = (devId == null ? "" : devId) + ":" + (finalMsg == null ? "" : finalMsg);
-                                if (smallVisible && keyCandidate.equals(lastSmallKey)) {
-                                    if (llAlertPendingSmall != null) setSmallVisible(true);
-                                    if (allowAutoHideBig && llAlertPending != null) llAlertPending.setVisibility(View.GONE);
-                                    lastSmallKey = keyCandidate;
-                                } else {
-                                    showLatestPending();
-                                }
-                            }
-                        }
-                    }
-                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("状态刷新")); } catch (Exception ignored) {}
-                } catch (Exception ignored) {}
-            });
         } catch (Exception ignored) {}
     }
 
@@ -1489,7 +1398,6 @@ public class MainActivity extends AppCompatActivity {
         if (lastShownKey != null && lastShownKey.equals(key)) {
             updatePendingBadge();
             if (llAlertPendingSmall != null) setSmallVisible(false);
-            Log.d("", "llAlertPendingSmall=Visibility===13===" + llAlertPendingSmall.getVisibility());
             if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
             return;
         }
@@ -1499,7 +1407,6 @@ public class MainActivity extends AppCompatActivity {
         if (tvErrorTime != null) tvErrorTime.setText(currentAlert.time);
         updatePendingBadge();
         if (llAlertPendingSmall != null) setSmallVisible(false);
-        Log.d("", "llAlertPendingSmall=Visibility===14===" + llAlertPendingSmall.getVisibility());
         if (llAlertPending != null) llAlertPending.setVisibility(View.VISIBLE);
         allowAutoHideBig = false;
         int sc = getStatusCodeForTitle(currentAlert.title);
@@ -1721,6 +1628,9 @@ public class MainActivity extends AppCompatActivity {
                     pendingCountOverride = null;
                 }
             }
+            long now = System.currentTimeMillis();
+            if (now - lastBadgeQueryMs < 3000) return;
+            lastBadgeQueryMs = now;
             if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
             android.content.Context appCtx = getApplicationContext();
@@ -1729,7 +1639,6 @@ public class MainActivity extends AppCompatActivity {
                 int count = 0;
                 try {
                     com.lora.cn.database.DatabaseHelper db = databaseHelper != null ? databaseHelper : com.lora.cn.database.DatabaseHelper.getInstance(appCtx);
-                    try { db.syncLowBatteryFlags(); } catch (Exception ignored) {}
                     java.util.List<com.lora.cn.ui.model.LogInfo> all = db.getAllLogsBoundToTerminals();
                     java.util.Map<String, com.lora.cn.ui.model.LogInfo> latest = new java.util.HashMap<>();
                     for (com.lora.cn.ui.model.LogInfo li : all) {
@@ -1824,14 +1733,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void applyPendingBadgeUi(int count) {
         pendingAlertCount = count;
+        lastComputedPendingCount = count;
         if (tvErrorNumber != null) tvErrorNumber.setText(String.valueOf(count));
         if (llAlertPendingSmall != null) {
             boolean bigVisible = llAlertPending != null && llAlertPending.getVisibility() == View.VISIBLE;
             int queueSizeLocal = alertQueue != null ? alertQueue.size() : 0;
             boolean shouldShowSmall = !bigVisible && (count > 0 || queueSizeLocal > 0);
             setSmallVisible(shouldShowSmall);
-            boolean currentSmall = llAlertPendingSmall.getVisibility() == View.VISIBLE;
-            Log.d("", "llAlertPendingSmall=Visibility===4===" + shouldShowSmall + "=======" + (currentSmall ? View.VISIBLE : View.GONE));
         }
         int queueSize = alertQueue.size();
         if (count != lastBadgeCount || queueSize != lastBadgeQueueSize) {
@@ -2006,8 +1914,6 @@ public class MainActivity extends AppCompatActivity {
             fragmentDeviceListContainer.setVisibility(View.VISIBLE);
             rvMenuTabs.setVisibility(View.INVISIBLE);
             viewPager.setVisibility(View.GONE);
-
-            Log.d("", "llAlertPendingSmall=Visibility===6===" + llAlertPendingSmall.getVisibility());
         } catch (Exception e) {
             android.util.Log.e(TAG, "打开报警处理页面失败", e);
         }
@@ -2284,15 +2190,38 @@ public class MainActivity extends AppCompatActivity {
                                 // 存储到数据库
                                 if (!"-".equals(hex)) {
                                     com.lora.cn.utils.LogUtils.i(TAG, "准备入库上行数据 hex=" + hex);
-                                    // 存储到上行数据日志表
-                                    long result = databaseHelper.addUplinkLog(hex);
-                                    Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
-                                    com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
-                                    wroteAny = true;
-                                    // 通过EventBus广播（UplinkDataEvent暂时不可用）
-                                    UplinkDataEvent event = new UplinkDataEvent(time, hex);
-                                    EventBus.getDefault().post(event);
-                                    Log.d(TAG, "上行数据准备广播: time=" + time + ", hex=" + hex);
+                                    long nowMs = System.currentTimeMillis();
+                                    boolean allowStore = true;
+                                    if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
+                                        Long last = lastUplinkStoreByDevMs.get(devEui);
+                                        if (last != null && nowMs - last < 2000) {
+                                            allowStore = false;
+                                            Log.d(TAG, "跳过频繁上行入库: devEUI=" + devEui + ", hex=" + hex);
+                                        }
+                                    }
+                                    if (allowStore) {
+                                        if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
+                                            lastUplinkStoreByDevMs.put(devEui, nowMs);
+                                        }
+                                        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                                        final String broadcastTime = time;
+                                        final String broadcastHex = hex;
+                                        ioExecutor.execute(() -> {
+                                            long result = databaseHelper.addUplinkLog(broadcastHex);
+                                            Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
+                                            com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
+                                            try {
+                                                UplinkDataEvent event = new UplinkDataEvent(broadcastTime, broadcastHex);
+                                                EventBus.getDefault().post(event);
+                                            } catch (Exception ignored) {}
+                                            if (result > 0 && mainHandler != null) {
+                                                mainHandler.post(() -> {
+                                                    try { evaluateAlertsOnce(); } catch (Exception ignored) {}
+                                                });
+                                            }
+                                        });
+                                        wroteAny = true;
+                                    }
                                 }
 
                                 LogUtils.i(TAG,
@@ -2318,9 +2247,7 @@ public class MainActivity extends AppCompatActivity {
                                         " time=" + time +
                                         " hex=" + hex);
                             }
-                            if (wroteAny) {
-                                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新")); } catch (Exception ignored) {}
-                            }
+                            // 刷新事件已在后台入库完成后投递，此处不再重复投递
                         }
                         @Override
                         public void onError(String error) {

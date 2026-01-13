@@ -54,6 +54,12 @@ public class MaintenanceHomeListFragment extends Fragment {
     private int currentPage = 0;
     private boolean loadingMore = false;
     private int filterStatus = -1;
+    private View rlStart;
+    private View rlEnd;
+    private android.widget.TextView tvStart;
+    private android.widget.TextView tvEnd;
+    private String selectedStartTime = "";
+    private String selectedEndTime = "";
 
     public static MaintenanceHomeListFragment newInstance() {
         return new MaintenanceHomeListFragment();
@@ -80,6 +86,12 @@ public class MaintenanceHomeListFragment extends Fragment {
         adapter.setOnDeleteClickListener(this::showDeleteDialog);
         rv.setAdapter(adapter);
 
+        rlStart = v.findViewById(R.id.time_start_time);
+        rlEnd = v.findViewById(R.id.time_end_time);
+        tvStart = v.findViewById(R.id.time_start_time_tv);
+        tvEnd = v.findViewById(R.id.time_end_time_tv);
+        android.widget.TextView btnReset = v.findViewById(R.id.btn_reset_filters);
+
         android.widget.Spinner spinnerStatus = v.findViewById(R.id.spinner_status);
         if (spinnerStatus != null) {
             java.util.List<String> opts = new java.util.ArrayList<>();
@@ -103,6 +115,35 @@ public class MaintenanceHomeListFragment extends Fragment {
                 public void onNothingSelected(android.widget.AdapterView<?> parent) {}
             });
         }
+
+        if (btnReset != null) {
+            btnReset.setOnClickListener(v1 -> {
+                try {
+                    selectedStartTime = "";
+                    selectedEndTime = "";
+                    if (tvStart != null) tvStart.setText("开始时间");
+                    if (tvEnd != null) tvEnd.setText("结束时间");
+                    if (spinnerStatus != null) spinnerStatus.setSelection(0, false);
+                    currentPage = 0;
+                    loadList();
+                    if (swipe != null) swipe.setNoMoreData(false);
+                } catch (Exception ignored) {}
+            });
+        }
+        if (rlStart != null) rlStart.setOnClickListener(v12 -> showStartPicker());
+        if (rlEnd != null) rlEnd.setOnClickListener(v13 -> showEndPicker());
+        if (rlStart != null) rlStart.setOnLongClickListener(v14 -> {
+            selectedStartTime = "";
+            if (tvStart != null) tvStart.setText("开始时间");
+            loadList();
+            return true;
+        });
+        if (rlEnd != null) rlEnd.setOnLongClickListener(v15 -> {
+            selectedEndTime = "";
+            if (tvEnd != null) tvEnd.setText("结束时间");
+            loadList();
+            return true;
+        });
 
         if (swipe != null) {
             swipe.setEnableRefresh(true);
@@ -169,25 +210,7 @@ public class MaintenanceHomeListFragment extends Fragment {
                     Toast.makeText(requireContext(), "加载维护列表失败", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                List<MaintenanceInfo> filtered = new ArrayList<>();
-                long now = System.currentTimeMillis();
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
-                for (MaintenanceInfo mi : finalList) {
-                    String ct = mi.getCreateTime();
-                    if (ct == null || ct.trim().isEmpty()) continue;
-                    try {
-                        Date dt = sdf.parse(ct.trim());
-                        if (dt != null && dt.getTime() <= now) {
-                            if (filterStatus == -1) {
-                                filtered.add(mi);
-                            } else if (filterStatus == 0) {
-                                if (mi.getStatus() == 0) filtered.add(mi);
-                            } else if (filterStatus == 1) {
-                                if (mi.getStatus() == 1) filtered.add(mi);
-                            }
-                        }
-                    } catch (Exception ignored) {}
-                }
+                List<MaintenanceInfo> filtered = filterByStatusAndTime(finalList);
                 allFiltered.clear();
                 allFiltered.addAll(filtered);
                 currentPage = 0;
@@ -201,6 +224,31 @@ public class MaintenanceHomeListFragment extends Fragment {
                 }
             });
         });
+    }
+
+    private List<MaintenanceInfo> filterByStatusAndTime(List<MaintenanceInfo> source) {
+        List<MaintenanceInfo> out = new ArrayList<>();
+        long now = System.currentTimeMillis();
+        long startMs = parseMillis(selectedStartTime);
+        long endMs = parseMillis(selectedEndTime);
+        for (MaintenanceInfo mi : (source != null ? source : new ArrayList<MaintenanceInfo>())) {
+            if (mi == null) continue;
+            String ct = mi.getCreateTime();
+            if (ct == null || ct.trim().isEmpty()) continue;
+            long tm = parseMillis(ct);
+            if (tm < 0) continue;
+            if (tm > now) continue;
+            if (startMs > 0 && tm < startMs) continue;
+            if (endMs > 0 && tm > endMs) continue;
+            if (filterStatus == -1) {
+                out.add(mi);
+            } else if (filterStatus == 0) {
+                if (mi.getStatus() == 0) out.add(mi);
+            } else if (filterStatus == 1) {
+                if (mi.getStatus() == 1) out.add(mi);
+            }
+        }
+        return out;
     }
 
     private void submitCurrentPage() {
@@ -298,11 +346,74 @@ public class MaintenanceHomeListFragment extends Fragment {
         }
     }
 
+    private void showStartPicker() {
+        android.app.DatePickerDialog dp = new android.app.DatePickerDialog(requireContext());
+        dp.setOnDateSetListener((view, year, month, day) -> {
+            android.app.TimePickerDialog tp = new android.app.TimePickerDialog(requireContext(), (v, hour, minute) -> {
+                java.util.Calendar c = java.util.Calendar.getInstance();
+                c.set(java.util.Calendar.YEAR, year);
+                c.set(java.util.Calendar.MONTH, month);
+                c.set(java.util.Calendar.DAY_OF_MONTH, day);
+                c.set(java.util.Calendar.HOUR_OF_DAY, hour);
+                c.set(java.util.Calendar.MINUTE, minute);
+                c.set(java.util.Calendar.SECOND, 0);
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                selectedStartTime = sdf.format(c.getTime());
+                if (tvStart != null) tvStart.setText(selectedStartTime);
+                currentPage = 0;
+                loadList();
+            }, 0, 0, true);
+            tp.show();
+        });
+        dp.show();
+    }
+
+    private void showEndPicker() {
+        android.app.DatePickerDialog dp = new android.app.DatePickerDialog(requireContext());
+        dp.setOnDateSetListener((view, year, month, day) -> {
+            android.app.TimePickerDialog tp = new android.app.TimePickerDialog(requireContext(), (v, hour, minute) -> {
+                java.util.Calendar c = java.util.Calendar.getInstance();
+                c.set(java.util.Calendar.YEAR, year);
+                c.set(java.util.Calendar.MONTH, month);
+                c.set(java.util.Calendar.DAY_OF_MONTH, day);
+                c.set(java.util.Calendar.HOUR_OF_DAY, hour);
+                c.set(java.util.Calendar.MINUTE, minute);
+                c.set(java.util.Calendar.SECOND, 59);
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                selectedEndTime = sdf.format(c.getTime());
+                if (tvEnd != null) tvEnd.setText(selectedEndTime);
+                currentPage = 0;
+                loadList();
+            }, 23, 59, true);
+            tp.show();
+        });
+        dp.show();
+    }
+
+    private long parseMillis(String s) {
+        if (s == null || s.trim().isEmpty()) return -1L;
+        String raw = s.trim();
+        java.util.List<java.text.SimpleDateFormat> formats = new java.util.ArrayList<>();
+        formats.add(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()));
+        formats.add(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()));
+        for (java.text.SimpleDateFormat f : formats) {
+            try {
+                java.util.Date d = f.parse(raw);
+                if (d != null) return d.getTime();
+            } catch (Exception ignored) {}
+        }
+        return -1L;
+    }
+
     private void showConfirmDialog(MaintenanceInfo item) {
         if (item == null) return;
         EditText et = new EditText(requireContext());
         et.setMinLines(3);
         et.setHint("请输入备注");
+        try {
+            et.setText("确认维护");
+            et.setSelection(et.getText().length());
+        } catch (Exception ignored) {}
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("确认维护")
                 .setView(et)
@@ -350,8 +461,15 @@ public class MaintenanceHomeListFragment extends Fragment {
                         mainHandler.post(() -> {
                             if (!isAdded()) return;
                             if (finalR > 0) {
-                                loadList();
                                 Toast.makeText(requireContext(), "已确认维护", Toast.LENGTH_SHORT).show();
+                                try {
+                                    android.app.Activity a = getActivity();
+                                    if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                                        ((com.lora.cn.ui.activity.MainActivity) a).goHome();
+                                    } else {
+                                        loadList();
+                                    }
+                                } catch (Exception ignored2) {}
                             } else {
                                 Toast.makeText(requireContext(), "操作失败", Toast.LENGTH_SHORT).show();
                             }

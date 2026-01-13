@@ -77,7 +77,40 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
         String name = item.getTerminalName();
         String group = item.getTerminalGroup();
         if (logName != null) setTextOrDash(logName, name == null ? "" : name);
-        if (logGroup != null) setTextOrDash(logGroup, group == null ? "" : group);
+        String displayGroup = "";
+        try {
+            android.content.Context ctx = holder.itemView.getContext();
+            com.lora.cn.database.DatabaseHelper dbh = com.lora.cn.database.DatabaseHelper.getInstance(ctx);
+            com.lora.cn.database.dao.TerminalDao tdao = new com.lora.cn.database.dao.TerminalDao(dbh);
+            com.lora.cn.ui.model.Terminal t = tdao.getTerminalByDeviceId(item.getTerminalId());
+            String gnames = t != null ? t.getGroupNamesText() : null;
+            if (gnames != null && !gnames.trim().isEmpty()) {
+                String[] arr = gnames.split(",");
+                java.util.List<String> toks = new java.util.ArrayList<>();
+                for (String tk : arr) {
+                    if (tk == null) continue;
+                    String raw = tk.trim();
+                    if (raw.isEmpty()) continue;
+                    int p = raw.lastIndexOf('-');
+                    toks.add(p >= 0 ? raw.substring(p + 1) : raw);
+                }
+                StringBuilder sb = new StringBuilder();
+                for (int idx2 = 0; idx2 < toks.size(); idx2++) {
+                    if (idx2 > 0) sb.append("、");
+                    sb.append(toks.get(idx2));
+                }
+                displayGroup = sb.toString();
+            } else {
+                displayGroup = group == null ? "" : group;
+                if (displayGroup != null) {
+                    int p2 = displayGroup.lastIndexOf('-');
+                    displayGroup = p2 >= 0 ? displayGroup.substring(p2 + 1) : displayGroup;
+                }
+            }
+        } catch (Exception ignored) {
+            displayGroup = group == null ? "" : group;
+        }
+        if (logGroup != null) setTextOrDash(logGroup, displayGroup);
 
         String tid = item.getTerminalId();
         if (logId != null) setTextOrDash(logId, "终端ID：" + (tid == null ? "" : tid));
@@ -190,6 +223,7 @@ public class MaintenanceInfoAdapter extends BaseQuickAdapter<MaintenanceInfo, Qu
             if (logName != null) logName.setVisibility(View.VISIBLE);
             if (logGroup != null) logGroup.setVisibility(View.VISIBLE);
             if (logId != null) logId.setVisibility(View.VISIBLE);
+            if (containerId != null && mode == Mode.HOME) containerId.setVisibility(View.GONE);
         }
     }
 
