@@ -232,16 +232,26 @@ public class MaintenanceHomeListFragment extends Fragment {
 
     private List<MaintenanceInfo> filterByStatusAndTime(List<MaintenanceInfo> source) {
         List<MaintenanceInfo> out = new ArrayList<>();
+        long now = System.currentTimeMillis();
         long startMs = parseMillis(selectedStartTime);
         long endMs = parseMillis(selectedEndTime);
         for (MaintenanceInfo mi : (source != null ? source : new ArrayList<MaintenanceInfo>())) {
             if (mi == null) continue;
             String ct = mi.getCreateTime();
             if (ct == null || ct.trim().isEmpty()) continue;
-            long tm = parseMillis(ct);
-            if (tm < 0) continue;
-            if (startMs > 0 && tm < startMs) continue;
-            if (endMs > 0 && tm > endMs) continue;
+            long dueTm = parseMillis(ct);
+            if (dueTm < 0) continue;
+            if (mi.getStatus() == 0 && dueTm > now) continue;
+
+            String filterTime = ct;
+            if (mi.getStatus() == 1) {
+                String ht = mi.getHandleTime();
+                if (ht != null && !ht.trim().isEmpty()) filterTime = ht;
+            }
+            long filterTm = parseMillis(filterTime);
+            if (filterTm < 0) continue;
+            if (startMs > 0 && filterTm < startMs) continue;
+            if (endMs > 0 && filterTm > endMs) continue;
             if (filterStatus == -1) {
                 out.add(mi);
             } else if (filterStatus == 0) {
