@@ -341,8 +341,6 @@ public class MaintenanceHomeListFragment extends Fragment {
 //                        new int[]{mins},
 //                        true
 //                );
-                db.updateMaintenanceSent(mi.getId(), nowStr());
-                EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("maintenance_updated"));
             } catch (Exception ignored) {}
         }
     }
