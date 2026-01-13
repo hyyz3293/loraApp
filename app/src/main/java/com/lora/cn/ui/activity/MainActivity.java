@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.concurrent.atomic.AtomicInteger badgeSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.atomic.AtomicInteger alertEvalSeq = new java.util.concurrent.atomic.AtomicInteger();
     private final java.util.concurrent.ConcurrentHashMap<String, Long> lastUplinkStoreByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, SleepCycleState> sleepCycleStateByDev = new java.util.concurrent.ConcurrentHashMap<>();
     private volatile long lastAlertEvalTriggerMs = 0L;
     private int lastBadgeCount = -1;
     private int lastBadgeQueueSize = -1;
@@ -129,6 +130,187 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    private static class PendingUplink {
+        final String devEui;
+        final String devAddr;
+        final String hex;
+        final String dr;
+        final String time;
+        final String freq;
+        final String rssi;
+        final String snr;
+        final String fport;
+        final String fcnt;
+        PendingUplink(String devEui, String devAddr, String hex, String dr, String time, String freq, String rssi, String snr, String fport, String fcnt) {
+            this.devEui = devEui;
+            this.devAddr = devAddr;
+            this.hex = hex;
+            this.dr = dr;
+            this.time = time;
+            this.freq = freq;
+            this.rssi = rssi;
+            this.snr = snr;
+            this.fport = fport;
+            this.fcnt = fcnt;
+        }
+    }
+
+    private static class SleepCycleState {
+        long cycleStartMs;
+        boolean firstDropped;
+        SleepCycleState(long cycleStartMs, boolean firstDropped) {
+            this.cycleStartMs = cycleStartMs;
+            this.firstDropped = firstDropped;
+        }
+    }
+
+    private String normalizeDeviceKey(String devEui, String hex) {
+        String k = devEui != null ? devEui.trim() : "";
+        if (!k.isEmpty() && !"-".equals(k) && !" -".equals(k)) return k;
+        try {
+            com.lora.cn.utils.LoRaFrameParser.ParsedFrame f = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+            String did = f != null ? f.deviceId : null;
+            if (did != null && !did.trim().isEmpty()) return did.trim();
+        } catch (Exception ignored) {}
+        return k.isEmpty() ? (hex == null ? "" : hex) : k;
+    }
+
+    private void handleUplinkBySleepCycle(com.lora.cn.network.GatewayPacketsClient.PacketRecord r, String currentTime, long intervalMs) {
+        if (r == null) return;
+        String devEui = r.deviceId != null ? r.deviceId : "-";
+        String devAddr = r.devAddr != null ? r.devAddr : "-";
+        String hex = r.payloadHex != null ? r.payloadHex : "-";
+        String dr = r.dr != null ? r.dr : "-";
+        String time = r.time != null ? r.time : currentTime;
+        String freq = r.freq != null ? String.valueOf(r.freq) : "-";
+        String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
+        String snr = r.snr != null ? String.valueOf(r.snr) : "-";
+        String fport = r.fport != null ? String.valueOf(r.fport) : "-";
+        String fcnt = r.fcnt != null ? String.valueOf(r.fcnt) : "-";
+
+        PendingUplink p = new PendingUplink(devEui, devAddr, hex, dr, time, freq, rssi, snr, fport, fcnt);
+        String key = normalizeDeviceKey(devEui, hex);
+        long nowMs = System.currentTimeMillis();
+        SleepCycleState st = sleepCycleStateByDev.get(key);
+        boolean newCycle = st == null || nowMs - st.cycleStartMs >= Math.max(1000L, intervalMs);
+        if (newCycle) {
+            st = new SleepCycleState(nowMs, false);
+            sleepCycleStateByDev.put(key, st);
+        }
+        if (!st.firstDropped) {
+            st.firstDropped = true;
+            return;
+        }
+        processUplinkPacket(p);
+    }
+
+    private void processUplinkPacket(PendingUplink p) {
+        if (p == null) return;
+        String devEui = p.devEui;
+        String devAddr = p.devAddr;
+        String hex = p.hex;
+        String dr = p.dr;
+        String time = p.time;
+        String freq = p.freq;
+        String rssi = p.rssi;
+        String snr = p.snr;
+        String fport = p.fport;
+        String fcnt = p.fcnt;
+
+        if (!"-".equals(hex)) {
+            com.lora.cn.utils.LogUtils.i(TAG, "准备入库上行数据 hex=" + hex);
+            long nowMs = System.currentTimeMillis();
+            boolean allowStore = true;
+            if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
+                Long last = lastUplinkStoreByDevMs.get(devEui);
+                if (last != null && nowMs - last < 2000) {
+                    allowStore = false;
+                    Log.d(TAG, "跳过频繁上行入库: devEUI=" + devEui + ", hex=" + hex);
+                }
+            }
+            if (allowStore) {
+                if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
+                    lastUplinkStoreByDevMs.put(devEui, nowMs);
+                }
+                if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                final String broadcastTime = time;
+                final String broadcastHex = hex;
+                final String devEuiForLog = devEui;
+                ioExecutor.execute(() -> {
+                    try {
+                        Log.d(TAG, "入库任务开始: devEUI=" + (devEuiForLog == null ? "" : devEuiForLog) + ", time=" + broadcastTime);
+                    } catch (Exception ignored) {}
+                    long result = -1L;
+                    try { result = databaseHelper.addUplinkLog(broadcastHex); } catch (Exception e) { Log.e(TAG, "addUplinkLog异常: " + e.getMessage()); }
+                    Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
+                    com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
+                    if (result <= 0) {
+                        try {
+                            com.lora.cn.utils.LoRaFrameParser.ParsedFrame f = com.lora.cn.utils.LoRaFrameParser.parseFrame(broadcastHex);
+                            Log.w(TAG, "上行未写入日志表: devEUI=" + (devEuiForLog == null ? "" : devEuiForLog) + ", deviceId=" + (f != null ? f.deviceId : "") + ", hex=" + broadcastHex);
+                        } catch (Exception ignored) {}
+                    }
+                    try {
+                        UplinkDataEvent event = new UplinkDataEvent(broadcastTime, broadcastHex);
+                        EventBus.getDefault().post(event);
+                    } catch (Exception ignored) {}
+                    try {
+                        long nowEval = System.currentTimeMillis();
+                        if (nowEval - lastAlertEvalTriggerMs >= 300) {
+                            lastAlertEvalTriggerMs = nowEval;
+                            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                            mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
+                        }
+                    } catch (Exception ignored) {}
+                });
+            } else {
+                try {
+                    com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+                    String did = frame != null ? frame.deviceId : devEui;
+                    if (did != null && did.length() > 0 && databaseHelper != null && databaseHelper.isTerminalExists(did)) {
+                        try {
+                            databaseHelper.updateTerminalMetricsByDeviceId(did, frame != null ? frame.batteryLevel : 0, frame != null ? frame.rssi : 0, frame != null ? frame.batteryVoltage : 0);
+                        } catch (Exception ignored) {}
+                        try {
+                            databaseHelper.updateTerminalStatusByDeviceId(did, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                        } catch (Exception ignored) {}
+                        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("uplink_fast")); } catch (Exception ignored) {}
+                        try {
+                            UplinkDataEvent event = new UplinkDataEvent(time, hex);
+                            org.greenrobot.eventbus.EventBus.getDefault().post(event);
+                        } catch (Exception ignored) {}
+                        try {
+                            long nowEval = System.currentTimeMillis();
+                            if (nowEval - lastAlertEvalTriggerMs >= 300) {
+                                lastAlertEvalTriggerMs = nowEval;
+                                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
+
+        boolean verboseUplink = false;
+        try { verboseUplink = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("uplink_verbose_log", false); } catch (Exception ignored) {}
+        if (verboseUplink) {
+            LogUtils.i(TAG,
+                    "UPLINK devEUI=" + devEui +
+                            " devAddr=" + devAddr +
+                            " fport=" + fport +
+                            " fcnt=" + fcnt +
+                            " rssi=" + rssi +
+                            " snr=" + snr +
+                            " freq=" + freq +
+                            " dr=" + dr +
+                            " time=" + time +
+                            " hex=" + hex);
+        } else {
+            Log.d(TAG, "UPLINK devEUI=" + devEui + ", fcnt=" + fcnt + ", fport=" + fport);
+        }
+    }
 
     // 自动返回首页计时
     private android.os.Handler autoReturnHandler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -2415,113 +2597,10 @@ public class MainActivity extends AppCompatActivity {
                             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
                             String currentTime = sdf.format(new Date());
                             
-                            boolean wroteAny = false;
+                            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                            long intervalMs = Math.max(1L, Math.min(1440L, (long) intervalMin)) * 60_000L;
                             for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
-                                String devEui = r.deviceId != null ? r.deviceId : "-";
-                                String devAddr = r.devAddr != null ? r.devAddr : "-";
-                                String hex = r.payloadHex != null ? r.payloadHex : "-";
-                                String dr = r.dr != null ? r.dr : "-";
-                                String time = r.time != null ? r.time : currentTime;
-                                String freq = r.freq != null ? String.valueOf(r.freq) : "-";
-                                String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
-                                String snr = r.snr != null ? String.valueOf(r.snr) : "-";
-                                String fport = r.fport != null ? String.valueOf(r.fport) : "-";
-                                String fcnt = r.fcnt != null ? String.valueOf(r.fcnt) : "-";
-                                
-                                // 存储到数据库
-                                if (!"-".equals(hex)) {
-                                    com.lora.cn.utils.LogUtils.i(TAG, "准备入库上行数据 hex=" + hex);
-                                    long nowMs = System.currentTimeMillis();
-                                    boolean allowStore = true;
-                                    if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
-                                        Long last = lastUplinkStoreByDevMs.get(devEui);
-                                        if (last != null && nowMs - last < 2000) {
-                                            allowStore = false;
-                                            Log.d(TAG, "跳过频繁上行入库: devEUI=" + devEui + ", hex=" + hex);
-                                        }
-                                    }
-                                    if (allowStore) {
-                                        if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
-                                            lastUplinkStoreByDevMs.put(devEui, nowMs);
-                                        }
-                                        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
-                                        final String broadcastTime = time;
-                                        final String broadcastHex = hex;
-                                        final String devEuiForLog = devEui;
-                                        ioExecutor.execute(() -> {
-                                            try {
-                                                Log.d(TAG, "入库任务开始: devEUI=" + (devEuiForLog == null ? "" : devEuiForLog) + ", time=" + broadcastTime);
-                                            } catch (Exception ignored) {}
-                                            long result = -1L;
-                                            try { result = databaseHelper.addUplinkLog(broadcastHex); } catch (Exception e) { Log.e(TAG, "addUplinkLog异常: " + e.getMessage()); }
-                                            Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
-                                            com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
-                                            if (result <= 0) {
-                                                try {
-                                                    com.lora.cn.utils.LoRaFrameParser.ParsedFrame f = com.lora.cn.utils.LoRaFrameParser.parseFrame(broadcastHex);
-                                                    Log.w(TAG, "上行未写入日志表: devEUI=" + (devEuiForLog == null ? "" : devEuiForLog) + ", deviceId=" + (f != null ? f.deviceId : "") + ", hex=" + broadcastHex);
-                                                } catch (Exception ignored) {}
-                                            }
-                                            try {
-                                                UplinkDataEvent event = new UplinkDataEvent(broadcastTime, broadcastHex);
-                                                EventBus.getDefault().post(event);
-                                            } catch (Exception ignored) {}
-                                            try {
-                                                long nowEval = System.currentTimeMillis();
-                                                if (nowEval - lastAlertEvalTriggerMs >= 300) {
-                                                    lastAlertEvalTriggerMs = nowEval;
-                                                    if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                                                    mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
-                                                }
-                                            } catch (Exception ignored) {}
-                                        });
-                                        wroteAny = true;
-                                    } else {
-                                        try {
-                                            com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
-                                            String did = frame != null ? frame.deviceId : devEui;
-                                            if (did != null && did.length() > 0 && databaseHelper != null && databaseHelper.isTerminalExists(did)) {
-                                                try {
-                                                    databaseHelper.updateTerminalMetricsByDeviceId(did, frame != null ? frame.batteryLevel : 0, frame != null ? frame.rssi : 0, frame != null ? frame.batteryVoltage : 0);
-                                                } catch (Exception ignored) {}
-                                                try {
-                                                    databaseHelper.updateTerminalStatusByDeviceId(did, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
-                                                } catch (Exception ignored) {}
-                                                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("uplink_fast")); } catch (Exception ignored) {}
-                                                try {
-                                                    UplinkDataEvent event = new UplinkDataEvent(time, hex);
-                                                    org.greenrobot.eventbus.EventBus.getDefault().post(event);
-                                                } catch (Exception ignored) {}
-                                                try {
-                                                    long nowEval = System.currentTimeMillis();
-                                                    if (nowEval - lastAlertEvalTriggerMs >= 300) {
-                                                        lastAlertEvalTriggerMs = nowEval;
-                                                        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                                                        mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
-                                                    }
-                                                } catch (Exception ignored) {}
-                                            }
-                                        } catch (Exception ignored) {}
-                                    }
-                                }
-
-                                boolean verboseUplink = false;
-                                try { verboseUplink = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("uplink_verbose_log", false); } catch (Exception ignored) {}
-                                if (verboseUplink) {
-                                    LogUtils.i(TAG,
-                                            "UPLINK devEUI=" + devEui +
-                                            " devAddr=" + devAddr +
-                                            " fport=" + fport +
-                                            " fcnt=" + fcnt +
-                                            " rssi=" + rssi +
-                                            " snr=" + snr +
-                                            " freq=" + freq +
-                                            " dr=" + dr +
-                                            " time=" + time +
-                                            " hex=" + hex);
-                                } else {
-                                    Log.d(TAG, "UPLINK devEUI=" + devEui + ", fcnt=" + fcnt + ", fport=" + fport);
-                                }
+                                handleUplinkBySleepCycle(r, currentTime, intervalMs);
                             }
                             // 刷新事件已在后台入库完成后投递，此处不再重复投递
                         }
@@ -2585,6 +2664,7 @@ public class MainActivity extends AppCompatActivity {
                 alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
                 alertEvaluateHandler = null;
             }
+            try { sleepCycleStateByDev.clear(); } catch (Exception ignored) {}
             try {
                 if (ioExecutor != null) ioExecutor.shutdownNow();
             } catch (Exception ignored) {}

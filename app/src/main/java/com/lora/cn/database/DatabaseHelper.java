@@ -1635,6 +1635,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String deviceId = frame != null ? frame.deviceId : null;
         String terminalName = "";
         int statusCode = 0;
+        boolean clearedIllegalRemovalByAck = false;
         String operator = "";
         String operationTime = "";
         String action = "接收上行数据";
@@ -1682,8 +1683,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             // 事件优先级：低电量 > 丢失 > 开锁/上锁 > 打开/关闭 > 取走/放入 > 定期上报 > 护士站查询
             // 备注：statusCode 使用 LogStatus 枚举的 code，便于统一展示
 
-
-            boolean clearedIllegalRemovalByAck = false;
             try { clearedIllegalRemovalByAck = (frame.nurseAckParams & 0x1L) != 0; } catch (Exception ignored) {}
             if (frame.stPowerLockOn == 1 && (frame.stLayer1NotInPlace == 1 ||
                     frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
@@ -1872,6 +1871,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             if (frame != null && deviceId != null) {
                 updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
+                if (clearedIllegalRemovalByAck && mappedLogFromTerminal == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                    try {
+                        String autoUser = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        });
+                    } catch (Exception ignored) {}
+                }
                 if (mappedLogFromTerminal == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code
                         && statusCode != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         && statusCode != com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code) {
