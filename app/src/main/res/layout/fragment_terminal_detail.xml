@@ -324,11 +324,16 @@
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content" />
-            <ImageView
-                android:id="@+id/btn_toggle_maintenance"
-                android:src="@drawable/ic_chevron_up"
-                android:layout_width="24dp"
-                android:layout_height="24dp" />
+            <LinearLayout
+                android:layout_weight="8"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"  >
+                <ImageView
+                    android:id="@+id/btn_toggle_maintenance"
+                    android:src="@drawable/ic_chevron_up"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -445,11 +450,21 @@
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content" />
-            <ImageView
-                android:id="@+id/btn_toggle_logs"
-                android:src="@drawable/ic_chevron_up"
-                android:layout_width="24dp"
-                android:layout_height="24dp" />
+<!--            <ImageView-->
+<!--                android:id="@+id/btn_toggle_logs"-->
+<!--                android:src="@drawable/ic_chevron_up"-->
+<!--                android:layout_width="24dp"-->
+<!--                android:layout_height="24dp" />-->
+            <LinearLayout
+                android:layout_weight="8"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"  >
+                <ImageView
+                    android:id="@+id/btn_toggle_logs"
+                    android:src="@drawable/ic_chevron_up"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout

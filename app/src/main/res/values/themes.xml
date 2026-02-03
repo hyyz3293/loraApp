@@ -12,6 +12,8 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">@color/c_03090E</item>
+        <!-- 显式禁用全屏，确保默认显示系统状态栏 -->
+        <item name="android:windowFullscreen">false</item>
         <!-- 设置界面过渡动画 -->
         <item name="android:windowAnimationStyle">@style/windowAnimation</item>
         <item name="android:windowBackground">@mipmap/app_login</item>

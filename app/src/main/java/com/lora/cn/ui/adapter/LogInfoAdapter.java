@@ -16,6 +16,9 @@ import com.chad.library.adapter4.BaseQuickAdapter;
 import com.chad.library.adapter4.viewholder.QuickViewHolder;
 import com.lora.cn.R;
 import com.lora.cn.ui.model.LogInfo;
+import com.lora.cn.database.DatabaseHelper;
+import com.lora.cn.database.dao.TerminalDao;
+import com.lora.cn.ui.model.Terminal;
 
 public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
     public interface OnHandleClickListener { void onHandleClick(LogInfo item); }
@@ -46,11 +49,17 @@ public class LogInfoAdapter extends BaseQuickAdapter<LogInfo, QuickViewHolder> {
         }
         setStatusWithDot(logStatus, displayStatus);
 
-        // 设置名称字段 - 使用终端名称
         setTextOrPlaceholder(logName, item.getTerminalName());
 
-        // 设置ID字段 - 使用设备ID
-        setTextOrPlaceholder(logId, item.getDeviceId());
+        String groupText = null;
+        try {
+            TerminalDao dao = new TerminalDao(DatabaseHelper.getInstance(logId.getContext()));
+            if (!TextUtils.isEmpty(item.getDeviceId())) {
+                Terminal t = dao.getTerminalByDeviceId(item.getDeviceId());
+                if (t != null) groupText = t.getGroupNamesText();
+            }
+        } catch (Exception ignored) {}
+        setTextOrPlaceholder(logId, groupText);
 
         boolean isHandled = (item.getHandleUser() != null && item.getHandleUser().trim().length() > 0)
                 || (item.getHandleTime() != null && item.getHandleTime().trim().length() > 0);

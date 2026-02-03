@@ -60,6 +60,7 @@ public class LoRaFrameParser {
         public int stLayer4NotInPlace;   // Bit4: 第4层开关状态 1:不在位 0:在位
         public int stLayer5NotInPlace;   // Bit5: 第5层开关状态 1:不在位 0:在位
         public int stMaintenanceNeeded;   // Bit6: 维护状态 1:需要维护 0:不需要维护
+        public int stTimedMaintenanceNeeded;
         // 枚举集合（事件/状态）
         public java.util.EnumSet<DeviceEventFlag> eventFlags = java.util.EnumSet.noneOf(DeviceEventFlag.class);
         public java.util.EnumSet<DeviceStatusFlag> statusFlags = java.util.EnumSet.noneOf(DeviceStatusFlag.class);
@@ -197,6 +198,7 @@ public class LoRaFrameParser {
             frame.stLayer4NotInPlace  = ((frame.deviceStatus & 0x10L) != 0) ? 1 : 0;
             frame.stLayer5NotInPlace  = ((frame.deviceStatus & 0x20L) != 0) ? 1 : 0;
             frame.stMaintenanceNeeded  = ((frame.deviceStatus & 0x40L) != 0) ? 1 : 0;
+            frame.stTimedMaintenanceNeeded  = ((frame.deviceStatus & 0x80L) != 0) ? 1 : 0;
             // 填充状态枚举集合
             frame.statusFlags = DeviceStatusFlag.fromMask(frame.deviceStatus);
             // 填充状态枚举集合
@@ -311,7 +313,8 @@ public class LoRaFrameParser {
         LAYER3_NOT_IN_PLACE(0x08L, "层3:不在位"),
         LAYER4_NOT_IN_PLACE(0x10L, "层4:不在位"),
         LAYER5_NOT_IN_PLACE(0x20L, "层5:不在位"),
-        MAINTENANCE_NEEDED(0x40L, "维护需要");
+        MAINTENANCE_NEEDED(0x40L, "维护需要"),
+        TIMED_MAINTENANCE_NEEDED(0x80L, "定时维护需要");
 
         public final long mask;
         private final String label;

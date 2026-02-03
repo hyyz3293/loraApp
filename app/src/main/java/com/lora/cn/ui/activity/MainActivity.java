@@ -9,6 +9,8 @@ import android.content.Intent;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -359,8 +361,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        try { WindowCompat.setDecorFitsSystemWindows(getWindow(), true); } catch (Exception ignored) {}
         setContentView(R.layout.activity_main);
-        
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+        ensureStatusBarVisible();
+
         // 初始化数据库助手
         databaseHelper = DatabaseHelper.getInstance(this);
         if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
@@ -388,7 +396,6 @@ public class MainActivity extends AppCompatActivity {
         // 默认显示终端列表
         menuTabs.get(0).setSelected(true);
         menuTabAdapter.notifyDataSetChanged();
-        applyImmersiveMode();
 
         try {
             LogUtils.e("android.os.Build.VERSION.SDK_INT===" + android.os.Build.VERSION.SDK_INT);
@@ -477,12 +484,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        ensureStatusBarVisible();
+        try { updateMaintenanceBadge(); } catch (Exception ignored) {}
+    }
+
+    @Override
     protected void onStart() {
         super.onStart();
         if (!org.greenrobot.eventbus.EventBus.getDefault().isRegistered(this)) {
             org.greenrobot.eventbus.EventBus.getDefault().register(this);
         }
-        applyImmersiveMode();
+        ensureStatusBarVisible();
     }
 
     @Override
@@ -509,26 +523,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) applyImmersiveMode();
+        if (hasFocus) ensureStatusBarVisible();
     }
 
     private void applyImmersiveMode() {
+    }
+
+    private void ensureStatusBarVisible() {
+        try { getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN); } catch (Exception ignored) {}
+        try { androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), true); } catch (Exception ignored) {}
         try {
             if (android.os.Build.VERSION.SDK_INT >= 30) {
                 android.view.WindowInsetsController c = getWindow().getInsetsController();
                 if (c != null) {
-                    c.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
-                    c.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                    c.show(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
                 }
             } else {
                 android.view.View decor = getWindow().getDecorView();
-                int flags = android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
-                        | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-                decor.setSystemUiVisibility(flags);
+                decor.setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_VISIBLE);
             }
         } catch (Exception ignored) {}
     }
@@ -1074,11 +1086,7 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ignored) {}
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        try { updateMaintenanceBadge(); } catch (Exception ignored) {}
-    }
+    
 
     // 全局报警窗口状态
     private View llAlertPending;
@@ -1604,9 +1612,11 @@ public class MainActivity extends AppCompatActivity {
 
 
             int latestTimedUnsentMins = -1;
+            java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allMForDevice = null;
             java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> dueMaint = new java.util.ArrayList<>();
             try {
-                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allM = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
+                allMForDevice = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allM = allMForDevice;
                 if (allM != null) {
                     long now = System.currentTimeMillis();
                     java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
@@ -1706,16 +1716,18 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } catch (Exception ignored) {}
                 boolean maintenanceNeeded = false;
+                boolean timedMaintenanceNeeded = false;
                 try {
                     if (frame.statusFlags != null) {
                         maintenanceNeeded = frame.statusFlags.contains(com.lora.cn.utils.LoRaFrameParser.DeviceStatusFlag.MAINTENANCE_NEEDED);
+                        timedMaintenanceNeeded = frame.statusFlags.contains(com.lora.cn.utils.LoRaFrameParser.DeviceStatusFlag.TIMED_MAINTENANCE_NEEDED);
                     }
                 } catch (Exception ignored) {}
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = allMForDevice != null ? allMForDevice : databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
                 if (maintenanceNeeded) {
                     try {
                         try { db.updateTerminalMaintenanceState(frame.deviceId, true, System.currentTimeMillis()); } catch (Exception ignored) {}
                         boolean existsPendingAuto = false;
-                        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
                         if (existingAll != null) {
                             for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
                                 String c = x != null ? x.getContent() : null;
@@ -1758,11 +1770,32 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     try {
                         try { db.updateTerminalMaintenanceState(frame.deviceId, false, System.currentTimeMillis()); } catch (Exception ignored) {}
-                        java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = databaseHelper.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
                         if (existingAll != null) {
                             String autoUser = "系统自动";
                             String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-                            String autoRemark = "设备恢复：自动标记已维护";
+                            String autoRemark = "主动维护清除：自动标记已维护";
+                            for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
+                                if (x == null) continue;
+                                if (x.getStatus() != 0) continue;
+                                String c = x.getContent();
+                                if (!(("主动维护".equals(c)) || (c != null && c.startsWith("设备维护：")))) continue;
+                                String hu = x.getHandleUser();
+                                String ht = x.getHandleTime();
+                                boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                                if (!unhandled) continue;
+                                try { databaseHelper.updateMaintenanceHandled(x.getId(), 0L, autoUser, autoTime, autoRemark); } catch (Exception ignored2) {}
+                                maintenanceTouched = true;
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+
+                if (!timedMaintenanceNeeded) {
+                    try {
+                        if (existingAll != null) {
+                            String autoUser = "系统自动";
+                            String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                            String autoRemark = "定时维护清除：自动标记已维护";
                             long now = System.currentTimeMillis();
                             java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
                             java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
@@ -1771,6 +1804,8 @@ public class MainActivity extends AppCompatActivity {
                             for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
                                 if (x == null) continue;
                                 if (x.getStatus() != 0) continue;
+                                String c = x.getContent();
+                                if ("主动维护".equals(c) || (c != null && c.startsWith("设备维护："))) continue;
                                 String hu = x.getHandleUser();
                                 String ht = x.getHandleTime();
                                 boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());

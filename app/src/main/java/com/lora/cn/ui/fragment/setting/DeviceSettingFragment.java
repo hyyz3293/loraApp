@@ -28,6 +28,9 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.text.format.DateFormat;
+import androidx.appcompat.app.AlertDialog;
+
+import com.lora.cn.BuildConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,9 +99,9 @@ public class DeviceSettingFragment extends Fragment {
         if (hasPermission("setting_sound")) {
             settingList.add(new SettingItem("音量设置", 1, 0));
         }
-        if (hasPermission("setting_wifi")) {
-            settingList.add(new SettingItem("WiFIi连接", 0, 1));
-        }
+//        if (hasPermission("setting_wifi")) {
+//            settingList.add(new SettingItem("WiFIi连接", 0, 1));
+//        }
         if (hasPermission("setting_ip")) {
             settingList.add(new SettingItem("IP配置", 0, 2));
         }
@@ -121,6 +124,7 @@ public class DeviceSettingFragment extends Fragment {
             int sleepMin = SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
             settingList.add(new SettingItem("设备休眠间隔(分钟)", 2, 7, String.valueOf(sleepMin)));
         }
+        settingList.add(new SettingItem("版本信息", 0, 8));
 
         // 设置RecyclerView
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
@@ -143,6 +147,7 @@ public class DeviceSettingFragment extends Fragment {
                 case 5: permCode = "setting_home_return"; break;
                 case 6: permCode = "setting_inventory"; break;
                 case 7: permCode = "setting_sleep_interval"; break;
+                case 8: permCode = "setting_device"; break;
             }
             if (permCode != null && hasPermission(permCode)) {
                 onSettingClick(idx, settingItem);
@@ -194,9 +199,27 @@ public class DeviceSettingFragment extends Fragment {
             case 6:
                 showInventoryTimePicker();
                 break;
+            case 8:
+                showVersionInfo();
+                break;
         }
 
 
+    }
+
+    private void showVersionInfo() {
+        try {
+            String buildDate = "";
+            try { buildDate = String.valueOf(BuildConfig.class.getField("BUILD_DATE").get(null)); } catch (Exception ignored) {}
+            if (buildDate == null || buildDate.trim().isEmpty()) buildDate = "-";
+            String msg = "APP(Build " + BuildConfig.VERSION_CODE + " " + buildDate + ")\n"
+                    + "VersionName " + BuildConfig.VERSION_NAME;
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("版本信息")
+                    .setMessage(msg)
+                    .setPositiveButton("确定", null)
+                    .show();
+        } catch (Exception ignored) {}
     }
     
     private void showInventoryTimePicker() {
