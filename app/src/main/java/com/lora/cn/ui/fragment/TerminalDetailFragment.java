@@ -96,6 +96,9 @@ public class TerminalDetailFragment extends Fragment {
     private final AtomicInteger maintenanceSeq = new AtomicInteger(0);
     private View layoutMaintenanceBlock;
     private View layoutLogsBlock;
+    private View tab_maintenance, tab_logs;
+
+
     private ImageView btnToggleMaintenance;
     private ImageView btnToggleLogs;
     private View maintenanceHeaderRow;
@@ -179,6 +182,10 @@ public class TerminalDetailFragment extends Fragment {
         btnHandleNow = v.findViewById(R.id.btn_handle_now);
         btnSetMaintenance = v.findViewById(R.id.btn_set_maintenance);
 
+        tab_maintenance = v.findViewById(R.id.tab_maintenance);
+        tab_logs = v.findViewById(R.id.tab_logs);
+
+
         layoutMaintenanceBlock = v.findViewById(R.id.layout_maintenance_block);
         layoutLogsBlock = v.findViewById(R.id.layout_logs_block);
         btnToggleMaintenance = v.findViewById(R.id.btn_toggle_maintenance);
@@ -198,6 +205,23 @@ public class TerminalDetailFragment extends Fragment {
             });
         }
         applyToggleUi();
+
+
+        tab_maintenance.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                layoutMaintenanceBlock.setVisibility(View.VISIBLE);
+                layoutLogsBlock.setVisibility(View.GONE);
+            }
+        });
+
+        tab_logs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                layoutMaintenanceBlock.setVisibility(View.GONE);
+                layoutLogsBlock.setVisibility(View.VISIBLE);
+            }
+        });
     }
 
     private void bindData() {
