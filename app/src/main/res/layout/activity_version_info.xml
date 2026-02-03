@@ -2,9 +2,56 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:paddingLeft="20dp"
-    android:paddingRight="20dp">
+    android:paddingRight="20dp"
+    android:background="@color/white"
+    android:orientation="vertical">
+
+    <!-- 标题栏 -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp">
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text=""
+            android:textSize="30dp"
+            android:textColor="@color/black"
+            android:textStyle="bold" />
+
+        <TextView
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="16dp"
+            android:padding="8dp"
+            android:text="版本信息"
+            android:textSize="30dp"
+            android:textColor="@color/black"/>
+
+        <TextView
+            android:id="@+id/btn_back"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/bg_back_4"
+            android:textSize="16dp"
+            android:gravity="center"
+            android:textColor="#383B40"
+            android:text="返回"
+            android:textStyle="bold"
+            android:layout_width="98dp"
+            android:layout_height="32dp" />
+
+    </RelativeLayout>
+
+
 
     <LinearLayout
         android:paddingTop="12dp"
@@ -17,19 +64,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <TextView
-            android:text="版本信息"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:textColor="@color/black"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
 
-        <View
-            android:layout_marginTop="8dp"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#AEAEAE" />
 
         <TextView
             android:id="@+id/tv_app_version"

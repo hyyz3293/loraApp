@@ -272,7 +272,7 @@
                 <TextView
                     android:id="@+id/terminal_detail_version"
                     android:layout_marginLeft="12dp"
-                    android:text=""
+                    android:text="Ver-20260203-1.7.7"
                     android:textStyle="bold"
                     android:textSize="14dp"
                     android:textColor="@color/black"
@@ -357,7 +357,7 @@
                 android:foreground="?attr/selectableItemBackgroundBorderless" />
             <View
                 android:layout_width="1dp"
-                android:layout_height="match_parent"
+                android:layout_height="20dp"
                 android:background="#AEAEAE" />
             <TextView
                 android:id="@+id/tab_logs"
@@ -370,7 +370,10 @@
                 android:clickable="true"
                 android:foreground="?attr/selectableItemBackgroundBorderless" />
         </LinearLayout>
-
+        <View
+            android:background="#AEAEAE"
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp" />
 
         <LinearLayout
             android:id="@+id/layout_maintenance_block"
@@ -412,7 +415,7 @@
                 <TextView
                     android:text="时间"
                     android:gravity="center_vertical"
-                    android:paddingLeft="5dp"
+
                     android:textColor="#333333"
                     android:textSize="12dp"
                     android:textStyle="bold"
@@ -546,7 +549,6 @@
                     android:id="@+id/log_time"
                     android:text="时间"
                     android:gravity="center_vertical"
-                    android:paddingLeft="5dp"
                     android:textColor="#333333"
                     android:textSize="12dp"
                     android:textStyle="bold"

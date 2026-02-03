@@ -206,12 +206,19 @@ public class TerminalDetailFragment extends Fragment {
         }
         applyToggleUi();
 
-
         tab_maintenance.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 layoutMaintenanceBlock.setVisibility(View.VISIBLE);
                 layoutLogsBlock.setVisibility(View.GONE);
+                if (tab_maintenance instanceof android.widget.TextView) {
+                    ((android.widget.TextView) tab_maintenance).setTextColor(android.graphics.Color.parseColor("#383B40"));
+                }
+                if (tab_logs instanceof android.widget.TextView) {
+                    ((android.widget.TextView) tab_logs).setTextColor(android.graphics.Color.parseColor("#8291A9"));
+                }
+                tab_maintenance.setSelected(true);
+                tab_logs.setSelected(false);
             }
         });
 
@@ -220,8 +227,22 @@ public class TerminalDetailFragment extends Fragment {
             public void onClick(View v) {
                 layoutMaintenanceBlock.setVisibility(View.GONE);
                 layoutLogsBlock.setVisibility(View.VISIBLE);
+                if (tab_logs instanceof android.widget.TextView) {
+                    ((android.widget.TextView) tab_logs).setTextColor(android.graphics.Color.parseColor("#383B40"));
+                }
+                if (tab_maintenance instanceof android.widget.TextView) {
+                    ((android.widget.TextView) tab_maintenance).setTextColor(android.graphics.Color.parseColor("#8291A9"));
+                }
+                tab_logs.setSelected(true);
+                tab_maintenance.setSelected(false);
             }
         });
+        if (tab_maintenance instanceof android.widget.TextView && tab_logs instanceof android.widget.TextView) {
+            ((android.widget.TextView) tab_maintenance).setTextColor(android.graphics.Color.parseColor("#383B40"));
+            ((android.widget.TextView) tab_logs).setTextColor(android.graphics.Color.parseColor("#8291A9"));
+        }
+        tab_maintenance.setSelected(true);
+        tab_logs.setSelected(false);
     }
 
     private void bindData() {
