@@ -2463,6 +2463,11 @@ public class MainActivity extends AppCompatActivity {
                 try { p.release(); } catch (Exception ignored) {}
                 if (alertPlayer == p) alertPlayer = null;
             });
+            mp.setOnErrorListener((p, what, extra) -> {
+                try { p.release(); } catch (Exception ignored) {}
+                if (alertPlayer == p) alertPlayer = null;
+                return true;
+            });
             mp.prepare();
             mp.start();
             alertPlayer = mp;
@@ -2471,7 +2476,7 @@ public class MainActivity extends AppCompatActivity {
             ringStopRunnable = new java.lang.Runnable() {
                 @Override public void run() { stopAlertRinging(); }
             };
-            ringHandler.postDelayed(ringStopRunnable, 10000);
+            ringHandler.postDelayed(ringStopRunnable, 30000);
         } catch (Exception ignored) {}
     }
     public void stopAlertRinging() {

@@ -80,6 +80,16 @@ public class TerminalStatusAdapter extends BaseQuickAdapter<TerminalStatus, Quic
         view.setAlpha(1f);
     }
 
+    public void onViewRecycled(@NonNull QuickViewHolder holder) {
+        View icon = holder.getView(R.id.iv_status_icon);
+        View title = holder.getView(R.id.tv_status_title);
+        View count = holder.getView(R.id.tv_status_count);
+        if (icon != null) stopFlashing(icon);
+        if (title != null) stopFlashing(title);
+        if (count != null) stopFlashing(count);
+        super.onViewRecycled(holder);
+    }
+
     @NonNull
     @Override
     protected QuickViewHolder onCreateViewHolder(@NonNull Context context, @NonNull ViewGroup viewGroup, int i) {

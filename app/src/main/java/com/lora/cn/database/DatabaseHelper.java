@@ -972,7 +972,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('clean_terminal', '清理终端', 'clean', '清理终端模块', 1, NULL, 0, 3)");
+                ") VALUES ('clean_terminal', '清点终端', 'clean', '清点终端模块', 1, NULL, 0, 3)");
 
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
@@ -1060,7 +1060,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
-                ") VALUES ('clean_export', '导出', 'clean', '导出清理数据', 1, 3, 1, 1)");
+                ") VALUES ('clean_export', '导出', 'clean', '导出清点数据', 1, 3, 1, 1)");
 
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
                 COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +

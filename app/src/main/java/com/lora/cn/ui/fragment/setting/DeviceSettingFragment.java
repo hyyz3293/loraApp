@@ -19,7 +19,6 @@ import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.entity.User;
-import com.lora.cn.ui.activity.VersionInfoActivity;
 import com.lora.cn.ui.adapter.TerminalSettingDeviceAdapter;
 import com.lora.cn.ui.fragment.setting.device.IpConfigFragment;
 import com.lora.cn.ui.fragment.setting.device.WifiSettingFragment;

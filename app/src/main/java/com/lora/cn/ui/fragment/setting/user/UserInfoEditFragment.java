@@ -94,8 +94,8 @@ public class UserInfoEditFragment extends Fragment {
         
         // 设置性别Spinner
         String[] genderOptions = {"男", "女"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), R.layout.spinner_item_12dp, genderOptions);
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), R.layout.spinner_item_16dp, genderOptions);
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_16dp);
         spGender.setAdapter(adapter);
     }
 
