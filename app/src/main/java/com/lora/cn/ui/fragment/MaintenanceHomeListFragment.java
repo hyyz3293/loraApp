@@ -175,7 +175,6 @@ public class MaintenanceHomeListFragment extends Fragment {
             }
         });
 
-        loadList();
         return v;
     }
 
@@ -189,10 +188,19 @@ public class MaintenanceHomeListFragment extends Fragment {
         mainHandler = null;
     }
 
+    private boolean firstVisible = true;
+    private final Runnable deferLoadRunnable = () -> {
+        if (isAdded()) loadList();
+    };
+
     @Override
     public void onResume() {
         super.onResume();
-        loadList();
+        if (mainHandler == null) return;
+        try { mainHandler.removeCallbacks(deferLoadRunnable); } catch (Exception ignored) {}
+        long delay = firstVisible ? 400L : 200L;
+        firstVisible = false;
+        mainHandler.postDelayed(deferLoadRunnable, delay);
     }
 
     private void loadList() {
@@ -206,21 +214,24 @@ public class MaintenanceHomeListFragment extends Fragment {
             } catch (Exception e) {
                 list = null;
             }
-            List<MaintenanceInfo> finalList = list;
+            List<MaintenanceInfo> filtered = null;
+            if (list != null) {
+                try { filtered = filterByStatusAndTime(list); } catch (Exception ignored) {}
+                try { autoDispatchDue(list); } catch (Exception ignored) {}
+            }
+            List<MaintenanceInfo> finalFiltered = filtered;
             mainHandler.post(() -> {
                 if (!isAdded()) return;
                 if (token != loadSeq.get()) return;
-                if (finalList == null) {
+                if (finalFiltered == null) {
                     Toast.makeText(requireContext(), "加载维护列表失败", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                List<MaintenanceInfo> filtered = filterByStatusAndTime(finalList);
                 allFiltered.clear();
-                allFiltered.addAll(filtered);
+                allFiltered.addAll(finalFiltered);
                 currentPage = 0;
                 currentDisplay.clear();
                 submitCurrentPage();
-                autoDispatchDue(filtered);
                 if (swipe != null) {
                     swipe.finishRefresh(true);
                     swipe.setNoMoreData(false);
@@ -270,7 +281,6 @@ public class MaintenanceHomeListFragment extends Fragment {
         currentDisplay.clear();
         currentDisplay.addAll(allFiltered.subList(0, end));
         adapter.submitList(new ArrayList<>(currentDisplay));
-        adapter.notifyDataSetChanged();
     }
 
     private void loadMorePage() {
@@ -310,7 +320,6 @@ public class MaintenanceHomeListFragment extends Fragment {
                 List<MaintenanceInfo> more = new ArrayList<>(allFiltered.subList(safeNextStart, end));
                 currentDisplay.addAll(more);
                 adapter.submitList(new ArrayList<>(currentDisplay));
-                adapter.notifyDataSetChanged();
                 currentPage++;
             } catch (Exception ignored) {
                 if (swipe != null) swipe.finishLoadMore(false);
@@ -322,8 +331,7 @@ public class MaintenanceHomeListFragment extends Fragment {
 
     private void autoDispatchDue(List<MaintenanceInfo> list) {
         if (list == null || list.isEmpty()) return;
-        MainActivity a = (MainActivity) getActivity();
-        MqttPacketsClient client = a != null ? a.getMqttClient() : null;
+        MqttPacketsClient client = MqttPacketsClient.getShared();
         if (client == null) return;
         DownlinkMessageHelper helper = new DownlinkMessageHelper(client);
         for (MaintenanceInfo mi : list) {

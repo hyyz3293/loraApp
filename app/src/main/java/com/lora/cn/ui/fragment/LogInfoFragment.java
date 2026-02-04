@@ -77,11 +77,26 @@ public class LogInfoFragment extends Fragment {
     }
 
     @Nullable
+    private boolean firstVisible = true;
+    private final Runnable deferInitRunnable = () -> {
+        if (isAdded()) initLogData();
+    };
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_log_info, container, false);
         initViews(view);
-        initLogData();
+        if (firstVisible) {
+            firstVisible = false;
+            if (mainHandler != null) mainHandler.postDelayed(deferInitRunnable, 400);
+        } else {
+            if (mainHandler != null) {
+                try { mainHandler.removeCallbacks(deferInitRunnable); } catch (Exception ignored) {}
+                mainHandler.postDelayed(deferInitRunnable, 200);
+            } else {
+                initLogData();
+            }
+        }
         return view;
     }
 

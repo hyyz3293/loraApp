@@ -54,6 +54,10 @@ public class MaintenanceSettingListFragment extends Fragment {
     private ExecutorService ioExecutor;
     private Handler mainHandler;
     private final AtomicInteger loadSeq = new AtomicInteger(0);
+    private boolean firstVisible = true;
+    private final Runnable deferLoadRunnable = () -> {
+        try { loadList(); } catch (Exception ignored) {}
+    };
     private final Runnable dueRefreshRunnable = () -> {
         try { loadList(); } catch (Exception ignored) {}
     };
@@ -102,7 +106,6 @@ public class MaintenanceSettingListFragment extends Fragment {
             });
         }
 
-        loadList();
         return v;
     }
 
@@ -111,6 +114,7 @@ public class MaintenanceSettingListFragment extends Fragment {
         super.onDestroyView();
         try {
             if (mainHandler != null) mainHandler.removeCallbacks(dueRefreshRunnable);
+            if (mainHandler != null) mainHandler.removeCallbacks(deferLoadRunnable);
             if (ioExecutor != null) ioExecutor.shutdownNow();
         } catch (Exception ignored) {}
         ioExecutor = null;
@@ -132,6 +136,7 @@ public class MaintenanceSettingListFragment extends Fragment {
         } catch (Exception ignored) {}
         try {
             if (mainHandler != null) mainHandler.removeCallbacks(dueRefreshRunnable);
+            if (mainHandler != null) mainHandler.removeCallbacks(deferLoadRunnable);
         } catch (Exception ignored) {}
         super.onStop();
     }
@@ -139,7 +144,11 @@ public class MaintenanceSettingListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        loadList();
+        if (mainHandler == null) return;
+        try { mainHandler.removeCallbacks(deferLoadRunnable); } catch (Exception ignored) {}
+        long delay = firstVisible ? 400L : 200L;
+        firstVisible = false;
+        mainHandler.postDelayed(deferLoadRunnable, delay);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

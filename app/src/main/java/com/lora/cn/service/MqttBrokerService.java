@@ -40,6 +40,14 @@ public class MqttBrokerService extends Service {
     private android.os.Handler tickHandler;
     private final java.util.concurrent.atomic.AtomicReference<String> lastFireKey = new java.util.concurrent.atomic.AtomicReference<>("");
     private android.os.Handler maintenanceEvaluateHandler;
+    private com.lora.cn.network.MqttPacketsClient mqttClient;
+    private android.os.Handler mainHandler;
+    private final java.util.concurrent.atomic.AtomicBoolean mqttConnectInFlight = new java.util.concurrent.atomic.AtomicBoolean(false);
+    private int mqttConnectRetry = 0;
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private final java.util.concurrent.ConcurrentHashMap<String, SleepCycleState> sleepCycleStateByDev = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, Long> lastUplinkStoreByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final String ACTION_MQTT_CLIENT_STATE = "com.lora.cn.MQTT_CLIENT_STATE";
     private final Runnable maintenanceEvaluateRunnable = new Runnable() {
         @Override public void run() {
             try {
@@ -85,6 +93,8 @@ public class MqttBrokerService extends Service {
         brokerExecutor = Executors.newSingleThreadExecutor();
         tickHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         maintenanceEvaluateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        ioExecutor = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -101,7 +111,7 @@ public class MqttBrokerService extends Service {
             maintenanceEvaluateHandler.removeCallbacks(maintenanceEvaluateRunnable);
             maintenanceEvaluateHandler.postDelayed(maintenanceEvaluateRunnable, 1000);
         }
-        //startTicking();
+        startUplinkSubscription();
         return START_STICKY;
     }
 
@@ -121,6 +131,7 @@ public class MqttBrokerService extends Service {
                 maintenanceEvaluateHandler = null;
             }
         } catch (Exception ignored) {}
+        try { broadcastClientState("stopped"); } catch (Exception ignored) {}
         super.onDestroy();
     }
 
@@ -238,6 +249,40 @@ public class MqttBrokerService extends Service {
             return String.join(",", ips);
         } catch (Exception ignored) {
             return "";
+        }
+    }
+
+    private static class PendingUplink {
+        String devEui;
+        String devAddr;
+        String hex;
+        String dr;
+        String time;
+        String freq;
+        String rssi;
+        String snr;
+        String fport;
+        String fcnt;
+        PendingUplink(String devEui, String devAddr, String hex, String dr, String time, String freq, String rssi, String snr, String fport, String fcnt) {
+            this.devEui = devEui;
+            this.devAddr = devAddr;
+            this.hex = hex;
+            this.dr = dr;
+            this.time = time;
+            this.freq = freq;
+            this.rssi = rssi;
+            this.snr = snr;
+            this.fport = fport;
+            this.fcnt = fcnt;
+        }
+    }
+
+    private static class SleepCycleState {
+        long cycleStartMs;
+        boolean firstDropped;
+        SleepCycleState(long cycleStartMs, boolean firstDropped) {
+            this.cycleStartMs = cycleStartMs;
+            this.firstDropped = firstDropped;
         }
     }
 
@@ -361,6 +406,421 @@ public class MqttBrokerService extends Service {
                         //db.addLog(li);
                     } catch (Exception ignored) {}
                 }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private boolean isLocalPortOpen(int port) {
+        try {
+            java.net.Socket s = new java.net.Socket();
+            s.connect(new java.net.InetSocketAddress("127.0.0.1", port > 0 ? port : 1883), 200);
+            try { s.close(); } catch (Exception ignored) {}
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void startUplinkSubscription() {
+        try {
+            if (!mqttConnectInFlight.compareAndSet(false, true)) {
+                return;
+            }
+            try { broadcastClientState("connecting"); } catch (Exception ignored) {}
+            if (mqttClient == null) mqttClient = com.lora.cn.network.MqttPacketsClient.getShared();
+            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+            boolean localEnabled = sp.getBoolean("mqtt_local_broker_enabled", true);
+            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
+            String brokerUrl = localEnabled ? ("tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883)) : sp.getString("mqtt_broker_url", "");
+            boolean readyFlag = sp.getBoolean("mqtt_local_broker_ready", false);
+            if (localEnabled && !readyFlag && !isLocalPortOpen(localPort)) {
+                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
+                mqttConnectInFlight.set(false);
+                mainHandler.postDelayed(this::startUplinkSubscription, delay);
+                return;
+            }
+            String cachedId = sp.getString("mqtt_client_id_service", "");
+            if (cachedId == null || cachedId.trim().isEmpty()) {
+                String gen = "android-service-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+                sp.put("mqtt_client_id_service", gen);
+                cachedId = gen;
+            }
+            final String clientId = cachedId;
+            String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
+            String username = sp.getString("mqtt_username", "");
+            String password = sp.getString("mqtt_password", "");
+            boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
+            broadcastClientState("connecting");
+            mqttClient.connectAndSubscribe(getApplicationContext(), brokerUrl, clientId, topicFilter,
+                    username, password, trustAll,
+                    new com.lora.cn.network.GatewayPacketsClient.PacketsListener() {
+                        @Override
+                        public void onStatus(String msg) {
+                            try {
+                                if (msg != null && (msg.contains("连接成功") || msg.contains("订阅成功"))) {
+                                    mqttConnectRetry = 0;
+                                    mqttConnectInFlight.set(false);
+                                    broadcastClientState("connected");
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                        @Override
+                        public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {
+                            try {
+                                int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+                                long intervalMs = Math.max(1L, Math.min(1440L, (long) intervalMin)) * 60_000L;
+                                String currentTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                                if (records != null) {
+                                    for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
+                                        handleUplinkBySleepCycleService(r, currentTime, intervalMs);
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                        @Override
+                        public void onError(String error) {
+                            try {
+                                mqttConnectInFlight.set(false);
+                                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
+                                if (mqttClient != null) {
+                                    mqttClient.disconnect();
+                                }
+                                broadcastClientState("error");
+                                mainHandler.postDelayed(MqttBrokerService.this::startUplinkSubscription, delay);
+                            } catch (Exception ignored) {}
+                        }
+                        @Override
+                        public void onComplete() {
+                            try {
+                                mqttConnectInFlight.set(false);
+                                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
+                                broadcastClientState("disconnected");
+                                mainHandler.postDelayed(MqttBrokerService.this::startUplinkSubscription, delay);
+                            } catch (Exception ignored) {}
+                        }
+                    });
+        } catch (Exception e) {
+            try {
+                mqttConnectInFlight.set(false);
+                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
+                broadcastClientState("error");
+                mainHandler.postDelayed(this::startUplinkSubscription, delay);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private String normalizeDeviceKey(String devEui, String hex) {
+        String k = devEui != null ? devEui.trim() : "";
+        if (!k.isEmpty() && !"-".equals(k) && !" -".equals(k)) return k;
+        try {
+            com.lora.cn.utils.LoRaFrameParser.ParsedFrame f = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+            String did = f != null ? f.deviceId : null;
+            if (did != null && !did.trim().isEmpty()) return did.trim();
+        } catch (Exception ignored) {}
+        return k.isEmpty() ? (hex == null ? "" : hex) : k;
+    }
+
+    private void broadcastClientState(String state) {
+        try {
+            android.content.Intent i = new android.content.Intent(ACTION_MQTT_CLIENT_STATE);
+            i.putExtra("state", state);
+            sendBroadcast(i);
+        } catch (Exception ignored) {}
+    }
+
+    private void handleUplinkBySleepCycleService(com.lora.cn.network.GatewayPacketsClient.PacketRecord r, String currentTime, long intervalMs) {
+        if (r == null) return;
+        String devEui = r.deviceId != null ? r.deviceId : "-";
+        String devAddr = r.devAddr != null ? r.devAddr : "-";
+        String hex = r.payloadHex != null ? r.payloadHex : "-";
+        String dr = r.dr != null ? r.dr : "-";
+        String time = r.time != null ? r.time : currentTime;
+        String freq = r.freq != null ? String.valueOf(r.freq) : "-";
+        String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
+        String snr = r.snr != null ? String.valueOf(r.snr) : "-";
+        String fport = r.fport != null ? String.valueOf(r.fport) : "-";
+        String fcnt = r.fcnt != null ? String.valueOf(r.fcnt) : "-";
+        PendingUplink p = new PendingUplink(devEui, devAddr, hex, dr, time, freq, rssi, snr, fport, fcnt);
+        String key = normalizeDeviceKey(devEui, hex);
+        long nowMs = System.currentTimeMillis();
+        SleepCycleState st = sleepCycleStateByDev.get(key);
+        boolean newCycle = st == null || nowMs - st.cycleStartMs >= Math.max(1000L, intervalMs);
+        if (newCycle) {
+            st = new SleepCycleState(nowMs, false);
+            sleepCycleStateByDev.put(key, st);
+        }
+        if (!st.firstDropped) {
+            st.firstDropped = true;
+            if (!"-".equals(hex) && hex != null && hex.length() > 0) {
+                try {
+                    if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                    final String t = time;
+                    final String h = hex;
+                    ioExecutor.execute(() -> {
+                        try { onUplinkDataEventService(t, h); } catch (Exception ignored) {}
+                    });
+                } catch (Exception ignored) {}
+            }
+            return;
+        }
+        processUplinkPacketService(p);
+    }
+
+    private void processUplinkPacketService(PendingUplink p) {
+        if (p == null) return;
+        String devEui = p.devEui;
+        String hex = p.hex;
+        String time = p.time;
+        if (!"-".equals(hex)) {
+            long nowMs = System.currentTimeMillis();
+            boolean allowStore = true;
+            if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
+                Long last = lastUplinkStoreByDevMs.get(devEui);
+                if (last != null && nowMs - last < 2000) {
+                    allowStore = false;
+                }
+            }
+            if (allowStore) {
+                if (devEui != null && !"".equals(devEui) && !" -".equals(devEui)) {
+                    lastUplinkStoreByDevMs.put(devEui, nowMs);
+                }
+                if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+                final String broadcastTime = time;
+                final String broadcastHex = hex;
+                final String devEuiForLog = devEui;
+                ioExecutor.execute(() -> {
+                    long result = -1L;
+                    try { result = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).addUplinkLog(broadcastHex); } catch (Exception ignored) {}
+                    try {
+                        org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.events.UplinkDataEvent(broadcastTime, broadcastHex));
+                    } catch (Exception ignored) {}
+                });
+            }
+        }
+    }
+
+    private void onUplinkDataEventService(String time, String hex) {
+        try {
+            com.lora.cn.database.DatabaseHelper db = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext());
+            com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+            if (frame == null) return;
+            if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
+            try {
+                if (!db.isTerminalExists(frame.deviceId)) return;
+            } catch (Exception ignored) { return; }
+            int latestTimedUnsentMins = -1;
+            java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allMForDevice = null;
+            java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> dueMaint = new java.util.ArrayList<>();
+            try {
+                allMForDevice = db.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
+                java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allM = allMForDevice;
+                if (allM != null) {
+                    long now = System.currentTimeMillis();
+                    java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                    java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                    java.text.SimpleDateFormat sdf3 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.getDefault());
+                    java.text.SimpleDateFormat sdf4 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault());
+                    int latestUnsentMins = -1;
+                    long latestUnsentTs = -1L;
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : allM) {
+                        if (mi == null) continue;
+                        if (mi.getStatus() != 0) continue;
+                        String c = mi.getContent();
+                        if ("主动维护".equals(c)) continue;
+                        if (mi.getSentFlag() == 1 || !com.blankj.utilcode.util.StringUtils.isEmpty(mi.getSentTime())) continue;
+                        String ct = mi.getCreateTime();
+                        if (ct == null || ct.trim().isEmpty()) continue;
+                        try {
+                            java.util.Date dt = null;
+                            try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
+                            if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
+                            if (dt == null) { try { dt = sdf3.parse(ct.trim()); } catch (Exception ignored) {} }
+                            if (dt == null) { try { dt = sdf4.parse(ct.trim()); } catch (Exception ignored) {} }
+                            if (dt == null) continue;
+                            long ts = dt.getTime();
+                            if (ts > now) continue;
+                            java.util.Calendar cal = java.util.Calendar.getInstance();
+                            cal.setTime(dt);
+                            int mins = Math.max(0, Math.min(1440, cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)));
+                            if (ts >= latestUnsentTs) {
+                                latestUnsentTs = ts;
+                                latestUnsentMins = mins;
+                            }
+                            dueMaint.add(mi);
+                        } catch (Exception ignored) {}
+                    }
+                    if (latestUnsentMins >= 0) latestTimedUnsentMins = latestUnsentMins;
+                }
+            } catch (Exception ignored) {}
+            long nowDedup = System.currentTimeMillis();
+            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+            com.lora.cn.network.MqttPacketsClient client = com.lora.cn.network.MqttPacketsClient.getShared();
+            com.lora.cn.utils.DownlinkMessageHelper helper = new com.lora.cn.utils.DownlinkMessageHelper(client);
+            java.util.List<com.lora.cn.ui.model.Terminal> terms = db.getAllTerminals();
+            int depId = 0;
+            int cartId = 0;
+            boolean clearActivePending = false;
+            boolean maintenanceTouched = false;
+            try {
+                if (terms != null) {
+                    for (com.lora.cn.ui.model.Terminal t : terms) {
+                        if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                            depId = (int) Math.max(0, Math.min(255, t.getDepartmentId()));
+                            cartId = (int) Math.max(0, Math.min(255, t.getRoomId()));
+                            clearActivePending = t.isMaintenanceClearPending();
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+            boolean maintenanceNeeded = false;
+            boolean timedMaintenanceNeeded = false;
+            try {
+                if (frame.statusFlags != null) {
+                    maintenanceNeeded = frame.statusFlags.contains(com.lora.cn.utils.LoRaFrameParser.DeviceStatusFlag.MAINTENANCE_NEEDED);
+                    timedMaintenanceNeeded = frame.statusFlags.contains(com.lora.cn.utils.LoRaFrameParser.DeviceStatusFlag.TIMED_MAINTENANCE_NEEDED);
+                }
+            } catch (Exception ignored) {}
+            java.util.List<com.lora.cn.ui.model.MaintenanceInfo> existingAll = allMForDevice != null ? allMForDevice : db.getMaintenanceRecordsByTerminal(frame.deviceId, 0);
+            if (maintenanceNeeded) {
+                try {
+                    try { db.updateTerminalMaintenanceState(frame.deviceId, true, System.currentTimeMillis()); } catch (Exception ignored) {}
+                    boolean existsPendingAuto = false;
+                    if (existingAll != null) {
+                        for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
+                            String c = x != null ? x.getContent() : null;
+                            String hu = x != null ? x.getHandleUser() : null;
+                            String ht = x != null ? x.getHandleTime() : null;
+                            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                            if ("主动维护".equals(c) && unhandled) {
+                                existsPendingAuto = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!existsPendingAuto) {
+                        String name = "";
+                        String groups = "";
+                        if (terms != null) {
+                            for (com.lora.cn.ui.model.Terminal t : terms) {
+                                if (t != null && frame.deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                                    name = t.getTerminalName();
+                                    groups = t.getGroupNamesText();
+                                    break;
+                                }
+                            }
+                        }
+                        com.lora.cn.ui.model.MaintenanceInfo mi = new com.lora.cn.ui.model.MaintenanceInfo();
+                        mi.setTerminalId(frame.deviceId);
+                        mi.setTerminalName(name == null ? "" : name);
+                        mi.setTerminalGroup(groups == null ? "" : groups);
+                        mi.setStatus(0);
+                        mi.setContent("主动维护");
+                        long uid = sp.getLong("current_user_id", -1);
+                        String uname = sp.getString("current_user_name", "");
+                        mi.setCreateUserId(uid > 0 ? uid : 0L);
+                        mi.setCreateUser(uname == null ? "" : uname);
+                        mi.setCreateTime(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
+                        try { db.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
+                        maintenanceTouched = true;
+                    }
+                } catch (Exception ignored) {}
+            } else {
+                try {
+                    try { db.updateTerminalMaintenanceState(frame.deviceId, false, System.currentTimeMillis()); } catch (Exception ignored) {}
+                    if (existingAll != null) {
+                        String autoUser = "系统自动";
+                        String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                        String autoRemark = "主动维护清除：自动标记已维护";
+                        for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
+                            if (x == null) continue;
+                            if (x.getStatus() != 0) continue;
+                            String c = x.getContent();
+                            if (!(("主动维护".equals(c)) || (c != null && c.startsWith("设备维护：")))) continue;
+                            String hu = x.getHandleUser();
+                            String ht = x.getHandleTime();
+                            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                            if (!unhandled) continue;
+                            try { db.updateMaintenanceHandled(x.getId(), 0L, autoUser, autoTime, autoRemark); } catch (Exception ignored2) {}
+                            maintenanceTouched = true;
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+            if (!timedMaintenanceNeeded) {
+                try {
+                    if (existingAll != null) {
+                        String autoUser = "系统自动";
+                        String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                        String autoRemark = "定时维护清除：自动标记已维护";
+                        long now2 = System.currentTimeMillis();
+                        java.text.SimpleDateFormat sdf1 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault());
+                        java.text.SimpleDateFormat sdf2 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+                        java.text.SimpleDateFormat sdf3 = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.getDefault());
+                        java.text.SimpleDateFormat sdf4 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault());
+                        for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
+                            if (x == null) continue;
+                            if (x.getStatus() != 0) continue;
+                            String c = x.getContent();
+                            if ("主动维护".equals(c) || (c != null && c.startsWith("设备维护："))) continue;
+                            String hu = x.getHandleUser();
+                            String ht = x.getHandleTime();
+                            boolean unhandled = (hu == null || hu.trim().isEmpty()) && (ht == null || ht.trim().isEmpty());
+                            if (!unhandled) continue;
+                            String ct = x.getCreateTime();
+                            boolean due = true;
+                            if (ct != null && !ct.trim().isEmpty()) {
+                                try {
+                                    java.util.Date dt = null;
+                                    try { dt = sdf1.parse(ct.trim()); } catch (Exception ignored) {}
+                                    if (dt == null) { try { dt = sdf2.parse(ct.trim()); } catch (Exception ignored) {} }
+                                    if (dt == null) { try { dt = sdf3.parse(ct.trim()); } catch (Exception ignored) {} }
+                                    if (dt == null) { try { dt = sdf4.parse(ct.trim()); } catch (Exception ignored) {} }
+                                    if (dt != null) due = dt.getTime() <= now2;
+                                } catch (Exception ignored) {}
+                            }
+                            if (!due) continue;
+                            try { db.updateMaintenanceHandled(x.getId(), 0L, autoUser, autoTime, autoRemark); } catch (Exception ignored2) {}
+                            maintenanceTouched = true;
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+            boolean need8001ByConfig = false;
+            try { need8001ByConfig = helper.isNeedDownlink8001(frame); } catch (Exception ignored) {}
+            boolean timedMaintenanceDue = !dueMaint.isEmpty();
+            boolean shouldSend = clearActivePending || timedMaintenanceDue || need8001ByConfig;
+            if (!shouldSend) {
+                if (maintenanceTouched) {
+                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("维护刷新:" + frame.deviceId)); } catch (Exception ignored) {}
+                }
+                return;
+            }
+            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+            int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
+            int h = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_hour", 7);
+            int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
+            int fallbackMins = Math.max(0, Math.min(1440, h * 60 + m));
+            int clearMask = (timedMaintenanceDue ? (1 << 1) : 0) | (clearActivePending ? (1 << 2) : 0);
+            try {
+                helper.sendDownlink8001(frame.deviceId, 1, 1, depId, cartId, 0, clearMask, normalizedInterval, 1, new int[]{fallbackMins}, true);
+                if (timedMaintenanceDue) {
+                    String sentTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+                    for (com.lora.cn.ui.model.MaintenanceInfo mi : dueMaint) {
+                        try { db.updateMaintenanceSent(mi.getId(), sentTime); } catch (Exception ignored) {}
+                    }
+                    maintenanceTouched = true;
+                }
+            } catch (Exception ignored) {}
+            if (clearActivePending) {
+                try { db.setTerminalMaintenanceClearPending(frame.deviceId, false); } catch (Exception ignored) {}
+            }
+            if (maintenanceTouched) {
+                try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("维护刷新:" + frame.deviceId)); } catch (Exception ignored) {}
             }
         } catch (Exception ignored) {}
     }

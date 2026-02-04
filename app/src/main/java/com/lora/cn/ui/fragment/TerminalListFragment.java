@@ -73,10 +73,21 @@ public class TerminalListFragment extends Fragment {
     private android.os.Handler autoRefreshHandler = new android.os.Handler(android.os.Looper.getMainLooper());
     private java.util.concurrent.ExecutorService ioExecutor;
     private final java.util.concurrent.atomic.AtomicInteger loadSeq = new java.util.concurrent.atomic.AtomicInteger();
+    private boolean firstVisible = true;
+    private final Runnable resumeRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                refreshTerminalsAndStatus();
+                evaluateAlertOverlay();
+            } catch (Exception ignored) {}
+        }
+    };
     private final Runnable terminalRefreshDebounceRunnable = new Runnable() {
         @Override
         public void run() {
             try {
+                if (!isResumed()) return;
                 refreshTerminalsAndStatus();
                 evaluateAlertOverlay();
                 if (adapter != null) adapter.notifyDataSetChanged();
@@ -178,6 +189,7 @@ public class TerminalListFragment extends Fragment {
         ivErrorClose = view.findViewById(R.id.error_close);
         tvErrorVoiceNo = view.findViewById(R.id.error_voice_no);
         tvErrorComplete = view.findViewById(R.id.error_complte);
+        ensureTerminalListAdapter();
 //        btnAlertPending = view.findViewById(R.id.btn_alert_pending);
 //        tvAlertCount = view.findViewById(R.id.tv_alert_count);
 
@@ -524,19 +536,31 @@ public class TerminalListFragment extends Fragment {
     public void onResume() {
         super.onResume();
         try {
-            // 返回页面时刷新终端列表和状态统计，确保展示最新添加的设备
-            refreshTerminalsAndStatus();
+            autoRefreshHandler.removeCallbacks(resumeRefreshRunnable);
+            long delay = firstVisible ? 500L : 250L;
+            firstVisible = false;
+            autoRefreshHandler.postDelayed(resumeRefreshRunnable, delay);
             autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
             autoRefreshHandler.postDelayed(autoRefreshRunnable, 120000);
-            evaluateAlertOverlay();
         } catch (Exception e) {
             Log.e(TAG, "onResume 刷新终端列表失败", e);
         }
     }
 
+    @Override
+    public void onPause() {
+        try {
+            autoRefreshHandler.removeCallbacks(resumeRefreshRunnable);
+            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
+            autoRefreshHandler.removeCallbacks(terminalRefreshDebounceRunnable);
+        } catch (Exception ignored) {}
+        super.onPause();
+    }
+
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
         try {
+            if (!isResumed()) return;
             autoRefreshHandler.removeCallbacks(terminalRefreshDebounceRunnable);
             autoRefreshHandler.postDelayed(terminalRefreshDebounceRunnable, 1000);
         } catch (Exception ignored) {}
@@ -795,6 +819,11 @@ public class TerminalListFragment extends Fragment {
         if (terminalRecycle == null) return;
         GridLayoutManager terminalLayoutManager = new GridLayoutManager(getContext(), 4);
         terminalRecycle.setLayoutManager(terminalLayoutManager);
+        try {
+            terminalRecycle.setHasFixedSize(true);
+            terminalRecycle.setItemAnimator(null);
+            terminalRecycle.setNestedScrollingEnabled(false);
+        } catch (Throwable ignored) {}
         adapter = new TerminalAdapter();
         adapter.setOnFavoriteClickListener((terminal, isFavorite) -> {
             if (terminal == null || TextUtils.isEmpty(terminal.getTerminalId())) return;
@@ -1080,6 +1109,7 @@ public class TerminalListFragment extends Fragment {
     public void onDestroy() {
         try {
             autoRefreshHandler.removeCallbacks(terminalRefreshDebounceRunnable);
+            autoRefreshHandler.removeCallbacks(resumeRefreshRunnable);
         } catch (Exception ignored) {}
         if (ioExecutor != null) {
             try {

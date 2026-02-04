@@ -59,6 +59,13 @@ public class TerminalStatusListFragment extends Fragment {
     private java.util.concurrent.ExecutorService ioExecutor;
     private android.os.Handler mainHandler;
     private final java.util.concurrent.atomic.AtomicInteger loadSeq = new java.util.concurrent.atomic.AtomicInteger();
+    private boolean firstVisible = true;
+    private final Runnable resumeRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try { refreshTerminals(); } catch (Exception ignored) {}
+        }
+    };
     private final Runnable autoRefreshRunnable = new Runnable() {
         @Override
         public void run() {
@@ -87,6 +94,7 @@ public class TerminalStatusListFragment extends Fragment {
         }
 
         initViews(view);
+        initStatusBar();
 
 
         if (hasPermission("terminal_list")) {
@@ -102,6 +110,8 @@ public class TerminalStatusListFragment extends Fragment {
     public void onDestroyView() {
         try {
             if (ioExecutor != null) ioExecutor.shutdownNow();
+            autoRefreshHandler.removeCallbacks(resumeRefreshRunnable);
+            autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
         } catch (Exception ignored) {}
         ioExecutor = null;
         super.onDestroyView();
@@ -218,6 +228,11 @@ public class TerminalStatusListFragment extends Fragment {
         androidx.recyclerview.widget.GridLayoutManager terminalLayoutManager = new androidx.recyclerview.widget.GridLayoutManager(getContext(), 4);
         terminalRecycle.setLayoutManager(terminalLayoutManager);
         adapter = new TerminalAdapter();
+        try {
+            terminalRecycle.setHasFixedSize(true);
+            terminalRecycle.setItemAnimator(null);
+            terminalRecycle.setNestedScrollingEnabled(false);
+        } catch (Throwable ignored) {}
         terminalRecycle.setAdapter(adapter);
         adapter.setOnItemClickListener((adapter1, v1, position) -> {
             if (hasPermission("terminal_detail")) {
@@ -233,6 +248,11 @@ public class TerminalStatusListFragment extends Fragment {
         GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 6);
         rvTerminalStatus.setLayoutManager(gridLayoutManager);
         terminalStatusAdapter = new TerminalStatusAdapter();
+        try {
+            rvTerminalStatus.setHasFixedSize(true);
+            rvTerminalStatus.setItemAnimator(null);
+            rvTerminalStatus.setNestedScrollingEnabled(false);
+        } catch (Throwable ignored) {}
         rvTerminalStatus.setAdapter(terminalStatusAdapter);
         terminalStatusAdapter.setOnItemClickListener((adapter1, view1, position1) -> {
             TerminalStatus item = (TerminalStatus) terminalStatusAdapter.getItem(position1);
@@ -516,7 +536,10 @@ public class TerminalStatusListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        refreshTerminals();
+        autoRefreshHandler.removeCallbacks(resumeRefreshRunnable);
+        long delay = firstVisible ? 500L : 250L;
+        firstVisible = false;
+        autoRefreshHandler.postDelayed(resumeRefreshRunnable, delay);
         autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
         autoRefreshHandler.postDelayed(autoRefreshRunnable, 120000);
     }
@@ -524,6 +547,7 @@ public class TerminalStatusListFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
+        autoRefreshHandler.removeCallbacks(resumeRefreshRunnable);
         autoRefreshHandler.removeCallbacks(autoRefreshRunnable);
     }
 

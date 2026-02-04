@@ -96,6 +96,20 @@ public class TerminalDetailFragment extends Fragment {
     private final AtomicInteger bindSeq = new AtomicInteger(0);
     private final AtomicInteger logsSeq = new AtomicInteger(0);
     private final AtomicInteger maintenanceSeq = new AtomicInteger(0);
+    private final Runnable deferBindRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isAdded()) bindData();
+        }
+    };
+    private final Runnable deferMaintenanceCountRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!isAdded()) return;
+            String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
+            updateMaintenanceCount(deviceId);
+        }
+    };
     private View layoutMaintenanceBlock;
     private View layoutLogsBlock;
     private View tab_maintenance, tab_logs;
@@ -123,9 +137,14 @@ public class TerminalDetailFragment extends Fragment {
         if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
         initViews(v);
         setupListeners();
-        bindData();
-        loadLogs();
-        loadMaintenanceLogs();
+        if (mainHandler != null) {
+            mainHandler.postDelayed(() -> {
+                if (!isAdded()) return;
+                bindData();
+                loadLogs();
+                loadMaintenanceLogs();
+            }, 500);
+        }
         return v;
     }
 
@@ -134,6 +153,10 @@ public class TerminalDetailFragment extends Fragment {
         super.onDestroyView();
         try {
             if (ioExecutor != null) ioExecutor.shutdownNow();
+            if (mainHandler != null) {
+                mainHandler.removeCallbacks(deferBindRunnable);
+                mainHandler.removeCallbacks(deferMaintenanceCountRunnable);
+            }
         } catch (Exception ignored) {}
         ioExecutor = null;
         mainHandler = null;
@@ -891,7 +914,6 @@ public class TerminalDetailFragment extends Fragment {
                     if (tvNoMaintenance != null) tvNoMaintenance.setVisibility(View.GONE);
                     if (maintenanceAdapter != null) {
                         maintenanceAdapter.submitList(new java.util.ArrayList<>(finalList));
-                        maintenanceAdapter.notifyDataSetChanged();
                     }
                 } else {
                     if (rvMaintenanceLogs != null) rvMaintenanceLogs.setVisibility(View.GONE);
@@ -1015,8 +1037,9 @@ public class TerminalDetailFragment extends Fragment {
     public void onResume() {
         super.onResume();
         try {
-            String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
-            updateMaintenanceCount(deviceId);
+            if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
+            mainHandler.removeCallbacks(deferMaintenanceCountRunnable);
+            mainHandler.postDelayed(deferMaintenanceCountRunnable, 300);
         } catch (Exception ignored) {}
     }
 
@@ -1040,7 +1063,9 @@ public class TerminalDetailFragment extends Fragment {
                 waitingForUplink = false;
                 //if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
                 // 刷新数据以反映最新状态与电量
-                bindData();
+                if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
+                mainHandler.removeCallbacks(deferBindRunnable);
+                mainHandler.postDelayed(deferBindRunnable, 200);
             }
         } catch (Exception ignored) {}
     }
@@ -1048,7 +1073,10 @@ public class TerminalDetailFragment extends Fragment {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onTerminalRefreshEvent(com.lora.cn.event.TerminalRefreshEvent event) {
         try {
-            bindData();
+            if (!isResumed()) return;
+            if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
+            mainHandler.removeCallbacks(deferBindRunnable);
+            mainHandler.postDelayed(deferBindRunnable, 500);
         } catch (Exception ignored) {}
     }
 }

@@ -87,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.concurrent.ConcurrentHashMap<String, Long> lastMaintenanceEvalByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, SleepCycleState> sleepCycleStateByDev = new java.util.concurrent.ConcurrentHashMap<>();
     private volatile long lastAlertEvalTriggerMs = 0L;
+    private long appStartMs = 0L;
+    private final java.util.concurrent.atomic.AtomicBoolean navInFlight = new java.util.concurrent.atomic.AtomicBoolean(false);
     private int lastBadgeCount = -1;
     private int lastBadgeQueueSize = -1;
     private volatile int lastComputedPendingCount = -1;
@@ -102,7 +104,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     private static final long TEST_INTERVAL = 10 * 1000; // 30秒
-    private android.content.BroadcastReceiver brokerReadyReceiver;
+    private android.content.BroadcastReceiver mqttStateReceiver;
     private android.os.Handler testUplinkHandler;
     private final Runnable testUplinkRunnable = new Runnable() {
         @Override
@@ -271,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
                     } catch (Exception ignored) {}
                     try {
                         long nowEval = System.currentTimeMillis();
-                        if (nowEval - lastAlertEvalTriggerMs >= 300) {
+                        if (nowEval - lastAlertEvalTriggerMs >= 10000) {
                             lastAlertEvalTriggerMs = nowEval;
                             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                             mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
@@ -296,7 +298,7 @@ public class MainActivity extends AppCompatActivity {
                         } catch (Exception ignored) {}
                         try {
                             long nowEval = System.currentTimeMillis();
-                            if (nowEval - lastAlertEvalTriggerMs >= 300) {
+                            if (nowEval - lastAlertEvalTriggerMs >= 10000) {
                                 lastAlertEvalTriggerMs = nowEval;
                                 if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                                 mainHandler.post(() -> { try { evaluateAlertsOnce(); } catch (Exception ignored) {} });
@@ -339,21 +341,21 @@ public class MainActivity extends AppCompatActivity {
             try {
                 long timeoutMs = getAutoReturnTimeoutMs();
                 if (timeoutMs <= 0) {
-                    autoReturnHandler.postDelayed(this, 1000);
+                    autoReturnHandler.postDelayed(this, 1500);
                     return;
                 }
                 if (autoReturnBusy) {
                     lastInteractionMs = System.currentTimeMillis();
                 }
                 long idleMs = System.currentTimeMillis() - lastInteractionMs;
-                if (!isOnHome() && idleMs >= timeoutMs) {
+                if (!isOnHome() && idleMs >= timeoutMs && !navInFlight.get()) {
                     Log.i(TAG, "空闲超时，自动返回首页");
                     navigateHome();
                 }
             } catch (Exception e) {
                 Log.e(TAG, "自动返回首页检查异常: " + e.getMessage());
             } finally {
-                autoReturnHandler.postDelayed(this, 1000);
+                autoReturnHandler.postDelayed(this, 1500);
             }
         }
     };
@@ -361,6 +363,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        appStartMs = System.currentTimeMillis();
         try { WindowCompat.setDecorFitsSystemWindows(getWindow(), true); } catch (Exception ignored) {}
         setContentView(R.layout.activity_main);
 
@@ -378,9 +381,19 @@ public class MainActivity extends AppCompatActivity {
             com.lora.cn.utils.CrashLogger.install(getApplicationContext());
         } catch (Exception ignored) {}
         try {
-            databaseHelper.ensureDefaultAdminRoleAssigned();
-            databaseHelper.debugLogAdminRoleAndUser();
-            databaseHelper.syncLowBatteryFlags();
+            com.lora.cn.database.DatabaseHelper dbInit = databaseHelper;
+            java.util.concurrent.ExecutorService exec = ioExecutor;
+            if (dbInit != null && exec != null) {
+                exec.execute(() -> {
+                    try {
+                        dbInit.ensureDefaultAdminRoleAssigned();
+                        dbInit.debugLogAdminRoleAndUser();
+                        dbInit.syncLowBatteryFlags();
+                    } catch (Exception e) {
+                        android.util.Log.e(TAG, "初始化管理员角色/用户日志失败: " + e.getMessage());
+                    }
+                });
+            }
         } catch (Exception e) {
             android.util.Log.e(TAG, "初始化管理员角色/用户日志失败: " + e.getMessage());
         }
@@ -395,7 +408,7 @@ public class MainActivity extends AppCompatActivity {
         
         // 默认显示终端列表
         menuTabs.get(0).setSelected(true);
-        menuTabAdapter.notifyDataSetChanged();
+        try { menuTabAdapter.submitList(new java.util.ArrayList<>(menuTabs)); } catch (Exception ignored) {}
 
         try {
             LogUtils.e("android.os.Build.VERSION.SDK_INT===" + android.os.Build.VERSION.SDK_INT);
@@ -428,32 +441,26 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
-            boolean localEnabled = sp.getBoolean("mqtt_local_broker_enabled", true);
-            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
-            if (true) {
-                android.content.Intent svc = new android.content.Intent(this, com.lora.cn.service.MqttBrokerService.class);
-                svc.putExtra("port", localPort > 0 ? localPort : 1883);
-                androidx.core.content.ContextCompat.startForegroundService(this, svc);
-            }
-            // 注册监听：本地Broker就绪后再连接
-            brokerReadyReceiver = new android.content.BroadcastReceiver() {
+            mqttStateReceiver = new android.content.BroadcastReceiver() {
                 @Override
                 public void onReceive(android.content.Context context, android.content.Intent intent) {
-                    if ("com.lora.cn.MQTT_BROKER_READY".equals(intent.getAction())) {
-                        int p = intent != null ? intent.getIntExtra("port", -1) : -1;
-                        String ips = intent != null ? intent.getStringExtra("ips") : "";
-                        android.util.Log.i(TAG, "收到MQTT_BROKER_READY广播: port=" + p + ", ips=" + ips + "，开始连接本地MQTT");
-                        startGlobalMqttLogging();
+                    if ("com.lora.cn.MQTT_CLIENT_STATE".equals(intent.getAction())) {
+                        String state = intent != null ? intent.getStringExtra("state") : "";
+                        if ("connected".equalsIgnoreCase(state)) {
+                            updateMqttDotUi(MQTT_STATE_CONNECTED);
+                        } else if ("connecting".equalsIgnoreCase(state)) {
+                            updateMqttDotUi(MQTT_STATE_CONNECTING);
+                        } else if ("stopped".equalsIgnoreCase(state)) {
+                            updateMqttDotUi(MQTT_STATE_STOPPED);
+                        } else {
+                            updateMqttDotUi(MQTT_STATE_CONNECTING);
+                        }
                     }
                 }
             };
-            android.content.IntentFilter filter = new android.content.IntentFilter("com.lora.cn.MQTT_BROKER_READY");
-            registerReceiver(brokerReadyReceiver, filter);
-            // 若服务端已就绪（比如用户此前已启动），立即连接
-            if (sp.getBoolean("mqtt_local_broker_ready", false)) {
-                android.util.Log.i(TAG, "检测到mqtt_local_broker_ready=true，立即连接本地MQTT");
-                startGlobalMqttLogging();
-            }
+            android.content.IntentFilter stateFilter = new android.content.IntentFilter("com.lora.cn.MQTT_CLIENT_STATE");
+            registerReceiver(mqttStateReceiver, stateFilter);
+            // 仅监听服务端状态广播驱动UI
         } catch (Exception ignored) {
             Log.e("tag", "error" + ignored);
         }
@@ -473,9 +480,13 @@ public class MainActivity extends AppCompatActivity {
         if (alertEvaluateHandler == null) {
             alertEvaluateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         }
-        alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
-        evaluateAlertsOnce();
-        alertEvaluateHandler.postDelayed(alertEvaluateRunnable, 5000);
+        try {
+            alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
+            long sinceStart = System.currentTimeMillis() - appStartMs;
+            int initialDelay = sinceStart < 30000 ? 10000 : 5000;
+            evaluateAlertsOnce();
+            alertEvaluateHandler.postDelayed(alertEvaluateRunnable, initialDelay);
+        } catch (Exception ignored) {}
 
     } 
 
@@ -621,6 +632,13 @@ public class MainActivity extends AppCompatActivity {
         ivErrorSmall = findViewById(R.id.error_small);
         ivErrorClose = findViewById(R.id.error_close);
         tvErrorVoiceNo = findViewById(R.id.error_voice_no);
+//        try {
+//            if (rvMenuTabs != null) {
+//                rvMenuTabs.setHasFixedSize(true);
+//                rvMenuTabs.setItemAnimator(null);
+//                rvMenuTabs.setNestedScrollingEnabled(false);
+//            }
+//        } catch (Throwable ignored) {}
         tvErrorComplete = findViewById(R.id.error_complte);
         updateMqttDotUi(MQTT_STATE_CONNECTING);
 
@@ -789,6 +807,7 @@ public class MainActivity extends AppCompatActivity {
     private void initViewPager() {
         pagerAdapter = new MainPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
+        viewPager.setOffscreenPageLimit(1);
         // 禁止用户手势滑动
         viewPager.setUserInputEnabled(false);
         
@@ -1117,6 +1136,8 @@ public class MainActivity extends AppCompatActivity {
     private final java.util.Map<String, Integer> lastHandledTypes = new java.util.HashMap<>();
     private final java.util.Map<String, Long> lastHandledTimes = new java.util.HashMap<>();
     private final java.util.Set<String> offlineAlertedKeys = new java.util.HashSet<>();
+    private volatile long lastTabSwitchMs = 0L;
+    private volatile long lastMaintenanceBadgeMs = 0L;
     private long lastBadgeQueryMs = 0L;
     private long lastTerminalRefreshRequestMs = 0L;
     private android.os.Handler alertEvaluateHandler;
@@ -1154,7 +1175,10 @@ public class MainActivity extends AppCompatActivity {
                     alertEvaluateBusy = false;
                 });
             } finally {
-                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 5000);
+                long now = System.currentTimeMillis();
+                long sinceStart = appStartMs > 0 ? (now - appStartMs) : 0L;
+                int nextDelay = sinceStart < 30000 ? 10000 : 5000;
+                if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, nextDelay);
             }
         }
     };
@@ -1465,7 +1489,14 @@ public class MainActivity extends AppCompatActivity {
         return out;
     }
 
+    private long alertUiThrottleUntilMs = 0L;
     private void applyAlertOverlayResult(EvaluateResult result) {
+        long nowThrottle = System.currentTimeMillis();
+        if (nowThrottle < alertUiThrottleUntilMs) {
+            updatePendingBadge();
+            return;
+        }
+        alertUiThrottleUntilMs = nowThrottle + 500L;
         if (result == null) {
             updatePendingBadge();
             return;
@@ -2331,6 +2362,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateMaintenanceBadge() {
         try {
+            long nowThrottle = System.currentTimeMillis();
+            if (nowThrottle - lastMaintenanceBadgeMs < 2000) return;
+            lastMaintenanceBadgeMs = nowThrottle;
             if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
             long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
@@ -2474,29 +2508,39 @@ public class MainActivity extends AppCompatActivity {
                 try { alertPlayer.release(); } catch (Exception ignored) {}
                 alertPlayer = null;
             }
-            android.content.res.AssetFileDescriptor afd = getAssets().openFd("901028.wav");
-            android.media.MediaPlayer mp = new android.media.MediaPlayer();
-            mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-            afd.close();
-            mp.setLooping(true);
-            mp.setOnCompletionListener(p -> {
-                try { p.release(); } catch (Exception ignored) {}
-                if (alertPlayer == p) alertPlayer = null;
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            ioExecutor.execute(() -> {
+                try {
+                    android.content.res.AssetFileDescriptor afd = getAssets().openFd("901028.wav");
+                    final android.media.MediaPlayer mp = new android.media.MediaPlayer();
+                    mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                    afd.close();
+                    mp.setLooping(true);
+                    mp.setOnCompletionListener(p -> {
+                        try { p.release(); } catch (Exception ignored) {}
+                        if (alertPlayer == p) alertPlayer = null;
+                    });
+                    mp.setOnErrorListener((p, what, extra) -> {
+                        try { p.release(); } catch (Exception ignored) {}
+                        if (alertPlayer == p) alertPlayer = null;
+                        return true;
+                    });
+                    mp.prepare();
+                    if (mainHandler != null) {
+                        mainHandler.post(() -> {
+                            try {
+                                mp.start();
+                                alertPlayer = mp;
+                                if (ringHandler == null) ringHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                                if (ringStopRunnable != null) ringHandler.removeCallbacks(ringStopRunnable);
+                                ringStopRunnable = new java.lang.Runnable() { @Override public void run() { stopAlertRinging(); } };
+                                ringHandler.postDelayed(ringStopRunnable, 30000);
+                            } catch (Exception ignored) {}
+                        });
+                    }
+                } catch (Exception ignored) {}
             });
-            mp.setOnErrorListener((p, what, extra) -> {
-                try { p.release(); } catch (Exception ignored) {}
-                if (alertPlayer == p) alertPlayer = null;
-                return true;
-            });
-            mp.prepare();
-            mp.start();
-            alertPlayer = mp;
-            if (ringHandler == null) ringHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-            if (ringStopRunnable != null) ringHandler.removeCallbacks(ringStopRunnable);
-            ringStopRunnable = new java.lang.Runnable() {
-                @Override public void run() { stopAlertRinging(); }
-            };
-            ringHandler.postDelayed(ringStopRunnable, 30000);
         } catch (Exception ignored) {}
     }
     public void stopAlertRinging() {
@@ -2516,9 +2560,15 @@ public class MainActivity extends AppCompatActivity {
         if (currentTabIndex == tabIndex) {
             return;
         }
-        
+        long now = System.currentTimeMillis();
+        if (navInFlight.get()) return;
+        if (now - lastTabSwitchMs < 250) return;
+        lastTabSwitchMs = now;
+        navInFlight.set(true);
         // 切换ViewPager2到指定页面
         viewPager.setCurrentItem(tabIndex, false); // false表示无动画切换
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        mainHandler.postDelayed(() -> navInFlight.set(false), 200);
     }
 
     public void showMaintenanceTab() {
@@ -2535,9 +2585,7 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; i < menuTabs.size(); i++) {
             menuTabs.get(i).setSelected(i == tabIndex);
         }
-        
-        menuTabAdapter.submitList(menuTabs);
-        menuTabAdapter.notifyDataSetChanged();
+        try { menuTabAdapter.submitList(new java.util.ArrayList<>(menuTabs)); } catch (Exception ignored) {}
     }
 
     private void toggleUserInfo() {
@@ -2549,6 +2597,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void showDeviceList() {
+        if (navInFlight.get()) return;
+        navInFlight.set(true);
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
 //        if (isDeviceListVisible) {
 //            return;
 //        }
@@ -2584,10 +2635,15 @@ public class MainActivity extends AppCompatActivity {
                 .replace(R.id.fragment_device_list_container, fragment)
                 .addToBackStack("device_list")
                 .commit();
+        mainHandler.postDelayed(() -> navInFlight.set(false), 300);
     }
 
     public void hideDeviceList() {
+        if (navInFlight.get()) return;
+        navInFlight.set(true);
         if (!isDeviceListVisible) {
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.postDelayed(() -> navInFlight.set(false), 300);
             return;
         }
 
@@ -2596,17 +2652,17 @@ public class MainActivity extends AppCompatActivity {
         rvMenuTabs.setVisibility(View.VISIBLE);
         isDeviceListVisible = false;
 
-        try {
-            getSupportFragmentManager().popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
-        } catch (Exception ignored) {}
+        try { getSupportFragmentManager().popBackStackImmediate("device_list", 0); } catch (Exception ignored) {}
 
         // 清除Fragment
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragment_device_list_container, new Fragment())
-                .commit();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        mainHandler.postDelayed(() -> navInFlight.set(false), 300);
     }
 
     private void showUserInfo() {
+        if (navInFlight.get()) return;
+        navInFlight.set(true);
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         if (userInfoFragment == null) {
             userInfoFragment = new UserInfoFragment();
             userInfoFragment.setOnUserInfoActionListener(new UserInfoFragment.OnUserInfoActionListener() {
@@ -2626,9 +2682,13 @@ public class MainActivity extends AppCompatActivity {
         viewPager.setVisibility(View.GONE);
         isUserInfoVisible = true;
         lastNonHomeStartMs = System.currentTimeMillis();
+        mainHandler.postDelayed(() -> navInFlight.set(false), 300);
     }
 
     private void hideUserInfo() {
+        if (navInFlight.get()) return;
+        navInFlight.set(true);
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         fragmentUserInfoContainer.setVisibility(View.GONE);
         viewPager.setVisibility(View.VISIBLE);
         rvMenuTabs.setVisibility(View.VISIBLE);
@@ -2642,6 +2702,7 @@ public class MainActivity extends AppCompatActivity {
         if (isOnHome()) {
             lastNonHomeStartMs = 0L;
         }
+        mainHandler.postDelayed(() -> navInFlight.set(false), 300);
     }
 
     @Override
@@ -2671,126 +2732,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ---------------- MQTT 全局连接与日志 -----------------
-    private void startGlobalMqttLogging() {
-        try {
-            if (!mqttConnectInFlight.compareAndSet(false, true)) {
-                return;
-            }
-            updateMqttDotUi(MQTT_STATE_CONNECTING);
-            if (mqttClient == null) mqttClient = com.lora.cn.network.MqttPacketsClient.getShared();
-            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
-            int localPort = sp.getInt("mqtt_local_broker_port", 1883);
-            String brokerUrl = "tcp://127.0.0.1:" + (localPort > 0 ? localPort : 1883);
-            boolean readyFlag = sp.getBoolean("mqtt_local_broker_ready", false);
-            android.util.Log.i(TAG, "准备连接MQTT: brokerUrl=" + brokerUrl + ", readyFlag=" + readyFlag + ", attempt=" + mqttReadyRetry);
-            if (!isLocalPortOpen(localPort)) {
-                android.util.Log.w(TAG, "本地端口未打开，延迟重试: port=" + localPort + ", attempt=" + mqttReadyRetry);
-                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                if (mqttReadyRetry < 40) {
-                    mqttReadyRetry++;
-                    mainHandler.postDelayed(this::startGlobalMqttLogging, 500);
-                    mqttConnectInFlight.set(false);
-                    return;
-                }
-            }
-            android.util.Log.i(TAG, "使用本地MQTT Broker: " + brokerUrl);
-            String cachedId = sp.getString("mqtt_client_id_main", "");
-            if (cachedId == null || cachedId.trim().isEmpty()) {
-                String gen = "android-main-" + java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-                sp.put("mqtt_client_id_main", gen);
-                cachedId = gen;
-            }
-            final String clientId = cachedId;
-            String topicFilter = sp.getString("mqtt_topic_filter", "/milesight/uplink/#");
-            String username = sp.getString("mqtt_username", "");
-            String password = sp.getString("mqtt_password", "");
-            boolean trustAll = sp.getBoolean("mqtt_trust_all_certs", false);
-            android.util.Log.i(TAG, "开始连接MQTT: clientId=" + clientId + ", topicFilter=" + topicFilter);
-            mqttClient.connectAndSubscribe(getApplicationContext(), brokerUrl, clientId, topicFilter,
-                    username, password, trustAll,
-                    new GatewayPacketsClient.PacketsListener() {
-                        @Override
-                        public void onStatus(String msg) {
-                            Log.d(TAG, "MQTT状态 onStatus: " + msg);
-                            if (msg != null && (msg.contains("连接成功") || msg.contains("订阅成功"))) {
-                                mqttConnectRetry = 0;
-                                mqttReadyRetry = 0;
-                                mqttConnectInFlight.set(false);
-                                updateMqttDotUi(MQTT_STATE_CONNECTED);
-                            }
-                        }
-                        @Override
-                        public void onPackets(java.util.List<com.lora.cn.network.GatewayPacketsClient.PacketRecord> records) {
-                            if (records == null || records.isEmpty()) {
-                                Log.e(TAG, "收到上行数据条数: 0");
-                                return;
-                            }
-                            Log.e(TAG, "收到上行数据条数: " + records.size());
-                            mqttConnectRetry = 0;
-                            mqttConnectInFlight.set(false);
-                            updateMqttDotUi(MQTT_STATE_CONNECTED);
-                            
-                            // 获取当前时间
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-                            String currentTime = sdf.format(new Date());
-                            
-                            int intervalMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
-                            long intervalMs = Math.max(1L, Math.min(1440L, (long) intervalMin)) * 60_000L;
-                            for (com.lora.cn.network.GatewayPacketsClient.PacketRecord r : records) {
-                                handleUplinkBySleepCycle(r, currentTime, intervalMs);
-                            }
-                            // 刷新事件已在后台入库完成后投递，此处不再重复投递
-                        }
-                        @Override
-                        public void onError(String error) {
-                            Log.e(TAG, "MQTT错误: " + error);
-                            try {
-                                mqttConnectInFlight.set(false);
-                                updateMqttDotUi(MQTT_STATE_CONNECTING);
-                                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
-                                if (mqttClient != null) {
-                                    mqttClient.disconnect();
-                                }
-                                mainHandler.postDelayed(MainActivity.this::startGlobalMqttLogging, delay);
-                            } catch (Exception ignored) {}
-                        }
-                        @Override
-                        public void onComplete() {
-                            Log.d(TAG, "MQTT完成/断开");
-                            try {
-                                mqttConnectInFlight.set(false);
-                                updateMqttDotUi(MQTT_STATE_CONNECTING);
-                                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
-                                mainHandler.postDelayed(MainActivity.this::startGlobalMqttLogging, delay);
-                            } catch (Exception ignored) {}
-                        }
-                    });
-        } catch (Exception e) {
-            Log.e(TAG, "启动MQTT日志输出失败", e);
-            try {
-                mqttConnectInFlight.set(false);
-                updateMqttDotUi(MQTT_STATE_CONNECTING);
-                if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
-                int delay = Math.min(10000, 1000 * Math.max(1, ++mqttConnectRetry));
-                mainHandler.postDelayed(this::startGlobalMqttLogging, delay);
-            } catch (Exception ignored) {}
-        }
-    }
 
     @Override
     protected void onDestroy() {
 
         super.onDestroy();
         try {
-            if (mqttClient != null) {
-                mqttClient.disconnect();
-            }
-            try { updateMqttDotUi(MQTT_STATE_STOPPED); } catch (Exception ignored) {}
-            if (brokerReadyReceiver != null) {
-                unregisterReceiver(brokerReadyReceiver);
-                brokerReadyReceiver = null;
+            if (mqttStateReceiver != null) {
+                unregisterReceiver(mqttStateReceiver);
+                mqttStateReceiver = null;
             }
             autoReturnHandler.removeCallbacks(autoReturnRunnable);
             if (testUplinkHandler != null) {
@@ -2824,23 +2774,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void navigateHome() {
+        if (navInFlight.get()) return;
+        navInFlight.set(true);
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         try {
-            // 切回首页Tab
             if (viewPager != null) viewPager.setCurrentItem(0, true);
-            // 关闭覆盖层
             if (isUserInfoVisible) hideUserInfo();
             if (isDeviceListVisible) hideDeviceList();
-            // 清空回退栈（确保返回首页）
-            getSupportFragmentManager().popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
-            // 显示首页视图
             rvMenuTabs.setVisibility(View.VISIBLE);
             viewPager.setVisibility(View.VISIBLE);
             fragmentUserInfoContainer.setVisibility(View.GONE);
             fragmentDeviceListContainer.setVisibility(View.GONE);
+            lastNonHomeStartMs = 0L;
+//            try {
+//                if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+//                if (llAlertPendingSmall != null) setSmallVisible(false);
+//                stopAlertRinging();
+//            } catch (Exception ignored) {}
+            try {
+                org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false));
+            } catch (Exception ignored) {}
         } catch (Exception e) {
             Log.e(TAG, "navigateHome 异常: " + e.getMessage());
         } finally {
-            lastNonHomeStartMs = 0L;
+            mainHandler.postDelayed(() -> navInFlight.set(false), 300);
         }
     }
 
@@ -2862,11 +2819,15 @@ public class MainActivity extends AppCompatActivity {
     // 仅显示首页的覆盖容器，不加载“附近终端”页面
     public void showOverlayOnly() {
         try {
+            if (navInFlight.get()) return;
+            navInFlight.set(true);
             if (isUserInfoVisible) hideUserInfo();
             fragmentDeviceListContainer.setVisibility(View.VISIBLE);
             rvMenuTabs.setVisibility(View.INVISIBLE);
             viewPager.setVisibility(View.GONE);
             isDeviceListVisible = true;
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.postDelayed(() -> navInFlight.set(false), 200);
         } catch (Exception e) {
             Log.e(TAG, "showOverlayOnly 异常: " + e.getMessage());
         }

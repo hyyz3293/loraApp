@@ -97,7 +97,11 @@ public class MqttPacketsClient {
             if (clientId == null || clientId.trim().isEmpty()) {
                 clientId = "android-" + java.util.UUID.randomUUID().toString().replace("-", "");
             }
-            if (client != null && client.isConnected()) {
+            boolean alreadyConnected = false;
+            if (client != null) {
+                try { alreadyConnected = client.isConnected(); } catch (Exception ignore) { alreadyConnected = false; }
+            }
+            if (alreadyConnected) {
                 if (listener != null) listener.onStatus("复用已有MQTT连接，继续订阅：" + topicFilter);
                 android.util.Log.i(TAG, "复用MQTT连接: url=" + brokerUrl + ", clientId=" + clientId);
                 scheduleSubscribe(topicFilter);
