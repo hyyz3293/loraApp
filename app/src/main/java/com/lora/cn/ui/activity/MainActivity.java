@@ -517,6 +517,12 @@ public class MainActivity extends AppCompatActivity {
                 maintenanceEvaluateHandler = null;
             }
         } catch (Exception ignored) {}
+        try {
+            if (alertEvaluateHandler != null) {
+                alertEvaluateHandler.removeCallbacks(alertEvaluateRunnable);
+                alertEvaluateHandler = null;
+            }
+        } catch (Exception ignored) {}
         super.onStop();
     }
 
@@ -1114,9 +1120,15 @@ public class MainActivity extends AppCompatActivity {
     private long lastBadgeQueryMs = 0L;
     private long lastTerminalRefreshRequestMs = 0L;
     private android.os.Handler alertEvaluateHandler;
+    private volatile boolean alertEvaluateBusy = false;
     private final Runnable alertEvaluateRunnable = new Runnable() {
         @Override public void run() {
             try {
+                if (alertEvaluateBusy) {
+                    if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 5000);
+                    return;
+                }
+                alertEvaluateBusy = true;
                 if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
                 if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                 int token = alertEvalSeq.incrementAndGet();
@@ -1139,6 +1151,7 @@ public class MainActivity extends AppCompatActivity {
                             try { applyAlertOverlayResult(finalRes); } catch (Exception ignored) {}
                         });
                     }
+                    alertEvaluateBusy = false;
                 });
             } finally {
                 if (alertEvaluateHandler != null) alertEvaluateHandler.postDelayed(this, 5000);
@@ -1172,9 +1185,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private android.os.Handler maintenanceEvaluateHandler;
+    private volatile boolean maintenanceEvaluateBusy = false;
     private final Runnable maintenanceEvaluateRunnable = new Runnable() {
         @Override public void run() {
             try {
+                if (maintenanceEvaluateBusy) {
+                    if (maintenanceEvaluateHandler != null) maintenanceEvaluateHandler.postDelayed(this, 60000);
+                    return;
+                }
+                maintenanceEvaluateBusy = true;
                 if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
                 if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                 long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
@@ -1253,6 +1272,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         }
                     } catch (Exception ignored) {}
+                    maintenanceEvaluateBusy = false;
                 });
             } finally {
                 if (maintenanceEvaluateHandler != null) maintenanceEvaluateHandler.postDelayed(this, 60000);

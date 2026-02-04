@@ -482,34 +482,14 @@ public class TerminalDetailFragment extends Fragment {
                 return;
             }
             String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
-            if (ioExecutor == null || mainHandler == null)
-
-                return;
-            ioExecutor.execute(() -> {
-                com.lora.cn.ui.model.Terminal t = null;
-                try {
-                    com.lora.cn.database.dao.TerminalDao dao = new com.lora.cn.database.dao.TerminalDao(dbHelper);
-                    t = dao.getTerminalByDeviceId(deviceId);
-                } catch (Exception ignored) {}
-                com.lora.cn.ui.model.Terminal finalT = t;
-                Handler h2 = mainHandler;
-                if (h2 == null) return;
-                h2.post(() -> {
-                    if (!isAdded()) return;
-                    if (finalT == null) {
-                        Toast.makeText(requireContext(), "未找到终端", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    AddDeviceFragment fragment = AddDeviceFragment.newInstance(finalT, "edit");
-                    androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
-                    if (a != null) {
-                        a.getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.fragment_device_list_container, fragment)
-                                .addToBackStack("edit_device")
-                                .commit();
-                    }
-                });
-            });
+            AddDeviceFragment fragment = AddDeviceFragment.newInstance(deviceId, "edit");
+            androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
+            if (a != null) {
+                a.getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_device_list_container, fragment)
+                        .addToBackStack("edit_device")
+                        .commit();
+            }
         });
         btnDelete.setOnClickListener(v -> {
             if (!hasPermission("terminal_delete")) {

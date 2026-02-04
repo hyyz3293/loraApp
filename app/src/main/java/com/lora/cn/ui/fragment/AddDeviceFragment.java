@@ -55,12 +55,16 @@ public class AddDeviceFragment extends Fragment {
     private TerminalDao terminalDao;
     private Terminal terminal;
     private String terminalId;
+    private java.util.concurrent.ExecutorService ioExecutor;
+    private android.os.Handler mainHandler;
     
     // 分类数据
     private List<Category> departmentCategories = new ArrayList<>();
     private List<Category> roomCategories = new ArrayList<>();
     private List<Category> nursingGroupCategories = new ArrayList<>();
     private List<Category> otherCategories = new ArrayList<>();
+    private com.lora.cn.ui.adapter.DynamicGroupAdapter dgAdapter;
+    private java.util.Map<java.lang.Long, java.util.List<com.lora.cn.database.entity.Category>> catsCache;
     
     // 选中的分类ID
     private Integer selectedDepartmentId = null;
@@ -84,14 +88,29 @@ public class AddDeviceFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
+    public static AddDeviceFragment newInstance(String deviceId, String mode) {
+        AddDeviceFragment fragment = new AddDeviceFragment();
+        Bundle args = new Bundle();
+        args.putString("device_id", deviceId);
+        args.putString("mode", mode);
+        fragment.setArguments(args);
+        return fragment;
+    }
     
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             String  terminalGson = getArguments().getString("terminal");
-            terminal = new Gson().fromJson(terminalGson, Terminal.class);
-            terminalId = terminal.getTerminalId();
+            if (terminalGson != null) {
+                terminal = new Gson().fromJson(terminalGson, Terminal.class);
+            }
+            if (terminal != null) {
+                terminalId = terminal.getTerminalId();
+            }
+            if (terminalId == null) {
+                terminalId = getArguments().getString("device_id");
+            }
         }
     }
     
@@ -105,6 +124,8 @@ public class AddDeviceFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         initViews(view);
+        if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         initData();
         setupListeners();
     }
@@ -146,12 +167,20 @@ public class AddDeviceFragment extends Fragment {
                 etDeviceName.setText(terminal.getTerminalName());
             }
         }
+        if ("edit".equals(mode) && terminal == null && !TextUtils.isEmpty(terminalId)) {
+            loadTerminalAsync();
+        }
         // 隐藏旧的静态分组分类控件，使用动态分组/分类选择
         if (spinnerDepartment != null) spinnerDepartment.setVisibility(View.GONE);
         if (spinnerRoom != null) spinnerRoom.setVisibility(View.GONE);
         if (spinnerNursingGroup != null) spinnerNursingGroup.setVisibility(View.GONE);
         if (spinnerOther != null) spinnerOther.setVisibility(View.GONE);
-        // 渲染动态分组与分类行
+        if (llDynamicGroups != null) {
+            androidx.recyclerview.widget.LinearLayoutManager lm = new androidx.recyclerview.widget.LinearLayoutManager(requireContext());
+            llDynamicGroups.setLayoutManager(lm);
+            dgAdapter = new com.lora.cn.ui.adapter.DynamicGroupAdapter(dbManager, selectedByGroup, terminal, new java.util.HashMap<>());
+            llDynamicGroups.setAdapter(dgAdapter);
+        }
         renderDynamicGroups();
     }
     
@@ -255,21 +284,91 @@ public class AddDeviceFragment extends Fragment {
     private void renderDynamicGroups() {
         try {
             if (llDynamicGroups == null) return;
-            java.util.List<com.lora.cn.database.entity.Group> groups = dbManager.getAllGroups();
-            if (groups == null || groups.isEmpty()) {
-                llDynamicGroups.setVisibility(View.GONE);
-                return;
-            }
-            LogUtils.e("========" + new Gson().toJson(groups));
-            llDynamicGroups.setVisibility(View.VISIBLE);
-            androidx.recyclerview.widget.LinearLayoutManager lm = new androidx.recyclerview.widget.LinearLayoutManager(requireContext());
-            llDynamicGroups.setLayoutManager(lm);
-            com.lora.cn.ui.adapter.DynamicGroupAdapter dgAdapter = new com.lora.cn.ui.adapter.DynamicGroupAdapter(dbManager, selectedByGroup, terminal);
-            llDynamicGroups.setAdapter(dgAdapter);
-            dgAdapter.submitList(groups);
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            ioExecutor.execute(() -> {
+                java.util.List<com.lora.cn.database.entity.Group> groups;
+                try {
+                    groups = dbManager.getAllGroups();
+                } catch (Exception e) {
+                    groups = null;
+                }
+                java.util.Map<java.lang.Long, java.util.List<com.lora.cn.database.entity.Category>> categoriesByGroup = new java.util.HashMap<>();
+                if (groups != null) {
+                    for (com.lora.cn.database.entity.Group g : groups) {
+                        try {
+                            java.util.List<com.lora.cn.database.entity.Category> cats = dbManager.getCategoriesByGroupId(g.getGroupId());
+                            categoriesByGroup.put(g.getGroupId(), cats);
+                        } catch (Exception ignored2) {}
+                    }
+                }
+                java.util.List<com.lora.cn.database.entity.Group> finalGroups = groups;
+                java.util.Map<java.lang.Long, java.util.List<com.lora.cn.database.entity.Category>> finalCats = categoriesByGroup;
+                mainHandler.post(() -> {
+                    if (!isAdded()) return;
+                    catsCache = finalCats;
+                    if (finalGroups == null || finalGroups.isEmpty()) {
+                        llDynamicGroups.setVisibility(View.GONE);
+                        return;
+                    }
+                    llDynamicGroups.setVisibility(View.VISIBLE);
+                    if (dgAdapter == null) {
+                        androidx.recyclerview.widget.LinearLayoutManager lm = new androidx.recyclerview.widget.LinearLayoutManager(requireContext());
+                        llDynamicGroups.setLayoutManager(lm);
+                    }
+                    dgAdapter = new com.lora.cn.ui.adapter.DynamicGroupAdapter(dbManager, selectedByGroup, terminal, finalCats);
+                    llDynamicGroups.setAdapter(dgAdapter);
+                    dgAdapter.submitList(finalGroups);
+                });
+            });
         } catch (Exception ignored) {
             LogUtils.e("ggg");
         }
+    }
+
+    private void loadTerminalAsync() {
+        try {
+            if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+            if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            ioExecutor.execute(() -> {
+                com.lora.cn.ui.model.Terminal t = null;
+                try {
+                    TerminalDao dao = new TerminalDao(DatabaseHelper.getInstance(requireContext()));
+                    t = dao.getTerminalByDeviceId(terminalId);
+                } catch (Exception ignored) {}
+                com.lora.cn.ui.model.Terminal finalT = t;
+                mainHandler.post(() -> {
+                    if (!isAdded()) return;
+                    terminal = finalT;
+                    if (terminal != null) {
+                        if (!TextUtils.isEmpty(terminal.getDeviceCode())) etDeviceId.setText(terminal.getDeviceCode());
+                        if (!TextUtils.isEmpty(terminal.getTerminalName())) etDeviceName.setText(terminal.getTerminalName());
+                        if (llDynamicGroups != null) {
+                            llDynamicGroups.setVisibility(View.VISIBLE);
+                            if (catsCache != null) {
+                                dgAdapter = new com.lora.cn.ui.adapter.DynamicGroupAdapter(dbManager, selectedByGroup, terminal, catsCache);
+                                llDynamicGroups.setAdapter(dgAdapter);
+                                if (dgAdapter.getItems() != null && !dgAdapter.getItems().isEmpty()) {
+                                    dgAdapter.notifyDataSetChanged();
+                                }
+                            } else {
+                                renderDynamicGroups();
+                            }
+                        }
+                    }
+                });
+            });
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onDestroyView() {
+        try {
+            if (ioExecutor != null) ioExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        ioExecutor = null;
+        mainHandler = null;
+        super.onDestroyView();
     }
     
     private void saveDevice() {

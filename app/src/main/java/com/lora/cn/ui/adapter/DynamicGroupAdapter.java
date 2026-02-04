@@ -24,11 +24,13 @@ public class DynamicGroupAdapter extends BaseQuickAdapter<Group, QuickViewHolder
     private final DatabaseManager dbManager;
     private final Map<Long, Long> selectedByGroup;
     private final Terminal terminal;
+    private final Map<Long, List<Category>> categoriesByGroup;
 
-    public DynamicGroupAdapter(DatabaseManager dbManager, Map<Long, Long> selectedByGroup, Terminal terminal) {
+    public DynamicGroupAdapter(DatabaseManager dbManager, Map<Long, Long> selectedByGroup, Terminal terminal, Map<Long, List<Category>> categoriesByGroup) {
         this.dbManager = dbManager;
         this.selectedByGroup = selectedByGroup;
         this.terminal = terminal;
+        this.categoriesByGroup = categoriesByGroup != null ? categoriesByGroup : new java.util.HashMap<>();
     }
 
     @Override
@@ -38,7 +40,7 @@ public class DynamicGroupAdapter extends BaseQuickAdapter<Group, QuickViewHolder
 
         tv.setText(item.getGroupName());
 
-        List<Category> cats = dbManager.getCategoriesByGroupId(item.getGroupId());
+        List<Category> cats = categoriesByGroup.get(item.getGroupId());
         List<String> names = new ArrayList<>();
         if (cats != null) {
             for (Category c : cats) names.add(c.getCategoryName());
