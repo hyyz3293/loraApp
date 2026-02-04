@@ -54,6 +54,8 @@ public class TerminalDetailFragment extends Fragment {
     }
 
     private DatabaseHelper dbHelper;
+    private com.lora.cn.database.DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
 
     private TextView tvTitle;
     private TextView btnBack;
@@ -111,6 +113,12 @@ public class TerminalDetailFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_terminal_detail, container, false);
         dbHelper = DatabaseHelper.getInstance(requireContext());
+        databaseManager = com.lora.cn.database.DatabaseManager.getInstance(requireContext());
+        long userId = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+        if (userId != -1) {
+            com.lora.cn.database.entity.User user = databaseManager.getUserById(userId);
+            if (user != null) currentUserRoleId = (int) user.getRoleId();
+        }
         if (ioExecutor == null) ioExecutor = Executors.newSingleThreadExecutor();
         if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
         initViews(v);
@@ -181,6 +189,10 @@ public class TerminalDetailFragment extends Fragment {
         terminal_detail_id = v.findViewById(R.id.terminal_detail_id);
         btnHandleNow = v.findViewById(R.id.btn_handle_now);
         btnSetMaintenance = v.findViewById(R.id.btn_set_maintenance);
+        if (btnEdit != null) btnEdit.setVisibility(hasPermission("terminal_edit") ? View.VISIBLE : View.GONE);
+        if (btnDelete != null) btnDelete.setVisibility(hasPermission("terminal_delete") ? View.VISIBLE : View.GONE);
+        if (ivFavorite != null) ivFavorite.setVisibility(hasPermission("terminal_mark") ? View.VISIBLE : View.GONE);
+        if (btnSetMaintenance != null) btnSetMaintenance.setVisibility(hasPermission("terminal_confirm") ? View.VISIBLE : View.GONE);
 
         tab_maintenance = v.findViewById(R.id.tab_maintenance);
         tab_logs = v.findViewById(R.id.tab_logs);
@@ -465,8 +477,14 @@ public class TerminalDetailFragment extends Fragment {
             if (getParentFragmentManager().getBackStackEntryCount() > 0) getParentFragmentManager().popBackStack();
         });
         btnEdit.setOnClickListener(v -> {
+            if (!hasPermission("terminal_edit")) {
+                Toast.makeText(requireContext(), "您没有编辑终端的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
             String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
-            if (ioExecutor == null || mainHandler == null) return;
+            if (ioExecutor == null || mainHandler == null)
+
+                return;
             ioExecutor.execute(() -> {
                 com.lora.cn.ui.model.Terminal t = null;
                 try {
@@ -494,6 +512,10 @@ public class TerminalDetailFragment extends Fragment {
             });
         });
         btnDelete.setOnClickListener(v -> {
+            if (!hasPermission("terminal_delete")) {
+                Toast.makeText(requireContext(), "您没有删除终端的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
             final String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
             DialogUtils.showConfirmDialog(requireContext(), "删除确认", "确定删除该终端吗？", new DialogUtils.OnConfirmDialogListener() {
                 @Override
@@ -532,6 +554,10 @@ public class TerminalDetailFragment extends Fragment {
         // 收藏点击切换
         ivFavorite.setClickable(true);
         ivFavorite.setOnClickListener(v -> {
+            if (!hasPermission("terminal_mark")) {
+                Toast.makeText(requireContext(), "您没有收藏终端的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
             String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
             Object tag = ivFavorite.getTag();
             boolean current = tag instanceof Boolean ? (Boolean) tag : false;
@@ -572,6 +598,10 @@ public class TerminalDetailFragment extends Fragment {
 
         if (btnSetMaintenance != null) {
             btnSetMaintenance.setOnClickListener(v -> {
+                if (!hasPermission("terminal_confirm")) {
+                    Toast.makeText(requireContext(), "您没有维护操作的权限", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
                 MaintenanceSettingListFragment fragment = MaintenanceSettingListFragment.newInstance(deviceId);
                 androidx.appcompat.app.AppCompatActivity a = (androidx.appcompat.app.AppCompatActivity) getActivity();
@@ -977,6 +1007,17 @@ public class TerminalDetailFragment extends Fragment {
     private boolean deleteTerminal(String deviceId) {
         try {
             return dbHelper.deleteTerminalByDeviceId(deviceId) > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean hasPermission(String permissionCode) {
+        if (currentUserRoleId == -1) {
+            return false;
+        }
+        try {
+            return databaseManager.hasPermission(currentUserRoleId, permissionCode);
         } catch (Exception e) {
             return false;
         }
