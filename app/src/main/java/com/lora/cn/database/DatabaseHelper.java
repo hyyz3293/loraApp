@@ -861,17 +861,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL("INSERT OR IGNORE INTO " + TABLE_ROLE_PERMISSIONS + " (" + COLUMN_ROLE_PERMISSION_ROLE_ID + ", " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + ") " +
                     "SELECT " + adminRid + ", " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_ID + " NOT IN (" +
                     "SELECT " + COLUMN_ROLE_PERMISSION_PERMISSION_ID + " FROM " + TABLE_ROLE_PERMISSIONS + " WHERE " + COLUMN_ROLE_PERMISSION_ROLE_ID + "=" + adminRid + ")");
-            android.database.Cursor c = db.rawQuery("SELECT " + COLUMN_USER_ID + ", " + COLUMN_USER_ROLE_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + "='admin' OR " + COLUMN_USER_NAME + "='管理员'", null);
-            while (c.moveToNext()) {
-                long uid = c.getLong(0);
-                long currentRid = c.getLong(1);
-                if (adminRid > 0 && currentRid != adminRid) {
-                    ContentValues up = new ContentValues();
-                    up.put(COLUMN_USER_ROLE_ID, adminRid);
-                    db.update(TABLE_USERS, up, COLUMN_USER_ID + "=?", new String[]{String.valueOf(uid)});
-                }
-            }
-            c.close();
+            // 不再强制覆盖现有用户的角色为管理员，避免用户手动调整后被重置
+            // 仅确保管理员角色和其权限完整存在
         } catch (Exception ignored) {}
     }
     
