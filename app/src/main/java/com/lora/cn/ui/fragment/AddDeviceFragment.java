@@ -71,6 +71,9 @@ public class AddDeviceFragment extends Fragment {
     private Integer selectedRoomId = null;
     private Integer selectedNursingGroupId = null;
     private Integer selectedOtherId = null;
+    private final java.util.concurrent.atomic.AtomicInteger groupsSeq = new java.util.concurrent.atomic.AtomicInteger(0);
+    private final java.util.concurrent.atomic.AtomicInteger terminalSeq = new java.util.concurrent.atomic.AtomicInteger(0);
+    private volatile boolean destroyed = false;
     
     public static AddDeviceFragment newInstance(Terminal terminalId) {
         AddDeviceFragment fragment = new AddDeviceFragment();
@@ -139,6 +142,13 @@ public class AddDeviceFragment extends Fragment {
         btnCancel = view.findViewById(R.id.btn_cancel);
         btnConfirmPair = view.findViewById(R.id.btn_confirm_pair);
         llDynamicGroups = view.findViewById(R.id.rv_dynamic_groups);
+        try {
+            if (llDynamicGroups != null) {
+                llDynamicGroups.setHasFixedSize(true);
+                llDynamicGroups.setItemAnimator(null);
+                llDynamicGroups.setNestedScrollingEnabled(false);
+            }
+        } catch (Throwable ignored) {}
     }
     
     private void initData() {
@@ -286,6 +296,7 @@ public class AddDeviceFragment extends Fragment {
             if (llDynamicGroups == null) return;
             if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            int token = groupsSeq.incrementAndGet();
             ioExecutor.execute(() -> {
                 java.util.List<com.lora.cn.database.entity.Group> groups;
                 try {
@@ -296,6 +307,7 @@ public class AddDeviceFragment extends Fragment {
                 java.util.Map<java.lang.Long, java.util.List<com.lora.cn.database.entity.Category>> categoriesByGroup = new java.util.HashMap<>();
                 if (groups != null) {
                     for (com.lora.cn.database.entity.Group g : groups) {
+                        if (destroyed) break;
                         try {
                             java.util.List<com.lora.cn.database.entity.Category> cats = dbManager.getCategoriesByGroupId(g.getGroupId());
                             categoriesByGroup.put(g.getGroupId(), cats);
@@ -305,7 +317,8 @@ public class AddDeviceFragment extends Fragment {
                 java.util.List<com.lora.cn.database.entity.Group> finalGroups = groups;
                 java.util.Map<java.lang.Long, java.util.List<com.lora.cn.database.entity.Category>> finalCats = categoriesByGroup;
                 mainHandler.post(() -> {
-                    if (!isAdded()) return;
+                    if (!isAdded() || destroyed) return;
+                    if (token != groupsSeq.get()) return;
                     catsCache = finalCats;
                     if (finalGroups == null || finalGroups.isEmpty()) {
                         llDynamicGroups.setVisibility(View.GONE);
@@ -330,6 +343,7 @@ public class AddDeviceFragment extends Fragment {
         try {
             if (ioExecutor == null) ioExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
             if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            int token = terminalSeq.incrementAndGet();
             ioExecutor.execute(() -> {
                 com.lora.cn.ui.model.Terminal t = null;
                 try {
@@ -338,7 +352,8 @@ public class AddDeviceFragment extends Fragment {
                 } catch (Exception ignored) {}
                 com.lora.cn.ui.model.Terminal finalT = t;
                 mainHandler.post(() -> {
-                    if (!isAdded()) return;
+                    if (!isAdded() || destroyed) return;
+                    if (token != terminalSeq.get()) return;
                     terminal = finalT;
                     if (terminal != null) {
                         if (!TextUtils.isEmpty(terminal.getDeviceCode())) etDeviceId.setText(terminal.getDeviceCode());
@@ -368,7 +383,20 @@ public class AddDeviceFragment extends Fragment {
         } catch (Exception ignored) {}
         ioExecutor = null;
         mainHandler = null;
+        destroyed = true;
         super.onDestroyView();
+    }
+    
+    @Override
+    public void onStop() {
+        destroyed = true;
+        try {
+            if (mainHandler != null) {
+                // 暂无特定回调需要移除，这里保留占位
+            }
+            if (ioExecutor != null) ioExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        super.onStop();
     }
     
     private void saveDevice() {
