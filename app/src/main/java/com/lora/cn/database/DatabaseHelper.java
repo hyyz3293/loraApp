@@ -885,6 +885,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_mark', '标记终端', 'terminal', '标记终端状态')");
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('terminal_confirm', '确认处理', 'terminal', '确认终端处理结果')");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
+                  COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_add', '新增维护', 'terminal', '新增维护记录')");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
+                  COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_edit', '编辑维护', 'terminal', '编辑维护记录')");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
+                  COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_delete', '删除维护', 'terminal', '删除维护记录')");
         
         // 日志管理权限
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
@@ -1029,6 +1035,24 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
                 COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
                 ") VALUES ('terminal_confirm', '确认处理', 'terminal', '确认终端处理结果', 1, 8, 2, 4)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('maintenance_add', '新增维护', 'terminal', '新增维护记录', 1, 8, 2, 5)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('maintenance_edit', '编辑维护', 'terminal', '编辑维护记录', 1, 8, 2, 6)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('maintenance_delete', '删除维护', 'terminal', '删除维护记录', 1, 8, 2, 7)");
 
         // Level 1 - 日志信息的子权限
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +

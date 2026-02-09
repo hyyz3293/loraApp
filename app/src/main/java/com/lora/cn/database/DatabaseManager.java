@@ -512,9 +512,14 @@ public class DatabaseManager {
      * 删除角色（会级联删除相关权限关联）
      */
     public boolean deleteRole(int roleId) {
-        // 先删除角色权限关联
+        Role r = roleDao.getRoleById(roleId);
+        if (r != null) {
+            String rn = r.getRoleName() == null ? "" : r.getRoleName().trim();
+            if ("管理员".equals(rn)) {
+                return false;
+            }
+        }
         rolePermissionDao.deleteRolePermissionsByRoleId(roleId);
-        // 再删除角色
         return roleDao.deleteRole(roleId) > 0;
     }
     
@@ -727,6 +732,13 @@ public class DatabaseManager {
         if (user.getUserId() <= 0) {
             return false;
         }
+        try {
+            User exist = userDao.getUserById((int) user.getUserId());
+            String acc = exist != null ? exist.getUserAccount() : null;
+            if (acc != null && acc.trim().equals("admin")) {
+                return false;
+            }
+        } catch (Throwable ignored) {}
         return userDao.updateUser(user) > 0;
     }
     
@@ -737,6 +749,13 @@ public class DatabaseManager {
         if (userId <= 0 || newPassword == null || newPassword.trim().isEmpty()) {
             return false;
         }
+        try {
+            User exist = userDao.getUserById((int) userId);
+            String acc = exist != null ? exist.getUserAccount() : null;
+            if (acc != null && acc.trim().equals("admin")) {
+                return false;
+            }
+        } catch (Throwable ignored) {}
         return userDao.updateUserPassword((int) userId, newPassword) > 0;
     }
     
@@ -744,6 +763,13 @@ public class DatabaseManager {
      * 删除用户
      */
     public boolean deleteUser(long userId) {
+        try {
+            User exist = userDao.getUserById((int) userId);
+            String acc = exist != null ? exist.getUserAccount() : null;
+            if (acc != null && acc.trim().equals("admin")) {
+                return false;
+            }
+        } catch (Throwable ignored) {}
         return userDao.deleteUser((int) userId) > 0;
     }
     

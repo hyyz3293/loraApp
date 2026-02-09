@@ -50,6 +50,8 @@ public class MaintenanceSettingListFragment extends Fragment {
     private DatabaseHelper db;
     private long currentUserId = -1;
     private String currentUserName = "";
+    private com.lora.cn.database.DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
     private String terminalId;
     private ExecutorService ioExecutor;
     private Handler mainHandler;
@@ -80,17 +82,43 @@ public class MaintenanceSettingListFragment extends Fragment {
         View btnBack = v.findViewById(R.id.back);
 
         db = DatabaseHelper.getInstance(requireContext());
+        databaseManager = com.lora.cn.database.DatabaseManager.getInstance(requireContext());
         currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
         currentUserName = SPUtils.getInstance().getString("current_user_name", "");
+        try {
+            long uid = currentUserId;
+            if (uid > 0) {
+                com.lora.cn.database.entity.User u = databaseManager.getUserById(uid);
+                if (u != null) currentUserRoleId = (int) u.getRoleId();
+            }
+        } catch (Exception ignored) {}
         if (ioExecutor == null) ioExecutor = Executors.newSingleThreadExecutor();
         if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new MaintenanceInfoDetailAdapter(MaintenanceInfoDetailAdapter.Mode.SETTING);
-        adapter.setOnConfirmClickListener(this::showConfirmDialog);
+        adapter.setOnConfirmClickListener(item -> {
+            if (!hasPermission("terminal_confirm")) {
+                Toast.makeText(requireContext(), "您没有确认维护的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showConfirmDialog(item);
+        });
         adapter.setOnViewClickListener(this::showViewDialog);
-        adapter.setOnEditClickListener(this::showEditDialog);
-        adapter.setOnDeleteClickListener(this::showDeleteDialog);
+        adapter.setOnEditClickListener(item -> {
+            if (!hasPermission("maintenance_edit")) {
+                Toast.makeText(requireContext(), "您没有编辑维护的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showEditDialog(item);
+        });
+        adapter.setOnDeleteClickListener(item -> {
+            if (!hasPermission("maintenance_delete")) {
+                Toast.makeText(requireContext(), "您没有删除维护的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showDeleteDialog(item);
+        });
         rv.setAdapter(adapter);
 
         if (btnBack != null) {
@@ -101,7 +129,12 @@ public class MaintenanceSettingListFragment extends Fragment {
             });
         }
         if (btnAdd != null) {
+            btnAdd.setVisibility(hasPermission("maintenance_add") ? View.VISIBLE : View.GONE);
             btnAdd.setOnClickListener(view -> {
+                if (!hasPermission("maintenance_add")) {
+                    Toast.makeText(requireContext(), "您没有新增维护的权限", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 if (!TextUtils.isEmpty(terminalId)) showAddDialogForTerminal(terminalId);
             });
         }
@@ -463,6 +496,15 @@ public class MaintenanceSettingListFragment extends Fragment {
                 .setPositiveButton("确定", null)
                 .create()
                 .show();
+    }
+
+    private boolean hasPermission(String code) {
+        if (currentUserRoleId <= 0) return false;
+        try {
+            return databaseManager.hasPermission(currentUserRoleId, code);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String nowStr() {

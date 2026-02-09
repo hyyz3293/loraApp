@@ -104,6 +104,11 @@ public class RoleManagementFragment extends Fragment {
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_delete, (baseQuickAdapter, view, i) -> {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
+                String rn = role.getRoleName() == null ? "" : role.getRoleName().trim();
+                if ("管理员".equals(rn)) {
+                    android.widget.Toast.makeText(requireContext(), "基础角色不可删除", android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 if (hasPermission("role_delete")) showDeleteConfirmDialog(role);
                 else android.widget.Toast.makeText(requireContext(), "您没有删除角色的权限", android.widget.Toast.LENGTH_SHORT).show();
             }

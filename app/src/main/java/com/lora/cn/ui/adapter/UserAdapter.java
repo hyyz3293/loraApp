@@ -37,6 +37,13 @@ public class UserAdapter extends BaseQuickAdapter<User, QuickViewHolder> {
         // 设置状态开关
         SwitchCompat switchStatus = holder.getView(R.id.switch_user_status);
         switchStatus.setChecked(user.getStatus() == 1);
+        String acc = user.getUserAccount() == null ? "" : user.getUserAccount().trim();
+        if ("admin".equals(acc)) {
+            holder.setVisible(R.id.tv_user_edit, false);
+            holder.setVisible(R.id.tv_user_delete, false);
+            holder.setVisible(R.id.tv_user_reset_password, false);
+            holder.setVisible(R.id.switch_user_status, false);
+        }
     }
 
     @NonNull

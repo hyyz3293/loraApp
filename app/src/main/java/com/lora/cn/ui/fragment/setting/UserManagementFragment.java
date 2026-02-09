@@ -99,6 +99,8 @@ public class UserManagementFragment extends Fragment {
         userAdapter.addOnItemChildClickListener(R.id.tv_user_reset_password, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
+                String acc = user.getUserAccount() == null ? "" : user.getUserAccount().trim();
+                if ("admin".equals(acc)) { Toast.makeText(requireContext(), "基础账户不可修改", Toast.LENGTH_SHORT).show(); return; }
                 if (hasPermission("user_reset_password")) showResetPasswordDialog(user);
                 else Toast.makeText(requireContext(), "您没有重置密码的权限", Toast.LENGTH_SHORT).show();
             }
@@ -107,6 +109,8 @@ public class UserManagementFragment extends Fragment {
         userAdapter.addOnItemChildClickListener(R.id.tv_user_edit, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
+                String acc = user.getUserAccount() == null ? "" : user.getUserAccount().trim();
+                if ("admin".equals(acc)) { Toast.makeText(requireContext(), "基础账户不可修改", Toast.LENGTH_SHORT).show(); return; }
                 if (hasPermission("user_edit")) showEditUserDialog(user);
                 else Toast.makeText(requireContext(), "您没有编辑用户的权限", Toast.LENGTH_SHORT).show();
             }
@@ -115,6 +119,8 @@ public class UserManagementFragment extends Fragment {
         userAdapter.addOnItemChildClickListener(R.id.tv_user_delete, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
+                String acc = user.getUserAccount() == null ? "" : user.getUserAccount().trim();
+                if ("admin".equals(acc)) { Toast.makeText(requireContext(), "基础账户不可删除", Toast.LENGTH_SHORT).show(); return; }
                 if (hasPermission("user_delete")) showDeleteConfirmDialog(user);
                 else Toast.makeText(requireContext(), "您没有删除用户的权限", Toast.LENGTH_SHORT).show();
             }
@@ -124,6 +130,8 @@ public class UserManagementFragment extends Fragment {
         userAdapter.addOnItemChildClickListener(R.id.switch_user_status, (baseQuickAdapter, view, i) -> {
             User user = baseQuickAdapter.getItem(i);
             if (user != null) {
+                String acc = user.getUserAccount() == null ? "" : user.getUserAccount().trim();
+                if ("admin".equals(acc)) { Toast.makeText(requireContext(), "基础账户不可修改", Toast.LENGTH_SHORT).show(); return; }
                 if (hasPermission("user_disable")) {
                     SwitchCompat switchCompat = (SwitchCompat) view;
                     toggleUserStatus(user, switchCompat.isChecked());

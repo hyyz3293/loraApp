@@ -370,7 +370,7 @@ public class MainActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
-        ensureStatusBarVisible();
+        ensureSystemBarsHidden();
 
         // 初始化数据库助手
         databaseHelper = DatabaseHelper.getInstance(this);
@@ -497,7 +497,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        ensureStatusBarVisible();
+        ensureSystemBarsHidden();
         try { updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
@@ -507,7 +507,7 @@ public class MainActivity extends AppCompatActivity {
         if (!org.greenrobot.eventbus.EventBus.getDefault().isRegistered(this)) {
             org.greenrobot.eventbus.EventBus.getDefault().register(this);
         }
-        ensureStatusBarVisible();
+        ensureSystemBarsHidden();
     }
 
     @Override
@@ -540,24 +540,32 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) ensureStatusBarVisible();
+        if (hasFocus) ensureSystemBarsHidden();
     }
 
     private void applyImmersiveMode() {
     }
 
-    private void ensureStatusBarVisible() {
-        try { getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN); } catch (Exception ignored) {}
-        try { androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), true); } catch (Exception ignored) {}
+    private void ensureSystemBarsHidden() {
+        try { getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN); } catch (Exception ignored) {}
+        try { androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false); } catch (Exception ignored) {}
         try {
             if (android.os.Build.VERSION.SDK_INT >= 30) {
                 android.view.WindowInsetsController c = getWindow().getInsetsController();
                 if (c != null) {
-                    c.show(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
+                    c.hide(android.view.WindowInsets.Type.statusBars() | android.view.WindowInsets.Type.navigationBars());
+                    c.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
                 }
             } else {
                 android.view.View decor = getWindow().getDecorView();
-                decor.setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_VISIBLE);
+                decor.setSystemUiVisibility(
+                        android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                                | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
+                                | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                | android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                | android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                | android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                );
             }
         } catch (Exception ignored) {}
     }
