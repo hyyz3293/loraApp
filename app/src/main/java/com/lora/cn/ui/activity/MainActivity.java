@@ -498,6 +498,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         ensureSystemBarsHidden();
+        try {
+            boolean connectedNow = com.lora.cn.network.MqttPacketsClient.getShared().isConnected();
+            updateMqttDotUi(connectedNow ? MQTT_STATE_CONNECTED : MQTT_STATE_CONNECTING);
+        } catch (Exception ignored) {}
         try { updateMaintenanceBadge(); } catch (Exception ignored) {}
     }
 
@@ -648,7 +652,9 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        } catch (Throwable ignored) {}
         tvErrorComplete = findViewById(R.id.error_complte);
-        updateMqttDotUi(MQTT_STATE_CONNECTING);
+        boolean connectedNow = false;
+        try { connectedNow = com.lora.cn.network.MqttPacketsClient.getShared().isConnected(); } catch (Exception ignored) {}
+        updateMqttDotUi(connectedNow ? MQTT_STATE_CONNECTED : MQTT_STATE_CONNECTING);
 
         if (rlAlertIcon != null) {
             rlAlertIcon.setOnClickListener(this::toggleGlobalMute);
@@ -799,8 +805,8 @@ public class MainActivity extends AppCompatActivity {
         menuTabs.add(new MenuTab("日志信息", 2));
         menuTabs.add(new MenuTab("维护列表", 3));
         menuTabs.add(new MenuTab("设置", 4));
-        menuTabs.add(new MenuTab("下行测试", 5));
-        menuTabs.add(new MenuTab("上行解析", 6));
+//        menuTabs.add(new MenuTab("下行测试", 5));
+//        menuTabs.add(new MenuTab("上行解析", 6));
         //menuTabs.add(new MenuTab("报警处理", -1));
         
         // 设置RecyclerView
@@ -875,6 +881,7 @@ public class MainActivity extends AppCompatActivity {
             bg.setColor(color);
             mqttStatusDot.setBackground(bg);
             mqttStatusDot.setVisibility(android.view.View.VISIBLE);
+            try { mqttStatusDot.bringToFront(); } catch (Exception ignored) {}
             if (mqttUiState == MQTT_STATE_CONNECTING) {
                 if (mqttDotBlinkAnim == null) {
                     android.view.animation.AlphaAnimation anim = new android.view.animation.AlphaAnimation(1.0f, 0.2f);
@@ -1817,10 +1824,10 @@ public class MainActivity extends AppCompatActivity {
                             mi.setTerminalGroup(groups == null ? "" : groups);
                             mi.setStatus(0);
                             mi.setContent("主动维护");
-                            long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-                            String uname = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
-                            mi.setCreateUserId(uid > 0 ? uid : 0L);
-                            mi.setCreateUser(uname == null ? "" : uname);
+                            long uidEff = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserIdForAuto();
+                            String unameEff = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserNameForAuto();
+                            mi.setCreateUserId(uidEff > 0 ? uidEff : 0L);
+                            mi.setCreateUser(unameEff == null ? "" : unameEff);
                             mi.setCreateTime(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                             try { databaseHelper.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
                             maintenanceTouched = true;
@@ -1830,7 +1837,7 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         try { db.updateTerminalMaintenanceState(frame.deviceId, false, System.currentTimeMillis()); } catch (Exception ignored) {}
                         if (existingAll != null) {
-                            String autoUser = "系统自动";
+                            String autoUser = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserNameForAuto();
                             String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                             String autoRemark = "主动维护清除：自动标记已维护";
                             for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
@@ -1852,7 +1859,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!timedMaintenanceNeeded) {
                     try {
                         if (existingAll != null) {
-                            String autoUser = "系统自动";
+                            String autoUser = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserNameForAuto();
                             String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                             String autoRemark = "定时维护清除：自动标记已维护";
                             long now = System.currentTimeMillis();
@@ -2665,6 +2672,15 @@ public class MainActivity extends AppCompatActivity {
         // 清除Fragment
         if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         mainHandler.postDelayed(() -> navInFlight.set(false), 300);
+    }
+
+    public void hideDeviceListImmediate() {
+        isDeviceListVisible = false;
+        fragmentDeviceListContainer.setVisibility(View.GONE);
+        viewPager.setVisibility(View.VISIBLE);
+        rvMenuTabs.setVisibility(View.VISIBLE);
+        try { getSupportFragmentManager().popBackStackImmediate("device_list", 0); } catch (Exception ignored) {}
+        navInFlight.set(false);
     }
 
     private void showUserInfo() {

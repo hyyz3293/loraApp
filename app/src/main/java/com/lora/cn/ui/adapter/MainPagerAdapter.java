@@ -33,10 +33,10 @@ public class MainPagerAdapter extends FragmentStateAdapter {
                 return new MaintenanceHomeListFragment();
             case 4:
                 return new SettingsFragment();
-            case 5:
-                return new DownlinkTestFragment();
-            case 6:
-                return new UplinkParseFragment();
+//            case 5:
+//                return new DownlinkTestFragment();
+//            case 6:
+//                return new UplinkParseFragment();
             default:
                 return new TerminalListFragment();
         }
@@ -44,6 +44,6 @@ public class MainPagerAdapter extends FragmentStateAdapter {
 
     @Override
     public int getItemCount() {
-        return 7;
+        return 5;
     }
 }

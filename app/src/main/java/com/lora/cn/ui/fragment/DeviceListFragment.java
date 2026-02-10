@@ -137,9 +137,8 @@ public class DeviceListFragment extends Fragment {
 
         // 返回按钮
         btnBack.setOnClickListener(v -> {
-            // 返回上个界面，隐藏设备列表
             if (getActivity() instanceof MainActivity) {
-                ((MainActivity) getActivity()).hideDeviceList();
+                ((MainActivity) getActivity()).hideDeviceListImmediate();
             } else if (getParentFragmentManager().getBackStackEntryCount() > 0) {
                 getParentFragmentManager().popBackStack();
             }

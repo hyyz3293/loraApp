@@ -494,7 +494,7 @@ public class TerminalDetailFragment extends Fragment {
         btnBack.setOnClickListener(v -> {
             android.app.Activity a = getActivity();
             if (a instanceof com.lora.cn.ui.activity.MainActivity) {
-                ((com.lora.cn.ui.activity.MainActivity) a).hideDeviceList();
+                ((com.lora.cn.ui.activity.MainActivity) a).hideDeviceListImmediate();
                 return;
             }
             if (getParentFragmentManager().getBackStackEntryCount() > 0) getParentFragmentManager().popBackStack();

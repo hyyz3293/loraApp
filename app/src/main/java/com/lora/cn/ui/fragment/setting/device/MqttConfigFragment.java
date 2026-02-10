@@ -134,20 +134,17 @@ public class MqttConfigFragment extends Fragment {
         sp.put("mqtt_local_broker_enabled", localEnabled);
         sp.put("mqtt_local_broker_port", localPort > 0 ? localPort : 1883);
 
-        if (localEnabled) {
-            try {
-                android.content.Intent svc = new android.content.Intent(requireContext(), com.lora.cn.service.MqttBrokerService.class);
-                svc.putExtra("port", localPort > 0 ? localPort : 1883);
-                androidx.core.content.ContextCompat.startForegroundService(requireContext(), svc);
+        try {
+            android.content.Intent svc = new android.content.Intent(requireContext(), com.lora.cn.service.MqttBrokerService.class);
+            svc.putExtra("port", localPort > 0 ? localPort : 1883);
+            androidx.core.content.ContextCompat.startForegroundService(requireContext(), svc);
+            if (localEnabled) {
                 String ipSummary = getIpSummary();
                 Toast.makeText(requireContext(), "本地MQTT服务端已启动: IP=" + (ipSummary.isEmpty()?"未知":ipSummary) + ", 端口=" + (localPort>0?localPort:1883), Toast.LENGTH_LONG).show();
-            } catch (Exception ignored) {}
-        } else {
-            try {
-                requireContext().stopService(new android.content.Intent(requireContext(), com.lora.cn.service.MqttBrokerService.class));
-                Toast.makeText(requireContext(), "本地MQTT服务端已停止", Toast.LENGTH_SHORT).show();
-            } catch (Exception ignored) {}
-        }
+            } else {
+                Toast.makeText(requireContext(), "使用外部Broker，服务已保持订阅接收", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception ignored) {}
 
         Toast.makeText(requireContext(), "MQTT设置已保存", Toast.LENGTH_SHORT).show();
     }

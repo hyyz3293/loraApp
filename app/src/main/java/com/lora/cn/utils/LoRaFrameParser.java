@@ -42,6 +42,12 @@ public class LoRaFrameParser {
         public int alarmCount;           // 当前闹钟数量 (1字节, 0-2)
         public int[] alarmMinutes;       // 闹钟时刻点列表 (N*2, 单位min)
 
+        public int termVerYY;
+        public int termVerMM;
+        public int termVerDD;
+        public int loraModuleVersionCode;
+        public String firmwareVersionString;
+
         // 设备事件 bit 展开
         public int evPowerLockOpen;      // Bit0: 电源开关锁-开事件 (0/1)
         public int evPowerLockClose;     // Bit1: 电源开关锁-关事件 (0/1)
@@ -276,6 +282,27 @@ public class LoRaFrameParser {
                 frame.alarmMinutes = new int[0];
             }
 
+            try {
+                if (frame.dataContent.length >= 4) {
+                    int n = frame.dataContent.length;
+                    int yy = bcdByteToInt(frame.dataContent[n - 4]);
+                    int mm = bcdByteToInt(frame.dataContent[n - 3]);
+                    int dd = bcdByteToInt(frame.dataContent[n - 2]);
+                    int mv = frame.dataContent[n - 1] & 0xFF;
+                    boolean yyOk = yy >= 0 && yy <= 99;
+                    boolean mmOk = mm >= 1 && mm <= 12;
+                    boolean ddOk = dd >= 1 && dd <= 31;
+                    boolean mvOk = (mv == 0x00) || (mv == 0x01);
+                    if (yyOk && mmOk && ddOk && mvOk) {
+                        frame.termVerYY = yy;
+                        frame.termVerMM = mm;
+                        frame.termVerDD = dd;
+                        frame.loraModuleVersionCode = mv;
+                        frame.firmwareVersionString = buildFirmwareVersionString(yy, mm, dd, mv);
+                    }
+                }
+            } catch (Exception ignored) {}
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -358,6 +385,32 @@ public class LoRaFrameParser {
             result = (result << 8) | (data[offset + i] & 0xFF);
         }
         return result;
+    }
+    
+    private static int bcdByteToInt(byte b) {
+        int v = b & 0xFF;
+        int hi = (v >> 4) & 0x0F;
+        int lo = v & 0x0F;
+        if (hi > 9 || lo > 9) return -1;
+        return hi * 10 + lo;
+    }
+
+    public static String buildFirmwareVersionString(int yy, int mm, int dd, int moduleCode) {
+        try {
+            int year = 2000 + Math.max(0, Math.min(99, yy));
+            int month = Math.max(1, Math.min(12, mm));
+            int day = Math.max(1, Math.min(31, dd));
+            String date = String.format(java.util.Locale.getDefault(), "%04d%02d%02d", year, month, day);
+            String module;
+            if (moduleCode == 0x01) {
+                module = "V4.18 P1.7.7";
+            } else {
+                module = "未知版本";
+            }
+            return "Ver-" + date + "-" + module;
+        } catch (Exception ignored) {
+            return "";
+        }
     }
     
     /**

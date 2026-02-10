@@ -37,7 +37,8 @@ public class VersionInfoFragment extends Fragment {
             tvAppName.setText(getString(R.string.app_name));
         }
         String appVer = "App版本：" + com.lora.cn.BuildConfig.VERSION_NAME + " (" + com.lora.cn.BuildConfig.VERSION_CODE + ")";
-        String termVer = "终端版本：" + "Ver-20260203-1.7.7";
+        String fw = com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "");
+        String termVer = "终端版本：" + (fw == null || fw.trim().isEmpty() ? "未知" : fw);
         if (tvAppVersion != null) tvAppVersion.setText(appVer);
         if (tvTerminalVersion != null) tvTerminalVersion.setText(termVer);
         return view;

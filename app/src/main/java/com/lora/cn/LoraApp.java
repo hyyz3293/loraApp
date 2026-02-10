@@ -24,18 +24,15 @@ import com.blankj.utilcode.util.Utils;
         } catch (Exception ignored) {}
             try {
                 com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
-                boolean localEnabled = sp.getBoolean("mqtt_local_broker_enabled", true);
                 int localPort = sp.getInt("mqtt_local_broker_port", 1883);
-                if (localEnabled) {
-                    android.content.Intent svc = new android.content.Intent(getApplicationContext(), com.lora.cn.service.MqttBrokerService.class);
-                    svc.putExtra("port", localPort > 0 ? localPort : 1883);
-                    try {
-                        androidx.core.content.ContextCompat.startForegroundService(getApplicationContext(), svc);
-                    } catch (Exception e) {
-                        try { getApplicationContext().startService(svc); } catch (Exception ignored) {}
-                    }
-                    try { sp.put("mqtt_client_in_service", true); } catch (Exception ignored) {}
+                android.content.Intent svc = new android.content.Intent(getApplicationContext(), com.lora.cn.service.MqttBrokerService.class);
+                svc.putExtra("port", localPort > 0 ? localPort : 1883);
+                try {
+                    androidx.core.content.ContextCompat.startForegroundService(getApplicationContext(), svc);
+                } catch (Exception e) {
+                    try { getApplicationContext().startService(svc); } catch (Exception ignored) {}
                 }
+                try { sp.put("mqtt_client_in_service", true); } catch (Exception ignored) {}
             } catch (Exception ignored) {}
 //        try {
 //            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();

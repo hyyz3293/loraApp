@@ -195,16 +195,28 @@ public class AddDeviceFragment extends Fragment {
     }
     
     private void setupListeners() {
-        // 顶部右侧返回按钮
-        btnSave.setOnClickListener(v -> {
-            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
-                getParentFragmentManager().popBackStack();
+        btnBack.setOnClickListener(v -> {
+            androidx.fragment.app.FragmentManager fm = getParentFragmentManager();
+            if (fm.getBackStackEntryCount() > 0) fm.popBackStack();
+            android.app.Activity a = getActivity();
+            if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                ((com.lora.cn.ui.activity.MainActivity) a).hideDeviceListImmediate();
             }
         });
-        // 底部取消按钮
+        btnSave.setOnClickListener(v -> {
+            androidx.fragment.app.FragmentManager fm = getParentFragmentManager();
+            if (fm.getBackStackEntryCount() > 0) fm.popBackStack();
+            android.app.Activity a = getActivity();
+            if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                ((com.lora.cn.ui.activity.MainActivity) a).hideDeviceListImmediate();
+            }
+        });
         btnCancel.setOnClickListener(v -> {
-            if (getParentFragmentManager().getBackStackEntryCount() > 0) {
-                getParentFragmentManager().popBackStack();
+            androidx.fragment.app.FragmentManager fm = getParentFragmentManager();
+            if (fm.getBackStackEntryCount() > 0) fm.popBackStack();
+            android.app.Activity a = getActivity();
+            if (a instanceof com.lora.cn.ui.activity.MainActivity) {
+                ((com.lora.cn.ui.activity.MainActivity) a).hideDeviceListImmediate();
             }
         });
         // 底部完成配对按钮

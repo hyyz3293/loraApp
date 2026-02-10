@@ -405,6 +405,67 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return instance;
     }
     
+    public long getDefaultAdminUserId() {
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            android.database.Cursor c = db.rawQuery("SELECT " + COLUMN_USER_ID + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + "='admin' LIMIT 1", null);
+            try {
+                if (c != null && c.moveToFirst()) {
+                    return c.getLong(0);
+                }
+            } finally {
+                if (c != null) c.close();
+            }
+        } catch (Exception ignored) {}
+        return 0L;
+    }
+    
+    public String getDefaultAdminUserName() {
+        try {
+            SQLiteDatabase db = getReadableDatabase();
+            android.database.Cursor c = db.rawQuery("SELECT " + COLUMN_USER_NAME + " FROM " + TABLE_USERS + " WHERE " + COLUMN_USER_ACCOUNT + "='admin' LIMIT 1", null);
+            try {
+                if (c != null && c.moveToFirst()) {
+                    String n = c.getString(0);
+                    if (n != null && !n.trim().isEmpty()) return n;
+                }
+            } finally {
+                if (c != null) c.close();
+            }
+        } catch (Exception ignored) {}
+        return "管理员";
+    }
+    
+    public long resolveEffectiveUserIdForAuto() {
+        boolean loggedIn = false;
+        try { loggedIn = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(com.lora.cn.constant.SpConstant.IS_LOGIN, false); } catch (Exception ignored) {}
+        if (!loggedIn) {
+            long aid = getDefaultAdminUserId();
+            return aid > 0 ? aid : 0L;
+        }
+        long uid = 0L;
+        try { uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", 0L); } catch (Exception ignored) {}
+        if (uid <= 0) {
+            long aid = getDefaultAdminUserId();
+            return aid > 0 ? aid : 0L;
+        }
+        return uid;
+    }
+    
+    public String resolveEffectiveUserNameForAuto() {
+        boolean loggedIn = false;
+        try { loggedIn = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean(com.lora.cn.constant.SpConstant.IS_LOGIN, false); } catch (Exception ignored) {}
+        if (!loggedIn) {
+            return getDefaultAdminUserName();
+        }
+        String name = null;
+        try { name = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", ""); } catch (Exception ignored) {}
+        if (name == null || name.trim().isEmpty()) {
+            return getDefaultAdminUserName();
+        }
+        return name;
+    }
+    
     @Override
     public void onCreate(SQLiteDatabase db) {
         // 创建分组表
@@ -1759,8 +1820,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_LOG_CREATE_TIME, bcdStr);
 
         String handleTimeNow = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-        String handleUserNow = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "");
-        if (handleUserNow == null || handleUserNow.trim().isEmpty()) handleUserNow = "系统自动";
+        String handleUserNow = resolveEffectiveUserNameForAuto();
         try {
             if (deviceId != null && !deviceId.trim().isEmpty()) {
                 markOfflineLogsHandled(deviceId, handleTimeNow, handleUserNow);
@@ -2013,10 +2073,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (deviceId == null || deviceId.trim().isEmpty()) return;
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues v = new ContentValues();
-        String user2 = handleUser;
-        if (user2 == null || user2.trim().isEmpty()) {
-            user2 = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
-        }
+        String user2 = (handleUser == null || handleUser.trim().isEmpty()) ? resolveEffectiveUserNameForAuto() : handleUser;
         v.put("handle_user", user2);
         v.put("handle_time", handleTime == null ? "" : handleTime);
         v.put("handle_remark", "自动处理");
@@ -2042,10 +2099,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         if (statuses == null || statuses.length == 0) return;
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues v = new ContentValues();
-        String user2 = handleUser;
-        if (user2 == null || user2.trim().isEmpty()) {
-            user2 = com.blankj.utilcode.util.SPUtils.getInstance().getString("current_user_name", "系统自动");
-        }
+        String user2 = (handleUser == null || handleUser.trim().isEmpty()) ? resolveEffectiveUserNameForAuto() : handleUser;
         v.put("handle_user", user2);
         v.put("handle_time", handleTime == null ? "" : handleTime);
         v.put("handle_remark", "自动处理");

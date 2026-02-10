@@ -102,10 +102,15 @@ public class MqttBrokerService extends Service {
         int port = readPort(intent);
         String ipSummary = getIpSummary();
         startForeground(NOTIFICATION_ID, buildNotification(port, ipSummary));
-        if (brokerExecutor != null) {
-            brokerExecutor.execute(() -> startBrokerIfNeeded(port));
+        boolean localEnabled = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("mqtt_local_broker_enabled", true);
+        if (localEnabled) {
+            if (brokerExecutor != null) {
+                brokerExecutor.execute(() -> startBrokerIfNeeded(port));
+            } else {
+                startBrokerIfNeeded(port);
+            }
         } else {
-            startBrokerIfNeeded(port);
+            stopBroker();
         }
         if (maintenanceEvaluateHandler != null) {
             maintenanceEvaluateHandler.removeCallbacks(maintenanceEvaluateRunnable);
@@ -529,6 +534,12 @@ public class MqttBrokerService extends Service {
             android.content.Intent i = new android.content.Intent(ACTION_MQTT_CLIENT_STATE);
             i.putExtra("state", state);
             sendBroadcast(i);
+            try {
+                com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+                sp.put("mqtt_client_state", state == null ? "" : state);
+                boolean ok = "connected".equalsIgnoreCase(state);
+                sp.put("mqtt_connected", ok);
+            } catch (Exception ignored) {}
         } catch (Exception ignored) {}
     }
 
@@ -612,6 +623,16 @@ public class MqttBrokerService extends Service {
             try {
                 if (!db.isTerminalExists(frame.deviceId)) return;
             } catch (Exception ignored) { return; }
+            try {
+                int yy = frame.termVerYY;
+                int mm = frame.termVerMM;
+                int dd = frame.termVerDD;
+                int mv = frame.loraModuleVersionCode;
+                String fw = com.lora.cn.utils.LoRaFrameParser.buildFirmwareVersionString(yy, mm, dd, mv);
+                if (fw != null && !fw.trim().isEmpty()) {
+                    com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version", fw);
+                }
+            } catch (Exception ignored) {}
             int latestTimedUnsentMins = -1;
             java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allMForDevice = null;
             java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> dueMaint = new java.util.ArrayList<>();
@@ -720,10 +741,10 @@ public class MqttBrokerService extends Service {
                         mi.setTerminalGroup(groups == null ? "" : groups);
                         mi.setStatus(0);
                         mi.setContent("主动维护");
-                        long uid = sp.getLong("current_user_id", -1);
-                        String uname = sp.getString("current_user_name", "");
-                        mi.setCreateUserId(uid > 0 ? uid : 0L);
-                        mi.setCreateUser(uname == null ? "" : uname);
+                        long uidEff = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserIdForAuto();
+                        String unameEff = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserNameForAuto();
+                        mi.setCreateUserId(uidEff > 0 ? uidEff : 0L);
+                        mi.setCreateUser(unameEff == null ? "" : unameEff);
                         mi.setCreateTime(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date()));
                         try { db.addMaintenanceRecord(mi); } catch (Exception ignored2) {}
                         maintenanceTouched = true;
@@ -733,7 +754,7 @@ public class MqttBrokerService extends Service {
                 try {
                     try { db.updateTerminalMaintenanceState(frame.deviceId, false, System.currentTimeMillis()); } catch (Exception ignored) {}
                     if (existingAll != null) {
-                        String autoUser = "系统自动";
+                        String autoUser = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserNameForAuto();
                         String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                         String autoRemark = "主动维护清除：自动标记已维护";
                         for (com.lora.cn.ui.model.MaintenanceInfo x : existingAll) {
@@ -754,7 +775,7 @@ public class MqttBrokerService extends Service {
             if (!timedMaintenanceNeeded) {
                 try {
                     if (existingAll != null) {
-                        String autoUser = "系统自动";
+                        String autoUser = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).resolveEffectiveUserNameForAuto();
                         String autoTime = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
                         String autoRemark = "定时维护清除：自动标记已维护";
                         long now2 = System.currentTimeMillis();
