@@ -543,6 +543,59 @@ public class MqttBrokerService extends Service {
         } catch (Exception ignored) {}
     }
 
+    public boolean setTabletTimeFromString(String time) {
+        long ms = parseTimeMillisFlexible(time);
+        return setTabletTimeMillis(ms);
+    }
+
+    private long parseTimeMillisFlexible(String s) {
+        if (s == null) return -1L;
+        String raw = s.trim();
+        if (raw.isEmpty()) return -1L;
+        try {
+            if (raw.matches("^\\d{13}$")) return Long.parseLong(raw);
+            if (raw.matches("^\\d{10}$")) return Long.parseLong(raw) * 1000L;
+        } catch (Exception ignored) {}
+        java.util.List<java.text.SimpleDateFormat> fs = new java.util.ArrayList<>();
+        fs.add(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()));
+        fs.add(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()));
+        fs.add(new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault()));
+        for (java.text.SimpleDateFormat f : fs) {
+            try {
+                java.util.Date d = f.parse(raw);
+                if (d != null) return d.getTime();
+            } catch (Exception ignored) {}
+        }
+        return -1L;
+    }
+
+    public boolean setTabletTimeMillis(long millis) {
+        if (millis <= 0L) return false;
+        boolean ok = false;
+        try { ok = android.os.SystemClock.setCurrentTimeMillis(millis); } catch (Throwable ignored) { ok = false; }
+        if (ok) return true;
+        java.text.SimpleDateFormat f1 = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+        java.text.SimpleDateFormat f2 = new java.text.SimpleDateFormat("yyyyMMdd.HHmmss", java.util.Locale.getDefault());
+        String ts1 = f1.format(new java.util.Date(millis));
+        String ts2 = f2.format(new java.util.Date(millis));
+        String[] cmds = new String[]{
+                "date -s " + ts1,
+                "toybox date -s " + ts1,
+                "busybox date -s " + ts1,
+                "date " + ts2,
+                "toybox date " + ts2,
+                "busybox date " + ts2
+        };
+        for (String c : cmds) {
+            try {
+                Process p = new ProcessBuilder("su", "-c", c).redirectErrorStream(true).start();
+                int code = p.waitFor();
+                if (code == 0) return true;
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
     private void handleUplinkBySleepCycleService(com.lora.cn.network.GatewayPacketsClient.PacketRecord r, String currentTime, long intervalMs) {
         if (r == null) return;
         String devEui = r.deviceId != null ? r.deviceId : "-";
@@ -550,6 +603,7 @@ public class MqttBrokerService extends Service {
         String hex = r.payloadHex != null ? r.payloadHex : "-";
         String dr = r.dr != null ? r.dr : "-";
         String time = r.time != null ? r.time : currentTime;
+        try { setTabletTimeFromString(time); } catch (Exception ignored) {}
         String freq = r.freq != null ? String.valueOf(r.freq) : "-";
         String rssi = r.rssi != null ? String.valueOf(r.rssi) : "-";
         String snr = r.snr != null ? String.valueOf(r.snr) : "-";

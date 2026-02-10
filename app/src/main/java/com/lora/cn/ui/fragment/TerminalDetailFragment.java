@@ -278,6 +278,11 @@ public class TerminalDetailFragment extends Fragment {
         }
         tab_maintenance.setSelected(true);
         tab_logs.setSelected(false);
+
+        String fw = com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "");
+        String termVer = (fw == null || fw.trim().isEmpty() ? "未知" : (fw + "-60.0.0.48")  )  ;
+        TextView tvTerminalVersion = v.findViewById(R.id.terminal_detail_version);
+        if (tvTerminalVersion != null) tvTerminalVersion.setText(termVer);
     }
 
     private void bindData() {
