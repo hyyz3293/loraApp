@@ -1823,7 +1823,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String handleUserNow = resolveEffectiveUserNameForAuto();
         try {
             if (deviceId != null && !deviceId.trim().isEmpty()) {
-                markOfflineLogsHandled(deviceId, handleTimeNow, handleUserNow);
+                markOfflineLogsHandled(deviceId, bcdStr, handleUserNow);
             }
         } catch (Exception ignored) {
             LogUtils.e("markOfflineLogsHandled:" + ignored);
@@ -1949,7 +1949,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 if (clearedIllegalRemovalByAck && mappedLogFromTerminal == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
                     try {
                         String autoUser = handleUserNow;
-                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                        markAlertLogsHandled(deviceId, bcdStr, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
                     } catch (Exception ignored) {}
@@ -1970,7 +1970,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     android.util.Log.d("DatabaseHelper", "按日志状态更新终端为正常在线 deviceId=" + deviceId + ", rows=" + rows);
                     try {
                         String autoUser = handleUserNow;
-                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                        markAlertLogsHandled(deviceId, bcdStr, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
@@ -1980,7 +1980,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     android.util.Log.d("DatabaseHelper", "按日志状态更新终端为异常取走 deviceId=" + deviceId + ", rows=" + rows);
                     try {
                         String autoUser = handleUserNow;
-                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                        markAlertLogsHandled(deviceId, bcdStr, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code
                         });
                     } catch (Exception ignored) {}
@@ -1990,7 +1990,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code) {
                     try {
                         String autoUser = handleUserNow;
-                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                        markAlertLogsHandled(deviceId, bcdStr, autoUser, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
@@ -2008,7 +2008,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 //                            || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
                     if (wasAbnormal && isRecoveryEvent) {
                         String autoUser2 = handleUserNow;
-                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser2, new int[]{
+                        markAlertLogsHandled(deviceId, bcdStr, autoUser2, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
                                 com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
                         });
@@ -2029,7 +2029,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyRecLb, nowMsLb); } catch (Exception ignored) {}
                     try {
                         String autoUserLb = handleUserNow;
-                        markAlertLogsHandled(deviceId, handleTimeNow, autoUserLb, new int[]{
+                        markAlertLogsHandled(deviceId, bcdStr, autoUserLb, new int[]{
                                 com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
                         });
                     } catch (Exception ignored) {}
@@ -2562,6 +2562,344 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return out;
+    }
+    
+    public long addUplinkLog(String hex, String uplinkTime) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        com.lora.cn.utils.LoRaFrameParser.ParsedFrame frame = com.lora.cn.utils.LoRaFrameParser.parseFrame(hex);
+        String deviceId = frame != null ? frame.deviceId : null;
+        String terminalName = "";
+        int statusCode = 0;
+        int mappedLogFromTerminal = 0;
+        boolean clearedIllegalRemovalByAck = false;
+        String operator = "";
+        String action = "接收上行数据: " + hex;
+        int currentLockState = (frame != null) ? frame.stPowerLockOn : -1;
+        int lastLockStateSnapshot = getLastLockStateByDeviceId(deviceId);
+        int lockChangeStatusCode = 0;
+        if (currentLockState != -1 && currentLockState != lastLockStateSnapshot) {
+            lockChangeStatusCode = (currentLockState == 1)
+                    ? com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
+                    : com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
+        }
+        try {
+            java.util.List<com.lora.cn.ui.model.Terminal> terminals = getAllTerminals();
+            if (deviceId != null && terminals != null) {
+                for (com.lora.cn.ui.model.Terminal t : terminals) {
+                    if (deviceId.equalsIgnoreCase(t.getTerminalId())) {
+                        terminalName = t.getTerminalName();
+                        try {
+                            int tsCode = t.getStatus();
+                            int mapped =
+                                    (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE)
+                                            ? com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code
+                                            : (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE)
+                                            ? com.lora.cn.ui.constants.LogStatus.ONLINE.code
+                                            : (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN)
+                                            ? com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                                            : (tsCode == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN)
+                                            ? com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
+                                            : 0;
+                            mappedLogFromTerminal = mapped;
+                            if (mapped != 0) statusCode = mapped;
+                        } catch (Exception ignored) {}
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        if (frame != null) {
+            try { clearedIllegalRemovalByAck = (frame.nurseAckParams & 0x1L) != 0; } catch (Exception ignored) {}
+            if (frame.stPowerLockOn == 1 && (frame.stLayer1NotInPlace == 1 ||
+                    frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
+                    frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
+                if (!clearedIllegalRemovalByAck) {
+                    statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code;
+                }
+            } else if ((frame.stLayer1NotInPlace == 0 &&
+                    frame.stLayer2NotInPlace == 0 && frame.stLayer3NotInPlace == 0 &&
+                    frame.stLayer4NotInPlace == 0 && frame.stLayer5NotInPlace == 0)) {
+                statusCode = com.lora.cn.ui.constants.LogStatus.ONLINE.code;
+            } else if (frame.stPowerLockOn == 0 && (frame.stLayer1NotInPlace == 1 ||
+                    frame.stLayer2NotInPlace == 1 || frame.stLayer3NotInPlace == 1 ||
+                    frame.stLayer4NotInPlace == 1 || frame.stLayer5NotInPlace == 1)) {
+                statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code;
+            } else if (frame.stPowerLockOn == 0) {
+                if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code)) {
+                    statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code;
+                }
+            } else if (frame.stPowerLockOn == 1) {
+                if (!isLastLogStatus(deviceId, com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code)) {
+                    statusCode = com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code;
+                }
+            } else if (frame.evManualPut == 1) {
+                statusCode = com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code;
+            }
+        }
+        values.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+        values.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
+        values.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+        values.put(COLUMN_LOG_STATUS, statusCode);
+        String normalized = normalizeTimeString(uplinkTime, frame != null ? frame.dataTime : null);
+        values.put(COLUMN_LOG_OPERATOR, operator);
+        values.put(COLUMN_LOG_OPERATION_TIME, normalized);
+        values.put(COLUMN_LOG_ACTION, action);
+        values.put(COLUMN_LOG_CREATE_TIME, normalized);
+        String handleTimeNow = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        String handleUserNow = resolveEffectiveUserNameForAuto();
+        try {
+            if (deviceId != null && !deviceId.trim().isEmpty()) {
+                markOfflineLogsHandled(deviceId, handleTimeNow, handleUserNow);
+            }
+        } catch (Exception ignored) {}
+        boolean exists = deviceId != null && isTerminalExists(deviceId);
+        String targetTable = exists ? TABLE_LOGS : TABLE_LOGS_UNBOUND;
+        long result = -1L;
+        boolean skipBySameStatus = false;
+        boolean suppressAbnormalRepeat = false;
+        boolean skipByTerminalStateSame = false;
+        Integer lastStatusGlobal = null;
+        String lastTimeGlobal = null;
+        android.database.Cursor c1 = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + ", " + COLUMN_LOG_CREATE_TIME + " FROM " + TABLE_LOGS +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                        " ORDER BY (CASE WHEN " + COLUMN_LOG_CREATE_TIME + " IS NULL OR TRIM(" + COLUMN_LOG_CREATE_TIME + ")='' THEN 0 ELSE 1 END) DESC, " +
+                        COLUMN_LOG_CREATE_TIME + " DESC, " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                new String[]{deviceId != null ? deviceId : ""});
+        try {
+            if (c1 != null && c1.moveToFirst()) {
+                lastStatusGlobal = c1.getInt(0);
+                lastTimeGlobal = c1.getString(1);
+            }
+        } finally {
+            if (c1 != null) c1.close();
+        }
+        android.database.Cursor c2 = db.rawQuery(
+                "SELECT " + COLUMN_LOG_STATUS + ", " + COLUMN_LOG_CREATE_TIME + " FROM " + TABLE_LOGS_UNBOUND +
+                        " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                        " ORDER BY (CASE WHEN " + COLUMN_LOG_CREATE_TIME + " IS NULL OR TRIM(" + COLUMN_LOG_CREATE_TIME + ")='' THEN 0 ELSE 1 END) DESC, " +
+                        COLUMN_LOG_CREATE_TIME + " DESC, " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                new String[]{deviceId != null ? deviceId : ""});
+        try {
+            if (c2 != null && c2.moveToFirst()) {
+                String t2 = c2.getString(1);
+                if (lastTimeGlobal == null || (t2 != null && t2.compareTo(lastTimeGlobal) > 0)) {
+                    lastStatusGlobal = c2.getInt(0);
+                    lastTimeGlobal = t2;
+                }
+            }
+        } finally {
+            if (c2 != null) c2.close();
+        }
+        if (lastStatusGlobal != null && lastStatusGlobal == statusCode) {
+            skipBySameStatus = true;
+        }
+        if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+            try {
+                java.util.List<com.lora.cn.ui.model.Terminal> terminals2 = getAllTerminals();
+                if (deviceId != null && terminals2 != null) {
+                    for (com.lora.cn.ui.model.Terminal t2 : terminals2) {
+                        if (t2 != null && deviceId.equalsIgnoreCase(t2.getTerminalId())) {
+                            int st2 = t2.getStatus();
+                            if (st2 == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
+                                suppressAbnormalRepeat = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        skipByTerminalStateSame = (statusCode != 0 && mappedLogFromTerminal == statusCode);
+        if (statusCode != 0 && !skipBySameStatus && !suppressAbnormalRepeat && !skipByTerminalStateSame) {
+            result = db.insert(targetTable, null, values);
+            try {
+                com.lora.cn.utils.LogUtils.e("上行数据库插入=\n" + targetTable + "-----result：" + result);
+                com.lora.cn.utils.LogUtils.e("上行数据库插入=\n" + values);
+            } catch (Exception ignored) {}
+        } else {
+            try {
+                com.lora.cn.utils.LogUtils.e(
+                        "上行未入库: deviceId=" + (deviceId == null ? "" : deviceId) +
+                                ", statusCode=" + statusCode +
+                                ", mappedFromTerminal=" + mappedLogFromTerminal +
+                                ", lastStatusGlobal=" + (lastStatusGlobal == null ? "null" : String.valueOf(lastStatusGlobal)) +
+                                ", lastTimeGlobal=" + (lastTimeGlobal == null ? "" : lastTimeGlobal) +
+                                ", skipBySameStatus=" + skipBySameStatus +
+                                ", suppressAbnormalRepeat=" + suppressAbnormalRepeat +
+                                ", skipByTerminalStateSame=" + skipByTerminalStateSame +
+                                ", existsTerminal=" + exists +
+                                ", table=" + targetTable);
+            } catch (Exception ignored) {}
+        }
+        try {
+            com.lora.cn.utils.LogUtils.e("开关锁 状态----lockChangeStatusCode=" + lockChangeStatusCode + "-----" + (statusCode != lockChangeStatusCode));
+        } catch (Exception ignored) {}
+        long lockResult = -1L;
+        if (lockChangeStatusCode > 0 && statusCode != lockChangeStatusCode) {
+            boolean skipLockDuplicate = false;
+            android.database.Cursor cLock = db.rawQuery(
+                    "SELECT " + COLUMN_LOG_STATUS + " FROM " + targetTable +
+                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? " +
+                            " ORDER BY " + COLUMN_LOG_ID + " DESC LIMIT 1",
+                    new String[]{deviceId != null ? deviceId : ""});
+            try {
+                if (cLock != null && cLock.moveToFirst()) {
+                    int lastSt2 = cLock.getInt(0);
+                    if (lastSt2 == lockChangeStatusCode) skipLockDuplicate = true;
+                }
+            } finally {
+                if (cLock != null) cLock.close();
+            }
+            if (!skipLockDuplicate) {
+                ContentValues vLock = new ContentValues();
+                vLock.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+                vLock.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
+                vLock.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+                vLock.put(COLUMN_LOG_STATUS, lockChangeStatusCode);
+                String nowStr2 = normalized;
+                vLock.put(COLUMN_LOG_OPERATOR, operator);
+                vLock.put(COLUMN_LOG_OPERATION_TIME, nowStr2);
+                vLock.put(COLUMN_LOG_ACTION, action);
+                vLock.put(COLUMN_LOG_CREATE_TIME, nowStr2);
+                lockResult = db.insert(targetTable, null, vLock);
+                try { com.lora.cn.utils.LogUtils.e("开关锁 写入"); } catch (Exception ignored) {}
+            }
+        }
+        try {
+            if (frame != null && deviceId != null) {
+                updateTerminalMetricsByDeviceId(deviceId, frame.batteryLevel, frame.rssi, frame.batteryVoltage);
+                if (clearedIllegalRemovalByAck && mappedLogFromTerminal == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                    try {
+                        String autoUser = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        });
+                    } catch (Exception ignored) {}
+                }
+                if (mappedLogFromTerminal == com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code
+                        && statusCode != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        && statusCode != com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code) {
+                    try { updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE); } catch (Exception ignored) {}
+                }
+                if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) {
+                    int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ABNORMAL_LOST);
+                } else if (statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code) {
+                    int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_NORMAL_TAKEN);
+                } else if (statusCode == com.lora.cn.ui.constants.LogStatus.ONLINE.code) {
+                    int rows = updateTerminalStatusByDeviceId(deviceId, com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_ONLINE);
+                    try {
+                        String autoUser = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        });
+                    } catch (Exception ignored) {}
+                } else if (statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_OPEN.code
+                        || statusCode == com.lora.cn.ui.constants.LogStatus.LOCK_CLOSE.code
+                        || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_ON.code
+                        || statusCode == com.lora.cn.ui.constants.LogStatus.DEVICE_OFF.code) {
+                    try {
+                        String autoUser = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUser, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_OFFLINE.code,
+                                com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code
+                        });
+                    } catch (Exception ignored) {}
+                }
+                try {
+                    long now = System.currentTimeMillis();
+                    if (now - lastTerminalRefreshPostMs >= 1000) {
+                        lastTerminalRefreshPostMs = now;
+                        org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId));
+                    }
+                } catch (Exception ignored) {}
+                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                long nowMsLb = System.currentTimeMillis();
+                String keyLogLb = "low_batt_last_logged_ms:" + (deviceId != null ? deviceId : "");
+                String keyRecLb = "low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : "");
+                if (frame.batteryLevel > lowTh) {
+                    try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyRecLb, nowMsLb); } catch (Exception ignored) {}
+                    try {
+                        String autoUserLb = handleUserNow;
+                        markAlertLogsHandled(deviceId, handleTimeNow, autoUserLb, new int[]{
+                                com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code
+                        });
+                    } catch (Exception ignored) {}
+                } else {
+                    long lastLoggedLb = 0L, lastRecoveredLb = 0L;
+                    try {
+                        lastLoggedLb = com.blankj.utilcode.util.SPUtils.getInstance().getLong(keyLogLb, 0L);
+                        lastRecoveredLb = com.blankj.utilcode.util.SPUtils.getInstance().getLong(keyRecLb, 0L);
+                    } catch (Exception ignored) {}
+                    boolean allowLb = (lastLoggedLb <= 0L) || (lastRecoveredLb > lastLoggedLb);
+                    if (!allowLb) {
+                        android.database.Cursor cLbAny = null;
+                        try {
+                            cLbAny = db.rawQuery(
+                                    "SELECT 1 FROM " + TABLE_LOGS +
+                                            " WHERE " + COLUMN_LOG_DEVICE_ID + "=? AND " + COLUMN_LOG_STATUS + "=? LIMIT 1",
+                                    new String[]{deviceId != null ? deviceId : "", String.valueOf(com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code)});
+                            boolean hasLogLb = (cLbAny != null && cLbAny.moveToFirst());
+                            if (!hasLogLb) allowLb = true;
+                        } finally {
+                            if (cLbAny != null) cLbAny.close();
+                        }
+                    }
+                    if (allowLb) {
+                        ContentValues v = new ContentValues();
+                        v.put(COLUMN_LOG_TERMINAL_ID, deviceId != null ? deviceId : "");
+                        v.put(COLUMN_LOG_TERMINAL_NAME, terminalName);
+                        v.put(COLUMN_LOG_DEVICE_ID, deviceId != null ? deviceId : "");
+                        v.put(COLUMN_LOG_STATUS, com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code);
+                        v.put(COLUMN_LOG_OPERATOR, "");
+                        v.put(COLUMN_LOG_OPERATION_TIME, normalized);
+                        v.put(COLUMN_LOG_ACTION, "设备低电量");
+                        v.put(COLUMN_LOG_CREATE_TIME, normalized);
+                        long r2 = db.insert(targetTable, null, v);
+                        try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyLogLb, nowMsLb); } catch (Exception ignored) {}
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return result;
+    }
+    
+    private String normalizeTimeString(String uplinkTime, java.util.Date frameDate) {
+        String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        String raw = uplinkTime == null ? "" : uplinkTime.trim();
+        if (!raw.isEmpty()) {
+            boolean digits = true;
+            for (int i = 0; i < raw.length(); i++) {
+                char ch = raw.charAt(i);
+                if (ch < '0' || ch > '9') { digits = false; break; }
+            }
+            if (digits) {
+                try {
+                    long v = Long.parseLong(raw);
+                    if (raw.length() == 10) v = v * 1000L;
+                    return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date(v));
+                } catch (Exception ignored) {}
+            } else {
+                java.util.List<java.text.SimpleDateFormat> fs = new java.util.ArrayList<>();
+                fs.add(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()));
+                fs.add(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()));
+                fs.add(new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.getDefault()));
+                for (java.text.SimpleDateFormat f : fs) {
+                    try {
+                        java.util.Date d = f.parse(raw);
+                        if (d != null) return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(d);
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        try {
+            if (frameDate != null) {
+                return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(frameDate);
+            }
+        } catch (Exception ignored) {}
+        return nowStr;
     }
 
     private String buildLogWhereClause(String startTime, String endTime, int typeSel, int policeSel) {

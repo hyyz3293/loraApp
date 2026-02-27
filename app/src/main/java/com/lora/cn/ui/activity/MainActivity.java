@@ -258,7 +258,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "入库任务开始: devEUI=" + (devEuiForLog == null ? "" : devEuiForLog) + ", time=" + broadcastTime);
                     } catch (Exception ignored) {}
                     long result = -1L;
-                    try { result = databaseHelper.addUplinkLog(broadcastHex); } catch (Exception e) { Log.e(TAG, "addUplinkLog异常: " + e.getMessage()); }
+                    try { result = databaseHelper.addUplinkLog(broadcastHex, broadcastTime); } catch (Exception e) { Log.e(TAG, "addUplinkLog异常: " + e.getMessage()); }
                     Log.d(TAG, "上行数据存储到上行日志表，结果: " + result);
                     com.lora.cn.utils.LogUtils.i(TAG, "上行数据入库结果: " + result);
                     if (result <= 0) {

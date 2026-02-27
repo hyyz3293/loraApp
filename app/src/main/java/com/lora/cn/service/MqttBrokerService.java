@@ -659,7 +659,7 @@ public class MqttBrokerService extends Service {
                 final String devEuiForLog = devEui;
                 ioExecutor.execute(() -> {
                     long result = -1L;
-                    try { result = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).addUplinkLog(broadcastHex); } catch (Exception ignored) {}
+                    try { result = com.lora.cn.database.DatabaseHelper.getInstance(getApplicationContext()).addUplinkLog(broadcastHex, broadcastTime); } catch (Exception ignored) {}
                     try {
                         org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.events.UplinkDataEvent(broadcastTime, broadcastHex));
                     } catch (Exception ignored) {}
