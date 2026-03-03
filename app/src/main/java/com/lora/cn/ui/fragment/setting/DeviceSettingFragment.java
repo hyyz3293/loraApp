@@ -103,7 +103,7 @@ public class DeviceSettingFragment extends Fragment {
 //            settingList.add(new SettingItem("WiFIi连接", 0, 1));
 //        }
         if (hasPermission("setting_ip")) {
-            settingList.add(new SettingItem("IP配置", 0, 2));
+            settingList.add(new SettingItem("IP信息", 0, 2));
         }
         if (hasPermission("setting_count")) {
             settingList.add(new SettingItem("清点次数(非管理员角色)", 2, 3));

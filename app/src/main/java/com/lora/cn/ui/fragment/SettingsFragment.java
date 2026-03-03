@@ -79,8 +79,8 @@ public class SettingsFragment extends Fragment {
             settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
         }
 //        if (hasPermission("setting_ip")) {
-//            // 直接增加网关IP配置的快捷入口
-//            settingList.add(new SettingItem(R.mipmap.ic_setting1, "网关IP配置"));
+//            // 直接增加网关IP信息的快捷入口
+//            settingList.add(new SettingItem(R.mipmap.ic_setting1, "网关IP信息"));
 //            // 新增 MQTT 设置入口（同属网络配置权限）
 //            settingList.add(new SettingItem(R.mipmap.ic_setting1, "MQTT设置"));
 //        }
@@ -134,7 +134,7 @@ public class SettingsFragment extends Fragment {
                     targetFragment = DeviceSettingFragment.newInstance();
                 }
                 break;
-            case "网关IP配置":
+            case "网关IP信息":
                 if (hasPermission("setting_ip")) {
                     targetFragment = IpConfigFragment.newInstance();
                 }

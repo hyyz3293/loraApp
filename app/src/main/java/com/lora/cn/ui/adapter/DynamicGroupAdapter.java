@@ -48,8 +48,8 @@ public class DynamicGroupAdapter extends BaseQuickAdapter<Group, QuickViewHolder
         if (names.isEmpty()) {
             names.add("暂无分类");
         }
-        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(holder.itemView.getContext(), R.layout.spinner_item_12dp, names);
-        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_12dp);
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(holder.itemView.getContext(), R.layout.spinner_item_16dp, names);
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_16dp);
         sp.setAdapter(adapter);
         sp.setTag(cats);
         sp.setEnabled(cats != null && !cats.isEmpty());

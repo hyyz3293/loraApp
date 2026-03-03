@@ -10772,8 +10772,8 @@
 
     <issue
         id="HardcodedText"
-        message="Hardcoded string &quot;IP配置&quot;, should use `@string` resource"
-        errorLine1="            android:text=&quot;IP配置&quot;"
+        message="Hardcoded string &quot;IP信息&quot;, should use `@string` resource"
+        errorLine1="            android:text=&quot;IP信息&quot;"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/fragment_ip_config.xml"
@@ -10805,8 +10805,8 @@
 
     <issue
         id="HardcodedText"
-        message="Hardcoded string &quot;IP配置&quot;, should use `@string` resource"
-        errorLine1="                    android:text=&quot;IP配置&quot;"
+        message="Hardcoded string &quot;IP信息&quot;, should use `@string` resource"
+        errorLine1="                    android:text=&quot;IP信息&quot;"
         errorLine2="                    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/fragment_ip_config.xml"
