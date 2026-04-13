@@ -96,6 +96,11 @@ public class RoleManagementFragment extends Fragment {
         roleAdapter.addOnItemChildClickListener(R.id.tv_role_edit, (baseQuickAdapter, view, i) -> {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
+                String rn = role.getRoleName() == null ? "" : role.getRoleName().trim();
+                if ("管理员".equals(rn)) {
+                    android.widget.Toast.makeText(requireContext(), "基础角色不可编辑", android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 if (hasPermission("role_edit")) showEditRoleDialogNew(role);
                 else android.widget.Toast.makeText(requireContext(), "您没有编辑角色的权限", android.widget.Toast.LENGTH_SHORT).show();
             }
@@ -154,6 +159,12 @@ public class RoleManagementFragment extends Fragment {
             Role role = baseQuickAdapter.getItem(i);
             if (role != null) {
                 SwitchCompat switchStatus = (SwitchCompat) view;
+                String rn = role.getRoleName() == null ? "" : role.getRoleName().trim();
+                if ("管理员".equals(rn)) {
+                    switchStatus.setChecked(role.getStatus() == 1);
+                    android.widget.Toast.makeText(requireContext(), "基础角色状态不可更改", android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 toggleRoleStatus(role, switchStatus.isChecked());
             }
         });

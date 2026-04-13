@@ -33,6 +33,7 @@ public class RoleAdapter extends BaseQuickAdapter<Role, QuickViewHolder> {
         // 设置角色名称
         holder.setText(R.id.tv_role_name, role.getRoleName());
         if (role.getRoleName() != null && role.getRoleName().trim().equals("管理员")) {
+            holder.setVisible(R.id.tv_role_edit, false);
             holder.setVisible(R.id.tv_role_delete, false);
         }
         

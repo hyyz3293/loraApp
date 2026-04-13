@@ -45,6 +45,8 @@ public class MaintenanceHomeListFragment extends Fragment {
     private DatabaseHelper db;
     private long currentUserId = -1;
     private String currentUserName = "";
+    private com.lora.cn.database.DatabaseManager databaseManager;
+    private int currentUserRoleId = -1;
     private ExecutorService ioExecutor;
     private Handler mainHandler;
     private final AtomicInteger loadSeq = new AtomicInteger(0);
@@ -75,6 +77,14 @@ public class MaintenanceHomeListFragment extends Fragment {
         db = DatabaseHelper.getInstance(requireContext());
         currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
         currentUserName = SPUtils.getInstance().getString("current_user_name", "");
+        databaseManager = com.lora.cn.database.DatabaseManager.getInstance(requireContext());
+        try {
+            long uid = currentUserId;
+            if (uid > 0) {
+                com.lora.cn.database.entity.User u = databaseManager.getUserById(uid);
+                if (u != null) currentUserRoleId = (int) u.getRoleId();
+            }
+        } catch (Exception ignored) {}
         if (ioExecutor == null) ioExecutor = Executors.newSingleThreadExecutor();
         if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
 
@@ -83,8 +93,20 @@ public class MaintenanceHomeListFragment extends Fragment {
         adapter.setOnConfirmClickListener(this::showConfirmDialog);
         adapter.setOnViewClickListener(this::showViewDialog);
         adapter.setOnViewRemarkClickListener(this::showRemarkDialog);
-        adapter.setOnEditClickListener(this::showEditDialog);
-        adapter.setOnDeleteClickListener(this::showDeleteDialog);
+        adapter.setOnEditClickListener(item -> {
+            if (!hasPermission("maintenance_edit_list")) {
+                Toast.makeText(requireContext(), "您没有编辑维护的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showEditDialog(item);
+        });
+        adapter.setOnDeleteClickListener(item -> {
+            if (!hasPermission("maintenance_delete_list")) {
+                Toast.makeText(requireContext(), "您没有删除维护的权限", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showDeleteDialog(item);
+        });
         rv.setAdapter(adapter);
 
         rlStart = v.findViewById(R.id.time_start_time);
@@ -424,6 +446,10 @@ public class MaintenanceHomeListFragment extends Fragment {
     }
 
     private void showConfirmDialog(MaintenanceInfo item) {
+        if (!hasPermission("maintenance_confirm")) {
+            Toast.makeText(requireContext(), "您没有确认维护的权限", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (item == null) return;
         EditText et = new EditText(requireContext());
         et.setMinLines(3);
@@ -507,6 +533,10 @@ public class MaintenanceHomeListFragment extends Fragment {
     }
 
     private void showEditDialog(MaintenanceInfo item) {
+        if (!hasPermission("maintenance_edit_list")) {
+            Toast.makeText(requireContext(), "您没有编辑维护的权限", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (item == null) return;
         EditText et = new EditText(requireContext());
         et.setMinLines(3);
@@ -549,6 +579,10 @@ public class MaintenanceHomeListFragment extends Fragment {
     }
 
     private void showDeleteDialog(MaintenanceInfo item) {
+        if (!hasPermission("maintenance_delete_list")) {
+            Toast.makeText(requireContext(), "您没有删除维护的权限", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (item == null) return;
         new AlertDialog.Builder(requireContext())
                 .setTitle("删除确认")
@@ -609,6 +643,15 @@ public class MaintenanceHomeListFragment extends Fragment {
                 .setPositiveButton("确定", null)
                 .create()
                 .show();
+    }
+
+    private boolean hasPermission(String code) {
+        if (currentUserRoleId <= 0) return false;
+        try {
+            return databaseManager.hasPermission(currentUserRoleId, code);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String nowStr() {

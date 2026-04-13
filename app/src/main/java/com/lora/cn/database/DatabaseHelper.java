@@ -673,8 +673,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
-        // 启用外键约束
         db.execSQL("PRAGMA foreign_keys=ON;");
+        try { ensureMaintenancePermissions(db); } catch (Exception ignored) {}
     }
 
     public boolean isFavoriteForUser(long userId, String deviceId) {
@@ -927,6 +927,38 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         } catch (Exception ignored) {}
     }
     
+    private void ensureMaintenancePermissions(SQLiteDatabase db) {
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('maintenance_list', '维护列表', 'maintenance', '维护列表模块', 1, NULL, 0, 4)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('maintenance_confirm', '确认维护', 'maintenance', '确认维护操作', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='maintenance_list' LIMIT 1), 1, 1)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('maintenance_edit_list', '编辑', 'maintenance', '编辑维护记录（维护列表）', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='maintenance_list' LIMIT 1), 1, 2)");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" +
+                COLUMN_PERMISSION_CODE + ", " + COLUMN_PERMISSION_NAME + ", " +
+                COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ", " +
+                COLUMN_PERMISSION_STATUS + ", " + COLUMN_PERMISSION_PARENT_ID + ", " +
+                COLUMN_PERMISSION_LEVEL + ", " + COLUMN_PERMISSION_SORT_ORDER +
+                ") VALUES ('maintenance_delete_list', '删除', 'maintenance', '删除维护记录（维护列表）', 1, (SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='maintenance_list' LIMIT 1), 1, 3)");
+        db.execSQL("UPDATE " + TABLE_PERMISSIONS + " SET " +
+                COLUMN_PERMISSION_PARENT_ID + "=(SELECT " + COLUMN_PERMISSION_ID + " FROM " + TABLE_PERMISSIONS + " WHERE " + COLUMN_PERMISSION_CODE + "='maintenance_list' LIMIT 1), " +
+                COLUMN_PERMISSION_LEVEL + "=1, " +
+                COLUMN_PERMISSION_STATUS + "=1 " +
+                "WHERE " + COLUMN_PERMISSION_CODE + " IN ('maintenance_confirm','maintenance_edit_list','maintenance_delete_list') AND (" + COLUMN_PERMISSION_PARENT_ID + " IS NULL OR " + COLUMN_PERMISSION_PARENT_ID + "=0)");
+    }
+
     /**
      * 插入初始权限数据
      */
@@ -952,6 +984,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_edit', '编辑维护', 'terminal', '编辑维护记录')");
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
                   COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_delete', '删除维护', 'terminal', '删除维护记录')");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
+                  COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_list', '维护列表', 'maintenance', '查看维护列表')");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
+                  COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_confirm', '确认维护', 'maintenance', '维护列表确认操作')");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
+                  COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_edit_list', '编辑', 'maintenance', '维护列表编辑操作')");
+        db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " +
+                  COLUMN_PERMISSION_NAME + ", " + COLUMN_PERMISSION_CATEGORY + ", " + COLUMN_PERMISSION_DESCRIPTION + ") VALUES ('maintenance_delete_list', '删除', 'maintenance', '维护列表删除操作')");
         
         // 日志管理权限
         db.execSQL("INSERT OR IGNORE INTO " + TABLE_PERMISSIONS + " (" + COLUMN_PERMISSION_CODE + ", " + 
