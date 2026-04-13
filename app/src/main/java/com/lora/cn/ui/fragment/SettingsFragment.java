@@ -1,6 +1,8 @@
 package com.lora.cn.ui.fragment;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +29,11 @@ import com.lora.cn.ui.model.SettingItem;
 import com.lora.cn.database.entity.User;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SettingsFragment extends Fragment {
 
@@ -36,32 +42,42 @@ public class SettingsFragment extends Fragment {
     private View settingsMainContainer;
     private View settingsFragmentContainer;
     private DatabaseManager databaseManager;
-    private int currentUserRoleId;
+    private int currentUserRoleId = -1;
+    private final Set<String> grantedPermissions = new HashSet<>();
+    private ExecutorService ioExecutor;
+    private Handler mainHandler;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_settings, container, false);
-        
-        initDatabase();
         initViews(view);
-        initSettingData();
+        initAsync();
+        setupRecyclerView();
         setupBackStackListener();
-        
+
         return view;
     }
-    
-    private void initDatabase() {
-        databaseManager = DatabaseManager.getInstance(requireContext());
-        // 获取当前登录用户的角色ID（通过 current_user_id 反查）
-        long currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
-        currentUserRoleId = -1;
-        if (currentUserId != -1) {
-            User user = databaseManager.getUserById(currentUserId);
-            if (user != null) {
-                currentUserRoleId = (int) user.getRoleId();
+
+    @Override
+    public void onDestroyView() {
+        try {
+            if (ioExecutor != null) {
+                ioExecutor.shutdownNow();
             }
-        }
+        } catch (Exception ignored) {}
+        ioExecutor = null;
+        mainHandler = null;
+        grantedPermissions.clear();
+        super.onDestroyView();
+    }
+
+    private void initAsync() {
+        databaseManager = DatabaseManager.getInstance(requireContext());
+        if (ioExecutor == null) ioExecutor = Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
+        if (terminalSettingRecycle != null) terminalSettingRecycle.setEnabled(false);
+        loadPermissionsAsync();
     }
 
     private void initViews(View view) {
@@ -70,11 +86,72 @@ public class SettingsFragment extends Fragment {
         settingsFragmentContainer = view.findViewById(R.id.settings_fragment_container);
     }
 
-    private void initSettingData() {
-        // 创建设置项数据，根据权限过滤
+    private void setupRecyclerView() {
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        terminalSettingRecycle.setLayoutManager(layoutManager);
+
+        terminalSettingAdapter = new TerminalSettingAdapter();
+        terminalSettingRecycle.setAdapter(terminalSettingAdapter);
+        terminalSettingAdapter.setOnItemClickListener((adapter, view, position) -> {
+            SettingItem settingItem = terminalSettingAdapter.getItem(position);
+            if (settingItem != null) {
+                onSettingClick(position, settingItem);
+            }
+        });
+    }
+
+    private void loadPermissionsAsync() {
+        if (ioExecutor == null || mainHandler == null) return;
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            int roleId = -1;
+            Set<String> permissions = new HashSet<>();
+            try {
+                long currentUserId = SPUtils.getInstance().getLong("current_user_id", -1);
+                if (currentUserId != -1) {
+                    User user = databaseManager.getUserById(currentUserId);
+                    if (user != null) {
+                        roleId = (int) user.getRoleId();
+                    }
+                }
+                if (roleId > 0) {
+                    String[] permissionCodes = new String[] {
+                            "setting_device",
+                            "setting_ip",
+                            "group_management",
+                            "role_management",
+                            "user_management",
+                            "department_management",
+                            "position_management",
+                            "setting"
+                    };
+                    DatabaseManager dm = DatabaseManager.getInstance(appContext);
+                    for (String code : permissionCodes) {
+                        try {
+                            if (dm.hasPermission(roleId, code)) {
+                                permissions.add(code);
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            final int finalRoleId = roleId;
+            final List<SettingItem> settingList = buildSettingList(permissions);
+            mainHandler.post(() -> {
+                if (!isAdded() || terminalSettingAdapter == null) return;
+                currentUserRoleId = finalRoleId;
+                grantedPermissions.clear();
+                grantedPermissions.addAll(permissions);
+                terminalSettingAdapter.submitList(settingList);
+                terminalSettingAdapter.notifyDataSetChanged();
+                if (terminalSettingRecycle != null) terminalSettingRecycle.setEnabled(true);
+            });
+        });
+    }
+
+    private List<SettingItem> buildSettingList(Set<String> permissions) {
         List<SettingItem> settingList = new ArrayList<>();
-        
-        // 检查各项权限并添加对应设置项
         if (hasPermission("setting_device")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
         }
@@ -103,24 +180,7 @@ public class SettingsFragment extends Fragment {
 //        if (hasPermission("setting")) {
 //            settingList.add(new SettingItem(R.mipmap.ic_setting2, "自动返回首页时间"));
 //        }
-
-
-        // 设置RecyclerView
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext()); // 3列网格布局
-        terminalSettingRecycle.setLayoutManager(layoutManager);
-        
-        terminalSettingAdapter = new TerminalSettingAdapter();
-        terminalSettingRecycle.setAdapter(terminalSettingAdapter);
-        
-        // 设置点击事件监听器
-        terminalSettingAdapter.setOnItemClickListener((adapter, view, position) -> {
-            SettingItem settingItem = settingList.get(position);
-            onSettingClick(position, settingItem);
-        });
-        
-        // 提交数据到适配器
-        terminalSettingAdapter.submitList(settingList);
-        terminalSettingAdapter.notifyDataSetChanged();
+        return settingList;
     }
 
     private void onSettingClick(int position, SettingItem settingItem) {
@@ -222,10 +282,7 @@ public class SettingsFragment extends Fragment {
      * @return 是否有权限
      */
     private boolean hasPermission(String permissionCode) {
-        if (currentUserRoleId == -1) {
-            return false;
-        }
-        return databaseManager.hasPermission(currentUserRoleId, permissionCode);
+        return currentUserRoleId > 0 && grantedPermissions.contains(permissionCode);
     }
 
     public static SettingsFragment newInstance() {

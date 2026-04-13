@@ -2,6 +2,8 @@ package com.lora.cn.ui.fragment.setting;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,7 +33,11 @@ import com.lora.cn.ui.adapter.UserAdapter;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 用户管理Fragment
@@ -46,6 +52,9 @@ public class UserManagementFragment extends Fragment {
     private DatabaseManager databaseManager;
     private List<User> allUsers;
     private long currentUserRoleId = -1;
+    private final Set<String> grantedPermissions = new HashSet<>();
+    private ExecutorService ioExecutor;
+    private Handler mainHandler;
 
     @Nullable
     @Override
@@ -55,9 +64,20 @@ public class UserManagementFragment extends Fragment {
         initViews(view);
         setupRecyclerView();
         setupListeners();
-        loadUsers();
+        initAsync();
         
         return view;
+    }
+
+    @Override
+    public void onDestroyView() {
+        try {
+            if (ioExecutor != null) ioExecutor.shutdownNow();
+        } catch (Exception ignored) {}
+        ioExecutor = null;
+        mainHandler = null;
+        grantedPermissions.clear();
+        super.onDestroyView();
     }
 
     private void initViews(View view) {
@@ -66,13 +86,56 @@ public class UserManagementFragment extends Fragment {
         btnBack = view.findViewById(R.id.back);
         databaseManager = DatabaseManager.getInstance(requireContext());
         allUsers = new ArrayList<>();
-        try {
-            long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
-            if (uid != -1) {
-                User cur = databaseManager.getUserById(uid);
-                if (cur != null) currentUserRoleId = cur.getRoleId();
-            }
-        } catch (Exception ignored) {}
+    }
+
+    private void initAsync() {
+        if (ioExecutor == null) ioExecutor = Executors.newSingleThreadExecutor();
+        if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
+        loadCurrentUserPermissionsAsync(this::loadUsers);
+    }
+
+    private void loadCurrentUserPermissionsAsync(@Nullable Runnable onComplete) {
+        if (ioExecutor == null || mainHandler == null) return;
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            long roleId = -1;
+            Set<String> permissions = new HashSet<>();
+            try {
+                long uid = com.blankj.utilcode.util.SPUtils.getInstance().getLong("current_user_id", -1);
+                if (uid != -1) {
+                    User cur = databaseManager.getUserById(uid);
+                    if (cur != null) roleId = cur.getRoleId();
+                }
+                if (roleId > 0) {
+                    String[] permissionCodes = new String[] {
+                            "user_add",
+                            "user_reset_password",
+                            "user_edit",
+                            "user_delete",
+                            "user_disable"
+                    };
+                    DatabaseManager dm = DatabaseManager.getInstance(appContext);
+                    for (String code : permissionCodes) {
+                        try {
+                            if (dm.hasPermission((int) roleId, code)) {
+                                permissions.add(code);
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+            } catch (Exception ignored) {}
+
+            final long finalRoleId = roleId;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                currentUserRoleId = finalRoleId;
+                grantedPermissions.clear();
+                grantedPermissions.addAll(permissions);
+                if (onComplete != null) {
+                    onComplete.run();
+                }
+            });
+        });
     }
 
     private void setupRecyclerView() {
@@ -141,37 +204,53 @@ public class UserManagementFragment extends Fragment {
     }
 
     private boolean hasPermission(String code) {
-        if (currentUserRoleId <= 0) return false;
-        return databaseManager.hasPermission((int) currentUserRoleId, code);
+        return currentUserRoleId > 0 && grantedPermissions.contains(code);
     }
     
     private void loadUsers() {
-        try {
-            com.lora.cn.database.DatabaseHelper.getInstance(requireContext()).ensureDefaultAdminRoleAssigned();
-            allUsers = databaseManager.getAllUsers();
-            if (allUsers != null) {
-                for (com.lora.cn.database.entity.User u : allUsers) {
-                    try {
-                        if (u.getRole() == null) {
-                            com.lora.cn.database.entity.Role r = databaseManager.getRoleById((int) u.getRoleId());
-                            u.setRole(r);
-                        }
-                        if (u.getPosition() == null) {
-                            com.lora.cn.database.entity.Position p = databaseManager.getPositionById(u.getPositionId());
-                            u.setPosition(p);
-                        }
-                        if (u.getDepartment() == null) {
-                            com.lora.cn.database.entity.Department d = databaseManager.getDepartmentById(u.getDepartmentId());
-                            u.setDepartment(d);
-                        }
-                    } catch (Exception ignored) {}
+        if (ioExecutor == null || mainHandler == null) return;
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            List<User> nextUsers = new ArrayList<>();
+            Exception error = null;
+            try {
+                com.lora.cn.database.DatabaseHelper.getInstance(appContext).ensureDefaultAdminRoleAssigned();
+                DatabaseManager dm = DatabaseManager.getInstance(appContext);
+                List<User> users = dm.getAllUsers();
+                if (users != null) {
+                    for (User u : users) {
+                        if (u == null) continue;
+                        try {
+                            if (u.getRole() == null) {
+                                u.setRole(dm.getRoleById((int) u.getRoleId()));
+                            }
+                            if (u.getPosition() == null) {
+                                u.setPosition(dm.getPositionById(u.getPositionId()));
+                            }
+                            if (u.getDepartment() == null) {
+                                u.setDepartment(dm.getDepartmentById(u.getDepartmentId()));
+                            }
+                        } catch (Exception ignored) {}
+                        nextUsers.add(u);
+                    }
                 }
+            } catch (Exception e) {
+                error = e;
             }
-            userAdapter.submitList(allUsers);
-        } catch (Exception e) {
-            LogUtils.e("UserManagementFragment", "加载用户列表失败: " + e.getMessage());
-            Toast.makeText(requireContext(), "加载用户列表失败", Toast.LENGTH_SHORT).show();
-        }
+
+            final Exception finalError = error;
+            final List<User> finalUsers = nextUsers;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (finalError != null) {
+                    LogUtils.e("UserManagementFragment", "加载用户列表失败: " + finalError.getMessage());
+                    Toast.makeText(requireContext(), "加载用户列表失败", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                allUsers = finalUsers;
+                userAdapter.submitList(new ArrayList<>(finalUsers));
+            });
+        });
     }
     
     private void showAddUserDialog() {
@@ -196,15 +275,6 @@ public class UserManagementFragment extends Fragment {
         Spinner spinnerDepartment = dialogView.findViewById(R.id.spinner_department);
         EditText etUserNumber = dialogView.findViewById(R.id.et_user_number);
         RadioGroup rgGender = dialogView.findViewById(R.id.rg_gender);
-        
-        // 设置下拉框数据
-        setupSpinners(spinnerRole, spinnerPosition, spinnerDepartment);
-        try {
-            spinnerDepartment.setEnabled(true);
-            spinnerDepartment.setClickable(true);
-            spinnerDepartment.setPrompt("选择科室");
-            spinnerDepartment.setOnTouchListener(null);
-        } catch (Exception ignored) {}
         
         // 如果是编辑模式，填充数据
         boolean isEdit = user != null;
@@ -260,65 +330,102 @@ public class UserManagementFragment extends Fragment {
         // 设置确定按钮点击事件
         
         dialog.setOnShowListener(dialogInterface -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                if (validateAndSaveUser(user, etUserName, etUserAccount, etUserPassword, etConfirmPassword,
-                        spinnerRole, switchStatus, spinnerPosition, spinnerDepartment, etUserNumber, rgGender)) {
-                    dialog.dismiss();
+            android.widget.Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            android.widget.Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            positiveButton.setEnabled(false);
+            positiveButton.setOnClickListener(v -> {
+                UserFormData formData = validateUserInput(user, etUserName, etUserAccount, etUserPassword, etConfirmPassword,
+                        spinnerRole, switchStatus, spinnerPosition, spinnerDepartment, etUserNumber, rgGender);
+                if (formData != null) {
+                    saveUserAsync(user, formData, dialog, positiveButton, negativeButton);
                 }
             });
+            loadDialogSpinnerDataAsync(spinnerRole, spinnerPosition, spinnerDepartment, user, positiveButton);
         });
         
         dialog.show();
     }
     
-    private void setupSpinners(Spinner spinnerRole, Spinner spinnerPosition, Spinner spinnerDepartment) {
-        try {
-            com.lora.cn.database.DatabaseHelper.getInstance(requireContext()).ensureDefaultAdminRoleAssigned();
-
-            // 设置角色下拉框
-            List<Role> roles = databaseManager.getActiveRoles();
-            List<String> roleNames = new ArrayList<>();
-            for (Role role : roles) {
-                roleNames.add(role.getRoleName());
-            }
-            ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_16dp, roleNames);
-            roleAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_16dp);
-            spinnerRole.setAdapter(roleAdapter);
-            spinnerRole.setTag(roles);
-            
-            // 设置职位下拉框
-            List<Position> positions = databaseManager.getAllPositions();
-            List<String> positionNames = new ArrayList<>();
-            for (Position position : positions) {
-                positionNames.add(position.getPositionName());
-            }
-            ArrayAdapter<String> positionAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_16dp, positionNames);
-            positionAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_16dp);
-            spinnerPosition.setAdapter(positionAdapter);
-            spinnerPosition.setTag(positions);
-            
-            // 设置科室下拉框
-            //allDepartments = dbManager.getCategoriesByGroupId(1);
-            databaseManager.ensureDefaultDepartmentsSeeded();
-            List<Department> departments = databaseManager.getAllDepartments();
-            List<String> departmentNames = new ArrayList<>();
-            for (Department department : departments) {
-                departmentNames.add(department.getDepartmentName());
-            }
-            ArrayAdapter<String> departmentAdapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_16dp, departmentNames);
-            departmentAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_16dp);
-            spinnerDepartment.setAdapter(departmentAdapter);
-            spinnerDepartment.setTag(departments);
-            if (!departments.isEmpty()) {
-                spinnerDepartment.setSelection(0);
-            }
-            if (departments.isEmpty()) {
-                Toast.makeText(requireContext(), "科室列表为空，请先在科室管理中添加科室", Toast.LENGTH_SHORT).show();
+    private void loadDialogSpinnerDataAsync(Spinner spinnerRole, Spinner spinnerPosition, Spinner spinnerDepartment,
+                                            @Nullable User user, android.widget.Button positiveButton) {
+        if (ioExecutor == null || mainHandler == null) return;
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            UserDialogData data = new UserDialogData();
+            Exception error = null;
+            try {
+                com.lora.cn.database.DatabaseHelper.getInstance(appContext).ensureDefaultAdminRoleAssigned();
+                DatabaseManager dm = DatabaseManager.getInstance(appContext);
+                data.roles = dm.getActiveRoles();
+                data.positions = dm.getAllPositions();
+                dm.ensureDefaultDepartmentsSeeded();
+                data.departments = dm.getAllDepartments();
+            } catch (Exception e) {
+                error = e;
             }
 
-        } catch (Exception e) {
-            LogUtils.e("UserManagementFragment", "设置下拉框数据失败: " + e.getMessage());
-            Toast.makeText(requireContext(), "加载数据失败", Toast.LENGTH_SHORT).show();
+            final Exception finalError = error;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (finalError != null) {
+                    LogUtils.e("UserManagementFragment", "设置下拉框数据失败: " + finalError.getMessage());
+                    Toast.makeText(requireContext(), "加载数据失败", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                bindSpinnerData(spinnerRole, data.roles, Role::getRoleName);
+                bindSpinnerData(spinnerPosition, data.positions, Position::getPositionName);
+                bindSpinnerData(spinnerDepartment, data.departments, Department::getDepartmentName);
+                try {
+                    spinnerDepartment.setEnabled(true);
+                    spinnerDepartment.setClickable(true);
+                    spinnerDepartment.setPrompt("选择科室");
+                    spinnerDepartment.setOnTouchListener(null);
+                } catch (Exception ignored) {}
+
+                if (user != null) {
+                    setSpinnerSelection(spinnerRole, user.getRoleId());
+                    setSpinnerSelection(spinnerPosition, user.getPositionId());
+                    setSpinnerSelection(spinnerDepartment, user.getDepartmentId());
+                } else {
+                    selectDefaultAdminRole(spinnerRole);
+                    if (!data.departments.isEmpty()) {
+                        spinnerDepartment.setSelection(0);
+                    }
+                }
+                if (data.departments.isEmpty()) {
+                    Toast.makeText(requireContext(), "科室列表为空，请先在科室管理中添加科室", Toast.LENGTH_SHORT).show();
+                }
+                positiveButton.setEnabled(true);
+            });
+        });
+    }
+
+    private <T> void bindSpinnerData(Spinner spinner, List<T> items, NameProvider<T> provider) {
+        List<String> names = new ArrayList<>();
+        if (items != null) {
+            for (T item : items) {
+                names.add(provider.getName(item));
+            }
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), R.layout.spinner_item_16dp, names);
+        adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_16dp);
+        spinner.setAdapter(adapter);
+        spinner.setTag(items != null ? items : new ArrayList<>());
+    }
+
+    private void selectDefaultAdminRole(Spinner spinnerRole) {
+        Object tag = spinnerRole.getTag();
+        if (!(tag instanceof List)) return;
+        List<?> items = (List<?>) tag;
+        for (int i = 0; i < items.size(); i++) {
+            Object item = items.get(i);
+            if (item instanceof Role) {
+                Role role = (Role) item;
+                if (role != null && "管理员".equals(role.getRoleName())) {
+                    spinnerRole.setSelection(i);
+                    return;
+                }
+            }
         }
     }
     
@@ -355,164 +462,159 @@ public class UserManagementFragment extends Fragment {
         }
     }
     
-    private boolean validateAndSaveUser(User existingUser, EditText etUserName, EditText etUserAccount,
-                                       EditText etUserPassword, EditText etConfirmPassword, Spinner spinnerRole,
-                                       SwitchCompat switchStatus, Spinner spinnerPosition, Spinner spinnerDepartment,
-                                       EditText etUserNumber, RadioGroup rgGender) {
-        
-        // 获取输入值
+    private UserFormData validateUserInput(User existingUser, EditText etUserName, EditText etUserAccount,
+                                           EditText etUserPassword, EditText etConfirmPassword, Spinner spinnerRole,
+                                           SwitchCompat switchStatus, Spinner spinnerPosition, Spinner spinnerDepartment,
+                                           EditText etUserNumber, RadioGroup rgGender) {
         String userName = etUserName.getText().toString().trim();
         String userAccount = etUserAccount.getText().toString().trim();
         String password = etUserPassword.getText().toString().trim();
         String confirmPassword = etConfirmPassword.getText().toString().trim();
         String userNumber = etUserNumber.getText().toString().trim();
-        
-        // 验证必填字段
+
         if (TextUtils.isEmpty(userName)) {
             Toast.makeText(requireContext(), "请输入用户姓名", Toast.LENGTH_SHORT).show();
-            return false;
+            return null;
         }
-        
         if (TextUtils.isEmpty(userAccount)) {
             Toast.makeText(requireContext(), "请输入用户账号", Toast.LENGTH_SHORT).show();
-            return false;
+            return null;
         }
-        
+
         if (existingUser == null) { // 新增用户需要验证密码
             if (TextUtils.isEmpty(password)) {
                 Toast.makeText(requireContext(), "请输入密码", Toast.LENGTH_SHORT).show();
-                return false;
+                return null;
             }
-            
             if (TextUtils.isEmpty(confirmPassword)) {
                 Toast.makeText(requireContext(), "请确认密码", Toast.LENGTH_SHORT).show();
-                return false;
+                return null;
             }
-            
             if (!password.equals(confirmPassword)) {
                 Toast.makeText(requireContext(), "两次输入的密码不一致", Toast.LENGTH_SHORT).show();
-                return false;
+                return null;
             }
-            
             if (password.length() < 6) {
                 Toast.makeText(requireContext(), "密码长度不能少于6位", Toast.LENGTH_SHORT).show();
-                return false;
+                return null;
             }
         }
-        
         if (TextUtils.isEmpty(userNumber)) {
             Toast.makeText(requireContext(), "请输入用户编号", Toast.LENGTH_SHORT).show();
-            return false;
+            return null;
         }
-        
-        // 获取选中的角色、职位、科室
+
         Role selectedRole = getSelectedItem(spinnerRole, Role.class);
-        if (selectedRole == null) {
-            try {
-                List<Role> roles = databaseManager.getActiveRoles();
-                for (Role r : roles) {
-                    if (r != null && "管理员".equals(r.getRoleName())) { selectedRole = r; break; }
-                }
-            } catch (Exception ignored) {}
-        }
         Position selectedPosition = getSelectedItem(spinnerPosition, Position.class);
         Department selectedDepartment = getSelectedItem(spinnerDepartment, Department.class);
-        if (selectedDepartment == null) {
-            try {
-                Object tagDept = spinnerDepartment.getTag();
-                java.util.List<Department> deptList;
-                if (tagDept instanceof java.util.List) {
-                    deptList = (java.util.List<Department>) tagDept;
-                } else {
-                    deptList = databaseManager.getAllDepartments();
-                }
-                int idx = spinnerDepartment.getSelectedItemPosition();
-                if (deptList != null && !deptList.isEmpty()) {
-                    if (idx >= 0 && idx < deptList.size()) selectedDepartment = deptList.get(idx);
-                    else selectedDepartment = deptList.get(0);
-                }
-            } catch (Exception ignored) {}
-        }
-        
         if (selectedRole == null) {
             Toast.makeText(requireContext(), "请选择用户角色", Toast.LENGTH_SHORT).show();
-            return false;
+            return null;
         }
-        
         if (selectedPosition == null) {
             Toast.makeText(requireContext(), "请选择职位", Toast.LENGTH_SHORT).show();
-            return false;
+            return null;
         }
-        
         if (selectedDepartment == null) {
             Toast.makeText(requireContext(), "请选择科室", Toast.LENGTH_SHORT).show();
-            return false;
+            return null;
         }
-        
-        // 获取性别
+
         String gender = rgGender.getCheckedRadioButtonId() == R.id.rb_male ? "男" : "女";
-        
-        try {
-            if (existingUser == null) {
-                // 检查账号是否已存在
-                if (databaseManager.isUserAccountExists(userAccount)) {
-                    Toast.makeText(requireContext(), "用户账号已存在", Toast.LENGTH_SHORT).show();
-                    return false;
-                }
-                
-                // 新增用户
-                User newUser = new User();
-                newUser.setUserName(userName);
-                newUser.setUserAccount(userAccount);
-                newUser.setUserPassword(password);
-                newUser.setRoleId(selectedRole.getRoleId());
-                newUser.setStatus(switchStatus.isChecked() ? 1 : 0);
-                newUser.setPositionId(selectedPosition.getPositionId());
-                newUser.setDepartmentId(selectedDepartment.getDepartmentId());
-                newUser.setUserCode(userNumber);
-                newUser.setGender(gender);
-                
-                long userId = databaseManager.addUser(newUser);
-                if (userId > 0) {
-                    newUser.setUserId(userId);
-                    newUser.setRole(selectedRole);
-                    newUser.setPosition(selectedPosition);
-                    newUser.setDepartment(selectedDepartment);
-                    userAdapter.addUser(newUser);
-                    Toast.makeText(requireContext(), "用户添加成功", Toast.LENGTH_SHORT).show();
-                    return true;
+
+        UserFormData formData = new UserFormData();
+        formData.userName = userName;
+        formData.userAccount = userAccount;
+        formData.password = password;
+        formData.userNumber = userNumber;
+        formData.gender = gender;
+        formData.selectedRole = selectedRole;
+        formData.selectedPosition = selectedPosition;
+        formData.selectedDepartment = selectedDepartment;
+        formData.enabled = switchStatus.isChecked();
+        return formData;
+    }
+
+    private void saveUserAsync(@Nullable User existingUser, UserFormData formData, AlertDialog dialog,
+                               android.widget.Button positiveButton, android.widget.Button negativeButton) {
+        if (ioExecutor == null || mainHandler == null) return;
+        setDialogButtonsEnabled(positiveButton, negativeButton, false);
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            UserWriteResult result = new UserWriteResult();
+            try {
+                DatabaseManager dm = DatabaseManager.getInstance(appContext);
+                if (existingUser == null) {
+                    if (dm.isUserAccountExists(formData.userAccount)) {
+                        result.message = "用户账号已存在";
+                    } else {
+                        User newUser = new User();
+                        newUser.setUserName(formData.userName);
+                        newUser.setUserAccount(formData.userAccount);
+                        newUser.setUserPassword(formData.password);
+                        newUser.setRoleId(formData.selectedRole.getRoleId());
+                        newUser.setStatus(formData.enabled ? 1 : 0);
+                        newUser.setPositionId(formData.selectedPosition.getPositionId());
+                        newUser.setDepartmentId(formData.selectedDepartment.getDepartmentId());
+                        newUser.setUserCode(formData.userNumber);
+                        newUser.setGender(formData.gender);
+                        long userId = dm.addUser(newUser);
+                        if (userId > 0) {
+                            newUser.setUserId(userId);
+                            newUser.setRole(formData.selectedRole);
+                            newUser.setPosition(formData.selectedPosition);
+                            newUser.setDepartment(formData.selectedDepartment);
+                            result.success = true;
+                            result.isAdd = true;
+                            result.user = newUser;
+                            result.message = "用户添加成功";
+                        } else {
+                            result.message = "用户添加失败";
+                        }
+                    }
                 } else {
-                    Toast.makeText(requireContext(), "用户添加失败", Toast.LENGTH_SHORT).show();
-                    return false;
+                    User updatedUser = copyUser(existingUser);
+                    updatedUser.setUserName(formData.userName);
+                    updatedUser.setRoleId(formData.selectedRole.getRoleId());
+                    updatedUser.setStatus(formData.enabled ? 1 : 0);
+                    updatedUser.setPositionId(formData.selectedPosition.getPositionId());
+                    updatedUser.setDepartmentId(formData.selectedDepartment.getDepartmentId());
+                    updatedUser.setUserCode(formData.userNumber);
+                    updatedUser.setGender(formData.gender);
+                    updatedUser.setRole(formData.selectedRole);
+                    updatedUser.setPosition(formData.selectedPosition);
+                    updatedUser.setDepartment(formData.selectedDepartment);
+                    if (dm.updateUser(updatedUser)) {
+                        result.success = true;
+                        result.user = updatedUser;
+                        result.message = "用户更新成功";
+                    } else {
+                        result.message = "用户更新失败";
+                    }
                 }
-            } else {
-                // 更新用户
-                existingUser.setUserName(userName);
-                existingUser.setRoleId(selectedRole.getRoleId());
-                existingUser.setStatus(switchStatus.isChecked() ? 1 : 0);
-                existingUser.setPositionId(selectedPosition.getPositionId());
-                existingUser.setDepartmentId(selectedDepartment.getDepartmentId());
-                existingUser.setUserCode(userNumber);
-                existingUser.setGender(gender);
-                existingUser.setRole(selectedRole);
-                existingUser.setPosition(selectedPosition);
-                existingUser.setDepartment(selectedDepartment);
-                
-                boolean success = databaseManager.updateUser(existingUser);
-                if (success) {
-                    userAdapter.updateUser(existingUser);
-                    Toast.makeText(requireContext(), "用户更新成功", Toast.LENGTH_SHORT).show();
-                    return true;
-                } else {
-                    Toast.makeText(requireContext(), "用户更新失败", Toast.LENGTH_SHORT).show();
-                    return false;
-                }
+            } catch (Exception e) {
+                LogUtils.e("UserManagementFragment", "保存用户失败: " + e.getMessage());
+                result.message = "保存用户失败";
             }
-        } catch (Exception e) {
-            LogUtils.e("UserManagementFragment", "保存用户失败: " + e.getMessage());
-            Toast.makeText(requireContext(), "保存用户失败", Toast.LENGTH_SHORT).show();
-            return false;
-        }
+
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                setDialogButtonsEnabled(positiveButton, negativeButton, true);
+                Toast.makeText(requireContext(), result.message, Toast.LENGTH_SHORT).show();
+                if (!result.success || result.user == null) {
+                    return;
+                }
+                if (result.isAdd) {
+                    userAdapter.addUser(result.user);
+                } else {
+                    userAdapter.updateUser(result.user);
+                }
+                updateCachedUser(result.user);
+                if (dialog.isShowing()) {
+                    dialog.dismiss();
+                }
+            });
+        });
     }
     
     @SuppressWarnings("unchecked")
@@ -529,68 +631,208 @@ public class UserManagementFragment extends Fragment {
     }
     
     private void showResetPasswordDialog(User user) {
-        new AlertDialog.Builder(requireContext())
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("重置密码")
                 .setMessage("确定要重置用户 \"" + user.getUserName() + "\" 的密码吗？\n重置后密码将变为：123456")
-                .setPositiveButton("确定", (dialog, which) -> {
-                    try {
-                        boolean success = databaseManager.updateUserPassword(user.getUserId(), "123456");
-                        if (success) {
-                            Toast.makeText(requireContext(), "密码重置成功", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(requireContext(), "密码重置失败", Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (Exception e) {
-                        LogUtils.e("UserManagementFragment", "重置密码失败: " + e.getMessage());
-                        Toast.makeText(requireContext(), "重置密码失败", Toast.LENGTH_SHORT).show();
-                    }
-                })
+                .setPositiveButton("确定", null)
                 .setNegativeButton("取消", null)
-                .show();
+                .create();
+        dialog.setOnShowListener(dialogInterface -> {
+            android.widget.Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            android.widget.Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            positiveButton.setOnClickListener(v -> resetPasswordAsync(user, positiveButton, negativeButton, dialog));
+        });
+        dialog.show();
     }
     
     private void showDeleteConfirmDialog(User user) {
-        new AlertDialog.Builder(requireContext())
+        AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setTitle("删除用户")
                 .setMessage("确定要删除用户 \"" + user.getUserName() + "\" 吗？此操作不可撤销。")
-                .setPositiveButton("确定", (dialog, which) -> {
-                    try {
-                        boolean success = databaseManager.deleteUser(user.getUserId());
-                        if (success) {
-                            userAdapter.removeUser(user.getUserId());
-                            Toast.makeText(requireContext(), "删除成功", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(requireContext(), "删除失败", Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (Exception e) {
-                        LogUtils.e("UserManagementFragment", "删除用户失败: " + e.getMessage());
-                        Toast.makeText(requireContext(), "删除用户失败", Toast.LENGTH_SHORT).show();
-                    }
-                })
+                .setPositiveButton("确定", null)
                 .setNegativeButton("取消", null)
-                .show();
+                .create();
+        dialog.setOnShowListener(dialogInterface -> {
+            android.widget.Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            android.widget.Button negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            positiveButton.setOnClickListener(v -> deleteUserAsync(user, positiveButton, negativeButton, dialog));
+        });
+        dialog.show();
     }
     
-    private void toggleUserStatus(User user, boolean isEnabled) {
-        try {
-            user.setStatus(isEnabled ? 1 : 0);
-            boolean success = databaseManager.updateUser(user);
-            if (success) {
-                userAdapter.updateUser(user);
-                String statusText = isEnabled ? "启用" : "禁用";
-                Toast.makeText(requireContext(), "用户已" + statusText, Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(), "状态更新失败", Toast.LENGTH_SHORT).show();
-                loadUsers(); // 重新加载数据
+    private void resetPasswordAsync(User user, android.widget.Button positiveButton,
+                                    android.widget.Button negativeButton, AlertDialog dialog) {
+        if (ioExecutor == null || mainHandler == null) return;
+        setDialogButtonsEnabled(positiveButton, negativeButton, false);
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            boolean success = false;
+            String message = "密码重置失败";
+            try {
+                success = DatabaseManager.getInstance(appContext).updateUserPassword(user.getUserId(), "123456");
+                message = success ? "密码重置成功" : "密码重置失败";
+            } catch (Exception e) {
+                LogUtils.e("UserManagementFragment", "重置密码失败: " + e.getMessage());
             }
-        } catch (Exception e) {
-            LogUtils.e("UserManagementFragment", "更新用户状态失败: " + e.getMessage());
-            Toast.makeText(requireContext(), "状态更新失败", Toast.LENGTH_SHORT).show();
-            loadUsers(); // 重新加载数据
+            final boolean finalSuccess = success;
+            final String finalMessage = message;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                setDialogButtonsEnabled(positiveButton, negativeButton, true);
+                Toast.makeText(requireContext(), finalMessage, Toast.LENGTH_SHORT).show();
+                if (finalSuccess && dialog.isShowing()) {
+                    dialog.dismiss();
+                }
+            });
+        });
+    }
+
+    private void deleteUserAsync(User user, android.widget.Button positiveButton,
+                                 android.widget.Button negativeButton, AlertDialog dialog) {
+        if (ioExecutor == null || mainHandler == null) return;
+        setDialogButtonsEnabled(positiveButton, negativeButton, false);
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            boolean success = false;
+            String message = "删除用户失败";
+            try {
+                success = DatabaseManager.getInstance(appContext).deleteUser(user.getUserId());
+                message = success ? "删除成功" : "删除失败";
+            } catch (Exception e) {
+                LogUtils.e("UserManagementFragment", "删除用户失败: " + e.getMessage());
+            }
+            final boolean finalSuccess = success;
+            final String finalMessage = message;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                setDialogButtonsEnabled(positiveButton, negativeButton, true);
+                Toast.makeText(requireContext(), finalMessage, Toast.LENGTH_SHORT).show();
+                if (!finalSuccess) {
+                    return;
+                }
+                userAdapter.removeUser(user.getUserId());
+                removeCachedUser(user.getUserId());
+                if (dialog.isShowing()) {
+                    dialog.dismiss();
+                }
+            });
+        });
+    }
+
+    private void toggleUserStatus(User user, boolean isEnabled, SwitchCompat switchCompat) {
+        if (ioExecutor == null || mainHandler == null) return;
+        final int previousStatus = user.getStatus();
+        switchCompat.setEnabled(false);
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        ioExecutor.execute(() -> {
+            boolean success = false;
+            try {
+                User updatedUser = copyUser(user);
+                updatedUser.setStatus(isEnabled ? 1 : 0);
+                success = DatabaseManager.getInstance(appContext).updateUser(updatedUser);
+            } catch (Exception e) {
+                LogUtils.e("UserManagementFragment", "更新用户状态失败: " + e.getMessage());
+            }
+            final boolean finalSuccess = success;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                switchCompat.setEnabled(true);
+                if (finalSuccess) {
+                    user.setStatus(isEnabled ? 1 : 0);
+                    userAdapter.updateUser(user);
+                    updateCachedUser(user);
+                    String statusText = isEnabled ? "启用" : "禁用";
+                    Toast.makeText(requireContext(), "用户已" + statusText, Toast.LENGTH_SHORT).show();
+                } else {
+                    switchCompat.setChecked(previousStatus == 1);
+                    Toast.makeText(requireContext(), "状态更新失败", Toast.LENGTH_SHORT).show();
+                    loadUsers();
+                }
+            });
+        });
+    }
+
+    private void setDialogButtonsEnabled(@Nullable android.widget.Button positiveButton,
+                                         @Nullable android.widget.Button negativeButton,
+                                         boolean enabled) {
+        if (positiveButton != null) positiveButton.setEnabled(enabled);
+        if (negativeButton != null) negativeButton.setEnabled(enabled);
+    }
+
+    private User copyUser(User source) {
+        User user = new User();
+        user.setUserId(source.getUserId());
+        user.setUserName(source.getUserName());
+        user.setUserAccount(source.getUserAccount());
+        user.setUserPassword(source.getUserPassword());
+        user.setRoleId(source.getRoleId());
+        user.setStatus(source.getStatus());
+        user.setPositionId(source.getPositionId());
+        user.setDepartmentId(source.getDepartmentId());
+        user.setUserCode(source.getUserCode());
+        user.setGender(source.getGender());
+        user.setPhone(source.getPhone());
+        user.setCreateTime(source.getCreateTime());
+        user.setUpdateTime(source.getUpdateTime());
+        user.setRole(source.getRole());
+        user.setPosition(source.getPosition());
+        user.setDepartment(source.getDepartment());
+        return user;
+    }
+
+    private void updateCachedUser(User user) {
+        if (allUsers == null) return;
+        for (int i = 0; i < allUsers.size(); i++) {
+            User item = allUsers.get(i);
+            if (item != null && item.getUserId() == user.getUserId()) {
+                allUsers.set(i, user);
+                return;
+            }
+        }
+        allUsers.add(user);
+    }
+
+    private void removeCachedUser(long userId) {
+        if (allUsers == null) return;
+        for (int i = allUsers.size() - 1; i >= 0; i--) {
+            User item = allUsers.get(i);
+            if (item != null && item.getUserId() == userId) {
+                allUsers.remove(i);
+                return;
+            }
         }
     }
 
     public static UserManagementFragment newInstance() {
         return new UserManagementFragment();
+    }
+
+    private interface NameProvider<T> {
+        String getName(T item);
+    }
+
+    private static class UserDialogData {
+        private List<Role> roles = new ArrayList<>();
+        private List<Position> positions = new ArrayList<>();
+        private List<Department> departments = new ArrayList<>();
+    }
+
+    private static class UserFormData {
+        private String userName;
+        private String userAccount;
+        private String password;
+        private String userNumber;
+        private String gender;
+        private boolean enabled;
+        private Role selectedRole;
+        private Position selectedPosition;
+        private Department selectedDepartment;
+    }
+
+    private static class UserWriteResult {
+        private boolean success;
+        private boolean isAdd;
+        private String message;
+        private User user;
     }
 }

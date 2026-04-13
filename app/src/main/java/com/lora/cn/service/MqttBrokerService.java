@@ -45,6 +45,8 @@ public class MqttBrokerService extends Service {
     private final java.util.concurrent.atomic.AtomicBoolean mqttConnectInFlight = new java.util.concurrent.atomic.AtomicBoolean(false);
     private int mqttConnectRetry = 0;
     private java.util.concurrent.ExecutorService ioExecutor;
+    private android.net.ConnectivityManager connectivityManager;
+    private android.net.ConnectivityManager.NetworkCallback networkCallback;
     private final java.util.concurrent.ConcurrentHashMap<String, SleepCycleState> sleepCycleStateByDev = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, Long> lastUplinkStoreByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
     private static final String ACTION_MQTT_CLIENT_STATE = "com.lora.cn.MQTT_CLIENT_STATE";
@@ -95,6 +97,7 @@ public class MqttBrokerService extends Service {
         maintenanceEvaluateHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         ioExecutor = Executors.newSingleThreadExecutor();
+        registerNetworkMonitor();
     }
 
     @Override
@@ -122,6 +125,7 @@ public class MqttBrokerService extends Service {
 
     @Override
     public void onDestroy() {
+        unregisterNetworkMonitor();
         stopBroker();
         if (brokerExecutor != null) {
             try {
@@ -431,6 +435,11 @@ public class MqttBrokerService extends Service {
             if (!mqttConnectInFlight.compareAndSet(false, true)) {
                 return;
             }
+            if (!isNetworkAvailable()) {
+                mqttConnectInFlight.set(false);
+                broadcastClientState("disconnected");
+                return;
+            }
             try { broadcastClientState("connecting"); } catch (Exception ignored) {}
             if (mqttClient == null) mqttClient = com.lora.cn.network.MqttPacketsClient.getShared();
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
@@ -515,6 +524,71 @@ public class MqttBrokerService extends Service {
                 broadcastClientState("error");
                 mainHandler.postDelayed(this::startUplinkSubscription, delay);
             } catch (Exception ignored) {}
+        }
+    }
+
+    private boolean isNetworkAvailable() {
+        try {
+            if (connectivityManager == null) {
+                connectivityManager = (android.net.ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            }
+            if (connectivityManager == null) return false;
+            android.net.Network activeNetwork = connectivityManager.getActiveNetwork();
+            if (activeNetwork == null) return false;
+            android.net.NetworkCapabilities caps = connectivityManager.getNetworkCapabilities(activeNetwork);
+            return caps != null && caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private void registerNetworkMonitor() {
+        try {
+            connectivityManager = (android.net.ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (connectivityManager == null || networkCallback != null) return;
+            networkCallback = new android.net.ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(android.net.Network network) {
+                    try {
+                        if (mainHandler == null) mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+                        mqttConnectRetry = 0;
+                        mqttConnectInFlight.set(false);
+                        broadcastClientState("connecting");
+                        mainHandler.postDelayed(MqttBrokerService.this::startUplinkSubscription, 800);
+                    } catch (Exception ignored) {}
+                }
+
+                @Override
+                public void onLost(android.net.Network network) {
+                    try {
+                        mqttConnectInFlight.set(false);
+                        if (mqttClient != null) mqttClient.disconnect();
+                        broadcastClientState("disconnected");
+                    } catch (Exception ignored) {}
+                }
+
+                @Override
+                public void onUnavailable() {
+                    try {
+                        mqttConnectInFlight.set(false);
+                        broadcastClientState("disconnected");
+                    } catch (Exception ignored) {}
+                }
+            };
+            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+        } catch (Exception e) {
+            Log.w("MqttBrokerService", "registerNetworkMonitor warn: " + e.getMessage());
+        }
+    }
+
+    private void unregisterNetworkMonitor() {
+        try {
+            if (connectivityManager != null && networkCallback != null) {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+            }
+        } catch (Exception ignored) {
+        } finally {
+            networkCallback = null;
         }
     }
 

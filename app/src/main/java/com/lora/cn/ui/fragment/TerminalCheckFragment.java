@@ -55,6 +55,9 @@ public class TerminalCheckFragment extends Fragment {
     private int currentUserRoleId = -1;
     private java.util.concurrent.ExecutorService ioExecutor;
     private android.os.Handler mainHandler;
+    private android.os.Handler countdownHandler;
+    private Runnable countdownRunnable;
+    private com.lora.cn.utils.DialogUtils.CountingProgress countingProgress;
 
     @Nullable
     @Override
@@ -88,7 +91,14 @@ public class TerminalCheckFragment extends Fragment {
     }
     
     @Override
+    public void onPause() {
+        cancelTerminalCheckCountdown();
+        super.onPause();
+    }
+
+    @Override
     public void onDestroyView() {
+        cancelTerminalCheckCountdown();
         try {
             if (ioExecutor != null) ioExecutor.shutdownNow();
         } catch (Exception ignored) {}
@@ -350,6 +360,7 @@ public class TerminalCheckFragment extends Fragment {
      * 开始终端清点
      */
     private void startTerminalCheck() {
+        cancelTerminalCheckCountdown();
         isChecking = true;
         try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(true)); } catch (Exception ignored) {}
         addTerminal.setText("清点中...");
@@ -371,39 +382,65 @@ public class TerminalCheckFragment extends Fragment {
             Log.e("TerminalCheckFragment", "记录清点开始日志失败", e);
         }
 
-        com.lora.cn.utils.DialogUtils.CountingProgress cp = com.lora.cn.utils.DialogUtils.showCountingProgressDialog(requireContext(), "清点中...", 0);
+        countingProgress = com.lora.cn.utils.DialogUtils.showCountingProgressDialog(requireContext(), "清点中...", 0);
         final int totalSec = 60;
-        android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+        countdownHandler = new android.os.Handler(android.os.Looper.getMainLooper());
         final int[] sec = {0};
-        Runnable r = new Runnable() {
+        countdownRunnable = new Runnable() {
             @Override public void run() {
                 try {
                     sec[0]++;
                     int percent = Math.min(100, (int) Math.round(sec[0] * 100.0 / totalSec));
-                    com.lora.cn.utils.DialogUtils.updateCountingProgress(cp, percent);
+                    if (countingProgress != null) {
+                        com.lora.cn.utils.DialogUtils.updateCountingProgress(countingProgress, percent);
+                    }
                     if (sec[0] < totalSec) {
-                        h.postDelayed(this, 1000);
+                        if (countdownHandler != null) {
+                            countdownHandler.postDelayed(this, 1000);
+                        }
                     } else {
-                        com.lora.cn.utils.DialogUtils.dismissCountingProgress(cp);
-                        isChecking = false;
-                        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
-                        addTerminal.setText("开始清点");
-                        addTerminal.setEnabled(true);
+                        dismissCountingProgressDialog();
+                        finishTerminalCheckUiState();
                         if (!isAdmin) decrementRemainingForUser();
                         updateClearTime();
                         refreshData();
                         Toast.makeText(getContext(), "清点完成", Toast.LENGTH_SHORT).show();
                     }
                 } catch (Exception e) {
-                    try { com.lora.cn.utils.DialogUtils.dismissCountingProgress(cp); } catch (Exception ignored) {}
-                    isChecking = false;
-                    try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
-                    addTerminal.setText("开始清点");
-                    addTerminal.setEnabled(true);
+                    dismissCountingProgressDialog();
+                    finishTerminalCheckUiState();
                 }
             }
         };
-        h.postDelayed(r, 1000);
+        countdownHandler.postDelayed(countdownRunnable, 1000);
+    }
+
+    private void cancelTerminalCheckCountdown() {
+        if (countdownHandler != null && countdownRunnable != null) {
+            countdownHandler.removeCallbacks(countdownRunnable);
+        }
+        countdownRunnable = null;
+        countdownHandler = null;
+        dismissCountingProgressDialog();
+        finishTerminalCheckUiState();
+    }
+
+    private void dismissCountingProgressDialog() {
+        try {
+            if (countingProgress != null) {
+                com.lora.cn.utils.DialogUtils.dismissCountingProgress(countingProgress);
+            }
+        } catch (Exception ignored) {}
+        countingProgress = null;
+    }
+
+    private void finishTerminalCheckUiState() {
+        isChecking = false;
+        try { org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.OperationBusyEvent(false)); } catch (Exception ignored) {}
+        if (addTerminal != null) {
+            addTerminal.setText("开始清点");
+            addTerminal.setEnabled(true);
+        }
     }
     
     /**

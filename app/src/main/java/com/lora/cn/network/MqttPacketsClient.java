@@ -14,6 +14,7 @@ import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -134,10 +135,24 @@ public class MqttPacketsClient {
                 subscribeRetry = 0;
             }
             final String effClientId = clientId;
+            final String effTopicFilter = topicFilter;
             client = new MqttAndroidClient(context.getApplicationContext(), brokerUrl, clientId);
-            client.setCallback(new MqttCallback() {
+            client.setCallback(new MqttCallbackExtended() {
+                @Override
+                public void connectComplete(boolean reconnect, String serverURI) {
+                    connecting = false;
+                    subscribeRetry = 0;
+                    if (reconnect) {
+                        if (listener != null) listener.onStatus("MQTT重连成功，重新订阅：" + effTopicFilter);
+                        android.util.Log.i(TAG, "MQTT重连成功: uri=" + serverURI + ", clientId=" + effClientId);
+                        scheduleSubscribe(effTopicFilter);
+                        flushPendingIfConnected();
+                    }
+                }
+
                 @Override
                 public void connectionLost(Throwable cause) {
+                    connecting = false;
                     if (listener != null) listener.onStatus("MQTT连接丢失：" + (cause == null ? "" : cause.getMessage()));
                 }
 
@@ -269,6 +284,9 @@ public class MqttPacketsClient {
         } catch (Exception e) {
             Log.w(TAG, "disconnect warn: " + e.getMessage());
         } finally {
+            client = null;
+            connecting = false;
+            subscribeRetry = 0;
             if (listener != null) listener.onComplete();
         }
     }

@@ -50,6 +50,7 @@ public class WifiSettingFragment extends Fragment {
     private List<WifiItem> wifiList = new ArrayList<>();
     private WifiManager wifiManager;
     private BroadcastReceiver wifiScanReceiver;
+    private boolean isWifiReceiverRegistered = false;
     
     public static WifiSettingFragment newInstance() {
         return new WifiSettingFragment();
@@ -70,14 +71,23 @@ public class WifiSettingFragment extends Fragment {
         
         return view;
     }
-    
+
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        // 注销广播接收器
-        if (wifiScanReceiver != null && getContext() != null) {
-            getContext().unregisterReceiver(wifiScanReceiver);
-        }
+    public void onStart() {
+        super.onStart();
+        registerWifiReceiverIfNeeded();
+    }
+
+    @Override
+    public void onStop() {
+        unregisterWifiReceiverIfNeeded();
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroyView() {
+        unregisterWifiReceiverIfNeeded();
+        super.onDestroyView();
     }
 
     private void initViews(View view) {
@@ -208,6 +218,9 @@ public class WifiSettingFragment extends Fragment {
         wifiScanReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                if (!isAdded() || getView() == null || wifiName == null || wifiPwd == null) {
+                    return;
+                }
                 boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
                 if (success) {
                     scanSuccess();
@@ -216,10 +229,36 @@ public class WifiSettingFragment extends Fragment {
                 }
             }
         };
-        
+    }
+
+    private void registerWifiReceiverIfNeeded() {
+        if (isWifiReceiverRegistered || wifiScanReceiver == null) {
+            return;
+        }
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        getContext().registerReceiver(wifiScanReceiver, intentFilter);
+        context.registerReceiver(wifiScanReceiver, intentFilter);
+        isWifiReceiverRegistered = true;
+    }
+
+    private void unregisterWifiReceiverIfNeeded() {
+        if (!isWifiReceiverRegistered) {
+            return;
+        }
+        Context context = getContext();
+        if (context == null) {
+            isWifiReceiverRegistered = false;
+            return;
+        }
+        try {
+            context.unregisterReceiver(wifiScanReceiver);
+        } catch (IllegalArgumentException ignored) {
+        }
+        isWifiReceiverRegistered = false;
     }
 
     private void initWifiData() {
