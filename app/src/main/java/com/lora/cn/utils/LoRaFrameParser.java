@@ -32,10 +32,10 @@ public class LoRaFrameParser {
         public int batteryVoltage;       // 电池电压 (2字节)
         public int batteryLevel;         // 电量 (1字节)
         public int rssi;                 // RSSI (1字节)
-        public int departmentNumber;     // 科室或护士站编号 (1字节)
-        public int cartNumber;           // 台车编号 (1字节)
-        public int deviceCount;          // 放置的设备数量 (1字节)
-        public int rackNumber;           // 设备所属台车台架编号 (1字节)
+        public int departmentNumber;     // 兼容旧协议字段，当前协议中对应终端版本YY原始字节
+        public int cartNumber;           // 兼容旧协议字段，当前协议中对应终端版本MM原始字节
+        public int deviceCount;          // 兼容旧协议字段，当前协议中对应终端版本DD原始字节
+        public int rackNumber;           // 兼容旧协议字段，当前协议中对应LoRa模组版本原始字节
         public int nurseAckOp;           // 应答护士站操作指令 (1字节)
         public long nurseAckParams;      // 应答护士站操作指令参数 (4字节)
         public int sleepIntervalMin;     // 当前休眠间隔 (2字节, 单位min)
@@ -224,23 +224,34 @@ public class LoRaFrameParser {
             frame.rssi = frame.dataContent[offset] & 0xFF;
             offset += 1;
             
-            // 7. 科室或护士站编号 (1字节)
+            // 7. 终端版本-YY (1字节, BCD)
             frame.departmentNumber = frame.dataContent[offset] & 0xFF;
+            frame.termVerYY = bcdByteToInt(frame.dataContent[offset]);
             offset += 1;
             
-            // 8. 台车编号 (1字节)
+            // 8. 终端版本-MM (1字节, BCD)
             frame.cartNumber = frame.dataContent[offset] & 0xFF;
+            frame.termVerMM = bcdByteToInt(frame.dataContent[offset]);
             offset += 1;
             
-            // 9. 放置的设备数量 (1字节)
+            // 9. 终端版本-DD (1字节, BCD)
             frame.deviceCount = frame.dataContent[offset] & 0xFF;
+            frame.termVerDD = bcdByteToInt(frame.dataContent[offset]);
             offset += 1;
             
-            // 10. 设备所属台车台架编号 (1字节)
+            // 10. LoRa模组版本 (1字节)
             if (offset < frame.dataContent.length) {
                 frame.rackNumber = frame.dataContent[offset] & 0xFF;
+                frame.loraModuleVersionCode = frame.dataContent[offset] & 0xFF;
             }
             offset += 1;
+
+            frame.firmwareVersionString = buildFirmwareVersionString(
+                    frame.termVerYY,
+                    frame.termVerMM,
+                    frame.termVerDD,
+                    frame.loraModuleVersionCode
+            );
 
             // 11. 应答护士站操作指令 (1字节)
             if (offset + 1 <= frame.dataContent.length) {
@@ -281,27 +292,6 @@ public class LoRaFrameParser {
             } else {
                 frame.alarmMinutes = new int[0];
             }
-
-            try {
-                if (frame.dataContent.length >= 4) {
-                    int n = frame.dataContent.length;
-                    int yy = bcdByteToInt(frame.dataContent[n - 4]);
-                    int mm = bcdByteToInt(frame.dataContent[n - 3]);
-                    int dd = bcdByteToInt(frame.dataContent[n - 2]);
-                    int mv = frame.dataContent[n - 1] & 0xFF;
-                    boolean yyOk = yy >= 0 && yy <= 99;
-                    boolean mmOk = mm >= 1 && mm <= 12;
-                    boolean ddOk = dd >= 1 && dd <= 31;
-                    boolean mvOk = (mv == 0x00) || (mv == 0x01);
-                    if (yyOk && mmOk && ddOk && mvOk) {
-                        frame.termVerYY = yy;
-                        frame.termVerMM = mm;
-                        frame.termVerDD = dd;
-                        frame.loraModuleVersionCode = mv;
-                        frame.firmwareVersionString = buildFirmwareVersionString(yy, mm, dd, mv);
-                    }
-                }
-            } catch (Exception ignored) {}
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -397,20 +387,24 @@ public class LoRaFrameParser {
 
     public static String buildFirmwareVersionString(int yy, int mm, int dd, int moduleCode) {
         try {
-            int year = 2000 + Math.max(0, Math.min(99, yy));
-            int month = Math.max(1, Math.min(12, mm));
-            int day = Math.max(1, Math.min(31, dd));
-            String date = String.format(java.util.Locale.getDefault(), "%04d%02d%02d", year, month, day);
-            String module;
-            if (moduleCode == 0x01) {
-                module = "V4.18 P1.7.7";
-            } else {
-                module = "未知版本";
+            boolean dateValid = yy >= 0 && yy <= 99 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31;
+            String module = getLoraModuleVersionName(moduleCode);
+            if (!dateValid) {
+                return moduleCode == 0x00 ? "" : module;
             }
+            int year = 2000 + yy;
+            String date = String.format(java.util.Locale.getDefault(), "%04d%02d%02d", year, mm, dd);
             return "Ver-" + date + "-" + module;
         } catch (Exception ignored) {
             return "";
         }
+    }
+
+    public static String getLoraModuleVersionName(int moduleCode) {
+        if (moduleCode == 0x01) {
+            return "V4.18 P1.7.7";
+        }
+        return "未知版本";
     }
     
     /**

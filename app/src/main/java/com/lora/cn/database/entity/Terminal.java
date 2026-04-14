@@ -33,10 +33,11 @@ public class Terminal {
     private Integer batteryVoltage;  // 电池电压 (2字节)
     private Integer batteryLevel;    // 电量 (1字节)
     private Integer rssi;            // RSSI (1字节)
-    private Integer departmentNumber; // 科室或护士站编号 (1字节)
-    private Integer cartNumber;      // 台车编号 (1字节)
-    private Integer deviceCount;     // 放置的设备数量 (1字节)
-    private Integer rackNumber;      // 设备所属台车台架编号 (1字节)
+    private Integer termVerYY;       // 终端版本-YY (1字节, BCD)
+    private Integer termVerMM;       // 终端版本-MM (1字节, BCD)
+    private Integer termVerDD;       // 终端版本-DD (1字节, BCD)
+    private Integer loraModuleVersionCode; // LoRa模组版本 (1字节)
+    private String firmwareVersionString;   // 固件版本字符串
     private String functionCode;     // 功能码
     private Integer sequenceNumber;  // 序列号
     private Integer dataLength;      // 数据长度
@@ -225,36 +226,76 @@ public class Terminal {
         this.rssi = rssi;
     }
 
+    public Integer getTermVerYY() {
+        return termVerYY;
+    }
+
+    public void setTermVerYY(Integer termVerYY) {
+        this.termVerYY = termVerYY;
+    }
+
+    public Integer getTermVerMM() {
+        return termVerMM;
+    }
+
+    public void setTermVerMM(Integer termVerMM) {
+        this.termVerMM = termVerMM;
+    }
+
+    public Integer getTermVerDD() {
+        return termVerDD;
+    }
+
+    public void setTermVerDD(Integer termVerDD) {
+        this.termVerDD = termVerDD;
+    }
+
+    public Integer getLoraModuleVersionCode() {
+        return loraModuleVersionCode;
+    }
+
+    public void setLoraModuleVersionCode(Integer loraModuleVersionCode) {
+        this.loraModuleVersionCode = loraModuleVersionCode;
+    }
+
+    public String getFirmwareVersionString() {
+        return firmwareVersionString;
+    }
+
+    public void setFirmwareVersionString(String firmwareVersionString) {
+        this.firmwareVersionString = firmwareVersionString;
+    }
+
     public Integer getDepartmentNumber() {
-        return departmentNumber;
+        return termVerYY;
     }
 
     public void setDepartmentNumber(Integer departmentNumber) {
-        this.departmentNumber = departmentNumber;
+        this.termVerYY = departmentNumber;
     }
 
     public Integer getCartNumber() {
-        return cartNumber;
+        return termVerMM;
     }
 
     public void setCartNumber(Integer cartNumber) {
-        this.cartNumber = cartNumber;
+        this.termVerMM = cartNumber;
     }
 
     public Integer getDeviceCount() {
-        return deviceCount;
+        return termVerDD;
     }
 
     public void setDeviceCount(Integer deviceCount) {
-        this.deviceCount = deviceCount;
+        this.termVerDD = deviceCount;
     }
 
     public Integer getRackNumber() {
-        return rackNumber;
+        return loraModuleVersionCode;
     }
 
     public void setRackNumber(Integer rackNumber) {
-        this.rackNumber = rackNumber;
+        this.loraModuleVersionCode = rackNumber;
     }
 
     public String getFunctionCode() {

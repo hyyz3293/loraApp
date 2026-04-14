@@ -27,10 +27,11 @@ public class DetailedUplinkLog {
     private int batteryVoltage;          // 电池电压 (2字节)
     private int batteryLevel;            // 电量 (1字节)
     private int rssi;                    // RSSI (1字节)
-    private int departmentNumber;        // 科室或护士站编号 (1字节)
-    private int cartNumber;              // 台车编号 (1字节)
-    private int deviceCount;             // 放置的设备数量 (1字节)
-    private int rackNumber;              // 设备所属台车台架编号 (1字节)
+    private int termVerYY;               // 终端版本-YY (1字节, BCD)
+    private int termVerMM;               // 终端版本-MM (1字节, BCD)
+    private int termVerDD;               // 终端版本-DD (1字节, BCD)
+    private int loraModuleVersionCode;   // LoRa模组版本 (1字节)
+    private String firmwareVersionString; // 固件版本字符串
     private int nurseAckOp;              // 应答护士站操作指令 (1字节)
     private long nurseAckParams;         // 应答护士站操作指令参数 (4字节)
     private int sleepIntervalMin;        // 当前休眠间隔 (2字节)
@@ -93,17 +94,32 @@ public class DetailedUplinkLog {
     public int getRssi() { return rssi; }
     public void setRssi(int rssi) { this.rssi = rssi; }
     
-    public int getDepartmentNumber() { return departmentNumber; }
-    public void setDepartmentNumber(int departmentNumber) { this.departmentNumber = departmentNumber; }
+    public int getTermVerYY() { return termVerYY; }
+    public void setTermVerYY(int termVerYY) { this.termVerYY = termVerYY; }
+
+    public int getTermVerMM() { return termVerMM; }
+    public void setTermVerMM(int termVerMM) { this.termVerMM = termVerMM; }
+
+    public int getTermVerDD() { return termVerDD; }
+    public void setTermVerDD(int termVerDD) { this.termVerDD = termVerDD; }
+
+    public int getLoraModuleVersionCode() { return loraModuleVersionCode; }
+    public void setLoraModuleVersionCode(int loraModuleVersionCode) { this.loraModuleVersionCode = loraModuleVersionCode; }
+
+    public String getFirmwareVersionString() { return firmwareVersionString; }
+    public void setFirmwareVersionString(String firmwareVersionString) { this.firmwareVersionString = firmwareVersionString; }
+
+    public int getDepartmentNumber() { return termVerYY; }
+    public void setDepartmentNumber(int departmentNumber) { this.termVerYY = departmentNumber; }
     
-    public int getCartNumber() { return cartNumber; }
-    public void setCartNumber(int cartNumber) { this.cartNumber = cartNumber; }
+    public int getCartNumber() { return termVerMM; }
+    public void setCartNumber(int cartNumber) { this.termVerMM = cartNumber; }
     
-    public int getDeviceCount() { return deviceCount; }
-    public void setDeviceCount(int deviceCount) { this.deviceCount = deviceCount; }
+    public int getDeviceCount() { return termVerDD; }
+    public void setDeviceCount(int deviceCount) { this.termVerDD = deviceCount; }
     
-    public int getRackNumber() { return rackNumber; }
-    public void setRackNumber(int rackNumber) { this.rackNumber = rackNumber; }
+    public int getRackNumber() { return loraModuleVersionCode; }
+    public void setRackNumber(int rackNumber) { this.loraModuleVersionCode = rackNumber; }
     
     public int getNurseAckOp() { return nurseAckOp; }
     public void setNurseAckOp(int nurseAckOp) { this.nurseAckOp = nurseAckOp; }
@@ -141,10 +157,11 @@ public class DetailedUplinkLog {
             this.batteryVoltage = frame.batteryVoltage;
             this.batteryLevel = frame.batteryLevel;
             this.rssi = frame.rssi;
-            this.departmentNumber = frame.departmentNumber;
-            this.cartNumber = frame.cartNumber;
-            this.deviceCount = frame.deviceCount;
-            this.rackNumber = frame.rackNumber;
+            this.termVerYY = frame.termVerYY;
+            this.termVerMM = frame.termVerMM;
+            this.termVerDD = frame.termVerDD;
+            this.loraModuleVersionCode = frame.loraModuleVersionCode;
+            this.firmwareVersionString = frame.firmwareVersionString;
             this.nurseAckOp = frame.nurseAckOp;
             this.nurseAckParams = frame.nurseAckParams;
             this.sleepIntervalMin = frame.sleepIntervalMin;
@@ -179,8 +196,7 @@ public class DetailedUplinkLog {
                 ", deviceId='" + deviceId + '\'' +
                 ", functionCode='" + functionCode + '\'' +
                 ", batteryLevel=" + batteryLevel +
-                ", cartNumber=" + cartNumber +
-                ", departmentNumber=" + departmentNumber +
+                ", firmwareVersionString='" + firmwareVersionString + '\'' +
                 ", parseSuccess=" + parseSuccess +
                 '}';
     }

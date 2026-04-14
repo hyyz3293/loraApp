@@ -30,7 +30,7 @@ public class VersionInfoActivity extends AppCompatActivity {
         TextView tvTerminalVersion = findViewById(R.id.tv_terminal_version);
         String appVer = "App版本：" + com.lora.cn.BuildConfig.VERSION_NAME + " (" + com.lora.cn.BuildConfig.VERSION_CODE +  ")";
         String fw = com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "");
-        String termVer = "终端版本：" + (fw == null || fw.trim().isEmpty() ? "未知" : (fw+ "-60.0.0.48")  )  ;
+        String termVer = "终端版本：" + (fw == null || fw.trim().isEmpty() ? "未知" : fw);
         if (tvAppVersion != null) tvAppVersion.setText(appVer);
         if (tvTerminalVersion != null) tvTerminalVersion.setText(termVer);
     }

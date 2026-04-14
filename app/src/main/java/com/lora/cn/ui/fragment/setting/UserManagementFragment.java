@@ -197,7 +197,7 @@ public class UserManagementFragment extends Fragment {
                 if ("admin".equals(acc)) { Toast.makeText(requireContext(), "基础账户不可修改", Toast.LENGTH_SHORT).show(); return; }
                 if (hasPermission("user_disable")) {
                     SwitchCompat switchCompat = (SwitchCompat) view;
-                    toggleUserStatus(user, switchCompat.isChecked());
+                    toggleUserStatus(user, switchCompat.isChecked(), switchCompat);
                 } else Toast.makeText(requireContext(), "您没有启用/禁用的权限", Toast.LENGTH_SHORT).show();
             }
         });

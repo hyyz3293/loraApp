@@ -230,6 +230,11 @@ public class DeviceListFragment extends Fragment {
                         discoveredTerminal.setBatteryLevel(pf.batteryLevel);
                         discoveredTerminal.setBatteryVoltage(pf.batteryVoltage);
                         discoveredTerminal.setRssi(pf.rssi);
+                        discoveredTerminal.setTermVerYY(pf.termVerYY);
+                        discoveredTerminal.setTermVerMM(pf.termVerMM);
+                        discoveredTerminal.setTermVerDD(pf.termVerDD);
+                        discoveredTerminal.setLoraModuleVersionCode(pf.loraModuleVersionCode);
+                        discoveredTerminal.setFirmwareVersionString(pf.firmwareVersionString);
                         discoveredTerminal.parsedFrame = pf;
                         next.add(discoveredTerminal);
                     }
@@ -339,6 +344,11 @@ public class DeviceListFragment extends Fragment {
                     discoveredTerminal.setBatteryLevel(frameData.batteryLevel);
                     discoveredTerminal.setBatteryVoltage(frameData.batteryVoltage);
                     discoveredTerminal.setRssi(frameData.rssi);
+                    discoveredTerminal.setTermVerYY(frameData.termVerYY);
+                    discoveredTerminal.setTermVerMM(frameData.termVerMM);
+                    discoveredTerminal.setTermVerDD(frameData.termVerDD);
+                    discoveredTerminal.setLoraModuleVersionCode(frameData.loraModuleVersionCode);
+                    discoveredTerminal.setFirmwareVersionString(frameData.firmwareVersionString);
                     discoveredTerminal.parsedFrame = frameData;
                     allTerminals.add(discoveredTerminal);
                     updateUI();
