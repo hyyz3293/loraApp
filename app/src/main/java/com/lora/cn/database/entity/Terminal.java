@@ -37,7 +37,7 @@ public class Terminal {
     private Integer termVerMM;       // 终端版本-MM (1字节, BCD)
     private Integer termVerDD;       // 终端版本-DD (1字节, BCD)
     private Integer loraModuleVersionCode; // LoRa模组版本 (1字节)
-    private String firmwareVersionString;   // 固件版本字符串
+    private String firmwareVersionString;   // 终端版本字符串
     private String functionCode;     // 功能码
     private Integer sequenceNumber;  // 序列号
     private Integer dataLength;      // 数据长度

@@ -304,7 +304,7 @@ public class UplinkParseFragment extends Fragment {
         list.add(new Item("终端版本-MM", frame.termVerMM >= 0 ? String.format(java.util.Locale.getDefault(), "%02d", frame.termVerMM) : "无效"));
         list.add(new Item("终端版本-DD", frame.termVerDD >= 0 ? String.format(java.util.Locale.getDefault(), "%02d", frame.termVerDD) : "无效"));
         list.add(new Item("LoRa模组版本", com.lora.cn.utils.LoRaFrameParser.getLoraModuleVersionName(frame.loraModuleVersionCode)));
-        list.add(new Item("固件版本", (frame.firmwareVersionString == null || frame.firmwareVersionString.trim().isEmpty()) ? "未知" : frame.firmwareVersionString));
+        list.add(new Item("终端版本", (frame.firmwareVersionString == null || frame.firmwareVersionString.trim().isEmpty()) ? "未知" : frame.firmwareVersionString));
         list.add(new Item("应答护士站操作指令", frame.nurseAckOp == 1 ? "1(清除报警)" : "0(无操作)"));
         StringBuilder ackParams = new StringBuilder();
         ackParams.append("Bit0=").append(((frame.nurseAckParams & 0x01L) != 0) ? "1" : "0").append(" 已清除非法移走； ");
@@ -416,7 +416,7 @@ public class UplinkParseFragment extends Fragment {
         list.add(new Item("终端版本-MM", frame.termVerMM >= 0 ? String.format(java.util.Locale.getDefault(), "%02d", frame.termVerMM) : "无效"));
         list.add(new Item("终端版本-DD", frame.termVerDD >= 0 ? String.format(java.util.Locale.getDefault(), "%02d", frame.termVerDD) : "无效"));
         list.add(new Item("LoRa模组版本", com.lora.cn.utils.LoRaFrameParser.getLoraModuleVersionName(frame.loraModuleVersionCode)));
-        list.add(new Item("固件版本", (frame.firmwareVersionString == null || frame.firmwareVersionString.trim().isEmpty()) ? "未知" : frame.firmwareVersionString));
+        list.add(new Item("终端版本", (frame.firmwareVersionString == null || frame.firmwareVersionString.trim().isEmpty()) ? "未知" : frame.firmwareVersionString));
         list.add(new Item("护士站应答指令", String.valueOf(frame.nurseAckOp)));
         list.add(new Item("护士站应答参数", String.valueOf(frame.nurseAckParams)));
         list.add(new Item("休眠间隔(分钟)", String.valueOf(frame.sleepIntervalMin)));

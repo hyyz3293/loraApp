@@ -31,7 +31,7 @@ public class DetailedUplinkLog {
     private int termVerMM;               // 终端版本-MM (1字节, BCD)
     private int termVerDD;               // 终端版本-DD (1字节, BCD)
     private int loraModuleVersionCode;   // LoRa模组版本 (1字节)
-    private String firmwareVersionString; // 固件版本字符串
+    private String firmwareVersionString; // 终端版本字符串
     private int nurseAckOp;              // 应答护士站操作指令 (1字节)
     private long nurseAckParams;         // 应答护士站操作指令参数 (4字节)
     private int sleepIntervalMin;        // 当前休眠间隔 (2字节)

@@ -52,6 +52,7 @@ public class SettingsFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_settings, container, false);
         initViews(view);
+        syncContainerVisibility();
         initAsync();
         setupRecyclerView();
         setupBackStackListener();
@@ -152,32 +153,33 @@ public class SettingsFragment extends Fragment {
 
     private List<SettingItem> buildSettingList(Set<String> permissions) {
         List<SettingItem> settingList = new ArrayList<>();
-        if (hasPermission("setting_device")) {
+        if (hasPermission(permissions, "setting_device")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting1, "设备设置"));
         }
-//        if (hasPermission("setting_ip")) {
+//        if (hasPermission(permissions, "setting_ip")) {
 //            // 直接增加网关IP信息的快捷入口
 //            settingList.add(new SettingItem(R.mipmap.ic_setting1, "网关IP信息"));
 //            // 新增 MQTT 设置入口（同属网络配置权限）
 //            settingList.add(new SettingItem(R.mipmap.ic_setting1, "MQTT设置"));
 //        }
-        if (hasPermission("group_management")) {
+        if (hasPermission(permissions, "group_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting2, "分组管理"));
         }
-        if (hasPermission("role_management")) {
+        if (hasPermission(permissions, "role_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting3, "角色管理"));
         }
-        if (hasPermission("user_management")) {
-            settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
-        }
-        if (hasPermission("department_management")) {
+
+        if (hasPermission(permissions, "department_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting5, "科室管理"));
         }
-        if (hasPermission("position_management")) {
+        if (hasPermission(permissions, "position_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting6, "职位管理"));
         }
+        if (hasPermission(permissions, "user_management")) {
+            settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
+        }
         //settingList.add(new SettingItem(R.mipmap.ic_setting6, "维护列表"));
-//        if (hasPermission("setting")) {
+//        if (hasPermission(permissions, "setting")) {
 //            settingList.add(new SettingItem(R.mipmap.ic_setting2, "自动返回首页时间"));
 //        }
         return settingList;
@@ -267,13 +269,21 @@ public class SettingsFragment extends Fragment {
 
     private void setupBackStackListener() {
         // 监听子Fragment回退栈变化
-        getChildFragmentManager().addOnBackStackChangedListener(() -> {
-            if (getChildFragmentManager().getBackStackEntryCount() == 0) {
-                // 回退栈为空，显示主设置页面
-                settingsMainContainer.setVisibility(View.VISIBLE);
-                settingsFragmentContainer.setVisibility(View.GONE);
-            }
-        });
+        getChildFragmentManager().addOnBackStackChangedListener(this::syncContainerVisibility);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        syncContainerVisibility();
+    }
+
+    private void syncContainerVisibility() {
+        if (settingsMainContainer == null || settingsFragmentContainer == null) return;
+        boolean hasChildPage = getChildFragmentManager().getBackStackEntryCount() > 0
+                || getChildFragmentManager().findFragmentById(R.id.settings_fragment_container) != null;
+        settingsMainContainer.setVisibility(hasChildPage ? View.GONE : View.VISIBLE);
+        settingsFragmentContainer.setVisibility(hasChildPage ? View.VISIBLE : View.GONE);
     }
     
     /**
@@ -283,6 +293,10 @@ public class SettingsFragment extends Fragment {
      */
     private boolean hasPermission(String permissionCode) {
         return currentUserRoleId > 0 && grantedPermissions.contains(permissionCode);
+    }
+
+    private boolean hasPermission(Set<String> permissions, String permissionCode) {
+        return permissions != null && permissions.contains(permissionCode);
     }
 
     public static SettingsFragment newInstance() {
