@@ -24,12 +24,15 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.blankj.utilcode.util.SPUtils;
 import com.lora.cn.R;
+import com.lora.cn.service.MqttBrokerService;
 import com.lora.cn.ui.adapter.WifiListAdapter;
 import com.lora.cn.ui.model.WifiItem;
 import com.lora.cn.utils.DialogUtils;
@@ -51,6 +54,7 @@ public class WifiSettingFragment extends Fragment {
     private WifiManager wifiManager;
     private BroadcastReceiver wifiScanReceiver;
     private boolean isWifiReceiverRegistered = false;
+    private android.os.Handler mainHandler;
     
     public static WifiSettingFragment newInstance() {
         return new WifiSettingFragment();
@@ -203,8 +207,9 @@ public class WifiSettingFragment extends Fragment {
                     wifiManager.disconnect();
                     wifiManager.enableNetwork(networkId, true);
                     wifiManager.reconnect();
-                    
-                    Toast.makeText(getContext(), "WiFi连接成功", Toast.LENGTH_SHORT).show();
+
+                    restartMqttAfterWifiSwitch();
+                    Toast.makeText(getContext(), "WiFi连接成功，正在重启MQTT", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(getContext(), "WiFi连接失败", Toast.LENGTH_SHORT).show();
                 }
@@ -347,5 +352,22 @@ public class WifiSettingFragment extends Fragment {
         } else {
             Toast.makeText(getContext(), "需要位置权限才能获取WiFi列表", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void restartMqttAfterWifiSwitch() {
+        if (mainHandler == null) {
+            mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+        }
+        mainHandler.postDelayed(() -> {
+            Context context = getContext();
+            if (context == null) {
+                return;
+            }
+            int localPort = SPUtils.getInstance().getInt("mqtt_local_broker_port", 1883);
+            Intent intent = new Intent(context, MqttBrokerService.class);
+            intent.setAction(MqttBrokerService.ACTION_RESTART_MQTT);
+            intent.putExtra("port", localPort > 0 ? localPort : 1883);
+            ContextCompat.startForegroundService(context, intent);
+        }, 2000);
     }
 }

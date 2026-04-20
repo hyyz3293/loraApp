@@ -89,6 +89,7 @@
 
         <TextView
             android:id="@+id/tv_terminal_version"
+            android:visibility="gone"
             android:layout_marginTop="8dp"
             android:layout_marginLeft="12dp"
             android:layout_marginRight="12dp"

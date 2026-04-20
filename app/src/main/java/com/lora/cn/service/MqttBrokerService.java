@@ -33,6 +33,7 @@ public class MqttBrokerService extends Service {
 
     private static final String CHANNEL_ID = "mqtt_broker";
     private static final int NOTIFICATION_ID = 1001;
+    public static final String ACTION_RESTART_MQTT = "com.lora.cn.action.RESTART_MQTT";
 
     private Server broker;
     private int currentPort = -1;
@@ -106,14 +107,19 @@ public class MqttBrokerService extends Service {
         String ipSummary = getIpSummary();
         startForeground(NOTIFICATION_ID, buildNotification(port, ipSummary));
         boolean localEnabled = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("mqtt_local_broker_enabled", true);
-        if (localEnabled) {
-            if (brokerExecutor != null) {
-                brokerExecutor.execute(() -> startBrokerIfNeeded(port));
-            } else {
-                startBrokerIfNeeded(port);
-            }
+        boolean restartRequested = intent != null && ACTION_RESTART_MQTT.equals(intent.getAction());
+        if (restartRequested) {
+            restartMqttComponents(port, localEnabled);
         } else {
-            stopBroker();
+            if (localEnabled) {
+                if (brokerExecutor != null) {
+                    brokerExecutor.execute(() -> startBrokerIfNeeded(port));
+                } else {
+                    startBrokerIfNeeded(port);
+                }
+            } else {
+                stopBroker();
+            }
         }
         if (maintenanceEvaluateHandler != null) {
             maintenanceEvaluateHandler.removeCallbacks(maintenanceEvaluateRunnable);
@@ -215,6 +221,30 @@ public class MqttBrokerService extends Service {
             com.blankj.utilcode.util.SPUtils.getInstance().put("mqtt_local_broker_ready", false);
             Intent stopped = new Intent("com.lora.cn.MQTT_BROKER_STOPPED");
             sendBroadcast(stopped);
+        }
+    }
+
+    private void restartMqttComponents(int port, boolean localEnabled) {
+        try {
+            mqttConnectRetry = 0;
+            mqttConnectInFlight.set(false);
+            if (mqttClient != null) {
+                mqttClient.disconnect();
+            }
+        } catch (Exception ignored) {
+        }
+        Runnable brokerTask = () -> {
+            if (localEnabled) {
+                stopBroker();
+                startBrokerIfNeeded(port);
+            } else {
+                stopBroker();
+            }
+        };
+        if (brokerExecutor != null) {
+            brokerExecutor.execute(brokerTask);
+        } else {
+            brokerTask.run();
         }
     }
 
@@ -756,10 +786,10 @@ public class MqttBrokerService extends Service {
                 int mm = frame.termVerMM;
                 int dd = frame.termVerDD;
                 int mv = frame.loraModuleVersionCode;
-                String fw = com.lora.cn.utils.LoRaFrameParser.buildFirmwareVersionString(yy, mm, dd, mv);
-                if (fw != null && !fw.trim().isEmpty()) {
-                    com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version", fw);
-                }
+                String fw = com.lora.cn.utils.LoRaFrameParser.normalizeFirmwareVersionString(
+                        com.lora.cn.utils.LoRaFrameParser.buildFirmwareVersionString(yy, mm, dd, mv)
+                );
+                com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version", fw);
             } catch (Exception ignored) {}
             int latestTimedUnsentMins = -1;
             java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allMForDevice = null;

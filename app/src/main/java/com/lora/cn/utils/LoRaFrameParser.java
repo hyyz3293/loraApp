@@ -246,12 +246,12 @@ public class LoRaFrameParser {
             }
             offset += 1;
 
-            frame.firmwareVersionString = buildFirmwareVersionString(
+            frame.firmwareVersionString = normalizeFirmwareVersionString(buildFirmwareVersionString(
                     frame.termVerYY,
                     frame.termVerMM,
                     frame.termVerDD,
                     frame.loraModuleVersionCode
-            );
+            ));
 
             // 11. 应答护士站操作指令 (1字节)
             if (offset + 1 <= frame.dataContent.length) {
@@ -390,10 +390,13 @@ public class LoRaFrameParser {
             boolean dateValid = yy >= 0 && yy <= 99 && mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31;
             String module = getLoraModuleVersionName(moduleCode);
             if (!dateValid) {
-                return moduleCode == 0x00 ? "" : module;
+                return normalizeFirmwareVersionString(module);
             }
             int year = 2000 + yy;
             String date = String.format(java.util.Locale.getDefault(), "%04d%02d%02d", year, mm, dd);
+            if (module == null || module.trim().isEmpty()) {
+                return "Ver-" + date;
+            }
             return "Ver-" + date + "-" + module;
         } catch (Exception ignored) {
             return "";
@@ -404,7 +407,28 @@ public class LoRaFrameParser {
         if (moduleCode == 0x01) {
             return "V4.18 P1.7.7";
         }
-        return "未知版本";
+        return "";
+    }
+
+    public static String normalizeFirmwareVersionString(String firmwareVersion) {
+        if (firmwareVersion == null) {
+            return "";
+        }
+        String normalized = firmwareVersion.trim();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        if ("未知".equals(normalized) || "未知版本".equals(normalized)) {
+            return "";
+        }
+        normalized = normalized.replace("-未知版本", "")
+                .replace("未知版本-", "")
+                .replace("未知版本", "")
+                .trim();
+        while (normalized.endsWith("-")) {
+            normalized = normalized.substring(0, normalized.length() - 1).trim();
+        }
+        return normalized;
     }
     
     /**

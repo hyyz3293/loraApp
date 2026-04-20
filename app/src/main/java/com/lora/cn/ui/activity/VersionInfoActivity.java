@@ -29,9 +29,18 @@ public class VersionInfoActivity extends AppCompatActivity {
         TextView tvAppVersion = findViewById(R.id.tv_app_version);
         TextView tvTerminalVersion = findViewById(R.id.tv_terminal_version);
         String appVer = "App版本：" + com.lora.cn.BuildConfig.VERSION_NAME + " (" + com.lora.cn.BuildConfig.VERSION_CODE +  ")";
-        String fw = com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "");
-        String termVer = "终端版本：" + (fw == null || fw.trim().isEmpty() ? "未知" : fw);
+        String fw = com.lora.cn.utils.LoRaFrameParser.normalizeFirmwareVersionString(
+                com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "")
+        );
         if (tvAppVersion != null) tvAppVersion.setText(appVer);
-        if (tvTerminalVersion != null) tvTerminalVersion.setText(termVer);
+        if (tvTerminalVersion != null) {
+            if (fw.isEmpty()) {
+                tvTerminalVersion.setText("");
+                tvTerminalVersion.setVisibility(android.view.View.GONE);
+            } else {
+                tvTerminalVersion.setText("终端版本：" + fw);
+                tvTerminalVersion.setVisibility(android.view.View.VISIBLE);
+            }
+        }
     }
 }

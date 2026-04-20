@@ -279,10 +279,11 @@ public class TerminalDetailFragment extends Fragment {
         tab_maintenance.setSelected(true);
         tab_logs.setSelected(false);
 
-        String fw = com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "");
-        String termVer = (fw == null || fw.trim().isEmpty() ? "未知" : fw);
+        String fw = com.lora.cn.utils.LoRaFrameParser.normalizeFirmwareVersionString(
+                com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "")
+        );
         TextView tvTerminalVersion = v.findViewById(R.id.terminal_detail_version);
-        if (tvTerminalVersion != null) tvTerminalVersion.setText(termVer);
+        if (tvTerminalVersion != null) tvTerminalVersion.setText(fw);
     }
 
     private void bindData() {
