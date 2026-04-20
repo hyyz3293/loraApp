@@ -225,26 +225,31 @@ public class TerminalStatusListFragment extends Fragment {
             });
         }
 
-        androidx.recyclerview.widget.GridLayoutManager terminalLayoutManager = new androidx.recyclerview.widget.GridLayoutManager(getContext(), 4);
-        terminalRecycle.setLayoutManager(terminalLayoutManager);
-        adapter = new TerminalAdapter();
-        try {
-            terminalRecycle.setHasFixedSize(true);
-            terminalRecycle.setItemAnimator(null);
-            terminalRecycle.setNestedScrollingEnabled(false);
-        } catch (Throwable ignored) {}
-        terminalRecycle.setAdapter(adapter);
-        adapter.setOnItemClickListener((adapter1, v1, position) -> {
-            if (hasPermission("terminal_detail")) {
-                Terminal terminal = (Terminal) adapter.getItem(position);
-                onTerminalClick(position, terminal);
-            } else {
-                Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
-            }
-        });
+        if (terminalRecycle != null) {
+            androidx.recyclerview.widget.GridLayoutManager terminalLayoutManager = new androidx.recyclerview.widget.GridLayoutManager(getContext(), 4);
+            terminalRecycle.setLayoutManager(terminalLayoutManager);
+            adapter = new TerminalAdapter();
+            try {
+                terminalRecycle.setHasFixedSize(true);
+                terminalRecycle.setItemAnimator(null);
+                terminalRecycle.setNestedScrollingEnabled(false);
+            } catch (Throwable ignored) {}
+            terminalRecycle.setAdapter(adapter);
+            adapter.setOnItemClickListener((adapter1, v1, position) -> {
+                if (hasPermission("terminal_detail")) {
+                    Terminal terminal = (Terminal) adapter.getItem(position);
+                    onTerminalClick(position, terminal);
+                } else {
+                    Toast.makeText(requireContext(), "您没有查看终端详情的权限", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private void initStatusBar() {
+        if (rvTerminalStatus == null) {
+            return;
+        }
         GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(), 6);
         rvTerminalStatus.setLayoutManager(gridLayoutManager);
         terminalStatusAdapter = new TerminalStatusAdapter();

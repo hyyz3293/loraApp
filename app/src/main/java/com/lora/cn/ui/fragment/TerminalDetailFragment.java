@@ -88,6 +88,7 @@ public class TerminalDetailFragment extends Fragment {
     private TextView terminal_detail_wifi;
     private TextView terminal_detail_battery;
     private TextView terminal_detail_id;
+    private TextView terminal_detail_version;
     private Button btnHandleNow;
     private TextView btnSetMaintenance;
     private boolean waitingForUplink = false;
@@ -210,6 +211,7 @@ public class TerminalDetailFragment extends Fragment {
         terminal_detail_wifi = v.findViewById(R.id.terminal_detail_wifi);
         terminal_detail_battery = v.findViewById(R.id.terminal_detail_battery);
         terminal_detail_id = v.findViewById(R.id.terminal_detail_id);
+        terminal_detail_version = v.findViewById(R.id.terminal_detail_version);
         btnHandleNow = v.findViewById(R.id.btn_handle_now);
         btnSetMaintenance = v.findViewById(R.id.btn_set_maintenance);
         if (btnEdit != null) btnEdit.setVisibility(hasPermission("terminal_edit") ? View.VISIBLE : View.GONE);
@@ -278,12 +280,7 @@ public class TerminalDetailFragment extends Fragment {
         }
         tab_maintenance.setSelected(true);
         tab_logs.setSelected(false);
-
-        String fw = com.lora.cn.utils.LoRaFrameParser.normalizeFirmwareVersionString(
-                com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "")
-        );
-        TextView tvTerminalVersion = v.findViewById(R.id.terminal_detail_version);
-        if (tvTerminalVersion != null) tvTerminalVersion.setText(fw);
+        if (terminal_detail_version != null) terminal_detail_version.setText("");
     }
 
     private void bindData() {
@@ -312,6 +309,9 @@ public class TerminalDetailFragment extends Fragment {
             String code = "-";
             String wifiText = "-";
             String batteryText = "";
+            String firmwareVersion = LoRaFrameParser.normalizeFirmwareVersionString(
+                    com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "")
+            );
             int batteryLevel = 0;
             boolean showBatteryAndSignal = false;
             int signalBars = 0;
@@ -440,6 +440,7 @@ public class TerminalDetailFragment extends Fragment {
             String finalCode = code;
             String finalWifiText = wifiText;
             String finalBatteryText = batteryText;
+            String finalFirmwareVersion = firmwareVersion;
             int finalBatteryLevel = batteryLevel;
             boolean finalShowBatteryAndSignal = showBatteryAndSignal;
             int finalSignalBars = signalBars;
@@ -485,6 +486,7 @@ public class TerminalDetailFragment extends Fragment {
                     }
                 }
                 if (terminal_detail_id != null) terminal_detail_id.setText(finalShowDeviceId);
+                if (terminal_detail_version != null) terminal_detail_version.setText(finalFirmwareVersion);
                 if (ivFavorite != null) {
                     ivFavorite.setImageResource(finalIsFavorite ? R.mipmap.ic_star_yeollw : R.mipmap.ic_start);
                     ivFavorite.setTag(finalIsFavorite);

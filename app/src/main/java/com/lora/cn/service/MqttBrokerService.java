@@ -779,9 +779,6 @@ public class MqttBrokerService extends Service {
             if (frame == null) return;
             if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
             try {
-                if (!db.isTerminalExists(frame.deviceId)) return;
-            } catch (Exception ignored) { return; }
-            try {
                 int yy = frame.termVerYY;
                 int mm = frame.termVerMM;
                 int dd = frame.termVerDD;
@@ -791,6 +788,9 @@ public class MqttBrokerService extends Service {
                 );
                 com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version", fw);
             } catch (Exception ignored) {}
+            try {
+                if (!db.isTerminalExists(frame.deviceId)) return;
+            } catch (Exception ignored) { return; }
             int latestTimedUnsentMins = -1;
             java.util.List<com.lora.cn.ui.model.MaintenanceInfo> allMForDevice = null;
             java.util.ArrayList<com.lora.cn.ui.model.MaintenanceInfo> dueMaint = new java.util.ArrayList<>();
