@@ -860,7 +860,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         
-        btnLogout.setOnClickListener(v -> confirmLogout());
+        if (btnLogout != null) {
+            btnLogout.setOnClickListener(v -> confirmLogout());
+        }
 
         tvUserName.setOnClickListener(v -> toggleUserInfo());
         if (btnMaintenanceBadge != null) {
@@ -2738,6 +2740,10 @@ public class MainActivity extends AppCompatActivity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    public void requestLogout() {
+        confirmLogout();
     }
 
     private void confirmLogout() {

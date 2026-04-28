@@ -34,8 +34,11 @@ import org.greenrobot.eventbus.ThreadMode;
 import com.lora.cn.ui.model.LogInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -55,6 +58,7 @@ public class DeviceListFragment extends Fragment {
     private TerminalDao terminalDao;
     private List<Terminal> allTerminals = new ArrayList<>();
     private Set<String> discoveredDeviceIds = new HashSet<>(); // 用于存储已发现的设备ID，避免重复显示
+    private Map<String, Long> discoveredDeviceTimes = new HashMap<>();
     private java.util.concurrent.ExecutorService ioExecutor;
     private android.os.Handler mainHandler;
     private final java.util.concurrent.atomic.AtomicInteger loadSeq = new java.util.concurrent.atomic.AtomicInteger();
@@ -164,6 +168,7 @@ public class DeviceListFragment extends Fragment {
         try {
             allTerminals.clear();
             discoveredDeviceIds.clear();
+            discoveredDeviceTimes.clear();
             deviceListAdapter.submitList(allTerminals);
             deviceListAdapter.notifyDataSetChanged();
             updateUI();
@@ -187,19 +192,23 @@ public class DeviceListFragment extends Fragment {
         final android.os.Handler handler = mainHandler;
         List<Terminal> seed = new ArrayList<>(allTerminals);
         Set<String> seedIds = new HashSet<>(discoveredDeviceIds);
+        Map<String, Long> seedTimes = new HashMap<>(discoveredDeviceTimes);
         ioExecutor.execute(() -> {
-            List<Terminal> next = new ArrayList<>(seed);
-            Set<String> nextIds = new HashSet<>(seedIds);
+            LinkedHashMap<String, Terminal> nextMap = new LinkedHashMap<>();
+            Map<String, Long> nextTimes = new HashMap<>();
             try {
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
-                if (!next.isEmpty()) {
-                    java.util.Iterator<Terminal> it = next.iterator();
-                    while (it.hasNext()) {
-                        Terminal t = it.next();
-                        if (t != null && !TextUtils.isEmpty(t.getDeviceId()) && dbHelper.isTerminalExists(t.getDeviceId())) {
-                            it.remove();
-                            nextIds.remove(t.getDeviceId());
-                        }
+                long nowMs = System.currentTimeMillis();
+                long filterWindowMs = getFilterWindowMs();
+                if (!seed.isEmpty()) {
+                    for (Terminal t : seed) {
+                        if (t == null || TextUtils.isEmpty(t.getDeviceId())) continue;
+                        String deviceId = t.getDeviceId();
+                        long seenTime = seedTimes.containsKey(deviceId) ? seedTimes.get(deviceId) : -1L;
+                        if (dbHelper.isTerminalExists(deviceId)) continue;
+                        if (!isWithinFilterWindow(nowMs, seenTime, filterWindowMs)) continue;
+                        nextMap.put(deviceId, t);
+                        nextTimes.put(deviceId, seenTime);
                     }
                 }
 
@@ -209,6 +218,8 @@ public class DeviceListFragment extends Fragment {
                         String action = li.getAction();
                         if (action == null) continue;
                         if (!action.startsWith("接收上行数据:")) continue;
+                        long logTime = parseLogTime(li);
+                        if (!isWithinFilterWindow(nowMs, logTime, filterWindowMs)) continue;
                         int idx = action.indexOf(":");
                         if (idx == -1 || idx + 1 >= action.length()) continue;
                         String hex = action.substring(idx + 1).trim();
@@ -217,8 +228,8 @@ public class DeviceListFragment extends Fragment {
 
                         String deviceId = pf.deviceId;
                         if (dbHelper.isTerminalExists(deviceId)) continue;
-                        if (nextIds.contains(deviceId)) continue;
-                        nextIds.add(deviceId);
+                        Long existingTime = nextTimes.get(deviceId);
+                        if (existingTime != null && existingTime >= logTime) continue;
 
                         Terminal discoveredTerminal = new Terminal();
                         discoveredTerminal.setDeviceId(deviceId);
@@ -236,13 +247,15 @@ public class DeviceListFragment extends Fragment {
                         discoveredTerminal.setLoraModuleVersionCode(pf.loraModuleVersionCode);
                         discoveredTerminal.setFirmwareVersionString(pf.firmwareVersionString);
                         discoveredTerminal.parsedFrame = pf;
-                        next.add(discoveredTerminal);
+                        nextMap.put(deviceId, discoveredTerminal);
+                        nextTimes.put(deviceId, logTime);
                     }
                 }
             } catch (Exception ignored) {}
 
-            List<Terminal> finalNext = next;
-            Set<String> finalNextIds = nextIds;
+            List<Terminal> finalNext = new ArrayList<>(nextMap.values());
+            Set<String> finalNextIds = new HashSet<>(nextMap.keySet());
+            Map<String, Long> finalNextTimes = new HashMap<>(nextTimes);
             if (handler == null) return;
             handler.post(() -> {
                 if (!isAdded()) return;
@@ -251,6 +264,8 @@ public class DeviceListFragment extends Fragment {
                 if (finalNext != null) allTerminals.addAll(finalNext);
                 discoveredDeviceIds.clear();
                 if (finalNextIds != null) discoveredDeviceIds.addAll(finalNextIds);
+                discoveredDeviceTimes.clear();
+                discoveredDeviceTimes.putAll(finalNextTimes);
                 if (deviceListAdapter != null) {
                     deviceListAdapter.submitList(new ArrayList<>(allTerminals));
                     deviceListAdapter.notifyDataSetChanged();
@@ -332,10 +347,15 @@ public class DeviceListFragment extends Fragment {
                 String deviceId = frameData.deviceId;
                 DatabaseHelper dbHelper = DatabaseHelper.getInstance(appCtx);
                 if (dbHelper.isTerminalExists(deviceId)) return;
+                long eventTime = parseTime(event.getTime());
+                long nowMs = System.currentTimeMillis();
+                long filterWindowMs = getFilterWindowMs();
+                if (!isWithinFilterWindow(nowMs, eventTime, filterWindowMs)) return;
                 mainHandler.post(() -> {
                     if (!isAdded()) return;
                     if (discoveredDeviceIds.contains(deviceId)) return;
                     discoveredDeviceIds.add(deviceId);
+                    discoveredDeviceTimes.put(deviceId, eventTime > 0 ? eventTime : nowMs);
                     Terminal discoveredTerminal = new Terminal();
                     discoveredTerminal.setDeviceId(deviceId);
                     discoveredTerminal.setDeviceName("终端ID：" + deviceId);
@@ -359,5 +379,37 @@ public class DeviceListFragment extends Fragment {
                 });
             } catch (Exception ignored) {}
         });
+    }
+
+    private long getFilterWindowMs() {
+        int sleepMin = com.blankj.utilcode.util.SPUtils.getInstance().getInt("device_sleep_interval_min", 3);
+        if (sleepMin <= 0) sleepMin = 3;
+        return Math.max(60_000L, sleepMin * 2L * 60_000L);
+    }
+
+    private long parseLogTime(LogInfo logInfo) {
+        if (logInfo == null) return -1L;
+        long createTime = parseTime(logInfo.getCreateTime());
+        if (createTime > 0) return createTime;
+        return parseTime(logInfo.getOperationTime());
+    }
+
+    private boolean isWithinFilterWindow(long nowMs, long seenTimeMs, long filterWindowMs) {
+        return seenTimeMs > 0 && nowMs - seenTimeMs <= filterWindowMs;
+    }
+
+    private long parseTime(String rawTime) {
+        if (rawTime == null || rawTime.trim().isEmpty()) return -1L;
+        String value = rawTime.trim();
+        java.util.List<java.text.SimpleDateFormat> formats = new ArrayList<>();
+        formats.add(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()));
+        formats.add(new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss", java.util.Locale.getDefault()));
+        for (java.text.SimpleDateFormat format : formats) {
+            try {
+                java.util.Date parsed = format.parse(value);
+                if (parsed != null) return parsed.getTime();
+            } catch (Exception ignored) {}
+        }
+        return -1L;
     }
 }

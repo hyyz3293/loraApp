@@ -178,6 +178,7 @@ public class SettingsFragment extends Fragment {
         if (hasPermission(permissions, "user_management")) {
             settingList.add(new SettingItem(R.mipmap.ic_setting4, "用户管理"));
         }
+        settingList.add(new SettingItem(R.mipmap.ic_logout, "退出登录"));
         //settingList.add(new SettingItem(R.mipmap.ic_setting6, "维护列表"));
 //        if (hasPermission(permissions, "setting")) {
 //            settingList.add(new SettingItem(R.mipmap.ic_setting2, "自动返回首页时间"));
@@ -250,6 +251,11 @@ public class SettingsFragment extends Fragment {
                             }
                         }
                     });
+                }
+                break;
+            case "退出登录":
+                if (getActivity() instanceof com.lora.cn.ui.activity.MainActivity) {
+                    ((com.lora.cn.ui.activity.MainActivity) getActivity()).requestLogout();
                 }
                 break;
         }
