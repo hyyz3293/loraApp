@@ -485,8 +485,8 @@ public class TerminalStatusListFragment extends Fragment {
                         boolean keep = true;
                         String st = TerminalStatusConstants.codeToText(t.getStatus());
                         if (opt.contains("只显示重点关注")) keep = t.isFavorite();
-                        else if (opt.contains("只显示异常关注")) keep = TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(st);
-                        else if (opt.contains("只显示没有信号")) keep = TerminalStatusConstants.STATUS_OFFLINE.equals(st);
+                        else if (opt.contains("只显示异常取走") || opt.contains("只显示异常关注")) keep = TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(st);
+                        else if (opt.contains("只显示设备离线") || opt.contains("只显示没有信号")) keep = TerminalStatusConstants.STATUS_OFFLINE.equals(st);
                         if (keep) filtered.add(t);
                     }
                     list = filtered;
