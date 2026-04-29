@@ -42,6 +42,8 @@ public class DeviceSettingFragment extends Fragment {
     private TerminalSettingDeviceAdapter terminalSettingAdapter;
     private TextView mTvBack;
     
+    private TextView tvUserName;
+    
     // 权限相关
     private DatabaseManager databaseManager;
     private int currentUserRoleId = -1;
@@ -80,6 +82,11 @@ public class DeviceSettingFragment extends Fragment {
     private void initViews(View view) {
         terminalSettingRecycle = view.findViewById(R.id.terminal_recycle_device);
         mTvBack = view.findViewById(R.id.back);
+        tvUserName = view.findViewById(R.id.tv_user_name);
+        if (tvUserName != null) {
+            String currentUserName = SPUtils.getInstance().getString("current_user_name", "用户");
+            tvUserName.setText(currentUserName);
+        }
     }
 
     private void initListener() {

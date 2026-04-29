@@ -1010,12 +1010,13 @@ public class TerminalListFragment extends Fragment {
             displayTerminal.setMaintenanceTime(dbTerminal.getMaintenanceTime());
 
             // 根据电量设置电池图标
-            if (dbTerminal.getBatteryLevel() > 80) {
-                displayTerminal.setBatteryIconResId(R.drawable.ic_green_sd); // 高电量-绿色电池
-            } else if (dbTerminal.getBatteryLevel() > 30) {
-                displayTerminal.setBatteryIconResId(R.drawable.ic_yellow_sd); // 中电量-黄色电池
-            } else {
+            boolean isLowBattery = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(dbTerminal.getBatteryVoltage(), dbTerminal.getBatteryLevel());
+            if (isLowBattery) {
                 displayTerminal.setBatteryIconResId(R.mipmap.ic_red_sd); // 低电量-红色电池（PNG保留在mipmap）
+            } else if (dbTerminal.getBatteryLevel() > 80) {
+                displayTerminal.setBatteryIconResId(R.drawable.ic_green_sd); // 高电量-绿色电池
+            } else {
+                displayTerminal.setBatteryIconResId(R.drawable.ic_yellow_sd); // 中电量-黄色电池
             }
 
             // 设置重要性（收藏状态）
@@ -1037,7 +1038,6 @@ public class TerminalListFragment extends Fragment {
             int offlineCount = 0;
             int maintenanceCount = 0;
 
-            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             if (allTerminals != null) {
                 for (Terminal terminal : allTerminals) {
                     if (terminal == null) continue;
@@ -1049,8 +1049,8 @@ public class TerminalListFragment extends Fragment {
                     else if (statusCode == TerminalStatusConstants.CODE_ABNORMAL_TAKEN) abnormalLostCount++;
                     else if (statusCode == TerminalStatusConstants.CODE_NORMAL_TAKEN) normalTakenCount++;
 
-                    int batteryLevel = terminal.getBatteryLevel();
-                    if (statusCode != TerminalStatusConstants.CODE_OFFLINE && batteryLevel <= lowTh) {
+                    if (statusCode != TerminalStatusConstants.CODE_OFFLINE
+                            && com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(terminal.getBatteryVoltage(), terminal.getBatteryLevel())) {
                         lowBatteryCount++;
                     }
                 }
@@ -1214,8 +1214,8 @@ public class TerminalListFragment extends Fragment {
                 else if (TerminalStatusConstants.STATUS_NORMAL_TAKEN.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_NORMAL_TAKEN;
                 else if (TerminalStatusConstants.STATUS_ABNORMAL_LOST.equals(statusFilterTitle)) match = t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
                 else if (TerminalStatusConstants.STATUS_LOW_BATTERY.equals(statusFilterTitle)) {
-                    int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                    match = t.getStatus() != TerminalStatusConstants.CODE_OFFLINE && t.getBatteryLevel() <= lowTh;
+                    match = t.getStatus() != TerminalStatusConstants.CODE_OFFLINE
+                            && com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), t.getBatteryLevel());
                 }
                 if (match) filtered.add(t);
             }

@@ -459,8 +459,8 @@ public class TerminalStatusListFragment extends Fragment {
                     match = t.getStatus() == TerminalStatusConstants.CODE_ABNORMAL_TAKEN || (tid != null && pendingAbnormalIds.contains(tid));
                 }
                 else if (TerminalStatusConstants.STATUS_LOW_BATTERY.equals(statusFilterTitle)) {
-                    int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                    match = t.getStatus() != TerminalStatusConstants.CODE_OFFLINE && t.getBatteryLevel() <= lowTh;
+                    match = t.getStatus() != TerminalStatusConstants.CODE_OFFLINE
+                            && com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), t.getBatteryLevel());
                 }
                 if (match) filtered.add(t);
             }

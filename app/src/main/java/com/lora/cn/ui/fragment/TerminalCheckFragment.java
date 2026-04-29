@@ -199,7 +199,6 @@ public class TerminalCheckFragment extends Fragment {
                 int online = 0, offline = 0, abnormal = 0;
                 int batteryNormal = 0, batteryLow = 0;
                 int manualTake = 0;
-                int lowThreshold = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                 for (com.lora.cn.ui.model.Terminal t : terminals) {
                     int sc = t.getStatus();
                     String st = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(sc);
@@ -214,7 +213,8 @@ public class TerminalCheckFragment extends Fragment {
                     }
                     int bl = t.getBatteryLevel();
                     if (!"设备离线".equals(st)) {
-                        if (bl <= lowThreshold) batteryLow++; else batteryNormal++;
+                        boolean isLow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), bl);
+                        if (isLow) batteryLow++; else batteryNormal++;
                     }
                 }
                 int totalStatus = Math.max(1, online + offline + abnormal + manualTake);
@@ -283,7 +283,6 @@ public class TerminalCheckFragment extends Fragment {
                         int manualTake = 0, illegalLoss = 0;
                         int batteryNormal = 0, batteryLow = 0, batteryOffline = 0;
                         int onlineCount = 0, offlineCount = 0;
-                        int lowThreshold2 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                         for (com.lora.cn.ui.model.Terminal t : terminals) {
                             boolean match = (t.getDepartmentId() == (int) c.getCategoryId())
                                     || (t.getRoomId() == (int) c.getCategoryId())
@@ -313,7 +312,10 @@ public class TerminalCheckFragment extends Fragment {
                             else if ("正常取走".equals(st)) { manualTake++; }
                             else if ("异常取走".equals(st)) { illegalLoss++; }
                             int bl = t.getBatteryLevel();
-                            if (!"设备离线".equals(st)) { if (bl <= lowThreshold2) batteryLow++; else batteryNormal++; }
+                            if (!"设备离线".equals(st)) {
+                                boolean isLow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), bl);
+                                if (isLow) batteryLow++; else batteryNormal++;
+                            }
                         }
                         com.lora.cn.ui.model.TerminalChartData data = new com.lora.cn.ui.model.TerminalChartData();
                         data.setOnlineTitle(label);

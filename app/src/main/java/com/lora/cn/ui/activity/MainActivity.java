@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     private MainPagerAdapter pagerAdapter;
     private List<MenuTab> menuTabs;
     private ImageView btnLogout;
-    private TextView tvUserName;
+    private ImageView ivUserAvatar;
     private FrameLayout fragmentUserInfoContainer;
     private FrameLayout fragmentDeviceListContainer;
     private UserInfoFragment userInfoFragment;
@@ -623,7 +623,7 @@ public class MainActivity extends AppCompatActivity {
         rvMenuTabs = findViewById(R.id.rv_menu_tabs);
         viewPager = findViewById(R.id.view_pager);
         btnLogout = findViewById(R.id.logout);
-        tvUserName = findViewById(R.id.tv_user_name);
+        ivUserAvatar = findViewById(R.id.iv_user_avatar);
         ivLogo = findViewById(R.id.iv_logo);
         btnShareLogs = findViewById(R.id.btn_share_logs);
         btnMaintenanceBadge = findViewById(R.id.btn_maintenance_badge);
@@ -842,9 +842,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initUserInfo() {
-        // 获取当前登录用户名并设置到tvUserName
-        String currentUserName = SPUtils.getInstance().getString("current_user_name", "用户");
-        tvUserName.setText(currentUserName);
     }
     
     private void initListeners() {
@@ -864,7 +861,9 @@ public class MainActivity extends AppCompatActivity {
             btnLogout.setOnClickListener(v -> confirmLogout());
         }
 
-        tvUserName.setOnClickListener(v -> toggleUserInfo());
+        if (ivUserAvatar != null) {
+            ivUserAvatar.setOnClickListener(v -> toggleUserInfo());
+        }
         if (btnMaintenanceBadge != null) {
             btnMaintenanceBadge.setOnClickListener(v -> switchToTab(3));
         }
@@ -1352,7 +1351,6 @@ public class MainActivity extends AppCompatActivity {
         try { all = db.getAllTerminals(); } catch (Exception ignored) {}
         if (all == null || all.isEmpty()) return out;
         String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
-        int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
 
         for (com.lora.cn.ui.model.Terminal t : all) {
             if (t == null) continue;
@@ -1362,7 +1360,7 @@ public class MainActivity extends AppCompatActivity {
             int status = t.getStatus();
             boolean isOffline = status == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
             boolean isAbnormal = status == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN;
-            boolean isLow = t.getBatteryLevel() <= lowTh;
+            boolean isLow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), t.getBatteryLevel());
 
             if (isAbnormal) {
                 if (last != null && last != com.lora.cn.ui.constants.LogStatus.DEVICE_LOST.code) out.clearDevs.add(devId);
@@ -2162,7 +2160,6 @@ public class MainActivity extends AppCompatActivity {
                     terminalById.put(t.getTerminalId(), t);
                 }
             }
-            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             int c = 0;
             for (com.lora.cn.ui.model.LogInfo li : latest.values()) {
                 if (li == null) continue;
@@ -2177,7 +2174,7 @@ public class MainActivity extends AppCompatActivity {
                     com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                     if (t != null) {
                         boolean devStillOffline = t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                        boolean isLowNow = t.getBatteryLevel() <= lowTh;
+                        boolean isLowNow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), t.getBatteryLevel());
                         boolean afterHandled = ht == null || at > ht;
                         if (!devStillOffline && isLowNow && afterHandled) c++;
                     }
@@ -2268,7 +2265,6 @@ public class MainActivity extends AppCompatActivity {
                             terminalById.put(t.getTerminalId(), t);
                         }
                     }
-                    int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                     int c = 0;
                     for (com.lora.cn.ui.model.LogInfo li : latest.values()) {
                         if (li == null) continue;
@@ -2282,12 +2278,7 @@ public class MainActivity extends AppCompatActivity {
                         if (s == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                             com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                             boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                            boolean showByBattery = true;
-                            if (t != null) {
-                                int level = t.getBatteryLevel();
-                                boolean levelKnown = level >= 0 && level <= 100;
-                                if (levelKnown) showByBattery = level <= lowTh;
-                            }
+                            boolean showByBattery = t != null && com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), t.getBatteryLevel());
                             if (t == null || devStillOffline || showByBattery) c++;
                         } else {
                             com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());

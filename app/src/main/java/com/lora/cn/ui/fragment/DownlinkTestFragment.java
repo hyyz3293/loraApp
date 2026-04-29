@@ -467,7 +467,7 @@ public class DownlinkTestFragment extends Fragment {
             if (etAlarmMinutes != null && TextUtils.isEmpty(etAlarmMinutes.getText())) {
                 etAlarmMinutes.setText(String.valueOf(mins));
             }
-            int low = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int low = com.lora.cn.utils.DownlinkMessageHelper.getLowBatteryThresholdPercent();
             if (etLowBattery != null && TextUtils.isEmpty(etLowBattery.getText())) {
                 etLowBattery.setText(String.valueOf(low));
             }

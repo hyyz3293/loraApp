@@ -171,8 +171,9 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
         // 电量使用BatteryView，背景透明、边框+四方格显示
         if (!isOffline) {
             int level = Math.max(0, Math.min(100, item.getBatteryLevel()));
-            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-            boolean isLow = level <= lowTh;
+            int bv = 0;
+            try { bv = item.getBatteryVoltage(); } catch (Exception ignored) {}
+            boolean isLow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(bv, level);
             if (isLow) {
                 if (batteryView != null) batteryView.setVisibility(View.GONE);
                 if (ivBatteryIcon != null) {
@@ -183,7 +184,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
                 if (batteryView != null) {
                     batteryView.setVisibility(View.VISIBLE);
-                    batteryView.setBatteryLevel(level);
+                    batteryView.setBatteryInfo(level, bv);
                 }
             }
             tvBatteryTitle.setText(level + "%");

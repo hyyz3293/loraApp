@@ -15,6 +15,29 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DownlinkMessageHelper {
     
     private static final String TAG = "DownlinkMessageHelper";
+
+    public static int getLowBatteryThresholdPercent() {
+        int p = 20;
+        try { p = SPUtils.getInstance().getInt("low_battery_threshold_percent", 20); } catch (Exception ignored) {}
+        if (p < 0) p = 0;
+        if (p > 100) p = 100;
+        return p;
+    }
+
+    public static int getLowBatteryThresholdVoltageCentiVolt() {
+        int p = getLowBatteryThresholdPercent();
+        int delta = Math.round(0.6f * p);
+        return 300 + delta;
+    }
+
+    public static boolean isLowBatteryByVoltageCentiVolt(int batteryVoltageCentiVolt) {
+        if (batteryVoltageCentiVolt <= 0) return false;
+        return batteryVoltageCentiVolt <= getLowBatteryThresholdVoltageCentiVolt();
+    }
+
+    public static boolean isLowBattery(int batteryVoltageCentiVolt, int batteryLevelPercent) {
+        return isLowBatteryByVoltageCentiVolt(batteryVoltageCentiVolt);
+    }
     
     // MQTT客户端实例
     private MqttPacketsClient mqttClient;
@@ -44,7 +67,7 @@ public class DownlinkMessageHelper {
                 Log.e(TAG, "MQTT客户端未初始化");
                 return;
             }
-            int lowBatteryPercent = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int lowBatteryPercent = getLowBatteryThresholdPercent();
             byte sequence = (byte) (System.currentTimeMillis() & 0xFF);
             long utcMs = System.currentTimeMillis();
             byte[] downlinkFrame = LoRaProtocolParser.buildDownlink8001Full(
@@ -202,7 +225,7 @@ public class DownlinkMessageHelper {
             int m = com.blankj.utilcode.util.SPUtils.getInstance().getInt("inventory_schedule_minute", 0);
             int mins = Math.max(0, Math.min(1440, h * 60 + m));
             int normalizedInterval = Math.max(3, Math.min(1440, intervalMin));
-            int lowBattery = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int lowBattery = getLowBatteryThresholdPercent();
             boolean debug = com.blankj.utilcode.util.SPUtils.getInstance().getBoolean("debug_need_downlink_8001", false);
             Need8001Decision d = evaluateNeed8001(frame, normalizedInterval, mins);
             if (shouldLogNeed8001(frame.deviceId, debug, d.need)) {

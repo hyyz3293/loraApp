@@ -120,7 +120,6 @@ public class AlertPendingListFragment extends Fragment {
                         if (t != null) terminalById.put(t.getTerminalId(), t);
                     }
                 }
-                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                 java.util.List<LogInfo> filtered = new java.util.ArrayList<>();
                 for (LogInfo li : pending) {
                     if (li == null) continue;
@@ -133,12 +132,7 @@ public class AlertPendingListFragment extends Fragment {
                     if (li.getStatusCode() == com.lora.cn.ui.constants.LogStatus.LOW_BATTERY.code) {
                         com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());
                         boolean devStillOffline = t != null && t.getStatus() == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE;
-                        boolean showByBattery = true;
-                        if (t != null) {
-                            int level = t.getBatteryLevel();
-                            boolean levelKnown = level >= 0 && level <= 100;
-                            if (levelKnown) showByBattery = level <= lowTh;
-                        }
+                        boolean showByBattery = t != null && com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), t.getBatteryLevel());
                         if (t == null || devStillOffline || showByBattery) filtered.add(li);
                     } else {
                         com.lora.cn.ui.model.Terminal t = terminalById.get(li.getTerminalId());

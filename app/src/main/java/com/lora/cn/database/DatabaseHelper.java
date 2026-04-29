@@ -1526,8 +1526,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     // 如果没有电量字段，使用信号强度作为默认值
                     terminal.setBatteryLevel(cursor.getInt(cursor.getColumnIndex(COLUMN_TERMINAL_SIGNAL_STRENGTH)));
                 }
-                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                terminal.setBatteryStatus(terminal.getBatteryLevel() <= lowTh ? 0 : 1);
                 
                 terminal.setDepartment(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT)));
                 terminal.setLocation(cursor.getString(cursor.getColumnIndex(COLUMN_TERMINAL_LOCATION)));
@@ -1541,6 +1539,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 if (rssiIndex != -1) {
                     terminal.setRssi(cursor.getInt(rssiIndex));
                 }
+                boolean isLowBattery = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(
+                        terminal.getBatteryVoltage(),
+                        terminal.getBatteryLevel()
+                );
+                terminal.setBatteryStatus(isLowBattery ? 0 : 1);
                 
                 // 设置分类ID
                 terminal.setDepartmentId(cursor.getLong(cursor.getColumnIndex(COLUMN_TERMINAL_DEPARTMENT_ID)));
@@ -2061,11 +2064,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId));
                     }
                 } catch (Exception ignored) {}
-                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                 long nowMsLb = System.currentTimeMillis();
                 String keyLogLb = "low_batt_last_logged_ms:" + (deviceId != null ? deviceId : "");
                 String keyRecLb = "low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : "");
-                if (frame.batteryLevel > lowTh) {
+                boolean lowNow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(frame.batteryVoltage, frame.batteryLevel);
+                if (!lowNow) {
                     try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyRecLb, nowMsLb); } catch (Exception ignored) {}
                     try {
                         String autoUserLb = handleUserNow;
@@ -2424,14 +2427,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public void syncLowBatteryFlags() {
         try {
-            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
             java.util.List<com.lora.cn.ui.model.Terminal> terminals = getAllTerminals();
             String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
             SQLiteDatabase db = this.getWritableDatabase();
             for (com.lora.cn.ui.model.Terminal t : terminals) {
                 String deviceId = t.getTerminalId();
-                int level = t.getBatteryLevel();
-                if (level <= lowTh) {
+                boolean isLow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(t.getBatteryVoltage(), t.getBatteryLevel());
+                if (isLow) {
                     long lastLoggedLb3 = 0L, lastRecoveredLb3 = 0L;
                     String keyLogLb3 = "low_batt_last_logged_ms:" + (deviceId != null ? deviceId : "");
                     String keyRecLb3 = "low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : "");
@@ -2476,7 +2478,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyLogLb3, System.currentTimeMillis()); } catch (Exception ignored) {}
                     }
                 }
-                if (level > lowTh) {
+                if (!isLow) {
                     try { com.blankj.utilcode.util.SPUtils.getInstance().put("low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : ""), System.currentTimeMillis()); } catch (Exception ignored) {}
                 }
             }
@@ -2855,11 +2857,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                         org.greenrobot.eventbus.EventBus.getDefault().post(new com.lora.cn.event.TerminalRefreshEvent("已入库刷新:" + deviceId));
                     }
                 } catch (Exception ignored) {}
-                int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                 long nowMsLb = System.currentTimeMillis();
                 String keyLogLb = "low_batt_last_logged_ms:" + (deviceId != null ? deviceId : "");
                 String keyRecLb = "low_batt_last_recovered_ms:" + (deviceId != null ? deviceId : "");
-                if (frame.batteryLevel > lowTh) {
+                boolean lowNow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(frame.batteryVoltage, frame.batteryLevel);
+                if (!lowNow) {
                     try { com.blankj.utilcode.util.SPUtils.getInstance().put(keyRecLb, nowMsLb); } catch (Exception ignored) {}
                     try {
                         String autoUserLb = handleUserNow;

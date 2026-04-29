@@ -186,12 +186,15 @@ public class TerminalDao {
             // 读取电量、电压、RSSI
             int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
             if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
-            int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-            terminal.setBatteryStatus(terminal.getBatteryLevel() <= lowTh ? 0 : 1);
             int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
             if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
             int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
             if (rssiIdx != -1) terminal.setRssi(cursor.getInt(rssiIdx));
+            boolean isLowBattery = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(
+                    terminal.getBatteryVoltage(),
+                    terminal.getBatteryLevel()
+            );
+            terminal.setBatteryStatus(isLowBattery ? 0 : 1);
         }
         
         cursor.close();
@@ -247,12 +250,15 @@ public class TerminalDao {
                 // 读取电量、电压、RSSI
                 int blIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_LEVEL);
                 if (blIdx != -1) terminal.setBatteryLevel(cursor.getInt(blIdx));
-                int lowTh2 = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                terminal.setBatteryStatus(terminal.getBatteryLevel() <= lowTh2 ? 0 : 1);
                 int bvIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_BATTERY_VOLTAGE);
                 if (bvIdx != -1) terminal.setBatteryVoltage(cursor.getInt(bvIdx));
                 int rssiIdx = cursor.getColumnIndex(DatabaseHelper.COLUMN_TERMINAL_RSSI);
                 if (rssiIdx != -1) terminal.setRssi(cursor.getInt(rssiIdx));
+                boolean isLowBattery2 = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(
+                        terminal.getBatteryVoltage(),
+                        terminal.getBatteryLevel()
+                );
+                terminal.setBatteryStatus(isLowBattery2 ? 0 : 1);
                 
                 terminals.add(terminal);
             } while (cursor.moveToNext());

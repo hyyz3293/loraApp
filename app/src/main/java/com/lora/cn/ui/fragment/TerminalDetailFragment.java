@@ -313,6 +313,7 @@ public class TerminalDetailFragment extends Fragment {
                     com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "")
             );
             int batteryLevel = 0;
+            int batteryVoltage = 0;
             boolean showBatteryAndSignal = false;
             int signalBars = 0;
             boolean isFavorite = false;
@@ -354,6 +355,7 @@ public class TerminalDetailFragment extends Fragment {
 
                 st = t.getStatus();
                 batteryLevel = t.getBatteryLevel();
+                batteryVoltage = t.getBatteryVoltage();
                 if (st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
                     topBattery = "";
                 } else {
@@ -371,9 +373,7 @@ public class TerminalDetailFragment extends Fragment {
                         || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN
                         || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
                     showBatteryAndSignal = true;
-                    int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
                     batteryText = batteryLevel + "%";
-                    boolean ignoredIsLow = batteryLevel <= lowTh;
                 }
 
                 if (st != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
@@ -442,6 +442,7 @@ public class TerminalDetailFragment extends Fragment {
             String finalBatteryText = batteryText;
             String finalFirmwareVersion = firmwareVersion;
             int finalBatteryLevel = batteryLevel;
+            int finalBatteryVoltage = batteryVoltage;
             boolean finalShowBatteryAndSignal = showBatteryAndSignal;
             int finalSignalBars = signalBars;
             boolean finalIsFavorite = isFavorite;
@@ -470,13 +471,12 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_battery != null) {
                     terminal_detail_battery.setText(finalBatteryText);
                     if (finalShowBatteryAndSignal) {
-                        int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
-                        boolean isLow = finalBatteryLevel <= lowTh;
+                        boolean isLow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(finalBatteryVoltage, finalBatteryLevel);
                         terminal_detail_battery.setTextColor(isLow ? android.graphics.Color.parseColor("#FF9500") : android.graphics.Color.parseColor("#333333"));
                     }
                 }
                 if (batteryView != null) batteryView.setVisibility(finalShowBatteryAndSignal ? View.VISIBLE : View.GONE);
-                if (batteryView != null && finalShowBatteryAndSignal) batteryView.setBatteryLevel(finalBatteryLevel);
+                if (batteryView != null && finalShowBatteryAndSignal) batteryView.setBatteryInfo(finalBatteryLevel, finalBatteryVoltage);
                 if (signalView != null) {
                     if (finalSt == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
                         signalView.setVisibility(View.GONE);

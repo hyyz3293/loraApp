@@ -112,7 +112,7 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
             int cc = com.blankj.utilcode.util.SPUtils.getInstance().getInt("terminal_check_count", 2);
             currentNum = String.valueOf(cc);
         } else if (item.getIndex() == 4) {
-            int lb = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+            int lb = com.lora.cn.utils.DownlinkMessageHelper.getLowBatteryThresholdPercent();
             currentNum = String.valueOf(lb);
         } else if (item.getIndex() == 5) {
             long sec = com.blankj.utilcode.util.SPUtils.getInstance().getLong("home_auto_return_timeout_sec", 60);
@@ -193,6 +193,8 @@ public class TerminalSettingDeviceAdapter extends BaseQuickAdapter<SettingItem, 
                         } else if (item.getIndex() == 4) {
                             try {
                                 int n = Integer.parseInt(newValue);
+                                if (n < 0) n = 0;
+                                if (n > 100) n = 100;
                                 out = String.valueOf(n);
                                 com.blankj.utilcode.util.SPUtils.getInstance().put("low_battery_threshold_percent", n);
                                 try {

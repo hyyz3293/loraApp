@@ -15,6 +15,7 @@ public class BatteryView extends View {
 
     // 电池参数
     private int batteryLevel = 75; // 电量百分比 0-100
+    private int batteryVoltageCentiVolt = 0;
     private final int segmentCount = 4; // 内部方格数量
     private float cornerRadius;
     private float terminalWidth; // 正极宽度
@@ -174,13 +175,24 @@ public class BatteryView extends View {
         invalidate();
     }
 
+    public void setBatteryVoltage(int batteryVoltageCentiVolt) {
+        this.batteryVoltageCentiVolt = Math.max(0, batteryVoltageCentiVolt);
+        updateColors();
+        invalidate();
+    }
+
+    public void setBatteryInfo(int levelPercent, int batteryVoltageCentiVolt) {
+        this.batteryLevel = Math.max(0, Math.min(levelPercent, 100));
+        this.batteryVoltageCentiVolt = Math.max(0, batteryVoltageCentiVolt);
+        updateColors();
+        invalidate();
+    }
+
     /**
      * 根据电量更新颜色
      */
     private void updateColors() {
-        int lowTh = 20;
-        try { lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20); } catch (Exception ignored) {}
-        boolean isLowBattery = batteryLevel <= lowTh;
+        boolean isLowBattery = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(batteryVoltageCentiVolt, batteryLevel);
 
         if (isLowBattery) {
             outerPaint.setColor(lowBatteryOuterColor);

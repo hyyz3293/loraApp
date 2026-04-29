@@ -81,7 +81,7 @@ public class UplinkParseFragment extends Fragment {
                                 int res2 = 0xFFFFFFFF;
                                 int res3 = 0xFFFFFFFF;
                                 int res4 = 0xFFFF;
-                                int low = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+                                int low = com.lora.cn.utils.DownlinkMessageHelper.getLowBatteryThresholdPercent();
                                 int ack = 1;
                                 int dep = 0xFF;
                                 int cart = 0xFF;
@@ -332,7 +332,7 @@ public class UplinkParseFragment extends Fragment {
         downlink.add(new Item("下行-保留2(4B)", "FFFFFFFF"));
         downlink.add(new Item("下行-保留3(4B)", "FFFFFFFF"));
         downlink.add(new Item("下行-保留4(2B)", "FFFF"));
-        int lowTh = com.blankj.utilcode.util.SPUtils.getInstance().getInt("low_battery_threshold_percent", 20);
+        int lowTh = com.lora.cn.utils.DownlinkMessageHelper.getLowBatteryThresholdPercent();
         downlink.add(new Item("下行-低电量阈值(%)", String.valueOf(lowTh)));
         downlink.add(new Item("下行-应答结果", "1"));
         downlink.add(new Item("下行-科室ID", "FF"));
