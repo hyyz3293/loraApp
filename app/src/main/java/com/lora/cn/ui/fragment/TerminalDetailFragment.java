@@ -309,9 +309,13 @@ public class TerminalDetailFragment extends Fragment {
             String code = "-";
             String wifiText = "-";
             String batteryText = "";
-            String firmwareVersion = LoRaFrameParser.normalizeFirmwareVersionString(
-                    com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "")
-            );
+            com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+            String fwRaw = "";
+            try { fwRaw = sp.getString("terminal_firmware_version_" + deviceId, ""); } catch (Exception ignored) {}
+            if (fwRaw == null || fwRaw.trim().isEmpty()) {
+                try { fwRaw = sp.getString("terminal_firmware_version", ""); } catch (Exception ignored) {}
+            }
+            String firmwareVersion = LoRaFrameParser.normalizeFirmwareVersionString(fwRaw);
             int batteryLevel = 0;
             int batteryVoltage = 0;
             boolean showBatteryAndSignal = false;

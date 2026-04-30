@@ -28,6 +28,14 @@ import java.util.concurrent.TimeUnit;
 
 import io.moquette.broker.Server;
 import io.moquette.broker.config.MemoryConfig;
+import io.moquette.interception.InterceptHandler;
+import io.moquette.interception.messages.InterceptAcknowledgedMessage;
+import io.moquette.interception.messages.InterceptConnectMessage;
+import io.moquette.interception.messages.InterceptConnectionLostMessage;
+import io.moquette.interception.messages.InterceptDisconnectMessage;
+import io.moquette.interception.messages.InterceptPublishMessage;
+import io.moquette.interception.messages.InterceptSubscribeMessage;
+import io.moquette.interception.messages.InterceptUnsubscribeMessage;
 
 public class MqttBrokerService extends Service {
 
@@ -50,6 +58,7 @@ public class MqttBrokerService extends Service {
     private android.net.ConnectivityManager.NetworkCallback networkCallback;
     private final java.util.concurrent.ConcurrentHashMap<String, SleepCycleState> sleepCycleStateByDev = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.ConcurrentHashMap<String, Long> lastUplinkStoreByDevMs = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.concurrent.ConcurrentHashMap<String, ClientConn> connectedClients = new java.util.concurrent.ConcurrentHashMap<>();
     private static final String ACTION_MQTT_CLIENT_STATE = "com.lora.cn.MQTT_CLIENT_STATE";
     private final Runnable maintenanceEvaluateRunnable = new Runnable() {
         @Override public void run() {
@@ -179,7 +188,9 @@ public class MqttBrokerService extends Service {
             java.io.File storeFile = new java.io.File(getFilesDir(), "moquette_store.mapdb");
             props.setProperty("persistent_store", storeFile.getAbsolutePath());
             MemoryConfig config = new MemoryConfig(props);
-            broker.startServer(config);
+            java.util.List<InterceptHandler> handlers = new java.util.ArrayList<>();
+            handlers.add(new BrokerConnectionHandler());
+            broker.startServer(config, handlers);
             currentPort = port;
             String ipSummary = getIpSummary();
             String primaryIp = "";
@@ -205,6 +216,87 @@ public class MqttBrokerService extends Service {
             // 启动失败时停止前台服务
             Log.e(CHANNEL_ID, "MQTT Broker start failed", e);
             stopSelf();
+        }
+    }
+
+    private static final class ClientConn {
+        final String clientId;
+        final String username;
+        final long connectedAtMs;
+        ClientConn(String clientId, String username, long connectedAtMs) {
+            this.clientId = clientId;
+            this.username = username;
+            this.connectedAtMs = connectedAtMs;
+        }
+    }
+
+    private final class BrokerConnectionHandler implements InterceptHandler {
+        @Override
+        public String getID() {
+            return "broker-connection-handler";
+        }
+
+        @Override
+        public Class<?>[] getInterceptedMessageTypes() {
+            return new Class<?>[]{InterceptConnectMessage.class, InterceptDisconnectMessage.class, InterceptConnectionLostMessage.class};
+        }
+
+        @Override
+        public void onConnect(InterceptConnectMessage msg) {
+            try {
+                String clientId = msg != null ? msg.getClientID() : "";
+                String username = msg != null ? msg.getUsername() : "";
+                connectedClients.put(clientId, new ClientConn(clientId, username, System.currentTimeMillis()));
+                Log.i(CHANNEL_ID, "MQTT client connected: clientId=" + clientId + ", username=" + (username == null ? "" : username));
+                Intent i = new Intent("com.lora.cn.MQTT_BROKER_CLIENT_CONNECTED");
+                i.putExtra("clientId", clientId);
+                i.putExtra("username", username);
+                sendBroadcast(i);
+            } catch (Exception ignored) {}
+        }
+
+        @Override
+        public void onDisconnect(InterceptDisconnectMessage msg) {
+            try {
+                String clientId = msg != null ? msg.getClientID() : "";
+                ClientConn prev = connectedClients.remove(clientId);
+                String username = prev != null ? prev.username : "";
+                Log.i(CHANNEL_ID, "MQTT client disconnected: clientId=" + clientId + ", username=" + (username == null ? "" : username));
+                Intent i = new Intent("com.lora.cn.MQTT_BROKER_CLIENT_DISCONNECTED");
+                i.putExtra("clientId", clientId);
+                i.putExtra("username", username);
+                sendBroadcast(i);
+            } catch (Exception ignored) {}
+        }
+
+        @Override
+        public void onConnectionLost(InterceptConnectionLostMessage msg) {
+            try {
+                String clientId = msg != null ? msg.getClientID() : "";
+                ClientConn prev = connectedClients.remove(clientId);
+                String username = prev != null ? prev.username : "";
+                Log.i(CHANNEL_ID, "MQTT client connection lost: clientId=" + clientId + ", username=" + (username == null ? "" : username));
+                Intent i = new Intent("com.lora.cn.MQTT_BROKER_CLIENT_LOST");
+                i.putExtra("clientId", clientId);
+                i.putExtra("username", username);
+                sendBroadcast(i);
+            } catch (Exception ignored) {}
+        }
+
+        @Override
+        public void onPublish(InterceptPublishMessage msg) {
+        }
+
+        @Override
+        public void onSubscribe(InterceptSubscribeMessage msg) {
+        }
+
+        @Override
+        public void onUnsubscribe(InterceptUnsubscribeMessage msg) {
+        }
+
+        @Override
+        public void onMessageAcknowledged(InterceptAcknowledgedMessage msg) {
         }
     }
 
@@ -787,6 +879,8 @@ public class MqttBrokerService extends Service {
                         com.lora.cn.utils.LoRaFrameParser.buildFirmwareVersionString(yy, mm, dd, mv)
                 );
                 com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version", fw);
+                com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version_" + frame.deviceId, fw);
+                com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version_last_device_id", frame.deviceId);
             } catch (Exception ignored) {}
             try {
                 if (!db.isTerminalExists(frame.deviceId)) return;

@@ -29,16 +29,24 @@ public class VersionInfoActivity extends AppCompatActivity {
         TextView tvAppVersion = findViewById(R.id.tv_app_version);
         TextView tvTerminalVersion = findViewById(R.id.tv_terminal_version);
         String appVer = "App版本：" + com.lora.cn.BuildConfig.VERSION_NAME + " (" + com.lora.cn.BuildConfig.VERSION_CODE +  ")";
-        String fw = com.lora.cn.utils.LoRaFrameParser.normalizeFirmwareVersionString(
-                com.blankj.utilcode.util.SPUtils.getInstance().getString("terminal_firmware_version", "")
-        );
+        com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
+        String lastDev = sp.getString("terminal_firmware_version_last_device_id", "");
+        String fwRaw = "";
+        if (lastDev != null && !lastDev.trim().isEmpty()) {
+            fwRaw = sp.getString("terminal_firmware_version_" + lastDev, "");
+        }
+        if (fwRaw == null || fwRaw.trim().isEmpty()) {
+            fwRaw = sp.getString("terminal_firmware_version", "");
+        }
+        String fw = com.lora.cn.utils.LoRaFrameParser.normalizeFirmwareVersionString(fwRaw);
         if (tvAppVersion != null) tvAppVersion.setText(appVer);
         if (tvTerminalVersion != null) {
             if (fw.isEmpty()) {
                 tvTerminalVersion.setText("");
                 tvTerminalVersion.setVisibility(android.view.View.GONE);
             } else {
-                tvTerminalVersion.setText("终端版本：" + fw);
+                String suffix = (lastDev != null && !lastDev.trim().isEmpty()) ? ("（最近设备 " + lastDev + "）") : "";
+                tvTerminalVersion.setText("终端版本" + suffix + "：" + fw);
                 tvTerminalVersion.setVisibility(android.view.View.VISIBLE);
             }
         }
