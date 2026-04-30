@@ -1336,6 +1336,7 @@ public class MainActivity extends AppCompatActivity {
         final java.util.HashMap<String, Long> logIdUpdates = new java.util.HashMap<>();
         boolean queuedAny;
         boolean touchedDb;
+        boolean clearAll;
     }
 
     private String lastSmallKey;
@@ -1349,8 +1350,25 @@ public class MainActivity extends AppCompatActivity {
         if (db == null) return out;
         java.util.List<com.lora.cn.ui.model.Terminal> all = null;
         try { all = db.getAllTerminals(); } catch (Exception ignored) {}
-        if (all == null || all.isEmpty()) return out;
+        if (all == null || all.isEmpty()) {
+            out.clearAll = true;
+            if (lastTypes != null && !lastTypes.isEmpty()) out.clearDevs.addAll(lastTypes.keySet());
+            return out;
+        }
         String nowStr = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        java.util.HashSet<String> currentDevIds = new java.util.HashSet<>();
+        for (com.lora.cn.ui.model.Terminal t : all) {
+            if (t == null) continue;
+            String devId = t.getTerminalId();
+            if (devId == null || devId.isEmpty()) continue;
+            currentDevIds.add(devId);
+        }
+        if (lastTypes != null && !lastTypes.isEmpty()) {
+            for (String devId : lastTypes.keySet()) {
+                if (devId == null || devId.isEmpty()) continue;
+                if (!currentDevIds.contains(devId)) out.clearDevs.add(devId);
+            }
+        }
 
         for (com.lora.cn.ui.model.Terminal t : all) {
             if (t == null) continue;
@@ -1516,6 +1534,20 @@ public class MainActivity extends AppCompatActivity {
             updatePendingBadge();
             return;
         }
+        if (result.clearAll) {
+            try { stopAlertRinging(); } catch (Exception ignored) {}
+            try { alertQueue.clear(); } catch (Exception ignored) {}
+            try { lastAlertTypes.clear(); } catch (Exception ignored) {}
+            try { lastAlertLogIds.clear(); } catch (Exception ignored) {}
+            currentAlert = null;
+            lastShownKey = null;
+            lastSmallKey = null;
+            if (llAlertPending != null) llAlertPending.setVisibility(View.GONE);
+            if (llAlertPendingSmall != null) setSmallVisible(false);
+            pendingCountOverride = null;
+            applyPendingBadgeUi(0);
+            return;
+        }
         int beforeQueueSize = alertQueue.size();
         boolean queueChanged = false;
 
@@ -1528,6 +1560,15 @@ public class MainActivity extends AppCompatActivity {
         if (!result.clearDevs.isEmpty()) {
             for (String devId : result.clearDevs) {
                 if (devId == null) continue;
+                try {
+                    java.util.Iterator<java.util.Map.Entry<String, Long>> it = lastAlertLogIds.entrySet().iterator();
+                    String prefix = devId + ":";
+                    while (it.hasNext()) {
+                        java.util.Map.Entry<String, Long> e = it.next();
+                        String k = e != null ? e.getKey() : null;
+                        if (k != null && k.startsWith(prefix)) it.remove();
+                    }
+                } catch (Exception ignored) {}
                 java.util.Deque<AlertItem> newQueue = new java.util.ArrayDeque<>();
                 for (AlertItem ai : alertQueue) {
                     boolean sameDev = devId.equalsIgnoreCase(ai.code);
