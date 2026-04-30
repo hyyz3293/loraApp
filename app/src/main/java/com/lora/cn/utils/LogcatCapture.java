@@ -20,6 +20,8 @@ public class LogcatCapture {
     private static final String PUBLIC_DIR = "Download/LoraAppLogs";
     private static String PUBLIC_NAME = "app_logcat.txt";
     private static String LOGCAT_TS;
+    private static final long ROTATE_MS = 30L * 60L * 1000L;
+    private static final int MAX_FILES = 96;
 
     public static void start(Context ctx) {
         if (running) return;
@@ -27,54 +29,34 @@ public class LogcatCapture {
         worker = new Thread(() -> {
             Process proc = null;
             BufferedReader br = null;
-            FileOutputStream fos = null;
+            StreamHolder holder = new StreamHolder();
             try {
                 int pid = android.os.Process.myPid();
-                if (LOGCAT_TS == null) {
-                    try {
-                        LOGCAT_TS = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date());
-                    } catch (Exception ignored) {
-                        LOGCAT_TS = String.valueOf(System.currentTimeMillis());
-                    }
-                }
                 File base = ctx != null ? ctx.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) : null;
                 if (base == null && ctx != null) base = ctx.getExternalFilesDir(null);
                 File dir = base != null ? new File(base, "LoraAppLogs") : null;
                 if (dir != null && !dir.exists()) dir.mkdirs();
-                String name = "app_logcat_" + LOGCAT_TS + ".txt";
-                PUBLIC_NAME = name;
-                File out = dir != null ? new File(dir, name) : null;
-                try {
-                    String basePath = base != null ? base.getAbsolutePath() : "null";
-                    String dirPath = dir != null ? dir.getAbsolutePath() : "null";
-                    String outPath = out != null ? out.getAbsolutePath() : "null";
-                    android.util.Log.i("LogcatCapture", "start base=" + basePath + " dir=" + dirPath + " file=" + outPath);
-                } catch (Exception ignored) {}
-                if (out != null && (!out.exists() || out.length() == 0)) {
-                    FileOutputStream init = new FileOutputStream(out, false);
-                    init.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
-                    init.flush();
-                    init.close();
-                }
-                fos = out != null ? new FileOutputStream(out, true) : null;
-                OutputStream publicOs = null;
-                try {
-                    publicOs = openPublicAppend(ctx);
-                } catch (Exception ignored) {}
+                long now0 = System.currentTimeMillis();
+                long nextRotateAt = rotateToNewFile(ctx, base, dir, holder, now0);
                 proc = new ProcessBuilder("logcat", "--pid", String.valueOf(pid), "-v", "time").redirectErrorStream(true).start();
                 br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
                 String line;
                 while (running && (line = br.readLine()) != null) {
+                    long now = System.currentTimeMillis();
+                    if (now >= nextRotateAt) {
+                        nextRotateAt = rotateToNewFile(ctx, base, dir, holder, now);
+                    }
                     try {
-                        if (fos != null) fos.write((line + "\n").getBytes("UTF-8"));
-                        if (publicOs != null) publicOs.write((line + "\n").getBytes("UTF-8"));
+                        if (holder.fos != null) holder.fos.write((line + "\n").getBytes("UTF-8"));
+                        if (holder.publicOs != null) holder.publicOs.write((line + "\n").getBytes("UTF-8"));
                     } catch (Exception ignored) {}
                 }
             } catch (Exception e) {
                 try { android.util.Log.e("LogcatCapture", "start error: " + e.getMessage()); } catch (Exception ignore) {}
             } finally {
                 try { if (br != null) br.close(); } catch (Exception ignore) {}
-                try { if (fos != null) fos.close(); } catch (Exception ignore) {}
+                try { if (holder.fos != null) holder.fos.close(); } catch (Exception ignore) {}
+                try { if (holder.publicOs != null) holder.publicOs.close(); } catch (Exception ignore) {}
                 try { if (proc != null) proc.destroy(); } catch (Exception ignore) {}
             }
         }, "LogcatCapture");
@@ -152,5 +134,65 @@ public class LogcatCapture {
             }
         } catch (Exception ignored) {}
         return null;
+    }
+
+    private static final class StreamHolder {
+        FileOutputStream fos;
+        OutputStream publicOs;
+    }
+
+    private static long rotateToNewFile(Context ctx, File base, File dir, StreamHolder holder, long now) {
+        try { if (holder.fos != null) holder.fos.close(); } catch (Exception ignored) {}
+        try { if (holder.publicOs != null) holder.publicOs.close(); } catch (Exception ignored) {}
+        holder.fos = null;
+        holder.publicOs = null;
+        try {
+            String ts;
+            try {
+                ts = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date(now));
+            } catch (Exception ignored) {
+                ts = String.valueOf(now);
+            }
+            LOGCAT_TS = ts;
+            String name = "app_logcat_" + ts + ".txt";
+            PUBLIC_NAME = name;
+            File out = dir != null ? new File(dir, name) : null;
+            if (out != null && (!out.exists() || out.length() == 0)) {
+                FileOutputStream init = new FileOutputStream(out, false);
+                init.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+                init.flush();
+                init.close();
+            }
+            holder.fos = out != null ? new FileOutputStream(out, true) : null;
+            try { holder.publicOs = openPublicAppend(ctx); } catch (Exception ignored) { holder.publicOs = null; }
+            if (dir != null) prune(dir, "app_logcat_", MAX_FILES);
+            try {
+                String basePath = base != null ? base.getAbsolutePath() : "null";
+                String dirPath = dir != null ? dir.getAbsolutePath() : "null";
+                String outPath = out != null ? out.getAbsolutePath() : "null";
+                android.util.Log.i("LogcatCapture", "rotate base=" + basePath + " dir=" + dirPath + " file=" + outPath);
+            } catch (Exception ignored) {}
+        } catch (Exception ignored) {}
+        return now + ROTATE_MS;
+    }
+
+    private static void prune(File dir, String prefix, int maxFiles) {
+        try {
+            if (dir == null || !dir.exists() || maxFiles <= 0) return;
+            File[] arr = dir.listFiles();
+            if (arr == null || arr.length <= maxFiles) return;
+            java.util.ArrayList<File> list = new java.util.ArrayList<>();
+            for (File f : arr) {
+                if (f == null) continue;
+                String n = f.getName();
+                if (n != null && n.startsWith(prefix) && n.endsWith(".txt")) list.add(f);
+            }
+            if (list.size() <= maxFiles) return;
+            java.util.Collections.sort(list, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+            int remove = list.size() - maxFiles;
+            for (int i = 0; i < remove; i++) {
+                try { list.get(i).delete(); } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {}
     }
 }

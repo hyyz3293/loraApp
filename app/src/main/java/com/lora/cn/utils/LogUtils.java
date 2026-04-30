@@ -22,39 +22,13 @@ public class LogUtils {
     private static final String PUBLIC_DIR = "Download/LoraAppLogs";
     private static String PUBLIC_NAME = "app_log.txt";
     private static String LOG_TS;
+    private static final long ROTATE_MS = 30L * 60L * 1000L;
+    private static final int MAX_FILES = 96;
+    private static volatile long nextRotateAtMs = 0L;
+    private static volatile File logsDir;
 
     public static void init(Context context) {
-        if (LOG_TS == null) {
-            try {
-                LOG_TS = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-            } catch (Exception ignored) {
-                LOG_TS = String.valueOf(System.currentTimeMillis());
-            }
-        }
-        File base = context != null ? context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) : null;
-        if (base == null && context != null) base = context.getExternalFilesDir(null);
-        File logs = base != null ? new File(base, "LoraAppLogs") : null;
-        if (logs != null && !logs.exists()) logs.mkdirs();
-        String name = "app_log_" + LOG_TS + ".txt";
-        PUBLIC_NAME = name;
-        logFile = logs != null ? new File(logs, name) : null;
-        try {
-            String basePath = base != null ? base.getAbsolutePath() : "null";
-            String logsPath = logs != null ? logs.getAbsolutePath() : "null";
-            String filePath = logFile != null ? logFile.getAbsolutePath() : "null";
-            android.util.Log.i("LogUtils", "init base=" + basePath + " logs=" + logsPath + " file=" + filePath);
-        } catch (Exception ignored) {}
-        try {
-            if (logFile != null && !logFile.exists()) {
-                FileOutputStream fos = new FileOutputStream(logFile, false);
-                fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
-                fos.flush();
-                fos.close();
-            }
-        } catch (Exception e) {
-            try { android.util.Log.e("LogUtils", "init create file error: " + e.getMessage()); } catch (Exception ignored) {}
-        }
-        try { ensurePublicFile(context); } catch (Exception ignored) {}
+        try { ensureRolling(context); } catch (Exception ignored) {}
     }
 
     public static void d(String msg) {
@@ -96,11 +70,8 @@ public class LogUtils {
 
     private static void write(String level, String tag, String msg, Throwable tr) {
         try {
-            if (logFile == null) {
-                try { init(com.blankj.utilcode.util.Utils.getApp()); } catch (Exception ignored) {}
-                try { android.util.Log.e("LogUtils", "write logFile null, attempted reinit"); } catch (Exception ignored) {}
-                if (logFile == null) return;
-            }
+            try { ensureRolling(com.blankj.utilcode.util.Utils.getApp()); } catch (Exception ignored) {}
+            if (logFile == null) return;
             if (!logFile.exists()) {
                 try {
                     FileOutputStream init = new FileOutputStream(logFile, false);
@@ -127,6 +98,70 @@ public class LogUtils {
         } catch (Exception e) {
             try { android.util.Log.e("LogUtils", "write error: " + e.getMessage()); } catch (Exception ignored) {}
         }
+    }
+
+    private static void ensureRolling(Context context) {
+        if (context == null) return;
+        long now = System.currentTimeMillis();
+        if (logsDir == null) {
+            File base = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (base == null) base = context.getExternalFilesDir(null);
+            File logs = base != null ? new File(base, "LoraAppLogs") : null;
+            if (logs != null && !logs.exists()) logs.mkdirs();
+            logsDir = logs;
+        }
+        if (logFile == null || nextRotateAtMs <= 0L || now >= nextRotateAtMs) {
+            rotateToNewFile(context, now);
+        }
+    }
+
+    private static void rotateToNewFile(Context context, long now) {
+        String ts;
+        try {
+            ts = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date(now));
+        } catch (Exception ignored) {
+            ts = String.valueOf(now);
+        }
+        LOG_TS = ts;
+        String name = "app_log_" + ts + ".txt";
+        PUBLIC_NAME = name;
+        logFile = logsDir != null ? new File(logsDir, name) : null;
+        nextRotateAtMs = now + ROTATE_MS;
+        try {
+            String logsPath = logsDir != null ? logsDir.getAbsolutePath() : "null";
+            String filePath = logFile != null ? logFile.getAbsolutePath() : "null";
+            android.util.Log.i("LogUtils", "rotate logs=" + logsPath + " file=" + filePath);
+        } catch (Exception ignored) {}
+        try {
+            if (logFile != null && (!logFile.exists() || logFile.length() == 0)) {
+                FileOutputStream fos = new FileOutputStream(logFile, false);
+                fos.write(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF});
+                fos.flush();
+                fos.close();
+            }
+        } catch (Exception ignored) {}
+        try { ensurePublicFile(context); } catch (Exception ignored) {}
+        try { if (logsDir != null) prune(logsDir, "app_log_", MAX_FILES); } catch (Exception ignored) {}
+    }
+
+    private static void prune(File dir, String prefix, int maxFiles) {
+        try {
+            if (dir == null || !dir.exists() || maxFiles <= 0) return;
+            File[] arr = dir.listFiles();
+            if (arr == null) return;
+            java.util.ArrayList<File> list = new java.util.ArrayList<>();
+            for (File f : arr) {
+                if (f == null) continue;
+                String n = f.getName();
+                if (n != null && n.startsWith(prefix) && n.endsWith(".txt")) list.add(f);
+            }
+            if (list.size() <= maxFiles) return;
+            java.util.Collections.sort(list, (a, b) -> Long.compare(a.lastModified(), b.lastModified()));
+            int remove = list.size() - maxFiles;
+            for (int i = 0; i < remove; i++) {
+                try { list.get(i).delete(); } catch (Exception ignored) {}
+            }
+        } catch (Exception ignored) {}
     }
 
     private static void ensurePublicFile(Context ctx) {
