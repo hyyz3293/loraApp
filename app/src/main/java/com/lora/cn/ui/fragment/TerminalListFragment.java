@@ -1003,7 +1003,8 @@ public class TerminalListFragment extends Fragment {
 
             // 设置电量信息
             displayTerminal.setBatteryLevel(dbTerminal.getBatteryLevel());
-            displayTerminal.setBatteryText(dbTerminal.getBatteryLevel() + "%");
+            displayTerminal.setBatteryVoltage(dbTerminal.getBatteryVoltage());
+            displayTerminal.setBatteryText("");
 
             // 维护状态
             displayTerminal.setMaintenanceActive(dbTerminal.isMaintenanceActive());

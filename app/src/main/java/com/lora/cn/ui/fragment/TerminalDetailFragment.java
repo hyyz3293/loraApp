@@ -85,13 +85,18 @@ public class TerminalDetailFragment extends Fragment {
     private TextView terminal_detail_code;
     private SignalStrengthView signalView;
     private BatteryView batteryView;
+    private ImageView ivBatteryLowIcon;
     private TextView terminal_detail_wifi;
+    private TextView terminal_detail_battery_label;
     private TextView terminal_detail_battery;
     private TextView terminal_detail_id;
     private TextView terminal_detail_version;
+    private View layoutBatteryBlock;
     private Button btnHandleNow;
     private TextView btnSetMaintenance;
     private boolean waitingForUplink = false;
+    private View layoutTerminalIdBlock;
+    private View layoutTerminalVersionBlock;
     private ExecutorService ioExecutor;
     private Handler mainHandler;
     private final AtomicInteger bindSeq = new AtomicInteger(0);
@@ -208,10 +213,15 @@ public class TerminalDetailFragment extends Fragment {
         terminal_detail_code = v.findViewById(R.id.terminal_detail_code);
         signalView = v.findViewById(R.id.signalView);
         batteryView = v.findViewById(R.id.batteryView);
+        ivBatteryLowIcon = v.findViewById(R.id.iv_battery_low_icon);
         terminal_detail_wifi = v.findViewById(R.id.terminal_detail_wifi);
+        terminal_detail_battery_label = v.findViewById(R.id.terminal_detail_battery_label);
         terminal_detail_battery = v.findViewById(R.id.terminal_detail_battery);
         terminal_detail_id = v.findViewById(R.id.terminal_detail_id);
         terminal_detail_version = v.findViewById(R.id.terminal_detail_version);
+        layoutBatteryBlock = v.findViewById(R.id.layout_battery_block);
+        layoutTerminalIdBlock = v.findViewById(R.id.layout_terminal_id_block);
+        layoutTerminalVersionBlock = v.findViewById(R.id.layout_terminal_version_block);
         btnHandleNow = v.findViewById(R.id.btn_handle_now);
         btnSetMaintenance = v.findViewById(R.id.btn_set_maintenance);
         if (btnEdit != null) btnEdit.setVisibility(hasPermission("terminal_edit") ? View.VISIBLE : View.GONE);
@@ -360,10 +370,15 @@ public class TerminalDetailFragment extends Fragment {
                 st = t.getStatus();
                 batteryLevel = t.getBatteryLevel();
                 batteryVoltage = t.getBatteryVoltage();
-                if (st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
-                    topBattery = "";
+                boolean isLowNow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(batteryVoltage, batteryLevel);
+                topBattery = "";
+                batteryText = "";
+                if (st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE
+                        || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN
+                        || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
+                    showBatteryAndSignal = isLowNow;
                 } else {
-                    topBattery = batteryLevel + "%";
+                    showBatteryAndSignal = false;
                 }
 
                 String names = t.getGroupNamesText();
@@ -373,11 +388,8 @@ public class TerminalDetailFragment extends Fragment {
                 if (TextUtils.isEmpty(code)) code = "-";
 
                 wifiText = com.lora.cn.ui.constants.TerminalStatusConstants.codeToText(st);
-                if (st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE
-                        || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_NORMAL_TAKEN
-                        || st == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ABNORMAL_TAKEN) {
-                    showBatteryAndSignal = true;
-                    batteryText = batteryLevel + "%";
+                if (showBatteryAndSignal) {
+                    batteryText = "";
                 }
 
                 if (st != com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
@@ -473,14 +485,39 @@ public class TerminalDetailFragment extends Fragment {
                 if (terminal_detail_code != null) terminal_detail_code.setText(finalCode);
                 if (terminal_detail_wifi != null) terminal_detail_wifi.setText(finalWifiText);
                 if (terminal_detail_battery != null) {
-                    terminal_detail_battery.setText(finalBatteryText);
-                    if (finalShowBatteryAndSignal) {
-                        boolean isLow = com.lora.cn.utils.DownlinkMessageHelper.isLowBattery(finalBatteryVoltage, finalBatteryLevel);
-                        terminal_detail_battery.setTextColor(isLow ? android.graphics.Color.parseColor("#FF9500") : android.graphics.Color.parseColor("#333333"));
-                    }
+                    terminal_detail_battery.setText("");
+                    terminal_detail_battery.setVisibility(View.GONE);
                 }
-                if (batteryView != null) batteryView.setVisibility(finalShowBatteryAndSignal ? View.VISIBLE : View.GONE);
-                if (batteryView != null && finalShowBatteryAndSignal) batteryView.setBatteryInfo(finalBatteryLevel, finalBatteryVoltage);
+                if (layoutBatteryBlock != null) layoutBatteryBlock.setVisibility(finalShowBatteryAndSignal ? View.VISIBLE : View.GONE);
+                if (terminal_detail_battery_label != null) terminal_detail_battery_label.setVisibility(finalShowBatteryAndSignal ? View.VISIBLE : View.GONE);
+                if (ivBatteryLowIcon != null) {
+                    ivBatteryLowIcon.setVisibility(finalShowBatteryAndSignal ? View.VISIBLE : View.GONE);
+                    if (finalShowBatteryAndSignal) ivBatteryLowIcon.setImageResource(R.mipmap.ic_baterery_low);
+                }
+                if (batteryView != null) batteryView.setVisibility(View.GONE);
+                try {
+                    android.widget.LinearLayout.LayoutParams lp1 = layoutTerminalIdBlock != null
+                            ? (android.widget.LinearLayout.LayoutParams) layoutTerminalIdBlock.getLayoutParams()
+                            : null;
+                    android.widget.LinearLayout.LayoutParams lp2 = layoutTerminalVersionBlock != null
+                            ? (android.widget.LinearLayout.LayoutParams) layoutTerminalVersionBlock.getLayoutParams()
+                            : null;
+                    if (lp1 != null && lp2 != null) {
+                        if (finalShowBatteryAndSignal) {
+                            lp1.width = 0;
+                            lp1.weight = 1f;
+                            lp2.width = 0;
+                            lp2.weight = 1f;
+                        } else {
+                            lp1.width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
+                            lp1.weight = 0f;
+                            lp2.width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
+                            lp2.weight = 0f;
+                        }
+                        layoutTerminalIdBlock.setLayoutParams(lp1);
+                        layoutTerminalVersionBlock.setLayoutParams(lp2);
+                    }
+                } catch (Exception ignored) {}
                 if (signalView != null) {
                     if (finalSt == com.lora.cn.ui.constants.TerminalStatusConstants.CODE_OFFLINE) {
                         signalView.setVisibility(View.GONE);

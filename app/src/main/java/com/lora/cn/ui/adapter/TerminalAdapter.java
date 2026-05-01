@@ -108,6 +108,7 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
             if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
             tvStatusTitle.setText(com.lora.cn.ui.constants.TerminalStatusConstants.STATUS_OFFLINE);
             tvBatteryTitle.setText("");
+            tvBatteryTitle.setVisibility(View.GONE);
         } else {
             if (isAbnormal) {
                 if (signalView != null) signalView.setVisibility(View.GONE);
@@ -178,16 +179,29 @@ public class TerminalAdapter extends BaseQuickAdapter<Terminal, QuickViewHolder>
                 if (batteryView != null) batteryView.setVisibility(View.GONE);
                 if (ivBatteryIcon != null) {
                     ivBatteryIcon.setVisibility(View.VISIBLE);
+                    int iconRes = 0;
+                    try { iconRes = item.getBatteryIconResId(); } catch (Exception ignored) { iconRes = 0; }
                     ivBatteryIcon.setImageResource(R.mipmap.ic_baterery_low);
+                }
+                if (tvBatteryTitle != null) {
+                    tvBatteryTitle.setText("");
+                    tvBatteryTitle.setVisibility(View.GONE);
                 }
             } else {
                 if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
-                if (batteryView != null) {
-                    batteryView.setVisibility(View.VISIBLE);
-                    batteryView.setBatteryInfo(level, bv);
+                if (batteryView != null) batteryView.setVisibility(View.GONE);
+                if (tvBatteryTitle != null) {
+                    tvBatteryTitle.setText("");
+                    tvBatteryTitle.setVisibility(View.GONE);
                 }
             }
-            tvBatteryTitle.setText(level + "%");
+        } else {
+            if (batteryView != null) batteryView.setVisibility(View.GONE);
+            if (ivBatteryIcon != null) ivBatteryIcon.setVisibility(View.GONE);
+            if (tvBatteryTitle != null) {
+                tvBatteryTitle.setText("");
+                tvBatteryTitle.setVisibility(View.GONE);
+            }
         }
         
         // 设置收藏状态

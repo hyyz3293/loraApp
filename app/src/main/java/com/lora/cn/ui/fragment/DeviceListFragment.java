@@ -24,6 +24,7 @@ import com.lora.cn.events.UplinkDataEvent;
 import com.lora.cn.database.DatabaseManager;
 import com.lora.cn.database.dao.TerminalDao;
 import com.lora.cn.database.entity.Terminal;
+import com.lora.cn.event.TerminalRefreshEvent;
 import com.lora.cn.ui.adapter.DeviceListAdapter;
 import com.lora.cn.ui.activity.MainActivity;
 import com.lora.cn.utils.LoRaFrameParser;
@@ -47,6 +48,8 @@ import java.util.Set;
 public class DeviceListFragment extends Fragment {
 
     private TextView btnSearchTerminal;
+    private TextView btnAddTestDevice;
+    private TextView btnAddLowBatteryTestDevice;
     private TextView btnBack;
     private EditText etSearch;
     private TextView btnSearch;
@@ -93,6 +96,8 @@ public class DeviceListFragment extends Fragment {
 
     private void initViews(View view) {
         btnSearchTerminal = view.findViewById(R.id.btn_search_terminal);
+        btnAddTestDevice = view.findViewById(R.id.btn_add_test_device);
+        btnAddLowBatteryTestDevice = view.findViewById(R.id.btn_add_low_battery_test_device);
         btnBack = view.findViewById(R.id.btn_back);
         etSearch = view.findViewById(R.id.et_search);
         btnSearch = view.findViewById(R.id.btn_search);
@@ -139,6 +144,13 @@ public class DeviceListFragment extends Fragment {
             startSearchingTerminals();
         });
 
+        if (btnAddTestDevice != null) {
+            btnAddTestDevice.setOnClickListener(v -> addTestDevice());
+        }
+        if (btnAddLowBatteryTestDevice != null) {
+            btnAddLowBatteryTestDevice.setOnClickListener(v -> addLowBatteryTestDevice());
+        }
+
         // 返回按钮
         btnBack.setOnClickListener(v -> {
             if (getActivity() instanceof MainActivity) {
@@ -153,6 +165,111 @@ public class DeviceListFragment extends Fragment {
             String searchText = etSearch.getText().toString().trim();
             searchTerminals(searchText);
         });
+    }
+
+    private void addTestDevice() {
+        if (ioExecutor == null || mainHandler == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        ioExecutor.execute(() -> {
+            String newId = generateUniqueTestTerminalId();
+            String suffix = newId != null && newId.length() >= 4 ? newId.substring(newId.length() - 4) : String.valueOf(System.currentTimeMillis() % 10000);
+            com.lora.cn.ui.model.Terminal t = new com.lora.cn.ui.model.Terminal();
+            t.setTerminalId(newId);
+            t.setTerminalName("测试设备-" + suffix);
+            t.setDeviceCode("TEST" + suffix);
+            t.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE);
+            t.setSignalStrength(0);
+            t.setBatteryLevel(100);
+            t.setBatteryVoltage(420);
+            t.setRssi(0);
+            t.setDepartment("");
+            t.setLocation("");
+            boolean ok = false;
+            try {
+                DatabaseHelper db = DatabaseHelper.getInstance(appCtx);
+                ok = db.addTerminal(t) > 0;
+            } catch (Exception ignored) {}
+            boolean finalOk = ok;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (finalOk) {
+                    try { EventBus.getDefault().post(new TerminalRefreshEvent("新增测试终端:" + newId)); } catch (Exception ignored) {}
+                    Toast.makeText(getContext(), "已添加测试设备: " + newId, Toast.LENGTH_SHORT).show();
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).hideDeviceListImmediate();
+                    }
+                } else {
+                    Toast.makeText(getContext(), "添加测试设备失败", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    private void addLowBatteryTestDevice() {
+        if (ioExecutor == null || mainHandler == null) return;
+        android.content.Context ctx = getContext();
+        if (ctx == null) return;
+        android.content.Context appCtx = ctx.getApplicationContext();
+        ioExecutor.execute(() -> {
+            String newId = generateUniqueTestTerminalId();
+            String suffix = newId != null && newId.length() >= 4 ? newId.substring(newId.length() - 4) : String.valueOf(System.currentTimeMillis() % 10000);
+            com.lora.cn.ui.model.Terminal t = new com.lora.cn.ui.model.Terminal();
+            t.setTerminalId(newId);
+            t.setTerminalName("低电量测试-" + suffix);
+            t.setDeviceCode("LOW" + suffix);
+            t.setStatus(com.lora.cn.ui.constants.TerminalStatusConstants.CODE_ONLINE);
+            t.setSignalStrength(0);
+            t.setBatteryLevel(5);
+            t.setBatteryVoltage(300);
+            t.setRssi(0);
+            t.setDepartment("");
+            t.setLocation("");
+            boolean ok = false;
+            try {
+                DatabaseHelper db = DatabaseHelper.getInstance(appCtx);
+                ok = db.addTerminal(t) > 0;
+            } catch (Exception ignored) {}
+            boolean finalOk = ok;
+            mainHandler.post(() -> {
+                if (!isAdded()) return;
+                if (finalOk) {
+                    try { EventBus.getDefault().post(new TerminalRefreshEvent("新增低电量测试终端:" + newId)); } catch (Exception ignored) {}
+                    Toast.makeText(getContext(), "已添加低电量测试设备: " + newId, Toast.LENGTH_SHORT).show();
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).hideDeviceListImmediate();
+                    }
+                } else {
+                    Toast.makeText(getContext(), "添加低电量测试设备失败", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    private String generateUniqueTestTerminalId() {
+        try {
+            if (terminalDao == null) terminalDao = new TerminalDao(DatabaseHelper.getInstance(requireContext()));
+            for (int i = 0; i < 20; i++) {
+                String id = randomHex16();
+                try {
+                    if (!terminalDao.isDeviceIdExists(id, 0)) return id;
+                } catch (Exception ignored) {
+                    return id;
+                }
+            }
+        } catch (Exception ignored) {}
+        return randomHex16();
+    }
+
+    private String randomHex16() {
+        try {
+            String s = java.util.UUID.randomUUID().toString().replace("-", "");
+            if (s.length() >= 16) return s.substring(0, 16).toUpperCase(java.util.Locale.getDefault());
+            return (s + "0000000000000000").substring(0, 16).toUpperCase(java.util.Locale.getDefault());
+        } catch (Exception ignored) {
+            return String.valueOf(System.currentTimeMillis());
+        }
     }
 
     /**

@@ -48,6 +48,34 @@
                 android:layout_height="32dp" />
 
             <TextView
+                android:id="@+id/btn_add_test_device"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="14dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="测试设备"
+                android:textStyle="bold"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
+
+            <TextView
+                android:id="@+id/btn_add_low_battery_test_device"
+                android:layout_marginRight="15dp"
+                android:background="@drawable/bg_btn2_4"
+                android:textSize="14dp"
+                android:gravity="center"
+                android:textColor="@color/white"
+                android:text="低电量"
+                android:textStyle="bold"
+                android:paddingLeft="17dp"
+                android:paddingRight="17dp"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp" />
+
+            <TextView
                 android:id="@+id/btn_back"
                 android:background="@drawable/bg_back_4"
                 android:textSize="16dp"

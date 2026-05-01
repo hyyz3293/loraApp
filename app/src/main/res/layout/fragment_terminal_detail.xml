@@ -201,6 +201,7 @@
 
 
             <LinearLayout
+                android:id="@+id/layout_battery_block"
                 android:orientation="horizontal"
                 android:layout_weight="1"
                 android:gravity="center_vertical"
@@ -208,11 +209,20 @@
                 android:layout_height="wrap_content" >
 
                 <TextView
+                    android:id="@+id/terminal_detail_battery_label"
                     android:text="电量："
                     android:textSize="14dp"
                     android:textColor="@color/black"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
+
+                <ImageView
+                    android:id="@+id/iv_battery_low_icon"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginLeft="6dp"
+                    android:src="@mipmap/ic_baterery_low"
+                    android:visibility="gone" />
 
                 <com.lora.cn.ui.view.BatteryView
                     android:id="@+id/batteryView"
@@ -245,6 +255,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_terminal_id_block"
                 android:orientation="horizontal"
                 android:layout_weight="1"
                 android:layout_width="0dp"
@@ -269,6 +280,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_terminal_version_block"
                 android:orientation="horizontal"
                 android:layout_weight="1"
                 android:layout_width="0dp"
