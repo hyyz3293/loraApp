@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -143,14 +144,9 @@ public class TerminalDetailFragment extends Fragment {
         if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
         initViews(v);
         setupListeners();
-        if (mainHandler != null) {
-            mainHandler.postDelayed(() -> {
-                if (!isAdded()) return;
-                bindData();
-                loadLogs();
-                loadMaintenanceLogs();
-            }, 500);
-        }
+        bindData();
+        loadLogs();
+        loadMaintenanceLogs();
         return v;
     }
 
@@ -224,6 +220,49 @@ public class TerminalDetailFragment extends Fragment {
         layoutTerminalVersionBlock = v.findViewById(R.id.layout_terminal_version_block);
         btnHandleNow = v.findViewById(R.id.btn_handle_now);
         btnSetMaintenance = v.findViewById(R.id.btn_set_maintenance);
+        if (tvTitle != null) tvTitle.setText("");
+        if (tvDeviceId != null) tvDeviceId.setText("");
+        if (tvDepartment != null) tvDepartment.setText("");
+        if (tvLocation != null) tvLocation.setText("");
+        if (tvStatus != null) tvStatus.setText("");
+        if (tvBattery != null) tvBattery.setText("");
+        if (terminal_detail_type != null) terminal_detail_type.setText("");
+        if (terminal_detail_code != null) terminal_detail_code.setText("");
+        if (terminal_detail_wifi != null) terminal_detail_wifi.setText("");
+        if (terminal_detail_id != null) terminal_detail_id.setText("");
+        if (terminal_detail_version != null) terminal_detail_version.setText("");
+        if (terminal_detail_battery != null) {
+            terminal_detail_battery.setText("");
+            terminal_detail_battery.setVisibility(View.GONE);
+        }
+        if (layoutBatteryBlock != null) layoutBatteryBlock.setVisibility(View.GONE);
+        if (terminal_detail_battery_label != null) terminal_detail_battery_label.setVisibility(View.GONE);
+        if (ivBatteryLowIcon != null) ivBatteryLowIcon.setVisibility(View.GONE);
+        if (batteryView != null) batteryView.setVisibility(View.GONE);
+        try {
+            android.widget.LinearLayout.LayoutParams lp1 = layoutTerminalIdBlock != null
+                    ? (android.widget.LinearLayout.LayoutParams) layoutTerminalIdBlock.getLayoutParams()
+                    : null;
+            android.widget.LinearLayout.LayoutParams lp2 = layoutTerminalVersionBlock != null
+                    ? (android.widget.LinearLayout.LayoutParams) layoutTerminalVersionBlock.getLayoutParams()
+                    : null;
+            if (lp1 != null && lp2 != null) {
+                lp1.width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
+                lp1.weight = 1f;
+                lp2.width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
+                lp2.weight = 2f;
+                layoutTerminalIdBlock.setLayoutParams(lp1);
+                layoutTerminalVersionBlock.setLayoutParams(lp2);
+            }
+        } catch (Exception ignored) {}
+        try {
+            if (layoutTerminalIdBlock instanceof LinearLayout) {
+                ((LinearLayout) layoutTerminalIdBlock).setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            }
+            if (layoutTerminalVersionBlock instanceof LinearLayout) {
+                ((LinearLayout) layoutTerminalVersionBlock).setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            }
+        } catch (Exception ignored) {}
         if (btnEdit != null) btnEdit.setVisibility(hasPermission("terminal_edit") ? View.VISIBLE : View.GONE);
         if (btnDelete != null) btnDelete.setVisibility(hasPermission("terminal_delete") ? View.VISIBLE : View.GONE);
         if (ivFavorite != null) ivFavorite.setVisibility(hasPermission("terminal_mark") ? View.VISIBLE : View.GONE);
@@ -510,12 +549,24 @@ public class TerminalDetailFragment extends Fragment {
                             lp2.weight = 1f;
                         } else {
                             lp1.width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
-                            lp1.weight = 0f;
+                            lp1.weight = 1f;
                             lp2.width = android.widget.LinearLayout.LayoutParams.WRAP_CONTENT;
-                            lp2.weight = 0f;
+                            lp2.weight = 2f;
                         }
                         layoutTerminalIdBlock.setLayoutParams(lp1);
                         layoutTerminalVersionBlock.setLayoutParams(lp2);
+                    }
+                } catch (Exception ignored) {}
+                try {
+                    if (layoutTerminalIdBlock instanceof LinearLayout) {
+                        ((LinearLayout) layoutTerminalIdBlock).setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+                    }
+                    if (layoutTerminalVersionBlock instanceof LinearLayout) {
+                        if (finalShowBatteryAndSignal) {
+                            ((LinearLayout) layoutTerminalVersionBlock).setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+                        } else {
+                            ((LinearLayout) layoutTerminalVersionBlock).setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL);
+                        }
                     }
                 } catch (Exception ignored) {}
                 if (signalView != null) {

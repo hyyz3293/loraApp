@@ -54,6 +54,7 @@
                 android:textSize="14dp"
                 android:gravity="center"
                 android:textColor="@color/white"
+                android:visibility="gone"
                 android:text="测试设备"
                 android:textStyle="bold"
                 android:paddingLeft="17dp"
@@ -63,6 +64,7 @@
 
             <TextView
                 android:id="@+id/btn_add_low_battery_test_device"
+                android:visibility="gone"
                 android:layout_marginRight="15dp"
                 android:background="@drawable/bg_btn2_4"
                 android:textSize="14dp"
