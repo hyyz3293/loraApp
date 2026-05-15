@@ -360,7 +360,29 @@ public class TerminalDetailFragment extends Fragment {
             String batteryText = "";
             com.blankj.utilcode.util.SPUtils sp = com.blankj.utilcode.util.SPUtils.getInstance();
             String fwRaw = "";
-            try { fwRaw = sp.getString("terminal_firmware_version_" + deviceId, ""); } catch (Exception ignored) {}
+            String did1 = deviceId != null ? deviceId.trim() : "";
+            String did2 = did1.isEmpty() ? "" : did1.toUpperCase(java.util.Locale.getDefault());
+            String did3 = did1.isEmpty() ? "" : did1.toLowerCase(java.util.Locale.getDefault());
+            String didFromDb = "";
+            try { didFromDb = (t != null && t.getTerminalId() != null) ? t.getTerminalId().trim() : ""; } catch (Exception ignored) { didFromDb = ""; }
+            String didFromDbUpper = didFromDb.isEmpty() ? "" : didFromDb.toUpperCase(java.util.Locale.getDefault());
+            String[] keys = new String[]{
+                    "terminal_firmware_version_" + did1,
+                    "terminal_firmware_version_" + did2,
+                    "terminal_firmware_version_" + did3,
+                    "terminal_firmware_version_" + didFromDb,
+                    "terminal_firmware_version_" + didFromDbUpper
+            };
+            for (String k : keys) {
+                if (k == null) continue;
+                try {
+                    String v = sp.getString(k, "");
+                    if (v != null && !v.trim().isEmpty()) {
+                        fwRaw = v;
+                        break;
+                    }
+                } catch (Exception ignored) {}
+            }
             if (fwRaw == null || fwRaw.trim().isEmpty()) {
                 try { fwRaw = sp.getString("terminal_firmware_version", ""); } catch (Exception ignored) {}
             }
@@ -1159,14 +1181,11 @@ public class TerminalDetailFragment extends Fragment {
             LoRaFrameParser.ParsedFrame frame = LoRaFrameParser.parseFrame(event.getHex());
             if (frame == null || frame.deviceId == null) return;
             String deviceId = getArguments() != null ? getArguments().getString(ARG_DEVICE_ID, "") : "";
-            if (waitingForUplink && deviceId.equalsIgnoreCase(frame.deviceId)) {
-                waitingForUplink = false;
-                //if (btnHandleNow != null) btnHandleNow.setVisibility(View.GONE);
-                // 刷新数据以反映最新状态与电量
-                if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
-                mainHandler.removeCallbacks(deferBindRunnable);
-                mainHandler.postDelayed(deferBindRunnable, 200);
-            }
+            if (!deviceId.equalsIgnoreCase(frame.deviceId)) return;
+            waitingForUplink = false;
+            if (mainHandler == null) mainHandler = new Handler(Looper.getMainLooper());
+            mainHandler.removeCallbacks(deferBindRunnable);
+            mainHandler.postDelayed(deferBindRunnable, 200);
         } catch (Exception ignored) {}
     }
 

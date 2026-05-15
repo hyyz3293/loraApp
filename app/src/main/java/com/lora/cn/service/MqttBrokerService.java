@@ -871,6 +871,8 @@ public class MqttBrokerService extends Service {
             if (frame == null) return;
             if (frame.deviceId == null || frame.deviceId.isEmpty()) return;
             try {
+                String devKey = frame.deviceId.trim();
+                String devKeyUpper = devKey.isEmpty() ? "" : devKey.toUpperCase(java.util.Locale.getDefault());
                 int yy = frame.termVerYY;
                 int mm = frame.termVerMM;
                 int dd = frame.termVerDD;
@@ -879,8 +881,13 @@ public class MqttBrokerService extends Service {
                         com.lora.cn.utils.LoRaFrameParser.buildFirmwareVersionString(yy, mm, dd, mv)
                 );
                 com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version", fw);
-                com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version_" + frame.deviceId, fw);
-                com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version_last_device_id", frame.deviceId);
+                if (!devKey.isEmpty()) {
+                    com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version_" + devKey, fw);
+                }
+                if (!devKeyUpper.isEmpty()) {
+                    com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version_" + devKeyUpper, fw);
+                }
+                com.blankj.utilcode.util.SPUtils.getInstance().put("terminal_firmware_version_last_device_id", devKeyUpper.isEmpty() ? devKey : devKeyUpper);
             } catch (Exception ignored) {}
             try {
                 if (!db.isTerminalExists(frame.deviceId)) return;
